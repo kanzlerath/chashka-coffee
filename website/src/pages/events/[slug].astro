@@ -1,6 +1,6 @@
 ---
 import StoryDetail from '../../components/StoryDetail.astro';
-export function getStaticPaths(){const events={'jazz-in-park':{title:'Вечер джаза в парке',intro:'Живой звук, десерты и кофе на свежем воздухе.',meta:'24 мая · 19:00 · Центральный парк'},'latte-art':{title:'Мастер-класс по латте-арту',intro:'Покажем базовые движения и дадим попробовать всё самим.',meta:'31 мая · 13:00 · Красный проспект'}};return Object.entries(events).map(([slug,story])=>({params:{slug},props:{story}}));}
+export function getStaticPaths(){const events={'jazz-in-park':{title:'Вечер джаза в парке',intro:'Живой звук, десерты и кофе на свежем воздухе.',meta:'24 мая · 19:00 · Центральный парк'},'latte-art':{title:'Мастер-класс по латте-арту',intro:'Покажем базовые движения и дадим попробовать всё самим.',meta:'31 мая · 13:00 · Красный проспект'},'book-club':{title:'Книжный клуб',intro:'Обсуждаем книгу месяца без строгих правил, но с хорошим кофе.',meta:'7 июня · 18:30 · улица Ленина'}};return Object.entries(events).map(([slug,story])=>({params:{slug},props:{story}}));}
 const {story}=Astro.props;
 ---
 <StoryDetail eyebrow="событие чашка кофе" action="Ко всем событиям" actionHref="/events" {...story}/>

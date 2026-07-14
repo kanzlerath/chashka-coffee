@@ -1,6 +1,6 @@
 ---
 import StoryDetail from '../../components/StoryDetail.astro';
-export function getStaticPaths(){const promotions={'summer-breakfasts':{title:'Летние завтраки',intro:'Любимые блюда и кофе по специальной цене — до 12:00 по будням.',meta:'Действует до 31 августа'},'coffee-to-go':{title:'Кофе с собой',intro:'Второй напиток для прогулки, дороги или человека рядом.',meta:'Предложение действует каждый день'}};return Object.entries(promotions).map(([slug,story])=>({params:{slug},props:{story}}));}
+export function getStaticPaths(){const promotions={'summer-breakfasts':{title:'Летние завтраки',intro:'Любимые блюда и кофе по специальной цене — до 12:00 по будням.',meta:'Действует до 31 августа'},'coffee-to-go':{title:'Кофе с собой',intro:'Второй напиток для прогулки, дороги или человека рядом.',meta:'Предложение действует каждый день'},'dessert-cappuccino':{title:'Десерт к капучино',intro:'Добавьте к напитку немного сладкого настроения.',meta:'Предложение действует до конца месяца'}};return Object.entries(promotions).map(([slug,story])=>({params:{slug},props:{story}}));}
 const {story}=Astro.props;
 ---
 <StoryDetail eyebrow="акция чашка кофе" action="Ко всем акциям" actionHref="/promotions" {...story}/>
