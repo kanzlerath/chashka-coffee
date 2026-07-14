@@ -4,105 +4,27 @@ import type { RestaurantSummary } from '@chashka-coffee/contracts'
 const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
 let restaurants: RestaurantSummary[] = []
 let apiUnavailable = false
-
-try {
-  const response = await fetch(`${apiUrl}/api/restaurants`)
-  if (!response.ok) throw new Error(`Catalog request failed with ${response.status}`)
-  restaurants = (await response.json()).restaurants
-} catch {
-  apiUnavailable = true
-}
-
-const formatLabels = {
-  CITY: 'В городе',
-  PARK: 'В парке',
-  AIRPORT: 'В аэропорту',
-  APART_HOTEL: 'Апарт-отель',
-} as const
+try { const response = await fetch(`${apiUrl}/api/restaurants`); if (!response.ok) throw new Error(); restaurants = (await response.json()).restaurants } catch { apiUnavailable = true }
+const formatLabels = { CITY: 'В городе', PARK: 'В парке', AIRPORT: 'В аэропорту', APART_HOTEL: 'Апарт-отель' } as const
+const coverFor = (index: number) => index % 3 === 0 ? '/images/restaurants-hero.png' : '/images/home-hero-v1.png'
 ---
 
-<html lang="ru">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="description" content="Рестораны сети «Чашка кофе»: адреса, часы работы и меню." />
-    <title>Рестораны — Чашка кофе</title>
-  </head>
-  <body>
-    <header class="site-header">
-      <a class="brand" href="/" aria-label="Чашка кофе, на главную"><span>☕</span> Чашка кофе</a>
-      <nav aria-label="Основная навигация"><a class="active" href="/restaurants">Рестораны</a><a href="/menu">Меню</a><a href="/delivery">Доставка</a><a href="/app">Приложение</a><a href="/about">О нас</a></nav>
-      <a class="delivery" href="/app">Доставка <span>↗</span></a>
-    </header>
-
-    <main>
-      <section class="hero">
-        <img src="/images/restaurants-hero.png" alt="Светлый интерьер кофейни с деревянными столами" />
-        <div class="hero-copy">
-          <p class="eyebrow">13 точек в Новосибирске</p>
-          <h1>Найдите свою<br />«Чашку кофе»</h1>
-          <p>В городе, в парках и перед вылетом — с одним простым маршрутом к хорошему кофе.</p>
-        </div>
-      </section>
-
-      <section class="directory" aria-labelledby="directory-title">
-        <div class="directory-heading"><p class="eyebrow">Рестораны</p><h2 id="directory-title">Рядом с вами</h2><p>{restaurants.length || 13} мест для встречи, работы и короткой паузы.</p></div>
-        <div class="filters" aria-label="Фильтр ресторанов">
-          <button class="is-active" data-filter="all">Все <span>{restaurants.length || 13}</span></button>
-          <button data-filter="CITY">В городе</button>
-          <button data-filter="PARK">В парках</button>
-          <button data-filter="AIRPORT">В аэропорту</button>
-          <button data-filter="APART_HOTEL">Апарт-отель</button>
-        </div>
-
-        {apiUnavailable ? (
-          <p class="api-note">Запустите API, чтобы увидеть актуальные точки: <code>bun run dev:backend</code>.</p>
-        ) : (
-          <div class="restaurant-list" id="restaurant-list">
-            {restaurants.map((restaurant, index) => (
-              <article class="restaurant" data-area={restaurant.area} data-apart={restaurant.isAtApartHotel} style={`--delay:${index * 45}ms`}>
-                <div class="restaurant-topline"><span>{formatLabels[restaurant.format]}</span><span>0{index + 1}</span></div>
-                <h3>{restaurant.name.replace('Чашка кофе — ', '')}</h3>
-                <p class="address">{restaurant.address}</p>
-                <div class="meta"><span>{restaurant.city}</span><span>{restaurant.openingHoursLabel}</span></div>
-                <div class="actions"><a href={`/restaurants/${restaurant.slug}`}>Подробнее <span>→</span></a><a class="menu-link" href={`/restaurants/${restaurant.slug}/menu`}>Меню <span>↗</span></a></div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
-    </main>
-
-    <footer><span>© {new Date().getFullYear()} Чашка кофе</span><a href="/contacts">Контакты</a><a href="/legal">Правовая информация</a><span>Любимый вкус — всегда рядом</span></footer>
-
-    <script>
-      const filters = document.querySelectorAll<HTMLButtonElement>('[data-filter]')
-      const restaurants = document.querySelectorAll<HTMLElement>('.restaurant')
-      filters.forEach((filter) => filter.addEventListener('click', () => {
-        filters.forEach((item) => item.classList.toggle('is-active', item === filter))
-        const value = filter.dataset.filter
-        restaurants.forEach((restaurant) => {
-          const show = value === 'all' || restaurant.dataset.area === value || (value === 'APART_HOTEL' && restaurant.dataset.apart === 'true')
-          restaurant.hidden = !show
-        })
-      }))
-    </script>
-  </body>
-</html>
+<html lang="ru"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width" /><meta name="description" content="Рестораны сети «Чашка кофе»: адреса, часы работы и меню." /><title>Рестораны — Чашка кофе</title></head>
+<body><div class="page-shell">
+  <header class="header"><a class="brand" href="/"><img src="/brand/logo.png" alt="" width="44" height="44" /><span>Чашка<br />кофе</span></a><nav><a class="active" href="/restaurants">Рестораны</a><a href="/restaurants/krasny-prospekt/menu">Меню</a><a href="/delivery">Доставка</a><a href="/app">Приложение</a><a href="/about">О нас</a></nav><a class="header-cta" href="/app">Доставка <span>↗</span></a></header>
+  <main>
+    <section class="hero"><img src="/images/restaurants-hero.png" alt="Светлый интерьер кофейни" /><div><p class="eyebrow">13 мест для вашего дня</p><h1>Рестораны<br />рядом с вами</h1><p>В центре города, в парках и перед вылетом — выбирайте свою «Чашку кофе».</p></div></section>
+    <section class="directory" aria-labelledby="directory-title"><div class="directory-top"><div><p class="eyebrow">найти кофейню</p><h2 id="directory-title">Куда сегодня?</h2></div><p>{restaurants.length || 13} точек для встреч, работы и короткой паузы.</p></div>
+      <div class="filters" aria-label="Фильтр ресторанов"><button class="is-active" data-filter="all">Все <span>{restaurants.length || 13}</span></button><button data-filter="CITY">В городе</button><button data-filter="PARK">В парках</button><button data-filter="AIRPORT">В аэропорту</button><button data-filter="APART_HOTEL">Апарт-отель</button></div>
+      <div class="map-panel" aria-label="Карта ресторанов"><div><span>Новосибирск</span><i class="pin p1">☕</i><i class="pin p2">☕</i><i class="pin p3">☕</i><i class="pin p4">☕</i><b>13</b><small>кофеен на карте</small></div><a href="#restaurant-list">Смотреть списком <span>↓</span></a></div>
+      {apiUnavailable ? <p class="api-note">Запустите API, чтобы увидеть актуальные точки: <code>bun run dev:backend</code>.</p> : <div class="restaurant-grid" id="restaurant-list">{restaurants.map((restaurant, index) => <article class="restaurant" data-area={restaurant.area} data-apart={restaurant.isAtApartHotel}><a class="restaurant-image" href={`/restaurants/${restaurant.slug}`}><img src={restaurant.coverImageUrl ?? coverFor(index)} alt="" /><span>{formatLabels[restaurant.format]}</span></a><div class="restaurant-body"><p>0{index + 1}</p><h3>{restaurant.name.replace('Чашка кофе — ', '')}</h3><span class="address">{restaurant.address}</span><span class="hours">◔ {restaurant.openingHoursLabel}</span><div class="card-actions"><a href={`/restaurants/${restaurant.slug}`}>Подробнее <span>→</span></a><a class="menu-link" href={`/restaurants/${restaurant.slug}/menu`}>Меню <span>↗</span></a></div></div></article>)}</div>}
+    </section>
+    <section class="menu-banner"><div><p class="eyebrow">меню каждой точки</p><h2>Вкус, который<br />всегда рядом</h2><p>У разных ресторанов — свои сезонные предложения и любимые блюда.</p><a class="button" href="/restaurants/krasny-prospekt/menu">Выбрать ресторан и меню <span>→</span></a></div><img src="/images/home-hero-v1.png" alt="Кофе и свежая выпечка" /></section>
+  </main>
+  <footer><div class="footer-brand"><img src="/brand/logo.png" alt="" width="58" height="58" /><span>Чашка<br />кофе</span></div><p>Ваше место<br />для хорошего дня.</p><div class="footer-links"><a href="/contacts">Контакты</a><a href="/app">Приложение</a><a href="/privacy">Политика</a></div><span>© 2026 Чашка кофе</span></footer>
+</div><nav class="mobile-nav"><a href="/">⌂<small>Главная</small></a><a class="active" href="/restaurants">⌖<small>Кофейни</small></a><a href="/restaurants/krasny-prospekt/menu">≡<small>Меню</small></a><a href="/app">◒<small>Приложение</small></a></nav>
+<script>const filters=document.querySelectorAll('[data-filter]');const cards=document.querySelectorAll('.restaurant');filters.forEach((filter)=>filter.addEventListener('click',()=>{filters.forEach((item)=>item.classList.toggle('is-active',item===filter));const value=filter.dataset.filter;cards.forEach((card)=>{card.hidden=!(value==='all'||card.dataset.area===value||(value==='APART_HOTEL'&&card.dataset.apart==='true'))})}))</script></body></html>
 
 <style>
-  :root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #241914; background: #f6f3ee; }
-  * { box-sizing: border-box; } body { margin: 0; } a { color: inherit; text-decoration: none; }
-  .site-header { height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 28px; padding: 0 4vw; background: #fdfcf9; border-bottom: 1px solid #e7e0d8; position: sticky; top: 0; z-index: 3; }
-  .brand { font-size: 20px; font-weight: 750; letter-spacing: -.04em; white-space: nowrap; }.brand span { color: #9e5e2f; margin-right: 5px; }
-  nav { display: flex; gap: clamp(14px, 2vw, 31px); font-size: 13px; color: #746a62; } nav a { padding: 29px 0 25px; } nav .active { color: #241914; border-bottom: 2px solid #8b542e; }
-  .delivery { background: #2b1d17; color: white; padding: 12px 16px; border-radius: 8px; font-size: 13px; font-weight: 650; white-space: nowrap; }.delivery span { margin-left: 8px; color: #dcb38e; }
-  .hero { height: min(66vw, 635px); min-height: 430px; position: relative; overflow: hidden; background: #d8d0c6; }.hero img { width: 100%; height: 100%; object-fit: cover; object-position: center; }.hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(247,244,239,.98) 0%, rgba(247,244,239,.76) 32%, rgba(247,244,239,.06) 65%); }.hero-copy { position: absolute; z-index: 1; top: 50%; left: max(4vw, calc((100vw - 1320px)/2)); transform: translateY(-50%); max-width: 495px; }.eyebrow { text-transform: uppercase; letter-spacing: .14em; font-size: 11px; font-weight: 700; color: #956036; margin: 0 0 14px; }.hero h1 { font-size: clamp(46px, 6.8vw, 94px); line-height: .94; letter-spacing: -.075em; margin: 0; }.hero-copy > p:last-child { max-width: 340px; margin: 27px 0 0; color: #5d5048; font-size: 18px; line-height: 1.45; }
-  .directory { max-width: 1320px; margin: 0 auto; padding: 110px 4vw 130px; }.directory-heading { display: grid; grid-template-columns: 1fr 1.1fr 1fr; align-items: end; border-bottom: 1px solid #dcd4cb; padding-bottom: 28px; }.directory-heading .eyebrow { grid-column: 1 / -1; }.directory h2 { margin: 0; font-size: clamp(36px, 4vw, 61px); letter-spacing: -.065em; line-height: .95; }.directory-heading > p:last-child { margin: 0; max-width: 260px; color: #6f625a; line-height: 1.45; }
-  .filters { display: flex; flex-wrap: wrap; gap: 8px; padding: 26px 0 36px; }.filters button { font: inherit; border: 1px solid #d9d0c7; background: transparent; border-radius: 999px; padding: 10px 15px; color: #5e5148; cursor: pointer; transition: .2s; }.filters button:hover, .filters .is-active { background: #2b1d17; color: white; border-color: #2b1d17; }.filters span { opacity: .6; margin-left: 3px; }
-  .restaurant-list { border-top: 1px solid #dcd4cb; }.restaurant { padding: 26px 0 27px; display: grid; grid-template-columns: 80px 1.25fr 1fr 1.35fr; gap: 20px; align-items: center; border-bottom: 1px solid #dcd4cb; animation: rise .5s both; animation-delay: var(--delay); }.restaurant-topline { display: contents; }.restaurant-topline span { font-size: 12px; color: #9a704f; }.restaurant-topline span:last-child { grid-column: 4; text-align: right; color: #b5aaa0; }.restaurant h3 { grid-column: 2; margin: 0; font-size: 23px; letter-spacing: -.04em; }.address { margin: 0; color: #685c54; }.meta { grid-column: 2 / 4; display: flex; gap: 22px; color: #81756c; font-size: 13px; }.actions { grid-column: 4; grid-row: 2 / 4; display: flex; justify-content: flex-end; gap: 8px; }.actions a { padding: 10px 13px; border-radius: 5px; border: 1px solid #d3c9c0; font-size: 13px; transition: .2s; }.actions .menu-link { background: #2b1d17; color: #fff; border-color: #2b1d17; }.actions a:hover { transform: translateY(-2px); }
-  .api-note { padding: 30px 0; color: #7e5540; } code { font-family: ui-monospace, monospace; font-size: .9em; }.restaurant[hidden] { display: none; }
-  footer { border-top: 1px solid #e2dad1; min-height: 95px; padding: 30px 4vw; display: flex; gap: 25px; flex-wrap: wrap; align-items: center; justify-content: space-between; color: #7c7067; font-size: 12px; } footer a:hover { color: #2b1d17; }
-  @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-  @media (max-width: 760px) { .site-header { height: 64px; padding: 0 18px; }.brand { font-size: 18px; } nav { display: none; }.delivery { padding: 10px 12px; }.hero { min-height: 520px; height: 78svh; }.hero img { object-position: 62% center; }.hero::after { background: linear-gradient(180deg, rgba(247,244,239,.94) 0%, rgba(247,244,239,.76) 46%, rgba(247,244,239,.12) 78%); }.hero-copy { left: 18px; right: 18px; top: 32%; transform: none; }.hero h1 { font-size: 55px; }.directory { padding: 66px 18px 82px; }.directory-heading { display: block; }.directory-heading > p:last-child { margin-top: 18px; }.restaurant { grid-template-columns: 1fr auto; gap: 10px; padding: 21px 0; }.restaurant-topline { display: flex; grid-column: 1 / -1; justify-content: space-between; }.restaurant-topline span:last-child { grid-column: auto; }.restaurant h3 { grid-column: 1 / -1; font-size: 21px; }.address { grid-column: 1 / -1; }.meta { grid-column: 1 / -1; flex-direction: column; gap: 4px; }.actions { grid-column: 1 / -1; grid-row: auto; justify-content: flex-start; margin-top: 8px; }.filters { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 23px; }.filters button { white-space: nowrap; } footer { padding: 24px 18px; justify-content: flex-start; gap: 14px 22px; } }
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');:root{font-family:Montserrat,Arial,sans-serif;color:#1b201b;background:#eaebe5}*{box-sizing:border-box}body{margin:0;padding:14px;background:#eaebe5}a{color:inherit;text-decoration:none}.page-shell{max-width:1680px;margin:auto;background:#fdfcf8;border-radius:30px;overflow:hidden;box-shadow:0 14px 55px rgba(34,40,29,.08)}.header{height:104px;padding:0 clamp(34px,4.2vw,72px);display:flex;align-items:center;gap:34px}.brand,.footer-brand{display:flex;align-items:center;gap:10px;font-weight:800;line-height:.86;letter-spacing:-.075em;font-size:22px}.brand img{object-fit:contain}.header nav{display:flex;gap:34px;margin:auto}.header nav a{font-size:14px;font-weight:600}.header nav .active{border-bottom:2px solid #9bbe2b;padding-bottom:7px}.header-cta{background:#202d24;color:#fff;border-radius:999px;padding:15px 21px;font-size:14px;font-weight:700}.header-cta span{color:#b8d83e;margin-left:7px}.hero{height:min(43vw,690px);min-height:500px;position:relative;margin:0 14px;overflow:hidden;border-radius:25px}.hero img{width:100%;height:100%;object-fit:cover}.hero:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#fdfcf8 0%,rgba(253,252,248,.9) 29%,rgba(253,252,248,.1) 62%,transparent)}.hero>div{position:absolute;z-index:1;left:clamp(35px,6vw,105px);top:50%;transform:translateY(-50%);max-width:600px}.eyebrow{margin:0 0 14px;font-size:11px;text-transform:uppercase;letter-spacing:.14em;font-weight:700;color:#8baa27}.hero h1,.directory h2,.menu-banner h2{margin:0;font-size:clamp(58px,6vw,105px);letter-spacing:-.09em;line-height:.86}.hero>div>p:last-child{max-width:390px;margin:27px 0 0;font-size:17px;line-height:1.55;color:#566057}.directory{padding:clamp(95px,10vw,150px) clamp(34px,6.5vw,108px)}.directory-top{display:flex;align-items:end;justify-content:space-between;gap:45px}.directory h2{font-size:clamp(55px,5vw,88px)}.directory-top>p{max-width:280px;margin:0;font-size:16px;line-height:1.55;color:#5b6259}.filters{display:flex;gap:9px;flex-wrap:wrap;margin:46px 0 18px}.filters button{border:1px solid #d7dbd3;border-radius:999px;padding:14px 18px;background:#fffefa;font:600 14px Montserrat,Arial,sans-serif;cursor:pointer}.filters .is-active{background:#202d24;color:white;border-color:#202d24}.filters span{opacity:.7;margin-left:4px}.map-panel{height:310px;border-radius:25px;overflow:hidden;background:linear-gradient(25deg,#d4e2d3 0 18%,#ecf0e9 18% 37%,#d8e5ed 37% 44%,#e9eee8 44% 70%,#d7e3d2 70%);position:relative;isolation:isolate}.map-panel:before,.map-panel:after{content:'';position:absolute;inset:-20% -5%;border-top:15px solid rgba(255,255,255,.78);transform:rotate(-12deg);box-shadow:0 105px 0 rgba(255,255,255,.64),0 210px 0 rgba(255,255,255,.55)}.map-panel:after{inset:-15% -30%;transform:rotate(48deg);border-width:9px;box-shadow:0 125px 0 rgba(255,255,255,.64)}.map-panel>div{position:absolute;z-index:1;left:35px;top:28px;display:flex;align-items:center;gap:10px}.map-panel>div>span{font-size:13px;font-weight:700}.map-panel b{display:grid;place-items:center;width:43px;height:43px;border-radius:50%;background:#202d24;color:#fff;font-size:15px}.map-panel small{font-size:11px}.pin{position:absolute;z-index:1;width:42px;height:42px;display:grid;place-items:center;border-radius:50% 50% 50% 0;background:#202d24;color:#b8d83e;font-style:normal;transform:rotate(-45deg)}.pin::first-letter{transform:rotate(45deg)}.p1{left:36%;top:52%}.p2{left:60%;top:31%}.p3{left:74%;top:61%}.p4{left:49%;top:75%}.map-panel>a{position:absolute;z-index:1;right:23px;bottom:20px;background:#fdfcf8;padding:13px 17px;border-radius:999px;font-size:13px;font-weight:700}.map-panel>a span{margin-left:8px}.restaurant-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px}.restaurant{border:1px solid #e1e4dc;border-radius:23px;overflow:hidden;background:#fffefa}.restaurant-image{height:225px;display:block;position:relative;overflow:hidden}.restaurant-image img{width:100%;height:100%;object-fit:cover;transition:transform .35s}.restaurant:hover img{transform:scale(1.04)}.restaurant-image span{position:absolute;top:14px;left:14px;padding:8px 10px;border-radius:999px;background:rgba(253,252,248,.93);font-size:11px;font-weight:700}.restaurant-body{padding:19px}.restaurant-body>p{margin:0;color:#8cad25;font-size:12px;font-weight:700}.restaurant h3{margin:10px 0;font-size:23px;line-height:1;letter-spacing:-.06em}.address,.hours{display:block;font-size:12px;line-height:1.45;color:#626b61}.hours{margin-top:7px}.card-actions{display:flex;gap:8px;margin-top:19px}.card-actions a{flex:1;text-align:center;border:1px solid #d6dad1;border-radius:999px;padding:12px 8px;font-size:12px;font-weight:700}.card-actions .menu-link{background:#202d24;color:#fff;border-color:#202d24}.restaurant[hidden]{display:none}.api-note{padding:28px 0}.menu-banner{margin:0 14px 14px;border-radius:25px;overflow:hidden;min-height:450px;display:grid;grid-template-columns:.9fr 1.1fr;background:#d8e6cf}.menu-banner>div{padding:clamp(42px,6vw,94px)}.menu-banner h2{font-size:clamp(47px,5vw,83px)}.menu-banner p:not(.eyebrow){max-width:370px;font-size:16px;line-height:1.55;color:#4e5d4f;margin:27px 0}.menu-banner img{width:100%;height:100%;object-fit:cover}.button{display:inline-flex;align-items:center;gap:28px;padding:18px 21px;border-radius:999px;background:#202d24;color:#fff;font-size:14px;font-weight:700}footer{padding:75px clamp(34px,6.5vw,105px) 23px;background:#202d24;color:#f7f6ed;display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:35px;align-items:start}.footer-brand{font-size:25px}.footer-brand img{object-fit:contain}.footer-brand+p{font-size:clamp(28px,3vw,43px);font-weight:700;line-height:.93;letter-spacing:-.07em;margin:0}.footer-links{display:flex;gap:14px;flex-wrap:wrap}.footer-links a,footer>span{font-size:12px;color:#d1d9d0}footer>span{grid-column:1/-1;border-top:1px solid rgba(255,255,255,.16);padding-top:20px}.mobile-nav{display:none}@media(max-width:840px){body{padding:0;background:#fdfcf8}.page-shell{border-radius:0;box-shadow:none}.header{height:72px;padding:0 20px}.brand{font-size:18px}.brand img{width:39px;height:39px}.header nav,.header-cta{display:none}.hero{height:620px;min-height:0;margin:0;border-radius:0}.hero:after{background:linear-gradient(180deg,#fdfcf8 0%,rgba(253,252,248,.87) 44%,rgba(253,252,248,.05) 85%,transparent)}.hero>div{top:72px;left:20px;right:20px;transform:none}.hero h1{font-size:54px}.hero>div>p:last-child{font-size:15px;margin-top:21px}.directory{padding:81px 20px}.directory-top{display:block}.directory h2{font-size:53px}.directory-top>p{margin-top:22px;font-size:15px}.filters{flex-wrap:nowrap;overflow:auto;margin:33px -20px 15px;padding:0 20px 8px}.filters button{white-space:nowrap;font-size:12px;padding:12px 15px}.map-panel{height:250px;border-radius:20px}.map-panel>div{left:20px;top:19px}.map-panel>a{right:12px;bottom:12px;font-size:11px}.restaurant-grid{grid-template-columns:1fr;gap:9px;margin-top:12px}.restaurant{border-radius:20px;display:grid;grid-template-columns:42% 58%}.restaurant-image{height:100%}.restaurant-body{padding:17px}.restaurant h3{font-size:22px}.card-actions{margin-top:15px}.card-actions a{padding:10px 6px;font-size:11px}.menu-banner{margin:0 12px 12px;border-radius:22px;display:block}.menu-banner>div{padding:48px 25px}.menu-banner h2{font-size:50px}.menu-banner img{height:280px;display:block}footer{margin-bottom:71px;padding:46px 20px 20px;display:block}.footer-brand+p{margin:32px 0}.footer-links{margin:34px 0}footer>span{display:block}.mobile-nav{position:fixed;z-index:4;bottom:0;left:0;right:0;height:71px;display:flex;justify-content:space-around;align-items:center;background:rgba(253,252,248,.94);backdrop-filter:blur(14px);border-top:1px solid #dde0d8}.mobile-nav a{font-size:19px;display:flex;flex-direction:column;align-items:center;gap:2px;color:#747a72}.mobile-nav small{font-size:9px;font-weight:600}.mobile-nav .active{color:#202d24}.mobile-nav .active:first-letter{background:#b5d83e;border-radius:12px;padding:1px 8px}}
 </style>
