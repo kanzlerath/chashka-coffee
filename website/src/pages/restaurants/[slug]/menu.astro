@@ -1,0 +1,35 @@
+---
+import type { RestaurantMenuResponse } from '@chashka-coffee/contracts'
+
+export function getStaticPaths() {
+  return ['krasny-prospekt', 'ulitsa-lenina', 'akademgorodok', 'galereya-novosibirsk', 'rechnoy-vokzal', 'ploshchad-lenina', 'vertical-apart-hotel', 'central-park', 'zaeltsovsky-park', 'mikhaylovskaya-naberegnaya', 'tolmachevo-domestic', 'tolmachevo-international', 'tolmachevo-arrivals'].map((slug) => ({ params: { slug } }))
+}
+
+const { slug } = Astro.params
+const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
+let data: RestaurantMenuResponse | null = null
+
+try {
+  const response = await fetch(`${apiUrl}/api/restaurants/${slug}/menu`)
+  if (response.ok) data = await response.json()
+} catch { /* local static build stays available without API */ }
+
+const markLabels = { VEGETARIAN: 'Вегетарианское', SPICY: 'Острое', LACTOSE_FREE: 'Без лактозы', GLUTEN_FREE: 'Без глютена', LIGHT: 'Лёгкое' } as const
+const price = (kopecks: number) => `${new Intl.NumberFormat('ru-RU').format(kopecks / 100)} ₽`
+---
+
+<html lang="ru"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width" /><title>{data ? `Меню — ${data.restaurant.name}` : 'Меню — Чашка кофе'}</title></head>
+<body>
+  <header><a class="brand" href="/restaurants">☕ <span>Чашка кофе</span></a><nav><a href="/restaurants">Рестораны</a><a class="active" href="/menu">Меню</a><a href="/app">Приложение</a></nav><a class="order" href="/app">Доставка ↗</a></header>
+  <main>
+    {data ? <>
+      <section class="intro"><p>Меню ресторана</p><h1>{data.restaurant.name.replace('Чашка кофе — ', '')}</h1><div><span>{data.restaurant.address}</span><a href="/restaurants">Выбрать другую точку ↗</a></div></section>
+      <nav class="category-nav" aria-label="Категории меню">{data.categories.map((category) => <a href={`#${category.slug}`}>{category.name}</a>)}</nav>
+      <div class="menu-shell">{data.categories.map((category) => <section id={category.slug} class="category"><div class="category-title"><p>Категория</p><h2>{category.name}</h2></div><div class="items">{category.items.map((item) => <article class="item"><div class="item-head"><h3>{item.name}</h3>{item.marketingBadge && <span class="badge">{item.marketingBadge === 'NEW' ? 'Новинка' : item.marketingBadge === 'HIT' ? 'Хит' : 'Сезонное'}</span>}</div>{item.description && <p>{item.description}</p>}{item.ingredients && <small>{item.ingredients}</small>}<footer><span>{item.weightGrams ? `${item.weightGrams} г` : ''}{item.calories ? ` · ${item.calories} ккал` : ''}</span><strong>{price(item.priceKopecks)}</strong></footer>{item.dietaryMarks.length > 0 && <div class="marks">{item.dietaryMarks.map((mark) => <span>{markLabels[mark]}</span>)}</div>}</article>)}</div></section>)}</div>
+    </> : <section class="unavailable"><p>Меню</p><h1>Данные появятся после запуска API.</h1><a href="/restaurants">Вернуться к ресторанам →</a></section>}
+  </main>
+</body></html>
+
+<style>
+  :root{font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:#251914;background:#f6f3ee}*{box-sizing:border-box}body{margin:0}a{color:inherit;text-decoration:none}header{height:76px;padding:0 4vw;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e3dbd2;background:#fcfbf8;position:sticky;top:0;z-index:2}.brand{font-size:20px;font-weight:800;letter-spacing:-.05em}.brand:first-letter{color:#a56631}nav{display:flex;gap:28px;font-size:13px;color:#786e66}nav a{padding:29px 0 25px}.active{color:#251914;border-bottom:2px solid #9e6538}.order{padding:12px 16px;background:#2b1d17;border-radius:7px;color:#fff;font-size:13px;font-weight:700}.intro{padding:104px 4vw 45px;max-width:1320px;margin:auto}.intro p,.category-title p,.unavailable p{text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:700;color:#9a6339}.intro h1{font-size:clamp(48px,7vw,94px);letter-spacing:-.075em;line-height:.9;margin:13px 0 35px}.intro>div{display:flex;gap:24px;color:#75675e}.intro>div a{color:#6e3f24;border-bottom:1px solid #aa876f}.category-nav{padding:0 4vw 26px;border-bottom:1px solid #ded5cc;max-width:1320px;margin:auto;display:flex;gap:8px;overflow:auto}.category-nav a{padding:10px 16px;border:1px solid #d8cec5;border-radius:999px;white-space:nowrap;font-size:13px}.menu-shell{max-width:1320px;margin:auto;padding:20px 4vw 110px}.category{padding:75px 0 0;display:grid;grid-template-columns:270px 1fr;gap:45px}.category-title{position:sticky;top:103px;align-self:start}.category-title h2{font-size:37px;line-height:.95;letter-spacing:-.06em;margin:10px 0}.items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-top:1px solid #ded5cc}.item{min-height:248px;padding:24px 24px 18px;border-bottom:1px solid #ded5cc;display:flex;flex-direction:column}.item:nth-child(odd){border-right:1px solid #ded5cc}.item-head{display:flex;gap:10px;justify-content:space-between}.item h3{font-size:21px;letter-spacing:-.04em;margin:0;line-height:1.05}.badge{background:#ead7bd;color:#6c4125;font-size:10px;padding:5px 7px;border-radius:4px;font-weight:700}.item>p{line-height:1.4;color:#5e5149;margin:14px 0 10px}.item small{color:#95877c;line-height:1.4}.item footer{display:flex;justify-content:space-between;align-items:end;margin-top:auto;padding-top:15px}.item footer span{font-size:12px;color:#8d7e74}.item footer strong{font-size:19px;letter-spacing:-.04em}.marks{display:flex;gap:5px;flex-wrap:wrap;margin-top:12px}.marks span{font-size:10px;color:#77665a;border:1px solid #e0d7cf;padding:4px 6px;border-radius:99px}.unavailable{min-height:calc(100vh - 76px);padding:22vh 8vw}.unavailable h1{max-width:680px;font-size:clamp(48px,7vw,90px);line-height:.92;letter-spacing:-.075em}.unavailable a{border-bottom:1px solid #9d704f}@media(max-width:720px){header{height:64px;padding:0 18px}.brand{font-size:18px}header nav{display:none}.order{padding:10px 12px}.intro{padding:74px 18px 34px}.intro h1{font-size:54px}.intro>div{display:block;line-height:1.5}.intro>div a{display:inline-block;margin-top:10px}.category-nav{padding:0 18px 20px}.menu-shell{padding:5px 18px 70px}.category{display:block;padding-top:55px}.category-title{position:static}.category-title h2{font-size:35px}.items{display:block;margin-top:22px}.item{min-height:210px;padding:21px 0}.item:nth-child(odd){border-right:0}.item h3{font-size:20px}.unavailable{padding:18vh 18px}.unavailable h1{font-size:53px}}
+</style>
