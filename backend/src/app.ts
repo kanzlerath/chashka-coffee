@@ -6,6 +6,7 @@ import type { DbClient } from './db'
 import type { AppEnv } from './env'
 import { errorResponse, handleError, validationErrorHook } from './http/errors'
 import { createAuthModule, type AuthHttpEnv } from './modules/auth'
+import { createCatalogModule } from './modules/catalog'
 
 type CreateAppOptions = {
   env: AppEnv
@@ -14,6 +15,7 @@ type CreateAppOptions = {
 
 export function createApp({ env, prisma }: CreateAppOptions) {
   const auth = createAuthModule({ db: prisma, env })
+  const catalog = createCatalogModule({ db: prisma })
   const app = new OpenAPIHono<AuthHttpEnv>({
     defaultHook: validationErrorHook,
   })
@@ -46,6 +48,7 @@ export function createApp({ env, prisma }: CreateAppOptions) {
   })
 
   app.route('/api/auth', auth.routes)
+  app.route('/api/restaurants', catalog.routes)
 
   app.doc('/openapi.json', {
     openapi: '3.0.0',

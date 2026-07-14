@@ -41,6 +41,17 @@ export const restaurantSummarySchema = z.object({
 })
 export type RestaurantSummary = z.infer<typeof restaurantSummarySchema>
 
+export const restaurantListQuerySchema = z.object({
+  area: restaurantAreaSchema.optional(),
+  apartHotel: z.enum(['true', 'false']).optional(),
+})
+export type RestaurantListQuery = z.infer<typeof restaurantListQuerySchema>
+
+export const restaurantListResponseSchema = z.object({
+  restaurants: z.array(restaurantSummarySchema),
+})
+export type RestaurantListResponse = z.infer<typeof restaurantListResponseSchema>
+
 export const menuItemSchema = z.object({
   id: uuidSchema,
   slug: slugSchema,
