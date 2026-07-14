@@ -1,0 +1,218 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RestaurantFormat {
+  CITY
+  PARK
+  AIRPORT
+  APART_HOTEL
+}
+
+enum RestaurantArea {
+  CITY
+  PARK
+  AIRPORT
+}
+
+enum MarketingBadge {
+  NEW
+  HIT
+  SEASONAL
+  SPECIAL
+}
+
+model User {
+  id           String        @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  email        String        @unique
+  passwordHash String        @map("password_hash")
+  displayName  String?       @map("display_name")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  sessions     AuthSession[]
+
+  @@map("users")
+}
+
+model AuthSession {
+  id               String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  userId           String    @db.Uuid @map("user_id")
+  refreshTokenHash String    @unique(map: "auth_sessions_refresh_token_hash_key") @map("refresh_token_hash")
+  expiresAt        DateTime  @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  userAgent        String?   @map("user_agent")
+  ipAddress        String?   @map("ip_address")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "auth_sessions_user_id_fkey")
+
+  @@index([userId], map: "auth_sessions_user_id_idx")
+  @@index([expiresAt], map: "auth_sessions_expires_at_idx")
+  @@map("auth_sessions")
+}
+
+model Restaurant {
+  id                 String                       @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  slug               String                       @unique @db.VarChar(120)
+  name               String                       @db.VarChar(180)
+  format             RestaurantFormat
+  area               RestaurantArea
+  isAtApartHotel     Boolean                      @default(false) @map("is_at_apart_hotel")
+  city               String                       @db.VarChar(100)
+  address            String                       @db.VarChar(300)
+  phone              String                       @db.VarChar(40)
+  description        String?
+  coverImageUrl      String?                      @map("cover_image_url")
+  latitude           Decimal?                     @db.Decimal(9, 6)
+  longitude          Decimal?                     @db.Decimal(9, 6)
+  yandexMapsUrl      String?                      @map("yandex_maps_url")
+  twoGisUrl          String?                      @map("two_gis_url")
+  createdAt          DateTime                     @default(now()) @map("created_at")
+  updatedAt          DateTime                     @updatedAt @map("updated_at")
+  openingHours       RestaurantOpeningHours[]
+  scheduleExceptions RestaurantScheduleException[]
+  menuAssignments    RestaurantMenu[]
+  menuItemOverrides  MenuItemOverride[]
+
+  @@index([format], map: "restaurants_format_idx")
+  @@index([area], map: "restaurants_area_idx")
+  @@index([city], map: "restaurants_city_idx")
+  @@map("restaurants")
+}
+
+model RestaurantOpeningHours {
+  id           String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  restaurantId String     @db.Uuid @map("restaurant_id")
+  dayOfWeek    Int        @map("day_of_week")
+  opensAt      String?    @db.VarChar(5) @map("opens_at")
+  closesAt     String?    @db.VarChar(5) @map("closes_at")
+  isClosed     Boolean    @default(false) @map("is_closed")
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade, map: "restaurant_opening_hours_restaurant_id_fkey")
+
+  @@unique([restaurantId, dayOfWeek], map: "restaurant_opening_hours_restaurant_id_day_of_week_key")
+  @@map("restaurant_opening_hours")
+}
+
+model RestaurantScheduleException {
+  id           String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  restaurantId String     @db.Uuid @map("restaurant_id")
+  date         DateTime   @db.Date
+  label        String     @db.VarChar(180)
+  opensAt      String?    @db.VarChar(5) @map("opens_at")
+  closesAt     String?    @db.VarChar(5) @map("closes_at")
+  isClosed     Boolean    @default(false) @map("is_closed")
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade, map: "restaurant_schedule_exceptions_restaurant_id_fkey")
+
+  @@unique([restaurantId, date], map: "restaurant_schedule_exceptions_restaurant_id_date_key")
+  @@map("restaurant_schedule_exceptions")
+}
+
+model Menu {
+  id           String           @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  slug         String           @unique @db.VarChar(120)
+  name         String           @db.VarChar(180)
+  description  String?
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+  restaurants  RestaurantMenu[]
+  categories   MenuCategory[]
+
+  @@map("menus")
+}
+
+model RestaurantMenu {
+  id           String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  restaurantId String     @db.Uuid @map("restaurant_id")
+  menuId       String     @db.Uuid @map("menu_id")
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade, map: "restaurant_menus_restaurant_id_fkey")
+  menu         Menu       @relation(fields: [menuId], references: [id], onDelete: Restrict, map: "restaurant_menus_menu_id_fkey")
+
+  @@unique([restaurantId, menuId], map: "restaurant_menus_restaurant_id_menu_id_key")
+  @@index([menuId], map: "restaurant_menus_menu_id_idx")
+  @@map("restaurant_menus")
+}
+
+model MenuCategory {
+  id        String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  menuId    String     @db.Uuid @map("menu_id")
+  slug      String     @db.VarChar(120)
+  name      String     @db.VarChar(100)
+  position  Int        @default(0)
+  menu      Menu       @relation(fields: [menuId], references: [id], onDelete: Cascade, map: "menu_categories_menu_id_fkey")
+  items     MenuItem[]
+
+  @@unique([menuId, slug], map: "menu_categories_menu_id_slug_key")
+  @@index([menuId, position], map: "menu_categories_menu_id_position_idx")
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id              String             @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  categoryId      String             @db.Uuid @map("category_id")
+  slug            String             @db.VarChar(120)
+  name            String             @db.VarChar(180)
+  description     String?
+  ingredients     String?
+  weightGrams     Int?               @map("weight_grams")
+  priceKopecks    Int                @map("price_kopecks")
+  calories        Int?
+  proteins        Decimal?           @db.Decimal(6, 2)
+  fats            Decimal?           @db.Decimal(6, 2)
+  carbohydrates   Decimal?           @db.Decimal(6, 2)
+  isVegetarian    Boolean            @default(false) @map("is_vegetarian")
+  isSpicy         Boolean            @default(false) @map("is_spicy")
+  isLactoseFree   Boolean            @default(false) @map("is_lactose_free")
+  isGlutenFree    Boolean            @default(false) @map("is_gluten_free")
+  isLight         Boolean            @default(false) @map("is_light")
+  marketingBadge  MarketingBadge?    @map("marketing_badge")
+  imageUrl        String?            @map("image_url")
+  position        Int                @default(0)
+  category        MenuCategory       @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "menu_items_category_id_fkey")
+  allergens       MenuItemAllergen[]
+  restaurantOverrides MenuItemOverride[]
+
+  @@unique([categoryId, slug], map: "menu_items_category_id_slug_key")
+  @@index([categoryId, position], map: "menu_items_category_id_position_idx")
+  @@map("menu_items")
+}
+
+model Allergen {
+  id        String             @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  slug      String             @unique @db.VarChar(120)
+  name      String             @unique @db.VarChar(80)
+  menuItems MenuItemAllergen[]
+
+  @@map("allergens")
+}
+
+model MenuItemAllergen {
+  menuItemId String   @db.Uuid @map("menu_item_id")
+  allergenId String   @db.Uuid @map("allergen_id")
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade, map: "menu_item_allergens_menu_item_id_fkey")
+  allergen   Allergen @relation(fields: [allergenId], references: [id], onDelete: Restrict, map: "menu_item_allergens_allergen_id_fkey")
+
+  @@id([menuItemId, allergenId])
+  @@index([allergenId], map: "menu_item_allergens_allergen_id_idx")
+  @@map("menu_item_allergens")
+}
+
+model MenuItemOverride {
+  id            String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  restaurantId  String     @db.Uuid @map("restaurant_id")
+  menuItemId    String     @db.Uuid @map("menu_item_id")
+  description   String?
+  ingredients   String?
+  weightGrams   Int?       @map("weight_grams")
+  priceKopecks  Int?       @map("price_kopecks")
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade, map: "menu_item_overrides_restaurant_id_fkey")
+  menuItem      MenuItem   @relation(fields: [menuItemId], references: [id], onDelete: Cascade, map: "menu_item_overrides_menu_item_id_fkey")
+
+  @@unique([restaurantId, menuItemId], map: "menu_item_overrides_restaurant_id_menu_item_id_key")
+  @@index([menuItemId], map: "menu_item_overrides_menu_item_id_idx")
+  @@map("menu_item_overrides")
+}
