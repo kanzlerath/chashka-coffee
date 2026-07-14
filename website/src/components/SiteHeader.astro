@@ -1,0 +1,41 @@
+---
+interface Props { active?: string }
+const { active = '' } = Astro.props;
+const primary = [
+  ['restaurants', 'Кофейни', '/restaurants'],
+  ['menu', 'Меню', '/restaurants/krasny-prospekt/menu'],
+  ['delivery', 'Доставка', '/delivery'],
+  ['app', 'Приложение', '/app'],
+  ['about', 'О нас', '/about'],
+];
+const mobile = [
+  ['restaurants', 'Кофейни', '/restaurants'], ['menu', 'Меню', '/restaurants/krasny-prospekt/menu'],
+  ['app', 'Приложение', '/app'], ['loyalty', 'Клуб друзей', '/loyalty'], ['coffee', 'Кофе для дома', '/coffee'],
+  ['bakery', 'Кондитерская', '/bakery'], ['events', 'События', '/events'], ['promotions', 'Акции', '/promotions'],
+  ['franchise', 'Франшиза', '/franchise'], ['jobs', 'Вакансии', '/jobs'], ['contacts', 'Контакты', '/contacts'],
+];
+---
+<header class="site-header" data-site-header>
+  <a class="site-logo" href="/" aria-label="Чашка кофе — на главную"><img src="/brand/logo.png" alt="" width="44" height="44"/><span>Чашка<br/>кофе</span></a>
+  <nav class="site-nav" aria-label="Основная навигация">{primary.map(([key,label,href]) => <a class:list={[{active: active === key}]} href={href}>{label}</a>)}</nav>
+  <div class="site-actions"><a class="site-delivery" href="/delivery">Доставка <span>↗</span></a><button class="site-menu-button" type="button" aria-controls="site-menu" aria-expanded="false"><span>Меню</span><i></i><i></i></button></div>
+</header>
+<div class="site-menu" id="site-menu" aria-hidden="true">
+  <div class="site-menu-top"><span>Навигация</span><button type="button" aria-label="Закрыть меню">Закрыть <b>×</b></button></div>
+  <nav aria-label="Мобильная навигация">{mobile.map(([key,label,href], index) => <a class:list={[{active: active === key}]} href={href}><small>0{index + 1}</small><span>{label}</span><b>↗</b></a>)}</nav>
+  <div class="site-menu-bottom"><a href="/contacts">Написать нам <span>→</span></a><p>Новосибирск<br/>с 2006 года</p></div>
+</div>
+<script>
+  const header = document.querySelector('[data-site-header]');
+  const menu = document.querySelector('#site-menu');
+  const opener = header?.querySelector<HTMLButtonElement>('.site-menu-button');
+  const closer = menu?.querySelector<HTMLButtonElement>('button');
+  const close = () => { menu?.classList.remove('is-open'); opener?.setAttribute('aria-expanded', 'false'); menu?.setAttribute('aria-hidden', 'true'); document.body.classList.remove('menu-open'); };
+  const open = () => { menu?.classList.add('is-open'); opener?.setAttribute('aria-expanded', 'true'); menu?.setAttribute('aria-hidden', 'false'); document.body.classList.add('menu-open'); };
+  opener?.addEventListener('click', () => menu?.classList.contains('is-open') ? close() : open());
+  closer?.addEventListener('click', close);
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape') close(); });
+</script>
+<style>
+  .site-header{height:96px;padding:0 clamp(24px,4vw,74px);display:flex;align-items:center;gap:clamp(25px,4vw,70px);background:#f8f7f2;position:relative;z-index:20}.site-logo{display:flex;align-items:center;gap:9px;color:#1f2921;text-decoration:none;font-size:18px;font-weight:800;letter-spacing:-.05em;line-height:.86}.site-logo img{object-fit:contain}.site-nav{display:flex;align-items:center;gap:clamp(19px,2.3vw,42px);margin-left:auto}.site-nav a{color:#485048;text-decoration:none;font-size:12px;font-weight:600;position:relative;padding:7px 0}.site-nav a:after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;background:#1f3427;transform:scaleX(0);transition:transform .2s}.site-nav a.active,.site-nav a:hover{color:#1f3427}.site-nav a.active:after{transform:scaleX(1)}.site-actions{display:flex;align-items:center;gap:10px}.site-delivery{padding:14px 17px;background:#20382b;color:#fff;border-radius:99px;text-decoration:none;font-size:11px;font-weight:700;white-space:nowrap}.site-delivery span{margin-left:12px;font-size:15px}.site-menu-button{display:none}.site-menu{display:none}@media(max-width:860px){.site-header{height:72px;padding:0 20px}.site-logo{font-size:17px}.site-logo img{width:39px;height:39px}.site-nav,.site-delivery{display:none}.site-actions{margin-left:auto}.site-menu-button{width:102px;height:42px;border:0;border-radius:99px;background:#20382b;color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;font:700 11px Montserrat,Arial,sans-serif}.site-menu-button i{display:block;width:10px;height:1px;background:currentColor}.site-menu{display:flex;position:fixed;z-index:100;inset:0;padding:21px 20px calc(24px + env(safe-area-inset-bottom));background:#20382b;color:#f8f7f2;flex-direction:column;opacity:0;pointer-events:none;transform:translateY(-2%);transition:opacity .25s,transform .25s}.site-menu.is-open{opacity:1;pointer-events:auto;transform:none}.site-menu-top{display:flex;justify-content:space-between;align-items:center;color:#b9dc3d;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}.site-menu-top button{padding:0;border:0;background:none;color:#f8f7f2;font:600 12px Montserrat,Arial,sans-serif}.site-menu-top b{margin-left:7px;font-size:23px;font-weight:400;vertical-align:-2px}.site-menu nav{display:grid;grid-template-columns:1fr 1fr;gap:0 21px;margin:auto 0}.site-menu nav a{min-height:62px;padding:14px 0;border-top:1px solid rgba(248,247,242,.2);display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:5px;color:#f8f7f2;text-decoration:none;font-size:17px;letter-spacing:-.06em;font-weight:700}.site-menu nav a small{font-size:9px;color:#b9dc3d;letter-spacing:0}.site-menu nav a b{font-size:15px;font-weight:500;color:#b9dc3d}.site-menu nav a.active span{color:#b9dc3d}.site-menu-bottom{display:flex;justify-content:space-between;align-items:end;border-top:1px solid rgba(248,247,242,.2);padding-top:20px}.site-menu-bottom a{display:inline-flex;gap:30px;padding:15px 17px;border-radius:99px;background:#b9dc3d;color:#20382b;text-decoration:none;font-size:11px;font-weight:800}.site-menu-bottom p{margin:0;color:#c7d2c8;font-size:10px;line-height:1.45;text-align:right}body.menu-open{overflow:hidden}}
+</style>
