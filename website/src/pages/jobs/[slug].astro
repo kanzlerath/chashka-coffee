@@ -1,6 +1,6 @@
 ---
 import StoryDetail from '../../components/StoryDetail.astro';
-export function getStaticPaths(){const jobs={barista:{title:'Бариста',intro:'Готовить кофе, улыбаться гостям и знать любимый десерт постоянных гостей.',meta:'Рестораны в центре · от 45 000 ₽'},manager:{title:'Менеджер зала',intro:'Собирать спокойную смену и делать так, чтобы гостям хотелось задержаться.',meta:'Красный проспект · от 55 000 ₽'}};return Object.entries(jobs).map(([slug,story])=>({params:{slug},props:{story}}));}
+export function getStaticPaths(){const jobs={barista:{title:'Бариста',intro:'Готовить кофе, улыбаться гостям и знать любимый десерт постоянных гостей.',meta:'Рестораны в центре · от 45 000 ₽'},manager:{title:'Менеджер зала',intro:'Собирать спокойную смену и делать так, чтобы гостям хотелось задержаться.',meta:'Красный проспект · от 55 000 ₽'},'pastry-chef':{title:'Кондитер',intro:'Работать со свежей выпечкой и превращать простые ингредиенты в повод зайти.',meta:'Производство · по итогам встречи'}};return Object.entries(jobs).map(([slug,story])=>({params:{slug},props:{story}}));}
 const {story}=Astro.props;
 ---
 <StoryDetail eyebrow="вакансия чашка кофе" action="Ко всем вакансиям" actionHref="/jobs" {...story}/>

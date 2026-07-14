@@ -1,6 +1,6 @@
 ---
 import StoryDetail from '../../components/StoryDetail.astro';
-export function getStaticPaths(){const stories={'coffee-morning':{title:'Кофе для первого тёплого утра',intro:'Как выбрать напиток, который не спорит с вашим настроением.',meta:'Гид · 5 минут'},'croissant-now':{title:'Почему круассан лучше есть сразу',intro:'Немного масла, много слоёв и один простой совет от кондитера.',meta:'Еда · 3 минуты'},'novosibirsk-route':{title:'Маршрут выходного дня по Новосибирску',intro:'Парки, набережная и кофейни для хорошей паузы.',meta:'Город · 7 минут'}};return Object.entries(stories).map(([slug,story])=>({params:{slug},props:{story}}));}
+export function getStaticPaths(){const stories={'coffee-morning':{title:'Кофе для первого тёплого утра',intro:'Как выбрать напиток, который не спорит с вашим настроением.',meta:'Гид · 5 минут'},'croissant-now':{title:'Почему круассан лучше есть сразу',intro:'Немного масла, много слоёв и один простой совет от кондитера.',meta:'Еда · 3 минуты'},'novosibirsk-route':{title:'Маршрут выходного дня по Новосибирску',intro:'Парки, набережная и кофейни для хорошей паузы.',meta:'Город · 7 минут'},'after-roasting':{title:'Что происходит с зерном после обжарки',intro:'Разбираемся без сложных слов — только вкус и любопытство.',meta:'Кофе · 6 минут'}};return Object.entries(stories).map(([slug,story])=>({params:{slug},props:{story}}));}
 const {story}=Astro.props;
 ---
 <StoryDetail eyebrow="журнал чашка кофе" {...story}/>
