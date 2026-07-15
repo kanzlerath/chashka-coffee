@@ -99,6 +99,20 @@ model ContentEntry {
   @@map("content_entries")
 }
 
+model MediaAsset {
+  id          String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  objectKey   String   @unique @map("object_key") @db.VarChar(1024)
+  publicUrl   String   @map("public_url")
+  filename    String   @db.VarChar(255)
+  contentType String   @map("content_type") @db.VarChar(120)
+  byteSize    Int      @map("byte_size")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([createdAt], map: "media_assets_created_at_idx")
+  @@map("media_assets")
+}
+
 model Restaurant {
   id                 String                       @id @default(dbgenerated("uuidv7()")) @db.Uuid
   slug               String                       @unique @db.VarChar(120)
