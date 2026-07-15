@@ -1,4 +1,6 @@
 ---
+import PageShell from '../layouts/PageShell.astro';
+
 const nav = [
   ["Рестораны", "/restaurants"],
   ["Меню", "/restaurants/krasny-prospekt/menu"],
@@ -7,34 +9,7 @@ const nav = [
 ];
 ---
 
-<html lang="ru">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#f6f4ef" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>Чашка кофе — сеть кофеен в Новосибирске</title>
-    <meta name="description" content="Чашка кофе — места для хорошего кофе, завтраков и встреч в Новосибирске." />
-  </head>
-  <body>
-    <div class="site-shell">
-    <header class="site-header">
-      <a class="brand" href="/" aria-label="Чашка кофе — на главную">
-        <img src="/brand/logo.png" alt="" width="42" height="42" />
-        <span>Чашка<br />кофе</span>
-      </a>
-      <nav aria-label="Главная навигация">
-        {nav.map(([label, href]) => <a href={href}>{label}</a>)}
-      </nav>
-      <div class="header-actions">
-        <a class="delivery-link" href="/app">Доставка <span aria-hidden="true">↗</span></a>
-        <button class="menu-toggle" type="button" aria-label="Открыть меню" aria-expanded="false">
-          <i></i><i></i>
-        </button>
-      </div>
-    </header>
-
-    <main>
+<PageShell title="Чашка кофе">
       <section class="hero" aria-labelledby="page-title">
         <img class="hero-image" src="/images/home-hero-v1.png" alt="Латте и миндальный круассан на солнечном столе" />
         <div class="hero-copy">
@@ -136,28 +111,7 @@ const nav = [
         <div class="app-copy"><p class="section-kicker">чашка кофе — в телефоне</p><h2 id="app-title">Больше любимого<br />в приложении</h2><p>Заказывайте быстрее, получайте бонусы и первыми узнавайте о новинках.</p><a class="button button-dark" href="/app">Скачать приложение <span>→</span></a></div>
         <div class="app-phone" aria-hidden="true"><div class="phone-top"></div><div class="phone-screen"><span>Доброе утро</span><strong>Что будем<br />сегодня?</strong><div class="phone-drink">☕</div><small>Ваш любимый<br />латте уже ждёт</small></div></div>
       </section>
-    </main>
-
-    <footer class="site-footer">
-      <div class="footer-top"><a class="footer-brand" href="/"><img src="/brand/logo.png" alt="" width="62" height="62" /><span>Чашка<br />кофе</span></a><p>Всегда есть повод<br />зайти на чашку кофе.</p></div>
-      <div class="footer-grid">
-        <div><p class="footer-label">Навигация</p>{nav.map(([label, href]) => <a href={href}>{label}</a>)}</div>
-        <div><p class="footer-label">Контакты</p><a href="tel:+73831232020">+7 (383) 123–20–20</a><a href="mailto:hello@chashkacoffee.ru">hello@chashkacoffee.ru</a><a href="/contacts">Все контакты ↗</a></div>
-        <div><p class="footer-label">Мы в соцсетях</p><a href="#">ВКонтакте ↗</a><a href="#">Telegram ↗</a></div>
-        <div class="footer-action"><p>Есть вопрос<br />или предложение?</p><a class="button button-lime" href="/contacts">Написать нам <span>→</span></a></div>
-      </div>
-      <div class="footer-bottom"><span>© 2026 Чашка кофе</span><a href="/privacy">Политика конфиденциальности</a><a href="#top">Наверх ↑</a></div>
-      <p class="footer-wordmark" aria-hidden="true">ЧАШКА КОФЕ</p>
-    </footer>
-    </div>
-
-    <nav class="mobile-nav" aria-label="Мобильная навигация"><a class="active" href="/"><b>⌂</b>Главная</a><a href="/restaurants"><b>⌖</b>Кофейни</a><a href="/restaurants/krasny-prospekt/menu"><b>≡</b>Меню</a><a href="/app"><b>◒</b>Приложение</a></nav>
-    <script>
-      const toggle = document.querySelector('.menu-toggle');
-      toggle?.addEventListener('click', () => toggle.setAttribute('aria-expanded', String(toggle.getAttribute('aria-expanded') !== 'true')));
-    </script>
-  </body>
-</html>
+</PageShell>
 
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
