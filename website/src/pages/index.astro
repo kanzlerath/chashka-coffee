@@ -7,6 +7,16 @@ const nav = [
   ["Доставка", "/app"],
   ["О нас", "/about"],
 ];
+type FeaturedEntry = { slug: string; title: string; excerpt: string | null; ctaLabel: string | null; eventStartsAt: string | null }
+const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
+let featuredEvent: FeaturedEntry | null = null
+let featuredPromotion: FeaturedEntry | null = null
+try {
+  const [eventsResponse, promotionsResponse] = await Promise.all([fetch(`${apiUrl}/api/content?type=EVENT`), fetch(`${apiUrl}/api/content?type=PROMOTION`)])
+  if (eventsResponse.ok) featuredEvent = (await eventsResponse.json()).entries.find((entry: FeaturedEntry) => entry) ?? null
+  if (promotionsResponse.ok) featuredPromotion = (await promotionsResponse.json()).entries.find((entry: FeaturedEntry) => entry) ?? null
+} catch { /* page remains editorial when API is unavailable */ }
+const eventDate = featuredEvent?.eventStartsAt ? new Date(featuredEvent.eventStartsAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '24 мая · 19:00'
 ---
 
 <PageShell title="Чашка кофе">
@@ -67,8 +77,8 @@ const nav = [
         <div class="ecosystem-grid">
           <a class="ecosystem-card ecosystem-app" href="/app"><span class="card-index">05</span><span class="card-arrow">↗</span><div><h3>Приложение<br />«Чашка кофе»</h3><p>Быстрый заказ, бонусы и любимое меню в телефоне.</p></div><div class="mini-phone" aria-hidden="true"><b>Чашка<br />кофе</b><i>☕</i></div></a>
           <a class="ecosystem-card ecosystem-coffee" href="/coffee"><span class="card-index">06</span><span class="card-arrow">↗</span><div><h3>Кофе<br />для дома</h3><p>Зерно, дрипы и капсулы для вашего ритуала.</p></div><div class="coffee-pack" aria-hidden="true">ЧК<small>зерно</small></div></a>
-          <a class="ecosystem-card ecosystem-event" href="/events"><span class="card-index">07</span><span class="card-arrow">↗</span><div><p class="event-date">24 мая · 19:00</p><h3>Вечер джаза<br />в парке</h3><p>Живая музыка, кофе и длинный майский вечер.</p></div><b class="event-glyph" aria-hidden="true">♪</b></a>
-          <a class="ecosystem-card ecosystem-promo" href="/promotions"><span class="card-index">08</span><span class="card-arrow">↗</span><div><h3>Акции<br />и новинки</h3><p>Поводы зайти сегодня — уже здесь.</p></div><strong>-20%</strong></a>
+          <a class="ecosystem-card ecosystem-event" href={featuredEvent ? `/events/${featuredEvent.slug}` : '/events'}><span class="card-index">07</span><span class="card-arrow">↗</span><div><p class="event-date">{eventDate}</p><h3>{featuredEvent?.title ?? <>Вечер джаза<br />в парке</>}</h3><p>{featuredEvent?.excerpt ?? 'Живая музыка, кофе и длинный майский вечер.'}</p></div><b class="event-glyph" aria-hidden="true">♪</b></a>
+          <a class="ecosystem-card ecosystem-promo" href={featuredPromotion ? `/promotions/${featuredPromotion.slug}` : '/promotions'}><span class="card-index">08</span><span class="card-arrow">↗</span><div><h3>{featuredPromotion?.title ?? <>Акции<br />и новинки</>}</h3><p>{featuredPromotion?.excerpt ?? 'Поводы зайти сегодня — уже здесь.'}</p></div><strong>{featuredPromotion?.ctaLabel ?? '-20%'}</strong></a>
           <a class="ecosystem-card ecosystem-cake" href="/bakery"><span class="card-index">09</span><span class="card-arrow">↗</span><div><h3>Кондитерская</h3><p>Десерты на каждый день и по особому поводу.</p></div><span class="cake-mark" aria-hidden="true">⌂</span></a>
           <a class="ecosystem-card ecosystem-gift" href="/certificates"><span class="card-index">10</span><span class="card-arrow">↗</span><div><h3>Сертификаты</h3><p>Подарок, который всегда приходится кстати.</p></div><span class="gift-mark" aria-hidden="true">✦</span></a>
         </div>
