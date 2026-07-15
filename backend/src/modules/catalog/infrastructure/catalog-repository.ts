@@ -53,7 +53,7 @@ function dietaryMarks(item: { isVegetarian: boolean; isSpicy: boolean; isLactose
 }
 
 function toAdminRestaurant(restaurant: {
-  id: string; slug: string; name: string; format: 'CITY' | 'PARK' | 'AIRPORT' | 'APART_HOTEL'; area: 'CITY' | 'PARK' | 'AIRPORT'; isAtApartHotel: boolean; city: string; address: string; phone: string; description: string | null; coverImageUrl: string | null; latitude: Prisma.Decimal | null; longitude: Prisma.Decimal | null; yandexMapsUrl: string | null; twoGisUrl: string | null; createdAt: Date; updatedAt: Date; menuAssignments?: { menu: { id: string; name: string } }[]
+  id: string; slug: string; name: string; format: 'CITY' | 'PARK' | 'AIRPORT' | 'APART_HOTEL'; area: 'CITY' | 'PARK' | 'AIRPORT'; isAtApartHotel: boolean; city: string; address: string; phone: string; description: string | null; coverImageUrl: string | null; latitude: Prisma.Decimal | null; longitude: Prisma.Decimal | null; yandexMapsUrl: string | null; twoGisUrl: string | null; createdAt: Date; updatedAt: Date; openingHours?: { dayOfWeek: number; opensAt: string | null; closesAt: string | null; isClosed: boolean }[]; menuAssignments?: { menu: { id: string; name: string } }[]
 }): AdminRestaurant {
   return {
     id: restaurant.id,
@@ -71,6 +71,7 @@ function toAdminRestaurant(restaurant: {
     longitude: restaurant.longitude === null ? null : Number(restaurant.longitude),
     yandexMapsUrl: restaurant.yandexMapsUrl,
     twoGisUrl: restaurant.twoGisUrl,
+    openingHours: restaurant.openingHours ?? [],
     menuId: restaurant.menuAssignments?.[0]?.menu.id ?? null,
     menuName: restaurant.menuAssignments?.[0]?.menu.name ?? null,
     createdAt: restaurant.createdAt.toISOString(),
@@ -159,18 +160,23 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
     },
 
     async listAdminRestaurants() {
-      const restaurants = await db.restaurant.findMany({ orderBy: { name: 'asc' }, include: { menuAssignments: { include: { menu: { select: { id: true, name: true } } } } } })
+      const restaurants = await db.restaurant.findMany({ orderBy: { name: 'asc' }, include: { openingHours: { orderBy: { dayOfWeek: 'asc' } }, menuAssignments: { include: { menu: { select: { id: true, name: true } } } } } })
       return restaurants.map(toAdminRestaurant)
     },
 
     async createRestaurant(input) {
-      const restaurant = await db.restaurant.create({ data: input })
+      const { openingHours, ...data } = input
+      const restaurant = await db.restaurant.create({ data: { ...data, openingHours: { create: openingHours } }, include: { openingHours: { orderBy: { dayOfWeek: 'asc' } } } })
       return toAdminRestaurant(restaurant)
     },
 
     async updateRestaurant(id, input) {
       try {
-        const restaurant = await db.restaurant.update({ where: { id }, data: input })
+        const { openingHours, ...data } = input
+        const restaurant = await db.$transaction(async (transaction) => {
+          await transaction.restaurantOpeningHours.deleteMany({ where: { restaurantId: id } })
+          return transaction.restaurant.update({ where: { id }, data: { ...data, openingHours: { create: openingHours } }, include: { openingHours: { orderBy: { dayOfWeek: 'asc' } } } })
+        })
         return toAdminRestaurant(restaurant)
       } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') return null

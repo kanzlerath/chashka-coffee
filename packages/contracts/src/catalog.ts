@@ -54,6 +54,15 @@ export type RestaurantListResponse = z.infer<typeof restaurantListResponseSchema
 
 const nullableText = (max: number) => z.string().trim().max(max).nullable()
 const nullableUrl = z.url().nullable()
+const nullableTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable()
+
+export const restaurantOpeningHoursEntrySchema = z.object({
+  dayOfWeek: z.number().int().min(0).max(6),
+  opensAt: nullableTime,
+  closesAt: nullableTime,
+  isClosed: z.boolean(),
+}).strict()
+export type RestaurantOpeningHoursEntry = z.infer<typeof restaurantOpeningHoursEntrySchema>
 
 export const adminRestaurantSchema = z.object({
   id: uuidSchema,
@@ -71,6 +80,7 @@ export const adminRestaurantSchema = z.object({
   longitude: z.number().min(-180).max(180).nullable(),
   yandexMapsUrl: nullableUrl,
   twoGisUrl: nullableUrl,
+  openingHours: z.array(restaurantOpeningHoursEntrySchema).max(7),
   menuId: uuidSchema.nullable(),
   menuName: z.string().trim().min(1).max(180).nullable(),
   createdAt: z.string().datetime(),
