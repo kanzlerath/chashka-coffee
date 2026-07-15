@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { HeadObjectCommand, type S3Client } from '@aws-sdk/client-s3'
 
 import { AppError } from '../http/errors'
 import {
@@ -91,6 +92,18 @@ describe('StorageService', () => {
         expiresInSeconds: 7 * 24 * 60 * 60 + 1,
       }),
     ).rejects.toThrow(AppError)
+  })
+
+  test('confirms only an uploaded object with the requested metadata', async () => {
+    const service = new StorageService(config, {
+      send: async (command: unknown) => {
+        expect(command).toBeInstanceOf(HeadObjectCommand)
+        return { ContentLength: 128, ContentType: 'image/png' }
+      },
+    } as unknown as S3Client)
+
+    await expect(service.assertPublicObject({ key: 'media/example.png', contentType: 'image/png', byteSize: 128 })).resolves.toBeUndefined()
+    await expect(service.assertPublicObject({ key: 'media/example.png', contentType: 'image/png', byteSize: 127 })).rejects.toThrow(AppError)
   })
 })
 

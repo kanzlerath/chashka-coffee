@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 import type { AppEnv } from '../env'
@@ -141,6 +141,18 @@ export class StorageService {
         Key: assertSafeObjectKey(key),
       }),
     )
+  }
+
+  async assertPublicObject(input: { key: string; contentType: string; byteSize: number }) {
+    try {
+      const object = await this.s3.send(new HeadObjectCommand({ Bucket: this.config.bucket, Key: assertSafeObjectKey(input.key) }))
+      if (object.ContentLength !== input.byteSize || object.ContentType?.split(';', 1)[0]?.toLowerCase() !== input.contentType.toLowerCase()) {
+        throw new AppError(400, 'VALIDATION_ERROR', 'Uploaded media object does not match the requested file')
+      }
+    } catch (error) {
+      if (error instanceof AppError) throw error
+      throw new AppError(400, 'VALIDATION_ERROR', 'Uploaded media object is unavailable')
+    }
   }
 
   publicUrlForKey(key: string) {

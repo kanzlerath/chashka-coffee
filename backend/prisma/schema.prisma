@@ -58,6 +58,11 @@ enum LeadStatus {
   CLOSED
 }
 
+enum MediaAssetStatus {
+  PENDING
+  READY
+}
+
 model User {
   id           String        @id @default(dbgenerated("uuidv7()")) @db.Uuid
   email        String        @unique
@@ -120,6 +125,7 @@ model MediaAsset {
   filename    String   @db.VarChar(255)
   contentType String   @map("content_type") @db.VarChar(120)
   byteSize    Int      @map("byte_size")
+  status      MediaAssetStatus @default(READY)
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
