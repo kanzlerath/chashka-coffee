@@ -8,6 +8,7 @@ import { errorResponse, handleError, validationErrorHook } from './http/errors'
 import { createAuthModule, type AuthHttpEnv } from './modules/auth'
 import { createCatalogModule } from './modules/catalog'
 import { createContentModule } from './modules/content'
+import { createMediaModule } from './modules/media'
 
 type CreateAppOptions = {
   env: AppEnv
@@ -18,6 +19,7 @@ export function createApp({ env, prisma }: CreateAppOptions) {
   const auth = createAuthModule({ db: prisma, env })
   const catalog = createCatalogModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
   const content = createContentModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
+  const media = createMediaModule({ db: prisma, env, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
   const app = new OpenAPIHono<AuthHttpEnv>({
     defaultHook: validationErrorHook,
   })
@@ -55,6 +57,7 @@ export function createApp({ env, prisma }: CreateAppOptions) {
   app.route('/api/content', content.routes)
   app.route('/api/admin', catalog.adminRoutes)
   app.route('/api/admin', content.adminRoutes)
+  app.route('/api/admin', media)
 
   app.doc('/openapi.json', {
     openapi: '3.0.0',
