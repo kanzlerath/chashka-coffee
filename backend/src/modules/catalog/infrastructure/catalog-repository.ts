@@ -1,10 +1,13 @@
 import type {
+  AdminRestaurant,
   DietaryMark,
   RestaurantListQuery,
   RestaurantListResponse,
   RestaurantMenuResponse,
   RestaurantSummary,
+  UpsertRestaurantRequest,
 } from '@chashka-coffee/contracts'
+import { Prisma } from '../../../generated/prisma/client'
 
 import type { DbClient } from '../../../db'
 import type { CatalogRepository } from '../application/ports'
@@ -41,6 +44,30 @@ function dietaryMarks(item: { isVegetarian: boolean; isSpicy: boolean; isLactose
     item.isGlutenFree ? 'GLUTEN_FREE' : null,
     item.isLight ? 'LIGHT' : null,
   ].filter((mark): mark is DietaryMark => mark !== null)
+}
+
+function toAdminRestaurant(restaurant: {
+  id: string; slug: string; name: string; format: 'CITY' | 'PARK' | 'AIRPORT' | 'APART_HOTEL'; area: 'CITY' | 'PARK' | 'AIRPORT'; isAtApartHotel: boolean; city: string; address: string; phone: string; description: string | null; coverImageUrl: string | null; latitude: Prisma.Decimal | null; longitude: Prisma.Decimal | null; yandexMapsUrl: string | null; twoGisUrl: string | null; createdAt: Date; updatedAt: Date
+}): AdminRestaurant {
+  return {
+    id: restaurant.id,
+    slug: restaurant.slug,
+    name: restaurant.name,
+    format: restaurant.format,
+    area: restaurant.area,
+    isAtApartHotel: restaurant.isAtApartHotel,
+    city: restaurant.city,
+    address: restaurant.address,
+    phone: restaurant.phone,
+    description: restaurant.description,
+    coverImageUrl: restaurant.coverImageUrl,
+    latitude: restaurant.latitude === null ? null : Number(restaurant.latitude),
+    longitude: restaurant.longitude === null ? null : Number(restaurant.longitude),
+    yandexMapsUrl: restaurant.yandexMapsUrl,
+    twoGisUrl: restaurant.twoGisUrl,
+    createdAt: restaurant.createdAt.toISOString(),
+    updatedAt: restaurant.updatedAt.toISOString(),
+  }
 }
 
 export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
@@ -116,6 +143,36 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
             }
           }),
         })),
+      }
+    },
+
+    async listAdminRestaurants() {
+      const restaurants = await db.restaurant.findMany({ orderBy: { name: 'asc' } })
+      return restaurants.map(toAdminRestaurant)
+    },
+
+    async createRestaurant(input) {
+      const restaurant = await db.restaurant.create({ data: input })
+      return toAdminRestaurant(restaurant)
+    },
+
+    async updateRestaurant(id, input) {
+      try {
+        const restaurant = await db.restaurant.update({ where: { id }, data: input })
+        return toAdminRestaurant(restaurant)
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') return null
+        throw error
+      }
+    },
+
+    async deleteRestaurant(id) {
+      try {
+        await db.restaurant.delete({ where: { id } })
+        return true
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') return false
+        throw error
       }
     },
   }

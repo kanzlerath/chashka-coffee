@@ -76,16 +76,21 @@ export class AuthApi {
     await this.options.onAuthExpired?.()
   }
 
+  request<TSchema extends z.ZodType>(path: string, schema: TSchema, options: Parameters<HttpClient['request']>[2] = {}) {
+    return this.authenticatedRequest(path, schema, undefined, options)
+  }
+
   private async authenticatedRequest<TSchema extends z.ZodType>(
     path: string,
     schema: TSchema,
     accessTokenOverride?: string,
+    options: Parameters<HttpClient['request']>[2] = {},
   ): Promise<z.infer<TSchema>> {
     const accessToken = accessTokenOverride ?? this.options.getAccessToken()
     const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined
 
     try {
-      return await this.http.request(path, schema, { headers })
+      return await this.http.request(path, schema, { ...options, headers: { ...options.headers, ...headers } })
     } catch (error) {
       if (!(error instanceof ApiRequestError) || error.status !== 401 || accessTokenOverride) {
         throw error
@@ -96,7 +101,7 @@ export class AuthApi {
         throw refreshError
       })
       this.options.setAccessToken(refreshed.accessToken)
-      return this.authenticatedRequest(path, schema, refreshed.accessToken)
+      return this.authenticatedRequest(path, schema, refreshed.accessToken, options)
     }
   }
 

@@ -27,11 +27,17 @@ enum MarketingBadge {
   SPECIAL
 }
 
+enum UserRole {
+  ADMIN
+  EDITOR
+}
+
 model User {
   id           String        @id @default(dbgenerated("uuidv7()")) @db.Uuid
   email        String        @unique
   passwordHash String        @map("password_hash")
   displayName  String?       @map("display_name")
+  role         UserRole      @default(EDITOR)
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
   sessions     AuthSession[]

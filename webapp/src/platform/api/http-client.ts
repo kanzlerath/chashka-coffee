@@ -4,7 +4,7 @@ import type { z } from 'zod'
 const defaultApiBaseUrl = (import.meta.env?.VITE_API_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 
 export type HttpRequestOptions = {
-  method?: 'GET' | 'POST'
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
   body?: unknown
   headers?: HeadersInit
   credentials?: RequestCredentials

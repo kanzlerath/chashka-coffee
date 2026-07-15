@@ -15,7 +15,7 @@ type CreateAppOptions = {
 
 export function createApp({ env, prisma }: CreateAppOptions) {
   const auth = createAuthModule({ db: prisma, env })
-  const catalog = createCatalogModule({ db: prisma })
+  const catalog = createCatalogModule({ db: prisma, requireAuth: auth.requireAuth })
   const app = new OpenAPIHono<AuthHttpEnv>({
     defaultHook: validationErrorHook,
   })
@@ -49,6 +49,7 @@ export function createApp({ env, prisma }: CreateAppOptions) {
 
   app.route('/api/auth', auth.routes)
   app.route('/api/restaurants', catalog.routes)
+  app.route('/api/admin', catalog.adminRoutes)
 
   app.doc('/openapi.json', {
     openapi: '3.0.0',

@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
 import { Typography } from '@/components/ui/typography'
 import { AuthForm, useAuth } from '@/features/auth'
+import { RestaurantsPage } from '@/features/catalog-admin'
 import { cn } from '@/lib/utils'
 
 const navLinkClass = cn(
@@ -32,8 +33,8 @@ export function RootLayout() {
           </Typography>
           <nav className="ml-auto flex items-center gap-2" aria-label="Primary">
             <Typography asChild variant="control" tone="muted">
-              <Link to="/" className={navLinkClass}>
-                Auth
+              <Link to="/restaurants" className={navLinkClass}>
+                Кофейни
               </Link>
             </Typography>
             <Typography asChild variant="control" tone="muted">
@@ -65,21 +66,21 @@ export function HomePage() {
     return (
       <section className="mx-auto grid w-full max-w-6xl gap-6 px-5 py-16">
         <Badge variant="outline" className="w-fit">
-          Authenticated starter
+          Админка «Чашки кофе»
         </Badge>
         <div className="grid max-w-3xl gap-4">
-          <Typography variant="h1">Session is active</Typography>
+          <Typography variant="h1">Сайт наполняется<br/>из админки.</Typography>
           <Typography className="max-w-2xl" tone="muted">
-            Logged in as{' '}
+            Вы вошли как{' '}
             <Typography as="strong" variant="emphasis" tone="default">
               {auth.user.email}
             </Typography>
-            .
+            . Управляйте кофейнями, меню, контентом и заявками в одном месте.
             This is the baseline auth pattern for future web features.
           </Typography>
         </div>
         <Button asChild size="lg" className="w-fit">
-          <Link to="/app">Open app</Link>
+          <Link to="/restaurants">Открыть кофейни</Link>
         </Button>
       </section>
     )
@@ -160,6 +161,13 @@ export function AppPage() {
       </div>
     </section>
   )
+}
+
+export function RestaurantsAdminRoute() {
+  const auth = useAuth()
+  if (auth.isBootstrapping) return <LoadingState />
+  if (!auth.user) return <HomePage />
+  return <RestaurantsPage />
 }
 
 function LoadingState() {

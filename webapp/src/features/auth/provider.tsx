@@ -102,8 +102,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
       register,
       login,
       logout,
+      api,
     }),
-    [isBootstrapping, login, logout, meQuery.data?.user, register],
+    [api, isBootstrapping, login, logout, meQuery.data?.user, register],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

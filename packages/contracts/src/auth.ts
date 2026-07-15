@@ -10,6 +10,9 @@ const displayNameSchema = z
 
 export const emailSchema = z.string().trim().toLowerCase().email().max(254)
 
+export const userRoleSchema = z.enum(['ADMIN', 'EDITOR'])
+export type UserRole = z.infer<typeof userRoleSchema>
+
 export const passwordSchema = z
   .string()
   .min(8, 'Password must be at least 8 characters')
@@ -19,6 +22,7 @@ export const userSchema = z.object({
   id: z.string(),
   email: emailSchema,
   displayName: z.string().nullable(),
+  role: userRoleSchema,
   createdAt: z.string().datetime(),
 })
 

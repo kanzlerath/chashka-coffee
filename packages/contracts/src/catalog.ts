@@ -52,6 +52,42 @@ export const restaurantListResponseSchema = z.object({
 })
 export type RestaurantListResponse = z.infer<typeof restaurantListResponseSchema>
 
+const nullableText = (max: number) => z.string().trim().max(max).nullable()
+const nullableUrl = z.url().nullable()
+
+export const adminRestaurantSchema = z.object({
+  id: uuidSchema,
+  slug: slugSchema,
+  name: z.string().trim().min(1).max(180),
+  format: restaurantFormatSchema,
+  area: restaurantAreaSchema,
+  isAtApartHotel: z.boolean(),
+  city: z.string().trim().min(1).max(100),
+  address: z.string().trim().min(1).max(300),
+  phone: z.string().trim().min(1).max(40),
+  description: nullableText(4_000),
+  coverImageUrl: nullableUrl,
+  latitude: z.number().min(-90).max(90).nullable(),
+  longitude: z.number().min(-180).max(180).nullable(),
+  yandexMapsUrl: nullableUrl,
+  twoGisUrl: nullableUrl,
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+})
+export type AdminRestaurant = z.infer<typeof adminRestaurantSchema>
+
+export const upsertRestaurantRequestSchema = adminRestaurantSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).strict()
+export type UpsertRestaurantRequest = z.infer<typeof upsertRestaurantRequestSchema>
+
+export const adminRestaurantListResponseSchema = z.object({
+  restaurants: z.array(adminRestaurantSchema),
+})
+export const adminRestaurantResponseSchema = z.object({ restaurant: adminRestaurantSchema })
+
 export const menuItemSchema = z.object({
   id: uuidSchema,
   slug: slugSchema,

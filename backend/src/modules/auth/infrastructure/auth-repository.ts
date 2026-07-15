@@ -9,6 +9,10 @@ export function createPrismaAuthRepository(db: DbClient): AuthRepository {
       return db.user.findUnique({ where: { email } })
     },
 
+    countUsers() {
+      return db.user.count()
+    },
+
     async createPasswordUser(input) {
       try {
         return await db.user.create({
@@ -16,6 +20,7 @@ export function createPrismaAuthRepository(db: DbClient): AuthRepository {
             email: input.email,
             passwordHash: input.passwordHash,
             displayName: input.displayName,
+            role: input.role,
           },
         })
       } catch (error) {

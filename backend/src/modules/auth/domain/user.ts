@@ -1,10 +1,11 @@
-import type { UserDto } from '@chashka-coffee/contracts'
+import type { UserDto, UserRole } from '@chashka-coffee/contracts'
 
 export type AuthUserRecord = {
   id: string
   email: string
   passwordHash: string | null
   displayName: string | null
+  role: UserRole
   createdAt: Date
 }
 
@@ -17,6 +18,7 @@ export function toBaseUserDto(user: AuthUserRecord): UserDto {
     id: user.id,
     email: user.email,
     displayName: user.displayName,
+    role: user.role,
     createdAt: user.createdAt.toISOString(),
   }
 }

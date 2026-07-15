@@ -8,6 +8,10 @@ export function toAuthAppError(error: unknown) {
     return new AppError(409, 'CONFLICT', error.message)
   }
 
+  if (error.kind === 'registration_closed') {
+    return new AppError(403, 'FORBIDDEN', error.message)
+  }
+
   return new AppError(401, 'UNAUTHORIZED', error.message)
 }
 

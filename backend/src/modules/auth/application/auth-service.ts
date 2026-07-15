@@ -29,13 +29,17 @@ export class AuthService {
   constructor(private readonly dependencies: AuthServiceDependencies) {}
 
   async register(input: RegisterPayload, metadata: SessionMetadata) {
+    const userCount = await this.dependencies.repository.countUsers()
+    if (userCount > 0) {
+      throw new AuthFailure('registration_closed', 'Registration is closed')
+    }
     const existingUser = await this.dependencies.repository.findUserByEmail(input.email)
     if (existingUser) {
       throw new AuthFailure('email_already_exists', 'User with this email already exists')
     }
 
     const passwordHash = await this.dependencies.passwords.hash(input.password)
-    const user = await this.dependencies.repository.createPasswordUser({ ...input, passwordHash })
+    const user = await this.dependencies.repository.createPasswordUser({ ...input, passwordHash, role: 'ADMIN' })
     return this.issueSession(user, metadata)
   }
 
