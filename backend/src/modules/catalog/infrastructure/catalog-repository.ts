@@ -1,6 +1,7 @@
 import type {
   AdminRestaurant,
   AdminMenu,
+  AdminMenuDetailResponse,
   DietaryMark,
   RestaurantListQuery,
   RestaurantListResponse,
@@ -202,6 +203,12 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') return null
         throw error
       }
+    },
+
+    async getAdminMenuDetail(id) {
+      const menu = await db.menu.findUnique({ where: { id }, include: { _count: { select: { categories: true, restaurants: true } }, categories: { orderBy: { position: 'asc' }, include: { items: { orderBy: { position: 'asc' } } } } } })
+      if (!menu) return null
+      return { menu: toAdminMenu(menu), categories: menu.categories.map((category) => ({ id: category.id, slug: category.slug, name: category.name, position: category.position, items: category.items.map((item) => ({ id: item.id, slug: item.slug, name: item.name, priceKopecks: item.priceKopecks, position: item.position, marketingBadge: item.marketingBadge, weightGrams: item.weightGrams })) })) } satisfies AdminMenuDetailResponse
     },
 
     async createCategory(menuId, input) {

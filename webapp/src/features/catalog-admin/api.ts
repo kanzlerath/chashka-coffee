@@ -1,6 +1,9 @@
 import {
   adminRestaurantListResponseSchema,
   adminRestaurantResponseSchema,
+  adminMenuListResponseSchema, adminMenuDetailResponseSchema, adminMenuResponseSchema, createdIdResponseSchema,
+  upsertMenuRequestSchema, upsertMenuCategoryRequestSchema, upsertMenuItemRequestSchema,
+  type UpsertMenuRequest, type UpsertMenuCategoryRequest, type UpsertMenuItemRequest,
   upsertRestaurantRequestSchema,
   type UpsertRestaurantRequest,
 } from '@chashka-coffee/contracts'
@@ -28,4 +31,10 @@ export class CatalogAdminApi {
       method: 'PUT', body: upsertRestaurantRequestSchema.parse(input),
     })
   }
+
+  listMenus() { return this.auth.request('/api/admin/menus', adminMenuListResponseSchema) }
+  getMenu(id: string) { return this.auth.request(`/api/admin/menus/${id}/detail`, adminMenuDetailResponseSchema) }
+  createMenu(input: UpsertMenuRequest) { return this.auth.request('/api/admin/menus', adminMenuResponseSchema, { method: 'POST', body: upsertMenuRequestSchema.parse(input) }) }
+  createCategory(menuId: string, input: UpsertMenuCategoryRequest) { return this.auth.request(`/api/admin/menus/${menuId}/categories`, createdIdResponseSchema, { method: 'POST', body: upsertMenuCategoryRequestSchema.parse(input) }) }
+  createItem(categoryId: string, input: UpsertMenuItemRequest) { return this.auth.request(`/api/admin/categories/${categoryId}/items`, createdIdResponseSchema, { method: 'POST', body: upsertMenuItemRequestSchema.parse(input) }) }
 }

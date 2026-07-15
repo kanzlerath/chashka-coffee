@@ -103,6 +103,7 @@ export const upsertMenuRequestSchema = adminMenuSchema.omit({ id: true, category
 export type UpsertMenuRequest = z.infer<typeof upsertMenuRequestSchema>
 export const adminMenuListResponseSchema = z.object({ menus: z.array(adminMenuSchema) })
 export const adminMenuResponseSchema = z.object({ menu: adminMenuSchema })
+export const createdIdResponseSchema = z.object({ id: uuidSchema })
 
 export const upsertMenuCategoryRequestSchema = z.object({
   slug: slugSchema,
@@ -126,6 +127,15 @@ export const upsertMenuItemRequestSchema = z.object({
   marketingBadge: marketingBadgeSchema.nullable(), imageUrl: nullableUrl, position: z.number().int().nonnegative(),
 }).strict()
 export type UpsertMenuItemRequest = z.infer<typeof upsertMenuItemRequestSchema>
+
+export const adminMenuDetailResponseSchema = z.object({
+  menu: adminMenuSchema,
+  categories: z.array(z.object({
+    id: uuidSchema, slug: slugSchema, name: z.string().trim().min(1).max(100), position: z.number().int().nonnegative(),
+    items: z.array(z.object({ id: uuidSchema, slug: slugSchema, name: z.string().trim().min(1).max(180), priceKopecks: z.number().int().nonnegative(), position: z.number().int().nonnegative(), marketingBadge: marketingBadgeSchema.nullable(), weightGrams: z.number().int().positive().nullable() })),
+  })),
+})
+export type AdminMenuDetailResponse = z.infer<typeof adminMenuDetailResponseSchema>
 
 export const menuItemSchema = z.object({
   id: uuidSchema,

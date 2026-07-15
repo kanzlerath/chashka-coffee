@@ -1,6 +1,7 @@
 import type {
   AdminRestaurant,
   AdminMenu,
+  AdminMenuDetailResponse,
   RestaurantListQuery,
   RestaurantListResponse,
   RestaurantMenuResponse,
@@ -20,6 +21,7 @@ export type CatalogRepository = {
   listAdminMenus(): Promise<AdminMenu[]>
   createMenu(input: UpsertMenuRequest): Promise<AdminMenu>
   updateMenu(id: string, input: UpsertMenuRequest): Promise<AdminMenu | null>
+  getAdminMenuDetail(id: string): Promise<AdminMenuDetailResponse | null>
   createCategory(menuId: string, input: UpsertMenuCategoryRequest): Promise<string | null>
   createItem(categoryId: string, input: UpsertMenuItemRequest): Promise<string | null>
 }

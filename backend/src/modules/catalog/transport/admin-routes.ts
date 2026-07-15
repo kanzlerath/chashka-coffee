@@ -3,6 +3,8 @@ import {
   adminRestaurantResponseSchema,
   adminMenuListResponseSchema,
   adminMenuResponseSchema,
+  adminMenuDetailResponseSchema,
+  createdIdResponseSchema,
   apiErrorSchema,
   upsertRestaurantRequestSchema,
   upsertMenuRequestSchema,
@@ -56,8 +58,9 @@ const deleteRoute = createRoute({
 const listMenusRoute = createRoute({ method: 'get', path: '/menus', responses: { 200: { content: { 'application/json': { schema: adminMenuListResponseSchema } }, description: 'Menu sets' } } })
 const createMenuRoute = createRoute({ method: 'post', path: '/menus', request: { body: { content: { 'application/json': { schema: upsertMenuRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: adminMenuResponseSchema } }, description: 'Menu created' } } })
 const updateMenuRoute = createRoute({ method: 'put', path: '/menus/{id}', request: { params: idParams, body: { content: { 'application/json': { schema: upsertMenuRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: adminMenuResponseSchema } }, description: 'Menu updated' } } })
-const categoryRoute = createRoute({ method: 'post', path: '/menus/{id}/categories', request: { params: idParams, body: { content: { 'application/json': { schema: upsertMenuCategoryRequestSchema } } } }, responses: { 201: { description: 'Category created' } } })
-const itemRoute = createRoute({ method: 'post', path: '/categories/{id}/items', request: { params: idParams, body: { content: { 'application/json': { schema: upsertMenuItemRequestSchema } } } }, responses: { 201: { description: 'Item created' } } })
+const menuDetailRoute = createRoute({ method: 'get', path: '/menus/{id}/detail', request: { params: idParams }, responses: { 200: { content: { 'application/json': { schema: adminMenuDetailResponseSchema } }, description: 'Menu editor detail' } } })
+const categoryRoute = createRoute({ method: 'post', path: '/menus/{id}/categories', request: { params: idParams, body: { content: { 'application/json': { schema: upsertMenuCategoryRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: createdIdResponseSchema } }, description: 'Category created' } } })
+const itemRoute = createRoute({ method: 'post', path: '/categories/{id}/items', request: { params: idParams, body: { content: { 'application/json': { schema: upsertMenuItemRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: createdIdResponseSchema } }, description: 'Item created' } } })
 
 export function createCatalogAdminRoutes({ service, requireAuth, requireAdmin }: { service: CatalogService; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireAdmin: MiddlewareHandler<AuthHttpEnv> }) {
   const routes = new OpenAPIHono<AuthHttpEnv>({ defaultHook: validationErrorHook })
@@ -82,7 +85,8 @@ export function createCatalogAdminRoutes({ service, requireAuth, requireAdmin }:
     if (!menu) throw new AppError(404, 'NOT_FOUND', 'Menu not found')
     return c.json({ menu }, 200)
   })
-  routes.openapi(categoryRoute, async (c) => { if (!await service.createCategory(c.req.valid('param').id, c.req.valid('json'))) throw new AppError(404, 'NOT_FOUND', 'Menu not found'); return c.body(null, 201) })
-  routes.openapi(itemRoute, async (c) => { if (!await service.createItem(c.req.valid('param').id, c.req.valid('json'))) throw new AppError(404, 'NOT_FOUND', 'Category not found'); return c.body(null, 201) })
+  routes.openapi(menuDetailRoute, async (c) => { const detail = await service.getAdminMenuDetail(c.req.valid('param').id); if (!detail) throw new AppError(404, 'NOT_FOUND', 'Menu not found'); return c.json(detail, 200) })
+  routes.openapi(categoryRoute, async (c) => { const id = await service.createCategory(c.req.valid('param').id, c.req.valid('json')); if (!id) throw new AppError(404, 'NOT_FOUND', 'Menu not found'); return c.json({ id }, 201) })
+  routes.openapi(itemRoute, async (c) => { const id = await service.createItem(c.req.valid('param').id, c.req.valid('json')); if (!id) throw new AppError(404, 'NOT_FOUND', 'Category not found'); return c.json({ id }, 201) })
   return routes
 }

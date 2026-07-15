@@ -13,7 +13,7 @@ import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
 import { Typography } from '@/components/ui/typography'
 import { AuthForm, useAuth } from '@/features/auth'
-import { RestaurantsPage } from '@/features/catalog-admin'
+import { MenuPage, RestaurantsPage } from '@/features/catalog-admin'
 import { TeamPage } from '@/features/staff-admin'
 import { cn } from '@/lib/utils'
 
@@ -38,6 +38,7 @@ export function RootLayout() {
                 Кофейни
               </Link>
             </Typography>
+            <Typography asChild variant="control" tone="muted"><Link to="/menus" className={navLinkClass}>Меню</Link></Typography>
             <Typography asChild variant="control" tone="muted">
               <Link to="/team" className={navLinkClass}>
                 Команда
@@ -182,6 +183,7 @@ export function TeamAdminRoute() {
   if (!auth.user) return <HomePage />
   return <TeamPage />
 }
+export function MenuAdminRoute() { const auth = useAuth(); if (auth.isBootstrapping) return <LoadingState />; if (!auth.user) return <HomePage />; return <MenuPage /> }
 
 function LoadingState() {
   return (
