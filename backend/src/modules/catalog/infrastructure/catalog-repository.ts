@@ -1,11 +1,13 @@
 import type {
   AdminRestaurant,
+  AdminMenu,
   DietaryMark,
   RestaurantListQuery,
   RestaurantListResponse,
   RestaurantMenuResponse,
   RestaurantSummary,
   UpsertRestaurantRequest,
+  UpsertMenuRequest,
 } from '@chashka-coffee/contracts'
 import { Prisma } from '../../../generated/prisma/client'
 
@@ -68,6 +70,10 @@ function toAdminRestaurant(restaurant: {
     createdAt: restaurant.createdAt.toISOString(),
     updatedAt: restaurant.updatedAt.toISOString(),
   }
+}
+
+function toAdminMenu(menu: { id: string; slug: string; name: string; description: string | null; createdAt: Date; updatedAt: Date; _count: { categories: number; restaurants: number } }): AdminMenu {
+  return { id: menu.id, slug: menu.slug, name: menu.name, description: menu.description, categoryCount: menu._count.categories, restaurantCount: menu._count.restaurants, createdAt: menu.createdAt.toISOString(), updatedAt: menu.updatedAt.toISOString() }
 }
 
 export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
@@ -172,6 +178,26 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
         return true
       } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') return false
+        throw error
+      }
+    },
+
+    async listAdminMenus() {
+      const menus = await db.menu.findMany({ orderBy: { name: 'asc' }, include: { _count: { select: { categories: true, restaurants: true } } } })
+      return menus.map(toAdminMenu)
+    },
+
+    async createMenu(input) {
+      const menu = await db.menu.create({ data: input, include: { _count: { select: { categories: true, restaurants: true } } } })
+      return toAdminMenu(menu)
+    },
+
+    async updateMenu(id, input) {
+      try {
+        const menu = await db.menu.update({ where: { id }, data: input, include: { _count: { select: { categories: true, restaurants: true } } } })
+        return toAdminMenu(menu)
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') return null
         throw error
       }
     },

@@ -88,6 +88,22 @@ export const adminRestaurantListResponseSchema = z.object({
 })
 export const adminRestaurantResponseSchema = z.object({ restaurant: adminRestaurantSchema })
 
+export const adminMenuSchema = z.object({
+  id: uuidSchema,
+  slug: slugSchema,
+  name: z.string().trim().min(1).max(180),
+  description: nullableText(2_000),
+  categoryCount: z.number().int().nonnegative(),
+  restaurantCount: z.number().int().nonnegative(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+})
+export type AdminMenu = z.infer<typeof adminMenuSchema>
+export const upsertMenuRequestSchema = adminMenuSchema.omit({ id: true, categoryCount: true, restaurantCount: true, createdAt: true, updatedAt: true }).strict()
+export type UpsertMenuRequest = z.infer<typeof upsertMenuRequestSchema>
+export const adminMenuListResponseSchema = z.object({ menus: z.array(adminMenuSchema) })
+export const adminMenuResponseSchema = z.object({ menu: adminMenuSchema })
+
 export const menuItemSchema = z.object({
   id: uuidSchema,
   slug: slugSchema,
