@@ -9,6 +9,9 @@ import {
   upsertRestaurantRequestSchema,
   assignRestaurantMenuRequestSchema,
   restaurantMenuAssignmentResponseSchema,
+  adminRestaurantMenuDetailResponseSchema,
+  upsertRestaurantMenuItemOverrideRequestSchema,
+  operationSuccessResponseSchema,
   upsertMenuRequestSchema,
   upsertMenuCategoryRequestSchema,
   upsertMenuItemRequestSchema,
@@ -58,6 +61,10 @@ const deleteRoute = createRoute({
   responses: { 204: { description: 'Restaurant deleted' }, 404: { content: errorContent, description: 'Restaurant not found' } },
 })
 const assignRestaurantMenuRoute = createRoute({ method: 'put', path: '/restaurants/{id}/menu', request: { params: idParams, body: { content: { 'application/json': { schema: assignRestaurantMenuRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: restaurantMenuAssignmentResponseSchema } }, description: 'Restaurant menu assignment updated' }, 404: { content: errorContent, description: 'Restaurant or menu not found' } } })
+const restaurantMenuDetailRoute = createRoute({ method: 'get', path: '/restaurants/{id}/menu-detail', request: { params: idParams }, responses: { 200: { content: { 'application/json': { schema: adminRestaurantMenuDetailResponseSchema } }, description: 'Restaurant menu with effective overrides' }, 404: { content: errorContent, description: 'Restaurant menu not found' } } })
+const overrideParams = z.object({ id: z.uuid(), itemId: z.uuid() })
+const overrideItemRoute = createRoute({ method: 'put', path: '/restaurants/{id}/menu-items/{itemId}/override', request: { params: overrideParams, body: { content: { 'application/json': { schema: upsertRestaurantMenuItemOverrideRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: operationSuccessResponseSchema } }, description: 'Restaurant item override saved' }, 404: { content: errorContent, description: 'Restaurant menu item not found' } } })
+const deleteOverrideItemRoute = createRoute({ method: 'delete', path: '/restaurants/{id}/menu-items/{itemId}/override', request: { params: overrideParams }, responses: { 200: { content: { 'application/json': { schema: operationSuccessResponseSchema } }, description: 'Restaurant item override removed' }, 404: { content: errorContent, description: 'Override not found' } } })
 const listMenusRoute = createRoute({ method: 'get', path: '/menus', responses: { 200: { content: { 'application/json': { schema: adminMenuListResponseSchema } }, description: 'Menu sets' } } })
 const createMenuRoute = createRoute({ method: 'post', path: '/menus', request: { body: { content: { 'application/json': { schema: upsertMenuRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: adminMenuResponseSchema } }, description: 'Menu created' } } })
 const updateMenuRoute = createRoute({ method: 'put', path: '/menus/{id}', request: { params: idParams, body: { content: { 'application/json': { schema: upsertMenuRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: adminMenuResponseSchema } }, description: 'Menu updated' } } })
@@ -86,6 +93,21 @@ export function createCatalogAdminRoutes({ service, requireAuth, requireAdmin }:
     const menuId = await service.assignRestaurantMenu(c.req.valid('param').id, c.req.valid('json'))
     if (menuId === undefined) throw new AppError(404, 'NOT_FOUND', 'Restaurant or menu not found')
     return c.json({ menuId }, 200)
+  })
+  routes.openapi(restaurantMenuDetailRoute, async (c) => {
+    const detail = await service.getAdminRestaurantMenuDetail(c.req.valid('param').id)
+    if (!detail) throw new AppError(404, 'NOT_FOUND', 'Restaurant menu not found')
+    return c.json(detail, 200)
+  })
+  routes.openapi(overrideItemRoute, async (c) => {
+    const saved = await service.upsertRestaurantMenuItemOverride(c.req.valid('param').id, c.req.valid('param').itemId, c.req.valid('json'))
+    if (!saved) throw new AppError(404, 'NOT_FOUND', 'Restaurant menu item not found')
+    return c.json({ success: true as const }, 200)
+  })
+  routes.openapi(deleteOverrideItemRoute, async (c) => {
+    const deleted = await service.deleteRestaurantMenuItemOverride(c.req.valid('param').id, c.req.valid('param').itemId)
+    if (!deleted) throw new AppError(404, 'NOT_FOUND', 'Override not found')
+    return c.json({ success: true as const }, 200)
   })
   routes.openapi(listMenusRoute, async (c) => c.json({ menus: await service.listAdminMenus() }, 200))
   routes.openapi(createMenuRoute, async (c) => c.json({ menu: await service.createMenu(c.req.valid('json')) }, 201))

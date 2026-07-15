@@ -2,6 +2,7 @@ import type {
   AdminRestaurant,
   AdminMenu,
   AdminMenuDetailResponse,
+  AdminRestaurantMenuDetailResponse,
   DietaryMark,
   RestaurantListQuery,
   RestaurantListResponse,
@@ -12,6 +13,7 @@ import type {
   UpsertMenuRequest,
   UpsertMenuCategoryRequest,
   UpsertMenuItemRequest,
+  UpsertRestaurantMenuItemOverrideRequest,
 } from '@chashka-coffee/contracts'
 import { Prisma } from '../../../generated/prisma/client'
 
@@ -206,6 +208,62 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
         if (input.menuId) await transaction.restaurantMenu.create({ data: { restaurantId: id, menuId: input.menuId } })
       })
       return input.menuId
+    },
+
+    async getAdminRestaurantMenuDetail(id) {
+      const restaurant = await db.restaurant.findUnique({
+        where: { id },
+        include: {
+          menuItemOverrides: true,
+          menuAssignments: { include: { menu: { include: { categories: { orderBy: { position: 'asc' }, include: { items: { orderBy: { position: 'asc' } } } } } } } },
+        },
+      })
+      const assignment = restaurant?.menuAssignments[0]
+      if (!assignment) return null
+      const overrides = new Map(restaurant.menuItemOverrides.map((override) => [override.menuItemId, override]))
+      return {
+        menu: { id: assignment.menu.id, name: assignment.menu.name },
+        categories: assignment.menu.categories.map((category) => ({
+          id: category.id,
+          name: category.name,
+          items: category.items.map((item) => {
+            const override = overrides.get(item.id)
+            return {
+              id: item.id,
+              name: item.name,
+              description: override?.description ?? item.description,
+              ingredients: override?.ingredients ?? item.ingredients,
+              weightGrams: override?.weightGrams ?? item.weightGrams,
+              priceKopecks: override?.priceKopecks ?? item.priceKopecks,
+              overridden: Boolean(override),
+            }
+          }),
+        })),
+      } satisfies AdminRestaurantMenuDetailResponse
+    },
+
+    async upsertRestaurantMenuItemOverride(restaurantId, itemId, input) {
+      const assignment = await db.restaurantMenu.findFirst({
+        where: { restaurantId, menu: { categories: { some: { items: { some: { id: itemId } } } } } },
+        select: { id: true },
+      })
+      if (!assignment) return false
+      await db.menuItemOverride.upsert({
+        where: { restaurantId_menuItemId: { restaurantId, menuItemId: itemId } },
+        create: { restaurantId, menuItemId: itemId, ...input },
+        update: input,
+      })
+      return true
+    },
+
+    async deleteRestaurantMenuItemOverride(restaurantId, itemId) {
+      try {
+        await db.menuItemOverride.delete({ where: { restaurantId_menuItemId: { restaurantId, menuItemId: itemId } } })
+        return true
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') return false
+        throw error
+      }
     },
 
     async listAdminMenus() {

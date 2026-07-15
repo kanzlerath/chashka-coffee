@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { AdminRestaurant, RestaurantOpeningHoursEntry, UpsertRestaurantRequest } from '@chashka-coffee/contracts'
+import type { AdminRestaurant, AdminRestaurantMenuDetailResponse, RestaurantOpeningHoursEntry, UpsertRestaurantMenuItemOverrideRequest, UpsertRestaurantRequest } from '@chashka-coffee/contracts'
 import { useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -26,14 +26,19 @@ const emptyRestaurant: UpsertRestaurantRequest = {
   openingHours: defaultHours,
 }
 
+type LocalMenuItem = AdminRestaurantMenuDetailResponse['categories'][number]['items'][number]
+
 export function RestaurantsPage() {
   const { api: authApi } = useAuth()
   const queryClient = useQueryClient()
   const api = useMemo(() => new CatalogAdminApi(authApi), [authApi])
   const [selected, setSelected] = useState<AdminRestaurant | null>(null)
   const [draft, setDraft] = useState<UpsertRestaurantRequest>(emptyRestaurant)
+  const [overrideItem, setOverrideItem] = useState<LocalMenuItem | null>(null)
+  const [overrideDraft, setOverrideDraft] = useState<UpsertRestaurantMenuItemOverrideRequest>({ description: null, ingredients: null, weightGrams: null, priceKopecks: null })
   const restaurants = useQuery({ queryKey: ['admin', 'restaurants'], queryFn: () => api.listRestaurants() })
   const menus = useQuery({ queryKey: ['admin', 'menus'], queryFn: () => api.listMenus() })
+  const restaurantMenu = useQuery({ queryKey: ['admin', 'restaurant-menu', selected?.id], enabled: Boolean(selected?.id && selected.menuId), queryFn: () => api.getRestaurantMenuDetail(selected!.id) })
   const save = useMutation({
     mutationFn: () => selected ? api.updateRestaurant(selected.id, draft) : api.createRestaurant(draft),
     onSuccess: (result) => {
@@ -46,12 +51,22 @@ export function RestaurantsPage() {
     mutationFn: (menuId: string | null) => api.assignRestaurantMenu(selected!.id, menuId),
     onSuccess: ({ menuId }) => {
       setSelected((current) => current ? { ...current, menuId, menuName: menus.data?.menus.find((menu) => menu.id === menuId)?.name ?? null } : current)
+      setOverrideItem(null)
       void queryClient.invalidateQueries({ queryKey: ['admin', 'restaurants'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'restaurant-menu', selected?.id] })
     },
   })
+  const saveOverride = useMutation({
+    mutationFn: () => api.saveRestaurantMenuItemOverride(selected!.id, overrideItem!.id, overrideDraft),
+    onSuccess: () => { setOverrideItem(null); void queryClient.invalidateQueries({ queryKey: ['admin', 'restaurant-menu', selected?.id] }) },
+  })
+  const resetOverride = useMutation({
+    mutationFn: () => api.deleteRestaurantMenuItemOverride(selected!.id, overrideItem!.id),
+    onSuccess: () => { setOverrideItem(null); void queryClient.invalidateQueries({ queryKey: ['admin', 'restaurant-menu', selected?.id] }) },
+  })
 
-  function choose(restaurant: AdminRestaurant) { setSelected(restaurant); setDraft(toDraft(restaurant)) }
-  function startNew() { setSelected(null); setDraft({ ...emptyRestaurant, openingHours: defaultHours.map((entry) => ({ ...entry })) }) }
+  function choose(restaurant: AdminRestaurant) { setSelected(restaurant); setDraft(toDraft(restaurant)); setOverrideItem(null) }
+  function startNew() { setSelected(null); setDraft({ ...emptyRestaurant, openingHours: defaultHours.map((entry) => ({ ...entry })) }); setOverrideItem(null) }
   function change<K extends keyof UpsertRestaurantRequest>(key: K, value: UpsertRestaurantRequest[K]) { setDraft((current) => ({ ...current, [key]: value })) }
   function changeHours(dayOfWeek: number, patch: Partial<RestaurantOpeningHoursEntry>) {
     change('openingHours', draft.openingHours.map((entry) => entry.dayOfWeek === dayOfWeek ? { ...entry, ...patch } : entry))
@@ -77,6 +92,8 @@ export function RestaurantsPage() {
         <fieldset className="grid gap-2 rounded-xl border p-3"><legend className="px-1 text-sm font-medium">График работы</legend>{draft.openingHours.map((entry) => <div className="grid grid-cols-[74px_1fr_1fr_auto] items-center gap-2" key={entry.dayOfWeek}><span className="text-sm">{dayLabel[entry.dayOfWeek]}</span><Input aria-label={`Открытие, ${dayLabel[entry.dayOfWeek]}`} disabled={entry.isClosed} type="time" value={entry.opensAt ?? ''} onChange={(event) => changeHours(entry.dayOfWeek, { opensAt: event.target.value || null })} /><Input aria-label={`Закрытие, ${dayLabel[entry.dayOfWeek]}`} disabled={entry.isClosed} type="time" value={entry.closesAt ?? ''} onChange={(event) => changeHours(entry.dayOfWeek, { closesAt: event.target.value || null })} /><label className="flex items-center gap-1 text-xs"><input checked={entry.isClosed} type="checkbox" onChange={(event) => changeHours(entry.dayOfWeek, { isClosed: event.target.checked })} />выходной</label></div>)}</fieldset>
         {selected ? <Field label="Набор меню"><select disabled={assignMenu.isPending || menus.isPending} value={selected.menuId ?? ''} onChange={(event) => assignMenu.mutate(event.target.value || null)}><option value="">Меню не назначено</option>{menus.data?.menus.map((menu) => <option key={menu.id} value={menu.id}>{menu.name}</option>)}</select><small className="text-muted-foreground">Для точки используется один основной набор. Изменение применяется сразу.</small></Field> : null}
         {assignMenu.isError && <p className="text-sm text-destructive">Не удалось назначить меню. Повторите попытку.</p>}
+        {selected && restaurantMenu.data ? <LocalOverrides categories={restaurantMenu.data.categories} item={overrideItem} draft={overrideDraft} onEdit={(item) => { setOverrideItem(item); setOverrideDraft({ description: item.description, ingredients: item.ingredients, weightGrams: item.weightGrams, priceKopecks: item.priceKopecks }) }} onChange={setOverrideDraft} onCancel={() => setOverrideItem(null)} onSave={() => saveOverride.mutate()} onReset={() => resetOverride.mutate()} saving={saveOverride.isPending || resetOverride.isPending} /> : null}
+        {restaurantMenu.isError ? <p className="text-sm text-muted-foreground">Назначьте набор меню, чтобы настроить позиции только для этой точки.</p> : null}
         {save.isError && <p className="text-sm text-destructive">Не удалось сохранить. Проверьте обязательные поля и уникальность адреса страницы.</p>}
         <Button type="submit" size="lg" disabled={save.isPending}>{save.isPending ? 'Сохраняем…' : selected ? 'Сохранить изменения' : 'Создать кофейню'}</Button>
       </form>
@@ -88,3 +105,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function toDraft(restaurant: AdminRestaurant): UpsertRestaurantRequest { const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...draft } = restaurant; return draft }
 const formatLabel = { CITY: 'Городская', PARK: 'Парк', AIRPORT: 'Аэропорт', APART_HOTEL: 'Апарт-отель' }
 const dayLabel = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
+
+function LocalOverrides({ categories, item, draft, onEdit, onChange, onCancel, onSave, onReset, saving }: {
+  categories: AdminRestaurantMenuDetailResponse['categories']; item: LocalMenuItem | null; draft: UpsertRestaurantMenuItemOverrideRequest
+  onEdit: (item: LocalMenuItem) => void; onChange: (value: UpsertRestaurantMenuItemOverrideRequest) => void; onCancel: () => void; onSave: () => void; onReset: () => void; saving: boolean
+}) {
+  return <section className="grid gap-3 border-t pt-5"><div><strong>Локальные изменения меню</strong><p className="text-sm text-muted-foreground">Переопределяют базовое блюдо только в этой кофейне.</p></div>
+    {item ? <div className="grid gap-3 rounded-xl border p-3"><b>{item.name}</b><Field label="Описание"><Textarea value={draft.description ?? ''} onChange={(event) => onChange({ ...draft, description: event.target.value.trim() || null })} /></Field><Field label="Состав"><Textarea value={draft.ingredients ?? ''} onChange={(event) => onChange({ ...draft, ingredients: event.target.value.trim() || null })} /></Field><div className="grid gap-3 sm:grid-cols-2"><Field label="Цена, ₽"><Input min={0} type="number" value={draft.priceKopecks === null ? '' : draft.priceKopecks / 100} onChange={(event) => onChange({ ...draft, priceKopecks: event.target.value === '' ? null : Math.round(Number(event.target.value) * 100) })} /></Field><Field label="Вес, г"><Input min={0} type="number" value={draft.weightGrams ?? ''} onChange={(event) => onChange({ ...draft, weightGrams: event.target.value === '' ? null : Number(event.target.value) })} /></Field></div><div className="flex flex-wrap gap-2"><Button disabled={saving} onClick={onSave} type="button">Сохранить для точки</Button>{item.overridden ? <Button disabled={saving} onClick={onReset} type="button" variant="outline">Вернуть базовое</Button> : null}<Button disabled={saving} onClick={onCancel} type="button" variant="ghost">Отмена</Button></div></div> : <div className="grid gap-3">{categories.map((category) => <div className="grid gap-1" key={category.id}><b className="text-sm">{category.name}</b>{category.items.map((menuItem) => <button className="flex items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-muted" key={menuItem.id} onClick={() => onEdit(menuItem)} type="button"><span className="text-sm">{menuItem.name}</span><small className={menuItem.overridden ? 'text-primary' : 'text-muted-foreground'}>{menuItem.overridden ? 'Изменено для точки' : `${menuItem.priceKopecks / 100} ₽`}</small></button>)}</div>)}</div>}</section>
+}

@@ -2,6 +2,8 @@ import {
   adminRestaurantListResponseSchema,
   adminRestaurantResponseSchema,
   assignRestaurantMenuRequestSchema, restaurantMenuAssignmentResponseSchema,
+  adminRestaurantMenuDetailResponseSchema, upsertRestaurantMenuItemOverrideRequestSchema,
+  operationSuccessResponseSchema,
   adminMenuListResponseSchema, adminMenuDetailResponseSchema, adminMenuResponseSchema, createdIdResponseSchema,
   upsertMenuRequestSchema, upsertMenuCategoryRequestSchema, upsertMenuItemRequestSchema,
   type UpsertMenuRequest, type UpsertMenuCategoryRequest, type UpsertMenuItemRequest,
@@ -38,6 +40,11 @@ export class CatalogAdminApi {
       method: 'PUT', body: assignRestaurantMenuRequestSchema.parse({ menuId }),
     })
   }
+  getRestaurantMenuDetail(id: string) { return this.auth.request(`/api/admin/restaurants/${id}/menu-detail`, adminRestaurantMenuDetailResponseSchema) }
+  saveRestaurantMenuItemOverride(restaurantId: string, itemId: string, input: { description: string | null; ingredients: string | null; weightGrams: number | null; priceKopecks: number | null }) {
+    return this.auth.request(`/api/admin/restaurants/${restaurantId}/menu-items/${itemId}/override`, operationSuccessResponseSchema, { method: 'PUT', body: upsertRestaurantMenuItemOverrideRequestSchema.parse(input) })
+  }
+  deleteRestaurantMenuItemOverride(restaurantId: string, itemId: string) { return this.auth.request(`/api/admin/restaurants/${restaurantId}/menu-items/${itemId}/override`, operationSuccessResponseSchema, { method: 'DELETE' }) }
 
   listMenus() { return this.auth.request('/api/admin/menus', adminMenuListResponseSchema) }
   getMenu(id: string) { return this.auth.request(`/api/admin/menus/${id}/detail`, adminMenuDetailResponseSchema) }

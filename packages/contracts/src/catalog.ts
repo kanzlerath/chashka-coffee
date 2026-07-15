@@ -104,6 +104,24 @@ export const adminRestaurantResponseSchema = z.object({ restaurant: adminRestaur
 export const assignRestaurantMenuRequestSchema = z.object({ menuId: uuidSchema.nullable() }).strict()
 export type AssignRestaurantMenuRequest = z.infer<typeof assignRestaurantMenuRequestSchema>
 export const restaurantMenuAssignmentResponseSchema = z.object({ menuId: uuidSchema.nullable() })
+export const upsertRestaurantMenuItemOverrideRequestSchema = z.object({
+  description: nullableText(1_000), ingredients: nullableText(2_000),
+  weightGrams: z.number().int().positive().nullable(), priceKopecks: z.number().int().nonnegative().nullable(),
+}).strict()
+export type UpsertRestaurantMenuItemOverrideRequest = z.infer<typeof upsertRestaurantMenuItemOverrideRequestSchema>
+export const adminRestaurantMenuDetailResponseSchema = z.object({
+  menu: z.object({ id: uuidSchema, name: z.string().trim().min(1).max(180) }),
+  categories: z.array(z.object({
+    id: uuidSchema, name: z.string().trim().min(1).max(100),
+    items: z.array(z.object({
+      id: uuidSchema, name: z.string().trim().min(1).max(180),
+      description: nullableText(1_000), ingredients: nullableText(2_000), weightGrams: z.number().int().positive().nullable(), priceKopecks: z.number().int().nonnegative(),
+      overridden: z.boolean(),
+    })),
+  })),
+})
+export type AdminRestaurantMenuDetailResponse = z.infer<typeof adminRestaurantMenuDetailResponseSchema>
+export const operationSuccessResponseSchema = z.object({ success: z.literal(true) })
 
 export const adminMenuSchema = z.object({
   id: uuidSchema,

@@ -7,6 +7,8 @@ import type {
   RestaurantMenuResponse,
   UpsertRestaurantRequest,
   AssignRestaurantMenuRequest,
+  AdminRestaurantMenuDetailResponse,
+  UpsertRestaurantMenuItemOverrideRequest,
   UpsertMenuRequest,
   UpsertMenuCategoryRequest,
   UpsertMenuItemRequest,
@@ -20,6 +22,9 @@ export type CatalogRepository = {
   updateRestaurant(id: string, input: UpsertRestaurantRequest): Promise<AdminRestaurant | null>
   deleteRestaurant(id: string): Promise<boolean>
   assignRestaurantMenu(id: string, input: AssignRestaurantMenuRequest): Promise<string | null | undefined>
+  getAdminRestaurantMenuDetail(id: string): Promise<AdminRestaurantMenuDetailResponse | null>
+  upsertRestaurantMenuItemOverride(restaurantId: string, itemId: string, input: UpsertRestaurantMenuItemOverrideRequest): Promise<boolean>
+  deleteRestaurantMenuItemOverride(restaurantId: string, itemId: string): Promise<boolean>
   listAdminMenus(): Promise<AdminMenu[]>
   createMenu(input: UpsertMenuRequest): Promise<AdminMenu>
   updateMenu(id: string, input: UpsertMenuRequest): Promise<AdminMenu | null>
