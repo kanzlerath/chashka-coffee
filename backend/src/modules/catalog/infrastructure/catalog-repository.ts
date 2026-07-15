@@ -208,7 +208,36 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
     async getAdminMenuDetail(id) {
       const menu = await db.menu.findUnique({ where: { id }, include: { _count: { select: { categories: true, restaurants: true } }, categories: { orderBy: { position: 'asc' }, include: { items: { orderBy: { position: 'asc' } } } } } })
       if (!menu) return null
-      return { menu: toAdminMenu(menu), categories: menu.categories.map((category) => ({ id: category.id, slug: category.slug, name: category.name, position: category.position, items: category.items.map((item) => ({ id: item.id, slug: item.slug, name: item.name, priceKopecks: item.priceKopecks, position: item.position, marketingBadge: item.marketingBadge, weightGrams: item.weightGrams })) })) } satisfies AdminMenuDetailResponse
+      return {
+        menu: toAdminMenu(menu),
+        categories: menu.categories.map((category) => ({
+          id: category.id,
+          slug: category.slug,
+          name: category.name,
+          position: category.position,
+          items: category.items.map((item) => ({
+            id: item.id,
+            slug: item.slug,
+            name: item.name,
+            description: item.description,
+            ingredients: item.ingredients,
+            weightGrams: item.weightGrams,
+            priceKopecks: item.priceKopecks,
+            calories: item.calories,
+            proteins: item.proteins === null ? null : Number(item.proteins),
+            fats: item.fats === null ? null : Number(item.fats),
+            carbohydrates: item.carbohydrates === null ? null : Number(item.carbohydrates),
+            isVegetarian: item.isVegetarian,
+            isSpicy: item.isSpicy,
+            isLactoseFree: item.isLactoseFree,
+            isGlutenFree: item.isGlutenFree,
+            isLight: item.isLight,
+            marketingBadge: item.marketingBadge,
+            imageUrl: item.imageUrl,
+            position: item.position,
+          })),
+        })),
+      } satisfies AdminMenuDetailResponse
     },
 
     async createCategory(menuId, input) {
@@ -223,6 +252,16 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
       if (!category) return null
       const item = await db.menuItem.create({ data: { ...input, categoryId } })
       return item.id
+    },
+
+    async updateItem(id, input) {
+      try {
+        const item = await db.menuItem.update({ where: { id }, data: input })
+        return item.id
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') return null
+        throw error
+      }
     },
   }
 }

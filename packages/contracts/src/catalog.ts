@@ -132,7 +132,27 @@ export const adminMenuDetailResponseSchema = z.object({
   menu: adminMenuSchema,
   categories: z.array(z.object({
     id: uuidSchema, slug: slugSchema, name: z.string().trim().min(1).max(100), position: z.number().int().nonnegative(),
-    items: z.array(z.object({ id: uuidSchema, slug: slugSchema, name: z.string().trim().min(1).max(180), priceKopecks: z.number().int().nonnegative(), position: z.number().int().nonnegative(), marketingBadge: marketingBadgeSchema.nullable(), weightGrams: z.number().int().positive().nullable() })),
+    items: z.array(z.object({
+      id: uuidSchema,
+      slug: slugSchema,
+      name: z.string().trim().min(1).max(180),
+      description: nullableText(1_000),
+      ingredients: nullableText(2_000),
+      weightGrams: z.number().int().positive().nullable(),
+      priceKopecks: z.number().int().nonnegative(),
+      calories: z.number().int().nonnegative().nullable(),
+      proteins: z.number().nonnegative().nullable(),
+      fats: z.number().nonnegative().nullable(),
+      carbohydrates: z.number().nonnegative().nullable(),
+      isVegetarian: z.boolean(),
+      isSpicy: z.boolean(),
+      isLactoseFree: z.boolean(),
+      isGlutenFree: z.boolean(),
+      isLight: z.boolean(),
+      marketingBadge: marketingBadgeSchema.nullable(),
+      imageUrl: nullableUrl,
+      position: z.number().int().nonnegative(),
+    })),
   })),
 })
 export type AdminMenuDetailResponse = z.infer<typeof adminMenuDetailResponseSchema>

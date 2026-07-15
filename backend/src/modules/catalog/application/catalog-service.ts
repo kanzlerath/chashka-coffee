@@ -35,4 +35,5 @@ export class CatalogService {
   getAdminMenuDetail(id: string) { return this.repository.getAdminMenuDetail(id) }
   createCategory(menuId: string, input: UpsertMenuCategoryRequest) { return this.repository.createCategory(menuId, input) }
   createItem(categoryId: string, input: UpsertMenuItemRequest) { return this.repository.createItem(categoryId, input) }
+  updateItem(id: string, input: UpsertMenuItemRequest) { return this.repository.updateItem(id, input) }
 }

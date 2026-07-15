@@ -24,4 +24,5 @@ export type CatalogRepository = {
   getAdminMenuDetail(id: string): Promise<AdminMenuDetailResponse | null>
   createCategory(menuId: string, input: UpsertMenuCategoryRequest): Promise<string | null>
   createItem(categoryId: string, input: UpsertMenuItemRequest): Promise<string | null>
+  updateItem(id: string, input: UpsertMenuItemRequest): Promise<string | null>
 }

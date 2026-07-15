@@ -37,4 +37,5 @@ export class CatalogAdminApi {
   createMenu(input: UpsertMenuRequest) { return this.auth.request('/api/admin/menus', adminMenuResponseSchema, { method: 'POST', body: upsertMenuRequestSchema.parse(input) }) }
   createCategory(menuId: string, input: UpsertMenuCategoryRequest) { return this.auth.request(`/api/admin/menus/${menuId}/categories`, createdIdResponseSchema, { method: 'POST', body: upsertMenuCategoryRequestSchema.parse(input) }) }
   createItem(categoryId: string, input: UpsertMenuItemRequest) { return this.auth.request(`/api/admin/categories/${categoryId}/items`, createdIdResponseSchema, { method: 'POST', body: upsertMenuItemRequestSchema.parse(input) }) }
+  updateItem(id: string, input: UpsertMenuItemRequest) { return this.auth.request(`/api/admin/items/${id}`, createdIdResponseSchema, { method: 'PUT', body: upsertMenuItemRequestSchema.parse(input) }) }
 }
