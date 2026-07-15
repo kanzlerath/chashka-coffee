@@ -1,11 +1,19 @@
 ---
 import PageShell from '../layouts/PageShell.astro';
 import LeadForm from '../components/LeadForm.astro';
-const jobs = [
+type JobRow = [string, string, string, string, string]
+let jobs: JobRow[] = [
   ['barista', 'Бариста', 'Рестораны в центре', 'от 45 000 ₽', 'Готовить кофе, улыбаться гостям и знать любимый десерт постоянных гостей.'],
   ['manager', 'Менеджер зала', 'Красный проспект', 'от 55 000 ₽', 'Собирать спокойную смену и делать так, чтобы гостям хотелось задержаться.'],
   ['pastry-chef', 'Кондитер', 'Производство', 'по итогам встречи', 'Работать со свежей выпечкой и превращать простые ингредиенты в повод зайти.'],
 ];
+try {
+  const response = await fetch(`${import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'}/api/jobs`)
+  if (response.ok) {
+    const data = await response.json()
+    jobs = data.openings.map((opening: any): JobRow => [opening.slug, opening.title, [opening.department, opening.location].filter(Boolean).join(' · ') || 'Чашка кофе', opening.employmentType ?? 'Условия обсуждаются', opening.description ?? 'Подробности вакансии уточнит команда.'])
+  }
+} catch { /* static editorial fallback remains available */ }
 ---
 <PageShell title="Вакансии" active="jobs">
 <section class="hero"><img src="/images/home-hero-v1.png" alt="Кофе и свежая выпечка"/><div><p>команда чашка кофе</p><h1>Работа,<br/>в которой<br/>есть вкус</h1><span>Мы ищем внимательных людей: тех, кому важны команда, гости и хорошо приготовленный кофе.</span><a href="#vacancies">Смотреть вакансии ↓</a></div></section>
