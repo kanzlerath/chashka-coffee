@@ -33,7 +33,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32),
   CORS_ORIGINS: z
     .string()
-    .default('http://localhost:5173,http://localhost:8081,http://localhost:19006')
+    .default('http://localhost:5173,http://127.0.0.1:5173,http://localhost:8081,http://localhost:19006')
     .transform((value) =>
       value
         .split(',')
