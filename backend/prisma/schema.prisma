@@ -149,6 +149,23 @@ model Lead {
   @@map("leads")
 }
 
+model JobOpening {
+  id           String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  slug         String   @unique @db.VarChar(120)
+  title        String   @db.VarChar(180)
+  department   String?  @db.VarChar(120)
+  location     String?  @db.VarChar(180)
+  employmentType String? @map("employment_type") @db.VarChar(80)
+  description  String?
+  isPublished  Boolean  @default(false) @map("is_published")
+  position     Int      @default(0)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([isPublished, position], map: "job_openings_published_position_idx")
+  @@map("job_openings")
+}
+
 model Restaurant {
   id                 String                       @id @default(dbgenerated("uuidv7()")) @db.Uuid
   slug               String                       @unique @db.VarChar(120)
