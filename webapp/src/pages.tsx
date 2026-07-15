@@ -14,6 +14,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { Typography } from '@/components/ui/typography'
 import { AuthForm, useAuth } from '@/features/auth'
 import { MenuPage, RestaurantsPage } from '@/features/catalog-admin'
+import { ContentPage } from '@/features/content-admin'
 import { TeamPage } from '@/features/staff-admin'
 import { cn } from '@/lib/utils'
 
@@ -39,6 +40,7 @@ export function RootLayout() {
               </Link>
             </Typography>
             <Typography asChild variant="control" tone="muted"><Link to="/menus" className={navLinkClass}>Меню</Link></Typography>
+            <Typography asChild variant="control" tone="muted"><Link to="/content" className={navLinkClass}>Контент</Link></Typography>
             <Typography asChild variant="control" tone="muted">
               <Link to="/team" className={navLinkClass}>
                 Команда
@@ -184,6 +186,7 @@ export function TeamAdminRoute() {
   return <TeamPage />
 }
 export function MenuAdminRoute() { const auth = useAuth(); if (auth.isBootstrapping) return <LoadingState />; if (!auth.user) return <HomePage />; return <MenuPage /> }
+export function ContentAdminRoute() { const auth = useAuth(); if (auth.isBootstrapping) return <LoadingState />; if (!auth.user) return <HomePage />; return <ContentPage /> }
 
 function LoadingState() {
   return (

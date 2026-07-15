@@ -32,6 +32,17 @@ enum UserRole {
   EDITOR
 }
 
+enum ContentEntryType {
+  PROMOTION
+  EVENT
+}
+
+enum PublicationStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 model User {
   id           String        @id @default(dbgenerated("uuidv7()")) @db.Uuid
   email        String        @unique
@@ -60,6 +71,31 @@ model AuthSession {
   @@index([userId], map: "auth_sessions_user_id_idx")
   @@index([expiresAt], map: "auth_sessions_expires_at_idx")
   @@map("auth_sessions")
+}
+
+model ContentEntry {
+  id          String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  type        ContentEntryType
+  status      PublicationStatus @default(DRAFT)
+  slug        String            @unique @db.VarChar(120)
+  title       String            @db.VarChar(180)
+  excerpt     String?           @db.VarChar(500)
+  body        String?
+  imageUrl    String?           @map("image_url")
+  ctaLabel    String?           @map("cta_label") @db.VarChar(80)
+  ctaUrl      String?           @map("cta_url")
+  startsAt    DateTime?         @map("starts_at")
+  endsAt      DateTime?         @map("ends_at")
+  eventStartsAt DateTime?       @map("event_starts_at")
+  location    String?           @db.VarChar(220)
+  isFeatured  Boolean           @default(false) @map("is_featured")
+  position    Int               @default(0)
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  @@index([type, status, position], map: "content_entries_type_status_position_idx")
+  @@index([startsAt], map: "content_entries_starts_at_idx")
+  @@map("content_entries")
 }
 
 model Restaurant {

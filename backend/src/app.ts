@@ -7,6 +7,7 @@ import type { AppEnv } from './env'
 import { errorResponse, handleError, validationErrorHook } from './http/errors'
 import { createAuthModule, type AuthHttpEnv } from './modules/auth'
 import { createCatalogModule } from './modules/catalog'
+import { createContentModule } from './modules/content'
 
 type CreateAppOptions = {
   env: AppEnv
@@ -16,6 +17,7 @@ type CreateAppOptions = {
 export function createApp({ env, prisma }: CreateAppOptions) {
   const auth = createAuthModule({ db: prisma, env })
   const catalog = createCatalogModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
+  const content = createContentModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
   const app = new OpenAPIHono<AuthHttpEnv>({
     defaultHook: validationErrorHook,
   })
@@ -29,7 +31,7 @@ export function createApp({ env, prisma }: CreateAppOptions) {
         return env.CORS_ORIGINS.includes(origin) ? origin : null
       },
       allowHeaders: ['Content-Type', 'Authorization'],
-      allowMethods: ['GET', 'POST', 'OPTIONS'],
+      allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       credentials: true,
       maxAge: 600,
     }),
@@ -51,6 +53,7 @@ export function createApp({ env, prisma }: CreateAppOptions) {
   app.route('/api/admin', auth.adminRoutes)
   app.route('/api/restaurants', catalog.routes)
   app.route('/api/admin', catalog.adminRoutes)
+  app.route('/api/admin', content.adminRoutes)
 
   app.doc('/openapi.json', {
     openapi: '3.0.0',
