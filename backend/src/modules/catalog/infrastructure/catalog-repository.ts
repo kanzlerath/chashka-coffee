@@ -8,6 +8,8 @@ import type {
   RestaurantSummary,
   UpsertRestaurantRequest,
   UpsertMenuRequest,
+  UpsertMenuCategoryRequest,
+  UpsertMenuItemRequest,
 } from '@chashka-coffee/contracts'
 import { Prisma } from '../../../generated/prisma/client'
 
@@ -200,6 +202,20 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') return null
         throw error
       }
+    },
+
+    async createCategory(menuId, input) {
+      const menu = await db.menu.findUnique({ where: { id: menuId }, select: { id: true } })
+      if (!menu) return null
+      const category = await db.menuCategory.create({ data: { ...input, menuId } })
+      return category.id
+    },
+
+    async createItem(categoryId, input) {
+      const category = await db.menuCategory.findUnique({ where: { id: categoryId }, select: { id: true } })
+      if (!category) return null
+      const item = await db.menuItem.create({ data: { ...input, categoryId } })
+      return item.id
     },
   }
 }

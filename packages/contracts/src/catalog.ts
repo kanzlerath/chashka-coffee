@@ -104,6 +104,29 @@ export type UpsertMenuRequest = z.infer<typeof upsertMenuRequestSchema>
 export const adminMenuListResponseSchema = z.object({ menus: z.array(adminMenuSchema) })
 export const adminMenuResponseSchema = z.object({ menu: adminMenuSchema })
 
+export const upsertMenuCategoryRequestSchema = z.object({
+  slug: slugSchema,
+  name: z.string().trim().min(1).max(100),
+  position: z.number().int().nonnegative(),
+}).strict()
+export type UpsertMenuCategoryRequest = z.infer<typeof upsertMenuCategoryRequestSchema>
+
+export const upsertMenuItemRequestSchema = z.object({
+  slug: slugSchema,
+  name: z.string().trim().min(1).max(180),
+  description: nullableText(1_000),
+  ingredients: nullableText(2_000),
+  weightGrams: z.number().int().positive().nullable(),
+  priceKopecks: z.number().int().nonnegative(),
+  calories: z.number().int().nonnegative().nullable(),
+  proteins: z.number().nonnegative().nullable(),
+  fats: z.number().nonnegative().nullable(),
+  carbohydrates: z.number().nonnegative().nullable(),
+  isVegetarian: z.boolean(), isSpicy: z.boolean(), isLactoseFree: z.boolean(), isGlutenFree: z.boolean(), isLight: z.boolean(),
+  marketingBadge: marketingBadgeSchema.nullable(), imageUrl: nullableUrl, position: z.number().int().nonnegative(),
+}).strict()
+export type UpsertMenuItemRequest = z.infer<typeof upsertMenuItemRequestSchema>
+
 export const menuItemSchema = z.object({
   id: uuidSchema,
   slug: slugSchema,
