@@ -15,6 +15,9 @@ import {
   upsertMenuRequestSchema,
   upsertMenuCategoryRequestSchema,
   upsertMenuItemRequestSchema,
+  restaurantScheduleExceptionListResponseSchema,
+  restaurantScheduleExceptionResponseSchema,
+  upsertRestaurantScheduleExceptionRequestSchema,
 } from '@chashka-coffee/contracts'
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi'
 import type { MiddlewareHandler } from 'hono'
@@ -72,6 +75,10 @@ const menuDetailRoute = createRoute({ method: 'get', path: '/menus/{id}/detail',
 const categoryRoute = createRoute({ method: 'post', path: '/menus/{id}/categories', request: { params: idParams, body: { content: { 'application/json': { schema: upsertMenuCategoryRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: createdIdResponseSchema } }, description: 'Category created' } } })
 const itemRoute = createRoute({ method: 'post', path: '/categories/{id}/items', request: { params: idParams, body: { content: { 'application/json': { schema: upsertMenuItemRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: createdIdResponseSchema } }, description: 'Item created' } } })
 const updateItemRoute = createRoute({ method: 'put', path: '/items/{id}', request: { params: idParams, body: { content: { 'application/json': { schema: upsertMenuItemRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: createdIdResponseSchema } }, description: 'Item updated' }, 404: { content: errorContent, description: 'Item not found' } } })
+const scheduleExceptionParams = z.object({ id: z.uuid(), exceptionId: z.uuid() })
+const listScheduleExceptionsRoute = createRoute({ method: 'get', path: '/restaurants/{id}/schedule-exceptions', request: { params: idParams }, responses: { 200: { content: { 'application/json': { schema: restaurantScheduleExceptionListResponseSchema } }, description: 'Restaurant schedule exceptions' }, 404: { content: errorContent, description: 'Restaurant not found' } } })
+const upsertScheduleExceptionRoute = createRoute({ method: 'put', path: '/restaurants/{id}/schedule-exceptions', request: { params: idParams, body: { content: { 'application/json': { schema: upsertRestaurantScheduleExceptionRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: restaurantScheduleExceptionResponseSchema } }, description: 'Restaurant schedule exception saved' }, 404: { content: errorContent, description: 'Restaurant not found' } } })
+const deleteScheduleExceptionRoute = createRoute({ method: 'delete', path: '/restaurants/{id}/schedule-exceptions/{exceptionId}', request: { params: scheduleExceptionParams }, responses: { 200: { content: { 'application/json': { schema: operationSuccessResponseSchema } }, description: 'Restaurant schedule exception deleted' }, 404: { content: errorContent, description: 'Exception not found' } } })
 
 export function createCatalogAdminRoutes({ service, requireAuth, requireAdmin }: { service: CatalogService; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireAdmin: MiddlewareHandler<AuthHttpEnv> }) {
   const routes = new OpenAPIHono<AuthHttpEnv>({ defaultHook: validationErrorHook })
@@ -120,5 +127,8 @@ export function createCatalogAdminRoutes({ service, requireAuth, requireAdmin }:
   routes.openapi(categoryRoute, async (c) => { const id = await service.createCategory(c.req.valid('param').id, c.req.valid('json')); if (!id) throw new AppError(404, 'NOT_FOUND', 'Menu not found'); return c.json({ id }, 201) })
   routes.openapi(itemRoute, async (c) => { const id = await service.createItem(c.req.valid('param').id, c.req.valid('json')); if (!id) throw new AppError(404, 'NOT_FOUND', 'Category not found'); return c.json({ id }, 201) })
   routes.openapi(updateItemRoute, async (c) => { const id = await service.updateItem(c.req.valid('param').id, c.req.valid('json')); if (!id) throw new AppError(404, 'NOT_FOUND', 'Menu item not found'); return c.json({ id }, 200) })
+  routes.openapi(listScheduleExceptionsRoute, async (c) => { const exceptions = await service.listRestaurantScheduleExceptions(c.req.valid('param').id); if (!exceptions) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found'); return c.json({ exceptions }, 200) })
+  routes.openapi(upsertScheduleExceptionRoute, async (c) => { const exception = await service.upsertRestaurantScheduleException(c.req.valid('param').id, c.req.valid('json')); if (!exception) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found'); return c.json({ exception }, 200) })
+  routes.openapi(deleteScheduleExceptionRoute, async (c) => { const deleted = await service.deleteRestaurantScheduleException(c.req.valid('param').id, c.req.valid('param').exceptionId); if (!deleted) throw new AppError(404, 'NOT_FOUND', 'Exception not found'); return c.json({ success: true as const }, 200) })
   return routes
 }

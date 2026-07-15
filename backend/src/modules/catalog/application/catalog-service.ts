@@ -1,4 +1,4 @@
-import type { AssignRestaurantMenuRequest, RestaurantListQuery, UpsertMenuCategoryRequest, UpsertMenuItemRequest, UpsertMenuRequest, UpsertRestaurantMenuItemOverrideRequest, UpsertRestaurantRequest } from '@chashka-coffee/contracts'
+import type { AssignRestaurantMenuRequest, RestaurantListQuery, UpsertMenuCategoryRequest, UpsertMenuItemRequest, UpsertMenuRequest, UpsertRestaurantMenuItemOverrideRequest, UpsertRestaurantRequest, UpsertRestaurantScheduleExceptionRequest } from '@chashka-coffee/contracts'
 
 import type { CatalogRepository } from './ports'
 
@@ -43,4 +43,7 @@ export class CatalogService {
   createCategory(menuId: string, input: UpsertMenuCategoryRequest) { return this.repository.createCategory(menuId, input) }
   createItem(categoryId: string, input: UpsertMenuItemRequest) { return this.repository.createItem(categoryId, input) }
   updateItem(id: string, input: UpsertMenuItemRequest) { return this.repository.updateItem(id, input) }
+  listRestaurantScheduleExceptions(restaurantId: string) { return this.repository.listRestaurantScheduleExceptions(restaurantId) }
+  upsertRestaurantScheduleException(restaurantId: string, input: UpsertRestaurantScheduleExceptionRequest) { return this.repository.upsertRestaurantScheduleException(restaurantId, input) }
+  deleteRestaurantScheduleException(restaurantId: string, exceptionId: string) { return this.repository.deleteRestaurantScheduleException(restaurantId, exceptionId) }
 }

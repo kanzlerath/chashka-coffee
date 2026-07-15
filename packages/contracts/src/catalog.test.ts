@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import {
   restaurantMenuResponseSchema,
+  upsertRestaurantScheduleExceptionRequestSchema,
   restaurantSummarySchema,
 } from './catalog'
 
@@ -129,6 +130,20 @@ describe('restaurant catalog contracts', () => {
           imageUrl: null,
         }],
       }],
+    })).toThrow()
+  })
+
+  test('models one-off restaurant opening-hour exceptions by calendar date', () => {
+    expect(upsertRestaurantScheduleExceptionRequestSchema.parse({
+      date: '2026-12-31',
+      label: 'Новогодний график',
+      opensAt: '09:00',
+      closesAt: '18:00',
+      isClosed: false,
+    }).date).toBe('2026-12-31')
+
+    expect(() => upsertRestaurantScheduleExceptionRequestSchema.parse({
+      date: '31-12-2026', label: 'Некорректная дата', opensAt: null, closesAt: null, isClosed: true,
     })).toThrow()
   })
 })

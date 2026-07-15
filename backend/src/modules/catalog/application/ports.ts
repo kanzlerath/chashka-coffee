@@ -12,6 +12,8 @@ import type {
   UpsertMenuRequest,
   UpsertMenuCategoryRequest,
   UpsertMenuItemRequest,
+  RestaurantScheduleException,
+  UpsertRestaurantScheduleExceptionRequest,
 } from '@chashka-coffee/contracts'
 
 export type CatalogRepository = {
@@ -32,4 +34,7 @@ export type CatalogRepository = {
   createCategory(menuId: string, input: UpsertMenuCategoryRequest): Promise<string | null>
   createItem(categoryId: string, input: UpsertMenuItemRequest): Promise<string | null>
   updateItem(id: string, input: UpsertMenuItemRequest): Promise<string | null>
+  listRestaurantScheduleExceptions(restaurantId: string): Promise<RestaurantScheduleException[] | null>
+  upsertRestaurantScheduleException(restaurantId: string, input: UpsertRestaurantScheduleExceptionRequest): Promise<RestaurantScheduleException | null>
+  deleteRestaurantScheduleException(restaurantId: string, exceptionId: string): Promise<boolean>
 }

@@ -20,6 +20,10 @@ import { Prisma } from '../../../generated/prisma/client'
 import type { DbClient } from '../../../db'
 import type { CatalogRepository } from '../application/ports'
 
+function toScheduleException(value: { id: string; date: Date; label: string; opensAt: string | null; closesAt: string | null; isClosed: boolean }) {
+  return { ...value, date: value.date.toISOString().slice(0, 10) }
+}
+
 function openingHoursLabel(openingHours: { dayOfWeek: number; opensAt: string | null; closesAt: string | null; isClosed: boolean }[]) {
   const weekday = openingHours.find((entry) => entry.dayOfWeek === 1) ?? openingHours[0]
   if (!weekday || weekday.isClosed || !weekday.opensAt || !weekday.closesAt) return 'Уточняйте часы работы'
@@ -264,6 +268,30 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') return false
         throw error
       }
+    },
+
+    async listRestaurantScheduleExceptions(restaurantId) {
+      const restaurant = await db.restaurant.findUnique({ where: { id: restaurantId }, select: { id: true } })
+      if (!restaurant) return null
+      const exceptions = await db.restaurantScheduleException.findMany({ where: { restaurantId }, orderBy: { date: 'asc' } })
+      return exceptions.map(toScheduleException)
+    },
+
+    async upsertRestaurantScheduleException(restaurantId, input) {
+      const restaurant = await db.restaurant.findUnique({ where: { id: restaurantId }, select: { id: true } })
+      if (!restaurant) return null
+      const date = new Date(`${input.date}T00:00:00.000Z`)
+      const exception = await db.restaurantScheduleException.upsert({
+        where: { restaurantId_date: { restaurantId, date } },
+        create: { restaurantId, date, label: input.label, opensAt: input.opensAt, closesAt: input.closesAt, isClosed: input.isClosed },
+        update: { label: input.label, opensAt: input.opensAt, closesAt: input.closesAt, isClosed: input.isClosed },
+      })
+      return toScheduleException(exception)
+    },
+
+    async deleteRestaurantScheduleException(restaurantId, exceptionId) {
+      const result = await db.restaurantScheduleException.deleteMany({ where: { id: exceptionId, restaurantId } })
+      return result.count > 0
     },
 
     async listAdminMenus() {

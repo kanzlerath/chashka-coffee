@@ -64,6 +64,21 @@ export const restaurantOpeningHoursEntrySchema = z.object({
 }).strict()
 export type RestaurantOpeningHoursEntry = z.infer<typeof restaurantOpeningHoursEntrySchema>
 
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+export const restaurantScheduleExceptionSchema = z.object({
+  id: uuidSchema,
+  date: isoDate,
+  label: z.string().trim().min(1).max(180),
+  opensAt: nullableTime,
+  closesAt: nullableTime,
+  isClosed: z.boolean(),
+})
+export type RestaurantScheduleException = z.infer<typeof restaurantScheduleExceptionSchema>
+export const upsertRestaurantScheduleExceptionRequestSchema = restaurantScheduleExceptionSchema.omit({ id: true }).strict()
+export type UpsertRestaurantScheduleExceptionRequest = z.infer<typeof upsertRestaurantScheduleExceptionRequestSchema>
+export const restaurantScheduleExceptionListResponseSchema = z.object({ exceptions: z.array(restaurantScheduleExceptionSchema) })
+export const restaurantScheduleExceptionResponseSchema = z.object({ exception: restaurantScheduleExceptionSchema })
+
 export const adminRestaurantSchema = z.object({
   id: uuidSchema,
   slug: slugSchema,
