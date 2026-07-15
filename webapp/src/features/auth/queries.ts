@@ -8,7 +8,6 @@ import type {
   CookieAuthResponse,
   LoginRequest,
   MeResponse,
-  RegisterRequest,
 } from '@chashka-coffee/contracts'
 
 import type { AuthApi } from './api'
@@ -24,7 +23,7 @@ type CurrentUserQueryOptions = {
 }
 
 type AuthMutationOptions = {
-  api: Pick<AuthApi, 'login' | 'logout' | 'register'>
+  api: Pick<AuthApi, 'login' | 'logout'>
   setAccessToken: (accessToken: string | null) => void
 }
 
@@ -33,17 +32,6 @@ export function useCurrentUserQuery({ api, enabled }: CurrentUserQueryOptions) {
     queryKey: authQueryKeys.me(),
     enabled,
     queryFn: () => api.me(),
-  })
-}
-
-export function useRegisterMutation({ api, setAccessToken }: AuthMutationOptions) {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: (input: RegisterRequest) => api.register(input),
-    onSuccess: (response) => {
-      applyAuthenticatedSession(queryClient, setAccessToken, response)
-    },
   })
 }
 

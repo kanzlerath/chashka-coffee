@@ -1,4 +1,4 @@
-export type AuthMode = 'login' | 'register'
+export type AuthMode = 'login'
 export type FieldName = 'displayName' | 'email' | 'password'
 export type FormError = { message?: string }
 export type FieldErrors = Partial<Record<FieldName, FormError[]>>

@@ -5,12 +5,10 @@ import {
   cookieRefreshResponseSchema,
   loginRequestSchema,
   meResponseSchema,
-  registerRequestSchema,
   type CookieAuthResponse,
   type CookieRefreshResponse,
   type LoginRequest,
   type MeResponse,
-  type RegisterRequest,
 } from '@chashka-coffee/contracts'
 import type { z } from 'zod'
 import { ApiRequestError, HttpClient } from '@/platform/api'
@@ -29,14 +27,6 @@ export class AuthApi {
   constructor(options: AuthApiOptions, http = new HttpClient()) {
     this.options = options
     this.http = http
-  }
-
-  register(input: RegisterRequest): Promise<CookieAuthResponse> {
-    const payload = registerRequestSchema.parse(input)
-    return this.http.request('/api/auth/register', cookieAuthResponseSchema, {
-      method: 'POST',
-      body: payload,
-    })
   }
 
   login(input: LoginRequest): Promise<CookieAuthResponse> {

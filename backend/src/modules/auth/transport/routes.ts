@@ -6,7 +6,6 @@ import {
   cookieRefreshResponseSchema,
   loginRequestSchema,
   meResponseSchema,
-  registerRequestSchema,
   tokenAuthResponseSchema,
   tokenLogoutRequestSchema,
   tokenRefreshRequestSchema,
@@ -60,50 +59,6 @@ const errorResponseContent = {
     schema: apiErrorSchema,
   },
 }
-
-const cookieRegisterRoute = createRoute({
-  method: 'post',
-  path: '/register',
-  request: {
-    body: {
-      content: {
-        'application/json': {
-          schema: registerRequestSchema,
-        },
-      },
-    },
-  },
-  responses: {
-    201: {
-      content: cookieAuthResponseContent,
-      description: 'Created user and browser session',
-    },
-    400: { content: errorResponseContent, description: 'Invalid payload' },
-    409: { content: errorResponseContent, description: 'Email already exists' },
-  },
-})
-
-const tokenRegisterRoute = createRoute({
-  method: 'post',
-  path: '/token/register',
-  request: {
-    body: {
-      content: {
-        'application/json': {
-          schema: registerRequestSchema,
-        },
-      },
-    },
-  },
-  responses: {
-    201: {
-      content: tokenAuthResponseContent,
-      description: 'Created user and explicit token session',
-    },
-    400: { content: errorResponseContent, description: 'Invalid payload' },
-    409: { content: errorResponseContent, description: 'Email already exists' },
-  },
-})
 
 const cookieLoginRoute = createRoute({
   method: 'post',
@@ -256,17 +211,6 @@ export function createAuthRoutes({ env, requireAuth, service }: CreateAuthRoutes
   const routes = new OpenAPIHono<AuthHttpEnv>({ defaultHook: validationErrorHook })
   const protectedRoutes = new OpenAPIHono<AuthHttpEnv>({
     defaultHook: validationErrorHook,
-  })
-
-  routes.openapi(cookieRegisterRoute, async (c) => {
-    const result = await executeAuth(() => service.register(c.req.valid('json'), requestMetadata(c)))
-    setRefreshCookie(c, result.refreshToken, env)
-    return c.json(withoutRefreshToken(result), 201)
-  })
-
-  routes.openapi(tokenRegisterRoute, async (c) => {
-    const result = await executeAuth(() => service.register(c.req.valid('json'), requestMetadata(c)))
-    return c.json(result, 201)
   })
 
   routes.openapi(cookieLoginRoute, async (c) => {
