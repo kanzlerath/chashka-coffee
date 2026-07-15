@@ -7,6 +7,8 @@ import {
   createdIdResponseSchema,
   apiErrorSchema,
   upsertRestaurantRequestSchema,
+  assignRestaurantMenuRequestSchema,
+  restaurantMenuAssignmentResponseSchema,
   upsertMenuRequestSchema,
   upsertMenuCategoryRequestSchema,
   upsertMenuItemRequestSchema,
@@ -55,6 +57,7 @@ const deleteRoute = createRoute({
   request: { params: idParams },
   responses: { 204: { description: 'Restaurant deleted' }, 404: { content: errorContent, description: 'Restaurant not found' } },
 })
+const assignRestaurantMenuRoute = createRoute({ method: 'put', path: '/restaurants/{id}/menu', request: { params: idParams, body: { content: { 'application/json': { schema: assignRestaurantMenuRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: restaurantMenuAssignmentResponseSchema } }, description: 'Restaurant menu assignment updated' }, 404: { content: errorContent, description: 'Restaurant or menu not found' } } })
 const listMenusRoute = createRoute({ method: 'get', path: '/menus', responses: { 200: { content: { 'application/json': { schema: adminMenuListResponseSchema } }, description: 'Menu sets' } } })
 const createMenuRoute = createRoute({ method: 'post', path: '/menus', request: { body: { content: { 'application/json': { schema: upsertMenuRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: adminMenuResponseSchema } }, description: 'Menu created' } } })
 const updateMenuRoute = createRoute({ method: 'put', path: '/menus/{id}', request: { params: idParams, body: { content: { 'application/json': { schema: upsertMenuRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: adminMenuResponseSchema } }, description: 'Menu updated' } } })
@@ -78,6 +81,11 @@ export function createCatalogAdminRoutes({ service, requireAuth, requireAdmin }:
     const deleted = await service.deleteRestaurant(c.req.valid('param').id)
     if (!deleted) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found')
     return c.body(null, 204)
+  })
+  routes.openapi(assignRestaurantMenuRoute, async (c) => {
+    const menuId = await service.assignRestaurantMenu(c.req.valid('param').id, c.req.valid('json'))
+    if (menuId === undefined) throw new AppError(404, 'NOT_FOUND', 'Restaurant or menu not found')
+    return c.json({ menuId }, 200)
   })
   routes.openapi(listMenusRoute, async (c) => c.json({ menus: await service.listAdminMenus() }, 200))
   routes.openapi(createMenuRoute, async (c) => c.json({ menu: await service.createMenu(c.req.valid('json')) }, 201))

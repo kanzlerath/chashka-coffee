@@ -71,6 +71,8 @@ export const adminRestaurantSchema = z.object({
   longitude: z.number().min(-180).max(180).nullable(),
   yandexMapsUrl: nullableUrl,
   twoGisUrl: nullableUrl,
+  menuId: uuidSchema.nullable(),
+  menuName: z.string().trim().min(1).max(180).nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 })
@@ -78,6 +80,8 @@ export type AdminRestaurant = z.infer<typeof adminRestaurantSchema>
 
 export const upsertRestaurantRequestSchema = adminRestaurantSchema.omit({
   id: true,
+  menuId: true,
+  menuName: true,
   createdAt: true,
   updatedAt: true,
 }).strict()
@@ -87,6 +91,9 @@ export const adminRestaurantListResponseSchema = z.object({
   restaurants: z.array(adminRestaurantSchema),
 })
 export const adminRestaurantResponseSchema = z.object({ restaurant: adminRestaurantSchema })
+export const assignRestaurantMenuRequestSchema = z.object({ menuId: uuidSchema.nullable() }).strict()
+export type AssignRestaurantMenuRequest = z.infer<typeof assignRestaurantMenuRequestSchema>
+export const restaurantMenuAssignmentResponseSchema = z.object({ menuId: uuidSchema.nullable() })
 
 export const adminMenuSchema = z.object({
   id: uuidSchema,

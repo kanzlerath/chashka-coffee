@@ -1,4 +1,4 @@
-import type { RestaurantListQuery, UpsertMenuCategoryRequest, UpsertMenuItemRequest, UpsertMenuRequest, UpsertRestaurantRequest } from '@chashka-coffee/contracts'
+import type { AssignRestaurantMenuRequest, RestaurantListQuery, UpsertMenuCategoryRequest, UpsertMenuItemRequest, UpsertMenuRequest, UpsertRestaurantRequest } from '@chashka-coffee/contracts'
 
 import type { CatalogRepository } from './ports'
 
@@ -27,6 +27,10 @@ export class CatalogService {
 
   deleteRestaurant(id: string) {
     return this.repository.deleteRestaurant(id)
+  }
+
+  assignRestaurantMenu(id: string, input: AssignRestaurantMenuRequest) {
+    return this.repository.assignRestaurantMenu(id, input)
   }
 
   listAdminMenus() { return this.repository.listAdminMenus() }

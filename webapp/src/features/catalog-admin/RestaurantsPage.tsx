@@ -22,11 +22,19 @@ export function RestaurantsPage() {
   const [selected, setSelected] = useState<AdminRestaurant | null>(null)
   const [draft, setDraft] = useState<UpsertRestaurantRequest>(emptyRestaurant)
   const restaurants = useQuery({ queryKey: ['admin', 'restaurants'], queryFn: () => api.listRestaurants() })
+  const menus = useQuery({ queryKey: ['admin', 'menus'], queryFn: () => api.listMenus() })
   const save = useMutation({
     mutationFn: () => selected ? api.updateRestaurant(selected.id, draft) : api.createRestaurant(draft),
     onSuccess: (result) => {
       setSelected(result.restaurant)
       setDraft(toDraft(result.restaurant))
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'restaurants'] })
+    },
+  })
+  const assignMenu = useMutation({
+    mutationFn: (menuId: string | null) => api.assignRestaurantMenu(selected!.id, menuId),
+    onSuccess: ({ menuId }) => {
+      setSelected((current) => current ? { ...current, menuId, menuName: menus.data?.menus.find((menu) => menu.id === menuId)?.name ?? null } : current)
       void queryClient.invalidateQueries({ queryKey: ['admin', 'restaurants'] })
     },
   })
@@ -38,10 +46,10 @@ export function RestaurantsPage() {
   return <section className="mx-auto grid w-full max-w-7xl gap-6 px-5 py-9 lg:grid-cols-[.9fr_1.1fr]">
     <Card className="min-h-[620px]"><CardHeader><div className="flex items-start justify-between gap-3"><div><CardTitle>Кофейни</CardTitle><CardDescription>Точки сети, адреса и связь с меню.</CardDescription></div><Button type="button" size="sm" onClick={startNew}>Новая</Button></div></CardHeader><CardContent className="grid gap-2">
       {restaurants.isPending && <CardDescription>Загружаем точки…</CardDescription>}
-      {restaurants.data?.restaurants.map((restaurant) => <button key={restaurant.id} type="button" onClick={() => choose(restaurant)} className="grid rounded-xl border p-4 text-left hover:bg-muted"><strong>{restaurant.name}</strong><span className="mt-1 text-sm text-muted-foreground">{restaurant.address} · {formatLabel[restaurant.format]}</span></button>)}
+      {restaurants.data?.restaurants.map((restaurant) => <button key={restaurant.id} type="button" onClick={() => choose(restaurant)} className="grid rounded-xl border p-4 text-left hover:bg-muted"><strong>{restaurant.name}</strong><span className="mt-1 text-sm text-muted-foreground">{restaurant.address} · {formatLabel[restaurant.format]}</span><small className="mt-1 text-muted-foreground">{restaurant.menuName ?? 'Меню не назначено'}</small></button>)}
       {restaurants.isError && <p className="text-sm text-destructive">Не удалось загрузить данные. Проверьте, что API запущен.</p>}
     </CardContent></Card>
-    <Card><CardHeader><CardTitle>{selected ? 'Редактировать кофейню' : 'Новая кофейня'}</CardTitle><CardDescription>Заполни базовые данные точки. График, карты и фотографии добавим следующим шагом.</CardDescription></CardHeader><CardContent>
+    <Card><CardHeader><CardTitle>{selected ? 'Редактировать кофейню' : 'Новая кофейня'}</CardTitle><CardDescription>Базовые данные точки и назначение её меню.</CardDescription></CardHeader><CardContent>
       <form className="grid gap-4" onSubmit={(event) => { event.preventDefault(); save.mutate() }}>
         <Field label="Название"><Input required value={draft.name} onChange={(event) => change('name', event.target.value)} /></Field>
         <Field label="Адрес страницы"><Input required value={draft.slug} placeholder="krasny-prospekt" onChange={(event) => change('slug', event.target.value)} /></Field>
@@ -49,6 +57,8 @@ export function RestaurantsPage() {
         <div className="grid gap-4 sm:grid-cols-2"><Field label="Город"><Input required value={draft.city} onChange={(event) => change('city', event.target.value)} /></Field><Field label="Телефон"><Input required value={draft.phone} onChange={(event) => change('phone', event.target.value)} /></Field></div>
         <Field label="Адрес"><Input required value={draft.address} onChange={(event) => change('address', event.target.value)} /></Field>
         <Field label="Описание"><Textarea value={draft.description ?? ''} onChange={(event) => change('description', event.target.value.trim() || null)} /></Field>
+        {selected ? <Field label="Набор меню"><select disabled={assignMenu.isPending || menus.isPending} value={selected.menuId ?? ''} onChange={(event) => assignMenu.mutate(event.target.value || null)}><option value="">Меню не назначено</option>{menus.data?.menus.map((menu) => <option key={menu.id} value={menu.id}>{menu.name}</option>)}</select><small className="text-muted-foreground">Для точки используется один основной набор. Изменение применяется сразу.</small></Field> : null}
+        {assignMenu.isError && <p className="text-sm text-destructive">Не удалось назначить меню. Повторите попытку.</p>}
         {save.isError && <p className="text-sm text-destructive">Не удалось сохранить. Проверьте обязательные поля и уникальность адреса страницы.</p>}
         <Button type="submit" size="lg" disabled={save.isPending}>{save.isPending ? 'Сохраняем…' : selected ? 'Сохранить изменения' : 'Создать кофейню'}</Button>
       </form>

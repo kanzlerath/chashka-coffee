@@ -1,6 +1,7 @@
 import {
   adminRestaurantListResponseSchema,
   adminRestaurantResponseSchema,
+  assignRestaurantMenuRequestSchema, restaurantMenuAssignmentResponseSchema,
   adminMenuListResponseSchema, adminMenuDetailResponseSchema, adminMenuResponseSchema, createdIdResponseSchema,
   upsertMenuRequestSchema, upsertMenuCategoryRequestSchema, upsertMenuItemRequestSchema,
   type UpsertMenuRequest, type UpsertMenuCategoryRequest, type UpsertMenuItemRequest,
@@ -29,6 +30,12 @@ export class CatalogAdminApi {
   updateRestaurant(id: string, input: UpsertRestaurantRequest) {
     return this.auth.request(`/api/admin/restaurants/${id}`, adminRestaurantResponseSchema, {
       method: 'PUT', body: upsertRestaurantRequestSchema.parse(input),
+    })
+  }
+
+  assignRestaurantMenu(id: string, menuId: string | null) {
+    return this.auth.request(`/api/admin/restaurants/${id}/menu`, restaurantMenuAssignmentResponseSchema, {
+      method: 'PUT', body: assignRestaurantMenuRequestSchema.parse({ menuId }),
     })
   }
 

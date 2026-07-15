@@ -8,6 +8,7 @@ import type {
   RestaurantMenuResponse,
   RestaurantSummary,
   UpsertRestaurantRequest,
+  AssignRestaurantMenuRequest,
   UpsertMenuRequest,
   UpsertMenuCategoryRequest,
   UpsertMenuItemRequest,
@@ -52,7 +53,7 @@ function dietaryMarks(item: { isVegetarian: boolean; isSpicy: boolean; isLactose
 }
 
 function toAdminRestaurant(restaurant: {
-  id: string; slug: string; name: string; format: 'CITY' | 'PARK' | 'AIRPORT' | 'APART_HOTEL'; area: 'CITY' | 'PARK' | 'AIRPORT'; isAtApartHotel: boolean; city: string; address: string; phone: string; description: string | null; coverImageUrl: string | null; latitude: Prisma.Decimal | null; longitude: Prisma.Decimal | null; yandexMapsUrl: string | null; twoGisUrl: string | null; createdAt: Date; updatedAt: Date
+  id: string; slug: string; name: string; format: 'CITY' | 'PARK' | 'AIRPORT' | 'APART_HOTEL'; area: 'CITY' | 'PARK' | 'AIRPORT'; isAtApartHotel: boolean; city: string; address: string; phone: string; description: string | null; coverImageUrl: string | null; latitude: Prisma.Decimal | null; longitude: Prisma.Decimal | null; yandexMapsUrl: string | null; twoGisUrl: string | null; createdAt: Date; updatedAt: Date; menuAssignments?: { menu: { id: string; name: string } }[]
 }): AdminRestaurant {
   return {
     id: restaurant.id,
@@ -70,6 +71,8 @@ function toAdminRestaurant(restaurant: {
     longitude: restaurant.longitude === null ? null : Number(restaurant.longitude),
     yandexMapsUrl: restaurant.yandexMapsUrl,
     twoGisUrl: restaurant.twoGisUrl,
+    menuId: restaurant.menuAssignments?.[0]?.menu.id ?? null,
+    menuName: restaurant.menuAssignments?.[0]?.menu.name ?? null,
     createdAt: restaurant.createdAt.toISOString(),
     updatedAt: restaurant.updatedAt.toISOString(),
   }
@@ -156,7 +159,7 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
     },
 
     async listAdminRestaurants() {
-      const restaurants = await db.restaurant.findMany({ orderBy: { name: 'asc' } })
+      const restaurants = await db.restaurant.findMany({ orderBy: { name: 'asc' }, include: { menuAssignments: { include: { menu: { select: { id: true, name: true } } } } } })
       return restaurants.map(toAdminRestaurant)
     },
 
@@ -183,6 +186,20 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') return false
         throw error
       }
+    },
+
+    async assignRestaurantMenu(id, input) {
+      const restaurant = await db.restaurant.findUnique({ where: { id }, select: { id: true } })
+      if (!restaurant) return undefined
+      if (input.menuId) {
+        const menu = await db.menu.findUnique({ where: { id: input.menuId }, select: { id: true } })
+        if (!menu) return undefined
+      }
+      await db.$transaction(async (transaction) => {
+        await transaction.restaurantMenu.deleteMany({ where: { restaurantId: id } })
+        if (input.menuId) await transaction.restaurantMenu.create({ data: { restaurantId: id, menuId: input.menuId } })
+      })
+      return input.menuId
     },
 
     async listAdminMenus() {
