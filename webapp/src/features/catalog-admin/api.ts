@@ -8,7 +8,9 @@ import {
   upsertMenuRequestSchema, upsertMenuCategoryRequestSchema, upsertMenuItemRequestSchema,
   type UpsertMenuRequest, type UpsertMenuCategoryRequest, type UpsertMenuItemRequest,
   upsertRestaurantRequestSchema,
+  restaurantScheduleExceptionListResponseSchema, restaurantScheduleExceptionResponseSchema, upsertRestaurantScheduleExceptionRequestSchema,
   type UpsertRestaurantRequest,
+  type UpsertRestaurantScheduleExceptionRequest,
 } from '@chashka-coffee/contracts'
 import type { AuthApi } from '@/features/auth'
 
@@ -45,6 +47,9 @@ export class CatalogAdminApi {
     return this.auth.request(`/api/admin/restaurants/${restaurantId}/menu-items/${itemId}/override`, operationSuccessResponseSchema, { method: 'PUT', body: upsertRestaurantMenuItemOverrideRequestSchema.parse(input) })
   }
   deleteRestaurantMenuItemOverride(restaurantId: string, itemId: string) { return this.auth.request(`/api/admin/restaurants/${restaurantId}/menu-items/${itemId}/override`, operationSuccessResponseSchema, { method: 'DELETE' }) }
+  listRestaurantScheduleExceptions(id: string) { return this.auth.request(`/api/admin/restaurants/${id}/schedule-exceptions`, restaurantScheduleExceptionListResponseSchema) }
+  saveRestaurantScheduleException(id: string, input: UpsertRestaurantScheduleExceptionRequest) { return this.auth.request(`/api/admin/restaurants/${id}/schedule-exceptions`, restaurantScheduleExceptionResponseSchema, { method: 'PUT', body: upsertRestaurantScheduleExceptionRequestSchema.parse(input) }) }
+  deleteRestaurantScheduleException(restaurantId: string, exceptionId: string) { return this.auth.request(`/api/admin/restaurants/${restaurantId}/schedule-exceptions/${exceptionId}`, operationSuccessResponseSchema, { method: 'DELETE' }) }
 
   listMenus() { return this.auth.request('/api/admin/menus', adminMenuListResponseSchema) }
   getMenu(id: string) { return this.auth.request(`/api/admin/menus/${id}/detail`, adminMenuDetailResponseSchema) }
