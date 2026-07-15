@@ -1,9 +1,9 @@
-import type { LoginRequest, RegisterPayload } from '@chashka-coffee/contracts'
+import type { CreateStaffUserRequest, LoginRequest, RegisterPayload } from '@chashka-coffee/contracts'
 
 import { AuthFailure } from '../domain/errors'
 import { sessionExpiresAt, type SessionMetadata } from '../domain/session'
 import type { AuthUserRecord, AuthenticatedPrincipal } from '../domain/user'
-import { userDtoFromPrincipal } from '../domain/user'
+import { toBaseUserDto, userDtoFromPrincipal } from '../domain/user'
 import type {
   AccessTokens,
   AuthRepository,
@@ -53,6 +53,19 @@ export class AuthService {
     }
 
     return this.issueSession(user, metadata)
+  }
+
+  async listUsers() {
+    const users = await this.dependencies.repository.listUsers()
+    return users.map(toBaseUserDto)
+  }
+
+  async createStaffUser(input: CreateStaffUserRequest) {
+    const existingUser = await this.dependencies.repository.findUserByEmail(input.email)
+    if (existingUser) throw new AuthFailure('email_already_exists', 'User with this email already exists')
+    const passwordHash = await this.dependencies.passwords.hash(input.password)
+    const user = await this.dependencies.repository.createPasswordUser({ ...input, passwordHash })
+    return toBaseUserDto(user)
   }
 
   async refresh(refreshToken: string | undefined, metadata: SessionMetadata) {

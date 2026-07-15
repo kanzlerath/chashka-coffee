@@ -37,6 +37,15 @@ export const loginRequestSchema = z.object({
   password: passwordSchema,
 })
 
+export const createStaffUserRequestSchema = z.object({
+  email: emailSchema,
+  password: passwordSchema,
+  displayName: displayNameSchema,
+  role: userRoleSchema.default('EDITOR'),
+})
+export const staffUserListResponseSchema = z.object({ users: z.array(userSchema) })
+export const staffUserResponseSchema = z.object({ user: userSchema })
+
 export const cookieRefreshRequestSchema = z.object({}).strict().optional().default({})
 export const cookieLogoutRequestSchema = z.object({}).strict().optional().default({})
 
@@ -71,6 +80,7 @@ export type UserDto = z.infer<typeof userSchema>
 export type RegisterRequest = z.input<typeof registerRequestSchema>
 export type RegisterPayload = z.output<typeof registerRequestSchema>
 export type LoginRequest = z.infer<typeof loginRequestSchema>
+export type CreateStaffUserRequest = z.output<typeof createStaffUserRequestSchema>
 export type CookieRefreshRequest = z.infer<typeof cookieRefreshRequestSchema>
 export type CookieLogoutRequest = z.infer<typeof cookieLogoutRequestSchema>
 export type TokenRefreshRequest = z.infer<typeof tokenRefreshRequestSchema>

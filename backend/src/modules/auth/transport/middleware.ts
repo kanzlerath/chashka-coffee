@@ -1,5 +1,6 @@
 import { createMiddleware } from 'hono/factory'
 
+import { AppError } from '../../../http/errors'
 import type { AuthenticatedPrincipal } from '../domain/user'
 import { executeAuth } from './errors'
 
@@ -7,6 +8,13 @@ export type AuthHttpEnv = {
   Variables: {
     user: AuthenticatedPrincipal
   }
+}
+
+export function createRequireAdmin() {
+  return createMiddleware<AuthHttpEnv>(async (c, next) => {
+    if (c.var.user.role !== 'ADMIN') throw new AppError(403, 'FORBIDDEN', 'Administrator access is required')
+    await next()
+  })
 }
 
 export function createRequireAuth(

@@ -1,4 +1,4 @@
-import type { RegisterPayload, UserDto, UserRole } from '@chashka-coffee/contracts'
+import type { CreateStaffUserRequest, RegisterPayload, UserDto, UserRole } from '@chashka-coffee/contracts'
 
 import type { SessionMetadata } from '../domain/session'
 import type { AuthUserRecord } from '../domain/user'
@@ -37,6 +37,7 @@ export type AuthRepository = {
     now: Date
   }): Promise<{ id: string; user: AuthUserRecord } | null>
   revokeSession(input: { refreshTokenHash: string; now: Date }): Promise<string | null>
+  listUsers(): Promise<AuthUserRecord[]>
 }
 
 export type AccessTokens = {

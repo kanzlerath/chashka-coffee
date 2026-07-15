@@ -110,6 +110,10 @@ export function createPrismaAuthRepository(db: DbClient): AuthRepository {
         return revoked.count === 1 ? session.userId : null
       })
     },
+
+    listUsers() {
+      return db.user.findMany({ orderBy: { createdAt: 'asc' } })
+    },
   }
 }
 

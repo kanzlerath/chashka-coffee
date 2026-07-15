@@ -49,9 +49,9 @@ const deleteRoute = createRoute({
   responses: { 204: { description: 'Restaurant deleted' }, 404: { content: errorContent, description: 'Restaurant not found' } },
 })
 
-export function createCatalogAdminRoutes({ service, requireAuth }: { service: CatalogService; requireAuth: MiddlewareHandler<AuthHttpEnv> }) {
+export function createCatalogAdminRoutes({ service, requireAuth, requireAdmin }: { service: CatalogService; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireAdmin: MiddlewareHandler<AuthHttpEnv> }) {
   const routes = new OpenAPIHono<AuthHttpEnv>({ defaultHook: validationErrorHook })
-  routes.use('*', requireAuth)
+  routes.use('*', requireAuth, requireAdmin)
 
   routes.openapi(listRoute, async (c) => c.json({ restaurants: await service.listAdminRestaurants() }, 200))
   routes.openapi(createRouteDefinition, async (c) => c.json({ restaurant: await service.createRestaurant(c.req.valid('json')) }, 201))

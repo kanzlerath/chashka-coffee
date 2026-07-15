@@ -14,6 +14,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { Typography } from '@/components/ui/typography'
 import { AuthForm, useAuth } from '@/features/auth'
 import { RestaurantsPage } from '@/features/catalog-admin'
+import { TeamPage } from '@/features/staff-admin'
 import { cn } from '@/lib/utils'
 
 const navLinkClass = cn(
@@ -35,6 +36,11 @@ export function RootLayout() {
             <Typography asChild variant="control" tone="muted">
               <Link to="/restaurants" className={navLinkClass}>
                 Кофейни
+              </Link>
+            </Typography>
+            <Typography asChild variant="control" tone="muted">
+              <Link to="/team" className={navLinkClass}>
+                Команда
               </Link>
             </Typography>
             <Typography asChild variant="control" tone="muted">
@@ -168,6 +174,13 @@ export function RestaurantsAdminRoute() {
   if (auth.isBootstrapping) return <LoadingState />
   if (!auth.user) return <HomePage />
   return <RestaurantsPage />
+}
+
+export function TeamAdminRoute() {
+  const auth = useAuth()
+  if (auth.isBootstrapping) return <LoadingState />
+  if (!auth.user) return <HomePage />
+  return <TeamPage />
 }
 
 function LoadingState() {
