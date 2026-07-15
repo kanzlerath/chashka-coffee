@@ -6,6 +6,8 @@ const leadMetadataSchema = z.record(z.string().trim().min(1).max(80), z.string()
 
 export const leadTypeSchema = z.enum(['CONTACT', 'RESERVATION', 'FRANCHISE', 'BANQUET', 'JOB'])
 export const leadStatusSchema = z.enum(['NEW', 'IN_PROGRESS', 'CLOSED'])
+export type LeadType = z.infer<typeof leadTypeSchema>
+export type LeadStatus = z.infer<typeof leadStatusSchema>
 
 export const createLeadRequestSchema = z.object({
   type: leadTypeSchema,

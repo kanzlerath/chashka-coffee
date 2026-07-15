@@ -15,6 +15,7 @@ import { Typography } from '@/components/ui/typography'
 import { AuthForm, useAuth } from '@/features/auth'
 import { MenuPage, RestaurantsPage } from '@/features/catalog-admin'
 import { ContentPage } from '@/features/content-admin'
+import { LeadsPage } from '@/features/leads-admin'
 import { TeamPage } from '@/features/staff-admin'
 import { cn } from '@/lib/utils'
 
@@ -41,6 +42,7 @@ export function RootLayout() {
             </Typography>
             <Typography asChild variant="control" tone="muted"><Link to="/menus" className={navLinkClass}>Меню</Link></Typography>
             <Typography asChild variant="control" tone="muted"><Link to="/content" className={navLinkClass}>Контент</Link></Typography>
+            {auth.user?.role === 'ADMIN' && <Typography asChild variant="control" tone="muted"><Link to="/leads" className={navLinkClass}>Заявки</Link></Typography>}
             <Typography asChild variant="control" tone="muted">
               <Link to="/team" className={navLinkClass}>
                 Команда
@@ -187,6 +189,7 @@ export function TeamAdminRoute() {
 }
 export function MenuAdminRoute() { const auth = useAuth(); if (auth.isBootstrapping) return <LoadingState />; if (!auth.user) return <HomePage />; return <MenuPage /> }
 export function ContentAdminRoute() { const auth = useAuth(); if (auth.isBootstrapping) return <LoadingState />; if (!auth.user) return <HomePage />; return <ContentPage /> }
+export function LeadsAdminRoute() { const auth = useAuth(); if (auth.isBootstrapping) return <LoadingState />; if (!auth.user) return <HomePage />; if (auth.user.role !== 'ADMIN') return <section className="mx-auto w-full max-w-6xl px-5 py-12"><Card><CardHeader><CardTitle>Недостаточно прав</CardTitle><CardDescription>Просмотр заявок доступен администраторам.</CardDescription></CardHeader></Card></section>; return <LeadsPage /> }
 
 function LoadingState() {
   return (
