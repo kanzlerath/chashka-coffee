@@ -30,11 +30,18 @@ export function createContentModule({ db, requireAuth, requireAdmin }: { db: DbC
   const create = createRoute({ method: 'post', path: '/content', request: { body: { content: { 'application/json': { schema: upsertContentEntryRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: contentEntryResponseSchema } }, description: 'Content entry created' } } })
   const update = createRoute({ method: 'put', path: '/content/{id}', request: { params: idParams, body: { content: { 'application/json': { schema: upsertContentEntryRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: contentEntryResponseSchema } }, description: 'Content entry updated' }, 404: { content: errorContent, description: 'Content entry not found' } } })
   const publicList = createRoute({ method: 'get', path: '/', request: { query: z.object({ type: contentEntryTypeSchema }) }, responses: { 200: { content: { 'application/json': { schema: contentEntryListResponseSchema } }, description: 'Published content entries' } } })
+  const publicDetail = createRoute({ method: 'get', path: '/{slug}', request: { params: z.object({ slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/) }) }, responses: { 200: { content: { 'application/json': { schema: contentEntryResponseSchema } }, description: 'Published content entry' }, 404: { content: errorContent, description: 'Content entry not found' } } })
 
   routes.openapi(publicList, async (c) => {
     const now = new Date()
     const entries = await db.contentEntry.findMany({ where: { type: c.req.valid('query').type, status: 'PUBLISHED', AND: [{ OR: [{ startsAt: null }, { startsAt: { lte: now } }] }, { OR: [{ endsAt: null }, { endsAt: { gte: now } }] }] }, orderBy: [{ isFeatured: 'desc' }, { position: 'asc' }, { eventStartsAt: 'asc' }] })
     return c.json({ entries: entries.map(dto) }, 200)
+  })
+  routes.openapi(publicDetail, async (c) => {
+    const now = new Date()
+    const entry = await db.contentEntry.findFirst({ where: { slug: c.req.valid('param').slug, status: 'PUBLISHED', AND: [{ OR: [{ startsAt: null }, { startsAt: { lte: now } }] }, { OR: [{ endsAt: null }, { endsAt: { gte: now } }] }] } })
+    if (!entry) throw new AppError(404, 'NOT_FOUND', 'Content entry not found')
+    return c.json({ entry: dto(entry) }, 200)
   })
 
   adminRoutes.openapi(list, async (c) => {
