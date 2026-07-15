@@ -18,7 +18,7 @@ const idParams = z.object({ id: z.uuid() })
 const errorSchema = z.object({ error: z.object({ code: z.string(), message: z.string() }) })
 const errorContent = { 'application/json': { schema: errorSchema } }
 
-function dto(entry: { id: string; type: 'PROMOTION' | 'EVENT'; status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'; slug: string; title: string; excerpt: string | null; body: string | null; imageUrl: string | null; ctaLabel: string | null; ctaUrl: string | null; startsAt: Date | null; endsAt: Date | null; eventStartsAt: Date | null; location: string | null; isFeatured: boolean; position: number; createdAt: Date; updatedAt: Date }): ContentEntry {
+function dto(entry: { id: string; type: 'PROMOTION' | 'EVENT' | 'ARTICLE'; status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'; slug: string; title: string; excerpt: string | null; body: string | null; imageUrl: string | null; ctaLabel: string | null; ctaUrl: string | null; startsAt: Date | null; endsAt: Date | null; eventStartsAt: Date | null; location: string | null; isFeatured: boolean; position: number; createdAt: Date; updatedAt: Date }): ContentEntry {
   return { ...entry, startsAt: entry.startsAt?.toISOString() ?? null, endsAt: entry.endsAt?.toISOString() ?? null, eventStartsAt: entry.eventStartsAt?.toISOString() ?? null, createdAt: entry.createdAt.toISOString(), updatedAt: entry.updatedAt.toISOString() }
 }
 

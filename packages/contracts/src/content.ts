@@ -5,7 +5,7 @@ const slug = z.string().trim().min(1).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$
 const nullableText = (max: number) => z.string().trim().max(max).nullable()
 const nullableUrl = z.url().nullable()
 
-export const contentEntryTypeSchema = z.enum(['PROMOTION', 'EVENT'])
+export const contentEntryTypeSchema = z.enum(['PROMOTION', 'EVENT', 'ARTICLE'])
 export const publicationStatusSchema = z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED'])
 export const contentEntrySchema = z.object({
   id: uuid, type: contentEntryTypeSchema, status: publicationStatusSchema, slug,
