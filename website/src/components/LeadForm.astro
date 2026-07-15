@@ -1,0 +1,54 @@
+---
+interface Props {
+  type: 'CONTACT' | 'RESERVATION' | 'FRANCHISE' | 'BANQUET' | 'JOB'
+  submitLabel?: string
+  subjectLabel?: string
+}
+const { type, submitLabel = 'Отправить заявку', subjectLabel } = Astro.props
+---
+<form class="lead-form" data-lead-form data-lead-type={type} novalidate>
+  <label>Ваше имя<input name="name" autocomplete="name" required placeholder="Как к вам обращаться" /></label>
+  <label>Телефон<input name="phone" autocomplete="tel" inputmode="tel" required placeholder="+7" /></label>
+  <label>E-mail<input name="email" autocomplete="email" type="email" placeholder="name@mail.ru" /></label>
+  {subjectLabel && <label>{subjectLabel}<input name="subject" placeholder={subjectLabel} /></label>}
+  <label class="lead-form-message">Комментарий<textarea name="message" placeholder="Расскажите, чем помочь"></textarea></label>
+  <button type="submit">{submitLabel} <b>→</b></button>
+  <p class="lead-form-status" aria-live="polite"></p>
+  <small>Нажимая кнопку, вы соглашаетесь с обработкой персональных данных.</small>
+</form>
+<script>
+  const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
+  document.querySelectorAll<HTMLFormElement>('[data-lead-form]').forEach((form) => {
+    const status = form.querySelector<HTMLElement>('.lead-form-status')
+    const button = form.querySelector<HTMLButtonElement>('button[type="submit"]')
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault()
+      if (!form.reportValidity()) return
+      const values = new FormData(form)
+      const subject = String(values.get('subject') ?? '').trim()
+      const payload = {
+        type: form.dataset.leadType,
+        name: String(values.get('name') ?? '').trim(),
+        phone: String(values.get('phone') ?? '').trim() || null,
+        email: String(values.get('email') ?? '').trim() || null,
+        message: String(values.get('message') ?? '').trim() || null,
+        metadata: subject ? { subject } : null,
+      }
+      if (button) button.disabled = true
+      if (status) status.textContent = 'Отправляем…'
+      try {
+        const response = await fetch(`${apiUrl}/api/leads`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        if (!response.ok) throw new Error('Lead request failed')
+        form.reset()
+        if (status) status.textContent = 'Спасибо! Мы скоро свяжемся с вами.'
+      } catch {
+        if (status) status.textContent = 'Не удалось отправить заявку. Позвоните нам или попробуйте ещё раз.'
+      } finally {
+        if (button) button.disabled = false
+      }
+    })
+  })
+</script>
+<style>
+  .lead-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}.lead-form label{display:grid;gap:6px;font:600 11px Montserrat,Arial,sans-serif}.lead-form input,.lead-form textarea{width:100%;border:1px solid rgba(32,56,43,.22);border-radius:10px;padding:14px;background:#fff;color:#20251f;font:14px Montserrat,Arial,sans-serif}.lead-form textarea{min-height:104px;resize:vertical}.lead-form-message,.lead-form button,.lead-form-status,.lead-form small{grid-column:1/-1}.lead-form button{justify-self:start;border:0;border-radius:99px;padding:16px 20px;background:#b9dc3d;color:#20382b;font:800 12px Montserrat,Arial,sans-serif;cursor:pointer}.lead-form button:disabled{opacity:.55;cursor:wait}.lead-form-status{min-height:18px;margin:0;font:600 12px Montserrat,Arial,sans-serif}.lead-form small{color:rgba(32,56,43,.7);font-size:10px;line-height:1.4}@media(max-width:600px){.lead-form{grid-template-columns:1fr}.lead-form-message,.lead-form button,.lead-form-status,.lead-form small{grid-column:auto}}
+</style>

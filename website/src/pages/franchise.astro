@@ -1,5 +1,6 @@
 ---
 import PageShell from '../layouts/PageShell.astro';
+import LeadForm from '../components/LeadForm.astro';
 const formats = [
   ['01', 'Городская кофейня', 'От 80 м²', 'Полноценное место для завтраков, встреч и длинных разговоров.'],
   ['02', 'Кофейня to go', 'От 25 м²', 'Компактный формат для делового потока и оживлённых улиц.'],
@@ -40,7 +41,7 @@ const stages = ['Знакомимся', 'Оцениваем локацию', 'П
 
       <section class="form" id="form">
         <div><p>узнать условия</p><h2>Давайте<br />обсудим<br />вашу идею</h2><span>Оставьте контакты — пришлём презентацию и договоримся о первом разговоре.</span></div>
-        <form><label>Ваше имя<input placeholder="Как к вам обращаться" /></label><label>Телефон<input type="tel" placeholder="+7" /></label><label>E-mail<input type="email" placeholder="name@mail.ru" /></label><label>Город<input placeholder="Где хотите открыть кофейню" /></label><button type="button">Получить презентацию <b>→</b></button><small>Нажимая кнопку, вы соглашаетесь с обработкой персональных данных.</small></form>
+        <LeadForm type="FRANCHISE" submitLabel="Получить презентацию" subjectLabel="Город для открытия" />
       </section>
     </PageShell>
 <style>
