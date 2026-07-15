@@ -44,6 +44,20 @@ enum PublicationStatus {
   ARCHIVED
 }
 
+enum LeadType {
+  CONTACT
+  RESERVATION
+  FRANCHISE
+  BANQUET
+  JOB
+}
+
+enum LeadStatus {
+  NEW
+  IN_PROGRESS
+  CLOSED
+}
+
 model User {
   id           String        @id @default(dbgenerated("uuidv7()")) @db.Uuid
   email        String        @unique
@@ -111,6 +125,22 @@ model MediaAsset {
 
   @@index([createdAt], map: "media_assets_created_at_idx")
   @@map("media_assets")
+}
+
+model Lead {
+  id        String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  type      LeadType
+  status    LeadStatus @default(NEW)
+  name      String     @db.VarChar(180)
+  phone     String?    @db.VarChar(40)
+  email     String?    @db.VarChar(320)
+  message   String?
+  payload   Json?
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  @@index([type, status, createdAt], map: "leads_type_status_created_at_idx")
+  @@map("leads")
 }
 
 model Restaurant {
