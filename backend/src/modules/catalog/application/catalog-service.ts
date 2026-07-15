@@ -13,6 +13,10 @@ export class CatalogService {
     return this.repository.findRestaurantMenu(slug)
   }
 
+  getRestaurantDetail(slug: string) {
+    return this.repository.findRestaurantDetail(slug)
+  }
+
   listAdminRestaurants() {
     return this.repository.listAdminRestaurants()
   }

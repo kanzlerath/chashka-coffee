@@ -165,6 +165,27 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
       }
     },
 
+    async findRestaurantDetail(slug) {
+      const restaurant = await db.restaurant.findUnique({
+        where: { slug },
+        include: {
+          openingHours: { orderBy: { dayOfWeek: 'asc' } },
+          scheduleExceptions: { orderBy: { date: 'asc' } },
+        },
+      })
+      if (!restaurant) return null
+      return {
+        ...toRestaurantSummary(restaurant),
+        description: restaurant.description,
+        latitude: restaurant.latitude === null ? null : Number(restaurant.latitude),
+        longitude: restaurant.longitude === null ? null : Number(restaurant.longitude),
+        yandexMapsUrl: restaurant.yandexMapsUrl,
+        twoGisUrl: restaurant.twoGisUrl,
+        openingHours: restaurant.openingHours,
+        scheduleExceptions: restaurant.scheduleExceptions.map(toScheduleException),
+      }
+    },
+
     async listAdminRestaurants() {
       const restaurants = await db.restaurant.findMany({ orderBy: { name: 'asc' }, include: { openingHours: { orderBy: { dayOfWeek: 'asc' } }, menuAssignments: { include: { menu: { select: { id: true, name: true } } } } } })
       return restaurants.map(toAdminRestaurant)

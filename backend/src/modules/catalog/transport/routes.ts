@@ -2,6 +2,7 @@ import {
   restaurantListQuerySchema,
   restaurantListResponseSchema,
   restaurantMenuResponseSchema,
+  restaurantDetailResponseSchema,
 } from '@chashka-coffee/contracts'
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi'
 import { z } from 'zod'
@@ -24,6 +25,12 @@ const menuRoute = createRoute({
     200: { content: { 'application/json': { schema: restaurantMenuResponseSchema } }, description: 'Menu for a restaurant' },
   },
 })
+const detailRoute = createRoute({
+  method: 'get',
+  path: '/{slug}',
+  request: { params: z.object({ slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/) }) },
+  responses: { 200: { content: { 'application/json': { schema: restaurantDetailResponseSchema } }, description: 'Restaurant details' } },
+})
 
 export function createCatalogRoutes(service: CatalogService) {
   const routes = new OpenAPIHono({ defaultHook: validationErrorHook })
@@ -32,6 +39,11 @@ export function createCatalogRoutes(service: CatalogService) {
     const menu = await service.getRestaurantMenu(c.req.valid('param').slug)
     if (!menu) throw new AppError(404, 'NOT_FOUND', 'Restaurant menu not found')
     return c.json(menu)
+  })
+  routes.openapi(detailRoute, async (c) => {
+    const restaurant = await service.getRestaurantDetail(c.req.valid('param').slug)
+    if (!restaurant) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found')
+    return c.json({ restaurant })
   })
   return routes
 }

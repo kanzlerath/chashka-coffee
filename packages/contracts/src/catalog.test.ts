@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import {
   restaurantMenuResponseSchema,
+  restaurantDetailResponseSchema,
   upsertRestaurantScheduleExceptionRequestSchema,
   restaurantSummarySchema,
 } from './catalog'
@@ -145,5 +146,18 @@ describe('restaurant catalog contracts', () => {
     expect(() => upsertRestaurantScheduleExceptionRequestSchema.parse({
       date: '31-12-2026', label: 'Некорректная дата', opensAt: null, closesAt: null, isClosed: true,
     })).toThrow()
+  })
+
+  test('exposes the complete public restaurant profile for a detail page', () => {
+    const detail = restaurantDetailResponseSchema.parse({
+      restaurant: {
+        id: '018f8d94-1f4f-7000-8000-000000000001', slug: 'krasny-prospekt', name: 'Чашка кофе', format: 'CITY', area: 'CITY', isAtApartHotel: false,
+        city: 'Новосибирск', address: 'Красный проспект, 25', phone: '+7 (383) 123-20-20', openingHoursLabel: 'Пн–Вс: 08:00–22:00', coverImageUrl: null,
+        description: 'Кофейня в центре города.', latitude: 55.03, longitude: 82.92, yandexMapsUrl: null, twoGisUrl: null,
+        openingHours: [{ dayOfWeek: 1, opensAt: '08:00', closesAt: '22:00', isClosed: false }], scheduleExceptions: [],
+      },
+    })
+
+    expect(detail.restaurant.description).toBe('Кофейня в центре города.')
   })
 })

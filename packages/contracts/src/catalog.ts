@@ -79,6 +79,18 @@ export type UpsertRestaurantScheduleExceptionRequest = z.infer<typeof upsertRest
 export const restaurantScheduleExceptionListResponseSchema = z.object({ exceptions: z.array(restaurantScheduleExceptionSchema) })
 export const restaurantScheduleExceptionResponseSchema = z.object({ exception: restaurantScheduleExceptionSchema })
 
+export const restaurantDetailSchema = restaurantSummarySchema.extend({
+  description: nullableText(4_000),
+  latitude: z.number().min(-90).max(90).nullable(),
+  longitude: z.number().min(-180).max(180).nullable(),
+  yandexMapsUrl: nullableUrl,
+  twoGisUrl: nullableUrl,
+  openingHours: z.array(restaurantOpeningHoursEntrySchema).max(7),
+  scheduleExceptions: z.array(restaurantScheduleExceptionSchema),
+})
+export type RestaurantDetail = z.infer<typeof restaurantDetailSchema>
+export const restaurantDetailResponseSchema = z.object({ restaurant: restaurantDetailSchema })
+
 export const adminRestaurantSchema = z.object({
   id: uuidSchema,
   slug: slugSchema,
