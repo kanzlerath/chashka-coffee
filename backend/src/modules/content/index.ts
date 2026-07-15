@@ -23,11 +23,19 @@ function dto(entry: { id: string; type: 'PROMOTION' | 'EVENT'; status: 'DRAFT' |
 }
 
 export function createContentModule({ db, requireAuth, requireAdmin }: { db: DbClient; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireAdmin: MiddlewareHandler<AuthHttpEnv> }) {
+  const routes = new OpenAPIHono({ defaultHook: validationErrorHook })
   const adminRoutes = new OpenAPIHono<AuthHttpEnv>({ defaultHook: validationErrorHook })
   adminRoutes.use('*', requireAuth, requireAdmin)
   const list = createRoute({ method: 'get', path: '/content', request: { query: z.object({ type: contentEntryTypeSchema.optional() }) }, responses: { 200: { content: { 'application/json': { schema: contentEntryListResponseSchema } }, description: 'Content entries' } } })
   const create = createRoute({ method: 'post', path: '/content', request: { body: { content: { 'application/json': { schema: upsertContentEntryRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: contentEntryResponseSchema } }, description: 'Content entry created' } } })
   const update = createRoute({ method: 'put', path: '/content/{id}', request: { params: idParams, body: { content: { 'application/json': { schema: upsertContentEntryRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: contentEntryResponseSchema } }, description: 'Content entry updated' }, 404: { content: errorContent, description: 'Content entry not found' } } })
+  const publicList = createRoute({ method: 'get', path: '/', request: { query: z.object({ type: contentEntryTypeSchema }) }, responses: { 200: { content: { 'application/json': { schema: contentEntryListResponseSchema } }, description: 'Published content entries' } } })
+
+  routes.openapi(publicList, async (c) => {
+    const now = new Date()
+    const entries = await db.contentEntry.findMany({ where: { type: c.req.valid('query').type, status: 'PUBLISHED', AND: [{ OR: [{ startsAt: null }, { startsAt: { lte: now } }] }, { OR: [{ endsAt: null }, { endsAt: { gte: now } }] }] }, orderBy: [{ isFeatured: 'desc' }, { position: 'asc' }, { eventStartsAt: 'asc' }] })
+    return c.json({ entries: entries.map(dto) }, 200)
+  })
 
   adminRoutes.openapi(list, async (c) => {
     const entries = await db.contentEntry.findMany({ where: c.req.valid('query').type ? { type: c.req.valid('query').type } : {}, orderBy: [{ position: 'asc' }, { createdAt: 'desc' }] })
@@ -46,7 +54,7 @@ export function createContentModule({ db, requireAuth, requireAdmin }: { db: DbC
       throw new AppError(404, 'NOT_FOUND', 'Content entry not found')
     }
   })
-  return { adminRoutes }
+  return { routes, adminRoutes }
 }
 
 function dates(input: UpsertContentEntryRequest) {

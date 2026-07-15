@@ -52,6 +52,7 @@ export function createApp({ env, prisma }: CreateAppOptions) {
   app.route('/api/auth', auth.routes)
   app.route('/api/admin', auth.adminRoutes)
   app.route('/api/restaurants', catalog.routes)
+  app.route('/api/content', content.routes)
   app.route('/api/admin', catalog.adminRoutes)
   app.route('/api/admin', content.adminRoutes)
 
