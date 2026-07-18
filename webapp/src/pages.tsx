@@ -18,6 +18,7 @@ import { ContentPage } from '@/features/content-admin'
 import { LeadsPage } from '@/features/leads-admin'
 import { MediaPage } from '@/features/media-admin'
 import { JobsPage } from '@/features/jobs-admin'
+import { HomepagePage } from '@/features/homepage-admin'
 import { TeamPage } from '@/features/staff-admin'
 import { cn } from '@/lib/utils'
 
@@ -44,6 +45,7 @@ export function RootLayout() {
             </Typography>
             <Typography asChild variant="control" tone="muted"><Link to="/menus" className={navLinkClass}>Меню</Link></Typography>
             <Typography asChild variant="control" tone="muted"><Link to="/content" className={navLinkClass}>Контент</Link></Typography>
+            {auth.user?.role === 'ADMIN' && <Typography asChild variant="control" tone="muted"><Link to="/homepage" className={navLinkClass}>Главная</Link></Typography>}
             {auth.user?.role === 'ADMIN' && <Typography asChild variant="control" tone="muted"><Link to="/leads" className={navLinkClass}>Заявки</Link></Typography>}
             {auth.user?.role === 'ADMIN' && <Typography asChild variant="control" tone="muted"><Link to="/media" className={navLinkClass}>Медиа</Link></Typography>}
             {auth.user?.role === 'ADMIN' && <Typography asChild variant="control" tone="muted"><Link to="/jobs" className={navLinkClass}>Вакансии</Link></Typography>}
@@ -196,6 +198,7 @@ export function ContentAdminRoute() { const auth = useAuth(); if (auth.isBootstr
 export function LeadsAdminRoute() { const auth = useAuth(); if (auth.isBootstrapping) return <LoadingState />; if (!auth.user) return <HomePage />; if (auth.user.role !== 'ADMIN') return <section className="mx-auto w-full max-w-6xl px-5 py-12"><Card><CardHeader><CardTitle>Недостаточно прав</CardTitle><CardDescription>Просмотр заявок доступен администраторам.</CardDescription></CardHeader></Card></section>; return <LeadsPage /> }
 export function MediaAdminRoute() { const auth = useAuth(); if (auth.isBootstrapping) return <LoadingState />; if (!auth.user) return <HomePage />; if (auth.user.role !== 'ADMIN') return <section className="mx-auto w-full max-w-6xl px-5 py-12"><Card><CardHeader><CardTitle>Недостаточно прав</CardTitle><CardDescription>Медиатека доступна администраторам.</CardDescription></CardHeader></Card></section>; return <MediaPage /> }
 export function JobsAdminRoute() { const auth = useAuth(); if (auth.isBootstrapping) return <LoadingState />; if (!auth.user) return <HomePage />; if (auth.user.role !== 'ADMIN') return <section className="mx-auto w-full max-w-6xl px-5 py-12"><Card><CardHeader><CardTitle>Недостаточно прав</CardTitle><CardDescription>Вакансии доступны администраторам.</CardDescription></CardHeader></Card></section>; return <JobsPage /> }
+export function HomepageAdminRoute() { const auth = useAuth(); if (auth.isBootstrapping) return <LoadingState />; if (!auth.user) return <HomePage />; if (auth.user.role !== 'ADMIN') return <section className="mx-auto w-full max-w-6xl px-5 py-12"><Card><CardHeader><CardTitle>Недостаточно прав</CardTitle><CardDescription>Настройка главной доступна администраторам.</CardDescription></CardHeader></Card></section>; return <HomepagePage /> }
 
 function LoadingState() {
   return (

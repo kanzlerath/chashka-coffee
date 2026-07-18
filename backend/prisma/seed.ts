@@ -113,6 +113,8 @@ const openingHours = [
 ]
 
 async function resetCatalog() {
+  await db.homepageBestseller.deleteMany()
+  await db.homepageSlide.deleteMany()
   await db.menuItemOverride.deleteMany()
   await db.restaurantOpeningHours.deleteMany()
   await db.restaurantScheduleException.deleteMany()
@@ -208,6 +210,69 @@ async function seed() {
       })
     }
   }
+
+  const homepageItems = await db.menuItem.findMany({
+    where: {
+      category: { menu: { slug: 'city-core' } },
+      slug: { in: ['avocado-toast', 'cappuccino', 'ricotta-syrniki', 'filter-coffee'] },
+    },
+  })
+  const homepageItemsBySlug = new Map(homepageItems.map((item) => [item.slug, item.id]))
+
+  await db.homepageSlide.createMany({
+    data: [
+      {
+        mediaType: 'IMAGE',
+        mediaUrl: '/images/home-morning-v2.png',
+        eyebrow: 'С хорошего кофе',
+        title: 'Начните день\nв своём ритме',
+        description: 'Завтрак, любимый кофе и немного времени для себя.',
+        ctaLabel: 'Открыть меню',
+        ctaUrl: '/restaurants/krasny-prospekt/menu',
+        durationSeconds: 7,
+        isPublished: true,
+        position: 10,
+      },
+      {
+        mediaType: 'IMAGE',
+        mediaUrl: '/images/home-breakfast.png',
+        eyebrow: 'В каждом районе',
+        title: 'Место, куда\nхочется зайти',
+        description: 'Встретиться, поработать или просто сделать паузу.',
+        ctaLabel: 'Найти кофейню',
+        ctaUrl: '/restaurants',
+        durationSeconds: 7,
+        isPublished: true,
+        position: 20,
+      },
+      {
+        mediaType: 'IMAGE',
+        mediaUrl: '/images/restaurants-hero.png',
+        eyebrow: 'Любимое — ближе',
+        title: 'Кофе и еда\nс доставкой',
+        description: 'Привезём из ближайшей «Чашки кофе» бережно и вовремя.',
+        ctaLabel: 'Заказать доставку',
+        ctaUrl: '/delivery',
+        durationSeconds: 7,
+        isPublished: true,
+        position: 30,
+      },
+    ],
+  })
+
+  const homepageBestsellerSeeds = [
+    { slug: 'avocado-toast', badge: 'Хит', position: 10 },
+    { slug: 'cappuccino', badge: 'Классика', position: 20 },
+    { slug: 'ricotta-syrniki', badge: 'Любимое', position: 30 },
+    { slug: 'filter-coffee', badge: 'Новинка', position: 40 },
+  ]
+
+  await db.homepageBestseller.createMany({
+    data: homepageBestsellerSeeds.flatMap(({ slug, badge, position }) => {
+      const menuItemId = homepageItemsBySlug.get(slug)
+      return menuItemId ? [{ menuItemId, badge, position, isPublished: true }] : []
+    }),
+  })
 
   const [restaurantCount, menuCount, itemCount] = await Promise.all([
     db.restaurant.count(),

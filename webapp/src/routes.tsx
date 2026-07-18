@@ -1,6 +1,6 @@
 import { createRootRoute, createRoute, createRouter } from '@tanstack/react-router'
 
-import { AppPage, ContentAdminRoute, HomePage, JobsAdminRoute, LeadsAdminRoute, MediaAdminRoute, MenuAdminRoute, RestaurantsAdminRoute, RootLayout, TeamAdminRoute } from './pages'
+import { AppPage, ContentAdminRoute, HomePage, HomepageAdminRoute, JobsAdminRoute, LeadsAdminRoute, MediaAdminRoute, MenuAdminRoute, RestaurantsAdminRoute, RootLayout, TeamAdminRoute } from './pages'
 
 const rootRoute = createRootRoute({
   component: RootLayout,
@@ -26,11 +26,12 @@ const restaurantsRoute = createRoute({
 const teamRoute = createRoute({ getParentRoute: () => rootRoute, path: '/team', component: TeamAdminRoute })
 const menusRoute = createRoute({ getParentRoute: () => rootRoute, path: '/menus', component: MenuAdminRoute })
 const contentRoute = createRoute({ getParentRoute: () => rootRoute, path: '/content', component: ContentAdminRoute })
+const homepageRoute = createRoute({ getParentRoute: () => rootRoute, path: '/homepage', component: HomepageAdminRoute })
 const leadsRoute = createRoute({ getParentRoute: () => rootRoute, path: '/leads', component: LeadsAdminRoute })
 const mediaRoute = createRoute({ getParentRoute: () => rootRoute, path: '/media', component: MediaAdminRoute })
 const jobsRoute = createRoute({ getParentRoute: () => rootRoute, path: '/jobs', component: JobsAdminRoute })
 
-const routeTree = rootRoute.addChildren([indexRoute, appRoute, restaurantsRoute, teamRoute, menusRoute, contentRoute, leadsRoute, mediaRoute, jobsRoute])
+const routeTree = rootRoute.addChildren([indexRoute, appRoute, restaurantsRoute, teamRoute, menusRoute, contentRoute, homepageRoute, leadsRoute, mediaRoute, jobsRoute])
 
 export const router = createRouter({ routeTree })
 

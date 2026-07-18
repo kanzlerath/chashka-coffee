@@ -1,6 +1,7 @@
 export * from './auth'
 export * from './catalog'
 export * from './content'
+export * from './homepage'
 export * from './media'
 export * from './leads'
 export * from './jobs'

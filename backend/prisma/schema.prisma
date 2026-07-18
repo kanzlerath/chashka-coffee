@@ -38,6 +38,11 @@ enum ContentEntryType {
   ARTICLE
 }
 
+enum HomepageSlideMediaType {
+  IMAGE
+  VIDEO
+}
+
 enum PublicationStatus {
   DRAFT
   PUBLISHED
@@ -116,6 +121,41 @@ model ContentEntry {
   @@index([type, status, position], map: "content_entries_type_status_position_idx")
   @@index([startsAt], map: "content_entries_starts_at_idx")
   @@map("content_entries")
+}
+
+model HomepageSlide {
+  id              String                 @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  mediaType       HomepageSlideMediaType @map("media_type")
+  mediaUrl        String                 @map("media_url")
+  posterUrl       String?                @map("poster_url")
+  eyebrow         String?                @db.VarChar(80)
+  title           String                 @db.VarChar(180)
+  description     String?                @db.VarChar(500)
+  ctaLabel        String?                @map("cta_label") @db.VarChar(80)
+  ctaUrl          String?                @map("cta_url")
+  durationSeconds Int                    @default(7) @map("duration_seconds")
+  isPublished     Boolean                @default(false) @map("is_published")
+  position        Int                    @default(0)
+  createdAt       DateTime               @default(now()) @map("created_at")
+  updatedAt       DateTime               @updatedAt @map("updated_at")
+
+  @@index([isPublished, position], map: "homepage_slides_published_position_idx")
+  @@map("homepage_slides")
+}
+
+model HomepageBestseller {
+  id          String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  menuItemId  String   @db.Uuid @map("menu_item_id")
+  badge       String?  @db.VarChar(40)
+  position    Int      @default(0)
+  isPublished Boolean  @default(false) @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  menuItem    MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade, map: "homepage_bestsellers_menu_item_id_fkey")
+
+  @@unique([menuItemId], map: "homepage_bestsellers_menu_item_id_key")
+  @@index([isPublished, position], map: "homepage_bestsellers_published_position_idx")
+  @@map("homepage_bestsellers")
 }
 
 model MediaAsset {
@@ -285,6 +325,7 @@ model MenuItem {
   category        MenuCategory       @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "menu_items_category_id_fkey")
   allergens       MenuItemAllergen[]
   restaurantOverrides MenuItemOverride[]
+  homepageBestsellers HomepageBestseller[]
 
   @@unique([categoryId, slug], map: "menu_items_category_id_slug_key")
   @@index([categoryId, position], map: "menu_items_category_id_position_idx")

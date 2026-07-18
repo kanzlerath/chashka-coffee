@@ -1,129 +1,166 @@
 ---
 import PageShell from '../layouts/PageShell.astro';
-
-type FeaturedEntry = {
-  slug: string;
-  title: string;
-  excerpt: string | null;
-  ctaLabel: string | null;
-  eventStartsAt: string | null;
-}
+import type { ContentEntry, HomepagePublicResponse, RestaurantSummary } from '@chashka-coffee/contracts';
 
 const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
-let featuredEvent: FeaturedEntry | null = null
-let featuredPromotion: FeaturedEntry | null = null
+let homepage: HomepagePublicResponse | null = null
+let promotions: ContentEntry[] = []
+let events: ContentEntry[] = []
+let articles: ContentEntry[] = []
+let restaurants: RestaurantSummary[] = []
 
 try {
-  const [eventsResponse, promotionsResponse] = await Promise.all([
-    fetch(`${apiUrl}/api/content?type=EVENT`),
+  const [homepageResponse, promotionResponse, eventResponse, articleResponse, restaurantResponse] = await Promise.all([
+    fetch(`${apiUrl}/api/homepage`),
     fetch(`${apiUrl}/api/content?type=PROMOTION`),
+    fetch(`${apiUrl}/api/content?type=EVENT`),
+    fetch(`${apiUrl}/api/content?type=ARTICLE`),
+    fetch(`${apiUrl}/api/restaurants`),
   ])
-  if (eventsResponse.ok) featuredEvent = (await eventsResponse.json()).entries.at(0) ?? null
-  if (promotionsResponse.ok) featuredPromotion = (await promotionsResponse.json()).entries.at(0) ?? null
-} catch { /* Editorial fallbacks keep the local website complete without the API. */ }
+  if (homepageResponse.ok) homepage = await homepageResponse.json()
+  if (promotionResponse.ok) promotions = (await promotionResponse.json()).entries
+  if (eventResponse.ok) events = (await eventResponse.json()).entries
+  if (articleResponse.ok) articles = (await articleResponse.json()).entries
+  if (restaurantResponse.ok) restaurants = (await restaurantResponse.json()).restaurants
+} catch { /* Local fallbacks keep the public landing page complete before the API is available. */ }
 
-const eventDate = featuredEvent?.eventStartsAt
-  ? new Date(featuredEvent.eventStartsAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
-  : 'Каждую неделю'
+const defaultSlides = [
+  { mediaType: 'IMAGE', mediaUrl: '/images/home-morning-v2.png', posterUrl: null, eyebrow: 'С хорошего кофе', title: 'Начните день\nв своём ритме', description: 'Завтрак, любимый кофе и немного времени для себя.', ctaLabel: 'Открыть меню', ctaUrl: '/restaurants/krasny-prospekt/menu', durationSeconds: 7 },
+  { mediaType: 'IMAGE', mediaUrl: '/images/home-breakfast.png', posterUrl: null, eyebrow: 'В каждом районе', title: 'Место, куда\nхочется зайти', description: 'Встретиться, поработать или просто сделать паузу.', ctaLabel: 'Найти кофейню', ctaUrl: '/restaurants', durationSeconds: 7 },
+  { mediaType: 'IMAGE', mediaUrl: '/images/restaurants-hero.png', posterUrl: null, eyebrow: 'Любимое — ближе', title: 'Кофе и еда\nс доставкой', description: 'Привезём из ближайшей «Чашки кофе» бережно и вовремя.', ctaLabel: 'Заказать доставку', ctaUrl: '/delivery', durationSeconds: 7 },
+]
+const slides = homepage?.slides.length ? homepage.slides : defaultSlides
+const productFallbacks = ['/images/home-breakfast.png', '/images/home-hero-v1.png', '/images/home-morning-v2.png', '/images/restaurants-hero.png']
+const defaultBestsellers = [
+  { slug: 'avocado-toast', name: 'Тост с авокадо', description: 'Хрустящий хлеб, авокадо и яйцо пашот.', price: '590 ₽', badge: 'хит', imageUrl: productFallbacks[0], categoryName: 'Завтраки' },
+  { slug: 'cappuccino', name: 'Капучино', description: 'Эспрессо и воздушное молоко.', price: '290 ₽', badge: 'классика', imageUrl: productFallbacks[1], categoryName: 'Кофе' },
+  { slug: 'ricotta-syrniki', name: 'Сырники из рикотты', description: 'С ягодным соусом и сметаной.', price: '490 ₽', badge: 'любимое', imageUrl: productFallbacks[2], categoryName: 'Завтраки' },
+  { slug: 'filter-coffee', name: 'Фильтр-кофе', description: 'Сезонное зерно собственной обжарки.', price: '240 ₽', badge: 'новинка', imageUrl: productFallbacks[3], categoryName: 'Кофе' },
+]
+const bestsellers = homepage?.bestsellers.length
+  ? homepage.bestsellers.map((entry, index) => ({ slug: entry.item.slug, name: entry.item.name, description: entry.item.description ?? 'Выбранная позиция из меню «Чашки кофе».', price: `${Math.round(entry.item.priceKopecks / 100)} ₽`, badge: entry.badge ?? entry.item.marketingBadge?.toLowerCase() ?? entry.item.categoryName, imageUrl: entry.item.imageUrl ?? productFallbacks[index % productFallbacks.length], categoryName: entry.item.categoryName }))
+  : defaultBestsellers
+const featuredPromotion = promotions.at(0) ?? null
+const featuredEvent = events.at(0) ?? null
+const journal = articles.slice(0, 3).length ? articles.slice(0, 3) : [
+  { slug: 'coffee-morning', title: 'Кофе для первого тёплого утра', excerpt: 'Как выбрать напиток, который не спорит с вашим настроением.', imageUrl: '/images/home-breakfast.png' },
+  { slug: 'croissant-now', title: 'Почему круассан лучше есть сразу', excerpt: 'Немного масла, много слоёв и один простой совет от кондитера.', imageUrl: '/images/home-hero-v1.png' },
+  { slug: 'novosibirsk-route', title: 'Маршрут выходного дня по Новосибирску', excerpt: 'Парки, набережная и кофейни, в которых удобно сделать паузу.', imageUrl: '/images/restaurants-hero.png' },
+]
+const routeRestaurants = restaurants.filter((restaurant) => restaurant.city === 'Новосибирск').slice(0, 3)
+const placeRows = routeRestaurants.length ? routeRestaurants : [
+  { slug: 'krasny-prospekt', name: 'Чашка кофе — Красный проспект', address: 'Красный проспект, 25', openingHoursLabel: 'Пн–Пт: с 07:30', coverImageUrl: '/images/restaurants-hero.png' },
+  { slug: 'central-park', name: 'Чашка кофе — Центральный парк', address: 'ул. Мичурина, 8', openingHoursLabel: 'Ежедневно: с 09:00', coverImageUrl: '/images/home-hero-v1.png' },
+  { slug: 'ulitsa-lenina', name: 'Чашка кофе — улица Ленина', address: 'ул. Ленина, 12', openingHoursLabel: 'Пн–Пт: с 07:30', coverImageUrl: '/images/home-breakfast.png' },
+]
+const eventDate = featuredEvent?.eventStartsAt ? new Date(featuredEvent.eventStartsAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) : 'Каждую неделю'
 ---
 
-<PageShell
-  title="Чашка кофе"
-  description="Чашка кофе — сеть кофеен в Новосибирске: завтраки, десерты, кофе и места для хорошего дня."
-  image="/images/home-morning-v2.png"
->
+<PageShell title="Чашка кофе" description="Чашка кофе — сеть кофеен в Новосибирске: завтраки, десерты, кофе и места для хорошего дня." image="/images/home-morning-v2.png">
   <div class="home-page">
-    <section class="home-hero" aria-labelledby="page-title">
-      <img src="/images/home-morning-v2.png" alt="Капучино и круассан в светлой кофейне" fetchpriority="high" />
-      <div class="home-hero-copy">
-        <p class="eyebrow">Чашка кофе · Новосибирск</p>
-        <h1 id="page-title">День начинается<br />с любимого места</h1>
-        <p class="home-lead">Кофе, завтраки и время для себя — в городе, который всегда куда-то спешит.</p>
-        <div class="home-hero-actions">
-          <a class="button button-dark" href="/restaurants/krasny-prospekt/menu">Выбрать меню <span>→</span></a>
-          <a class="text-action" href="/restaurants">Найти кофейню <span>↗</span></a>
-        </div>
+    <section class="home-gallery" data-home-gallery aria-label="Актуальное в Чашке кофе">
+      <div class="gallery-stage">
+        {slides.map((slide, index) => <article class:list={['gallery-slide', { 'is-active': index === 0 }]} data-duration={slide.durationSeconds} data-slide aria-hidden={index === 0 ? 'false' : 'true'}>
+          {slide.mediaType === 'VIDEO'
+            ? <video autoplay={index === 0} loop muted playsinline poster={slide.posterUrl ?? undefined} preload={index === 0 ? 'auto' : 'metadata'} src={slide.mediaUrl}></video>
+            : <img src={slide.mediaUrl} alt="" fetchpriority={index === 0 ? 'high' : undefined} loading={index === 0 ? 'eager' : 'lazy'} />}
+          <div class="gallery-shade"></div>
+          <div class="gallery-copy">
+            {slide.eyebrow && <p>{slide.eyebrow}</p>}
+            <h1>{slide.title.split('\n').map((line) => <>{line}<br /></>)}</h1>
+            {slide.description && <span>{slide.description}</span>}
+            {slide.ctaLabel && slide.ctaUrl && <a href={slide.ctaUrl}>{slide.ctaLabel}<b>→</b></a>}
+          </div>
+        </article>)}
+        <div class="gallery-controls"><button type="button" data-gallery-prev aria-label="Предыдущий слайд">←</button><div aria-label="Выбор слайда" class="gallery-dots">{slides.map((slide, index) => <button class:list={{ 'is-active': index === 0 }} type="button" data-gallery-dot={index} aria-label={`Слайд ${index + 1}: ${slide.title.replace('\n', ' ')}`}></button>)}</div><button type="button" data-gallery-next aria-label="Следующий слайд">→</button></div>
       </div>
-      <div class="home-hero-meta" aria-label="Ключевая информация">
-        <p>Кофе, завтраки,<br />десерты и встречи</p>
-        <a href="/about">О «Чашке кофе» <span>↗</span></a>
-      </div>
+    </section>
+
+    <section class="home-bestsellers" aria-labelledby="bestsellers-title">
+      <header class="section-heading"><div><p class="eyebrow">выбирают чаще всего</p><h2 id="bestsellers-title">Бестселлеры</h2></div><a href="/restaurants/krasny-prospekt/menu">Всё меню <span>→</span></a></header>
+      <div class="bestseller-list">{bestsellers.map((item) => <a href="/restaurants/krasny-prospekt/menu" class="bestseller-card"><div class="bestseller-image"><img src={item.imageUrl} alt="" loading="lazy" /><span>{item.badge}</span></div><div class="bestseller-info"><small>{item.categoryName}</small><h3>{item.name}</h3><p>{item.description}</p><strong>{item.price}</strong></div></a>)}</div>
+    </section>
+
+    <section class="home-bento" aria-label="Разделы Чашки кофе">
+      <a class="bento-card bento-app" href="/app"><div><p>Приложение</p><h2>Чашка кофе<br />в телефоне</h2></div><span class="round-arrow">↗</span><div class="bento-phone" aria-hidden="true"><b>ЧК</b><i>☕</i></div></a>
+      <a class="bento-card bento-coffee" href="/coffee"><div><p>Кофе для дома</p><h2>Любимый<br />ритуал</h2></div><span class="round-arrow">↗</span><div class="coffee-pack" aria-hidden="true"><b>ЧК</b><small>зерно</small></div></a>
+      <a class="bento-card bento-event" href={featuredEvent ? `/events/${featuredEvent.slug}` : '/events'}><div><p>{eventDate} · события</p><h2>{featuredEvent?.title ?? 'Вечер\nв Чашке'}</h2></div><span class="round-arrow">↗</span><i aria-hidden="true">♪</i></a>
+      <a class="bento-card bento-promo" href={featuredPromotion ? `/promotions/${featuredPromotion.slug}` : '/promotions'}><div><p>Акции</p><h2>Повод зайти<br />сегодня</h2></div><span class="round-arrow">↗</span><strong>{featuredPromotion?.ctaLabel ?? 'new'}</strong></a>
+      <a class="bento-card bento-bakery" href="/bakery"><div><p>Кондитерская</p><h2>Десерты<br />на каждый день</h2></div><span class="round-arrow">↗</span><i aria-hidden="true">◒</i></a>
+      <a class="bento-card bento-certificates" href="/certificates"><div><p>Сертификаты</p><h2>Подарок,<br />который ждут</h2></div><span class="round-arrow">↗</span><i aria-hidden="true">✦</i></a>
+    </section>
+
+    <section class="home-moment" aria-labelledby="moment-title">
+      <div class="moment-image"><img src={featuredPromotion?.imageUrl ?? '/images/home-breakfast.png'} alt="" loading="lazy" /></div>
+      <div class="moment-copy"><p class="eyebrow">сейчас в чашке кофе</p><h2 id="moment-title">{featuredPromotion?.title ?? 'Вкус, который\nхочется поймать'}</h2><p>{featuredPromotion?.excerpt ?? 'Новые позиции, сезонные напитки и маленькие причины выбраться из дома.'}</p><a href={featuredPromotion ? `/promotions/${featuredPromotion.slug}` : '/promotions'}>Узнать больше <span>→</span></a></div>
+    </section>
+
+    <section class="home-menu" aria-labelledby="menu-title">
+      <header class="section-heading"><div><p class="eyebrow">всё для хорошего дня</p><h2 id="menu-title">Меню по настроению</h2></div><a href="/restaurants/krasny-prospekt/menu">Открыть меню <span>→</span></a></header>
+      <div class="menu-grid"><a class="menu-tile menu-main" href="/restaurants/krasny-prospekt/menu"><img src="/images/home-breakfast.png" alt="Завтрак" loading="lazy" /><span>Завтраки</span><b>Утро в Чашке кофе</b></a><a class="menu-tile menu-tile-coffee" href="/restaurants/krasny-prospekt/menu"><span>Кофе</span><i>☕</i></a><a class="menu-tile menu-tile-seasonal" href="/promotions"><span>Летние<br />хиты</span><strong>new</strong></a><a class="menu-tile menu-tile-hot" href="/restaurants/krasny-prospekt/menu"><span>Горячие<br />блюда</span><i>⌁</i></a><a class="menu-tile menu-tile-salad" href="/restaurants/krasny-prospekt/menu"><span>Закуски<br />и салаты</span><i>●</i></a><a class="menu-tile menu-tile-dessert" href="/bakery"><span>Десерты<br />и выпечка</span><i>✳</i></a></div>
     </section>
 
     <section class="home-route" aria-labelledby="route-title">
-      <header class="home-route-heading">
-        <p class="eyebrow">с чего начнём?</p>
-        <h2 id="route-title">Выберите свой<br />сценарий</h2>
-      </header>
-      <nav class="home-route-links" aria-label="Основные разделы">
-        <a href="/delivery"><span>01</span><strong>Заказать<br />доставку</strong><small>Любимые блюда — домой или в офис</small><b>→</b></a>
-        <a href="/restaurants/krasny-prospekt/menu"><span>02</span><strong>Открыть<br />меню</strong><small>Завтраки, обеды и десерты</small><b>→</b></a>
-        <a href="/restaurants"><span>03</span><strong>Найти<br />кофейню</strong><small>13 точек по всему городу</small><b>→</b></a>
-        <a href="/loyalty"><span>04</span><strong>Зайти<br />в клуб</strong><small>Бонусы и привилегии для друзей</small><b>→</b></a>
-      </nav>
+      <div class="route-main"><img src={placeRows[0].coverImageUrl ?? '/images/restaurants-hero.png'} alt="Интерьер кофейни" loading="lazy" /><div><p class="eyebrow">кофейни в новосибирске</p><h2 id="route-title">Городской<br />маршрут<br />за кофе</h2><a href="/restaurants">Все кофейни <span>→</span></a></div></div>
+      <div class="route-list">{placeRows.map((restaurant) => <a href={`/restaurants/${restaurant.slug}`}><span>{restaurant.name.replace('Чашка кофе — ', '')}</span><small>{restaurant.address} · {restaurant.openingHoursLabel}</small><b class="round-arrow">↗</b></a>)}</div>
     </section>
 
-    <section class="home-showcase" aria-label="Главные возможности Чашки кофе">
-      <a class="showcase-menu" href="/restaurants/krasny-prospekt/menu">
-        <img src="/images/home-hero-v1.png" alt="Кофе и свежая выпечка" loading="lazy" />
-        <div><p>Выбирайте своё</p><h2>Меню<br />на каждый час</h2><span>Завтраки, обеды, кофе и десерты <b>→</b></span></div>
-      </a>
-      <a class="showcase-delivery" href="/delivery">
-        <div class="showcase-mark" aria-hidden="true">↗</div>
-        <p>Доставка</p><h2>Любимое —<br />ближе</h2><span>Кофе и еда из ближайшей кофейни <b>→</b></span>
-      </a>
-      <a class="showcase-places" href="/restaurants">
-        <img src="/images/restaurants-hero.png" alt="Светлый интерьер кофейни" loading="lazy" />
-        <div><p>Кофейни</p><h2>Всегда<br />по пути</h2><span>Посмотреть на карте <b>→</b></span></div>
-      </a>
-    </section>
+    <section class="home-home-coffee" aria-labelledby="home-coffee-title"><div><p class="eyebrow">кофе для дома</p><h2 id="home-coffee-title">Заварите<br />свой момент</h2><p>Зерно, дрипы и капсулы для утра дома, офиса или дороги, которую вы выбираете сами.</p><a href="/coffee">Выбрать кофе <span>→</span></a></div><div class="home-coffee-visual" aria-hidden="true"><span>ЧК</span><small>зерно<br />для дома</small><i>☕</i></div></section>
 
-    <section class="home-places" aria-labelledby="places-title">
-      <div class="home-places-copy">
-        <p class="eyebrow">13 кофеен в новосибирске</p>
-        <h2 id="places-title">Место<br />для своего<br />ритма</h2>
-        <p>Забежать за фильтром, встретиться с друзьями или задержаться на длинный завтрак — выбирайте точку рядом с вами.</p>
-        <a class="button button-dark" href="/restaurants">Все кофейни <span>→</span></a>
-      </div>
-      <div class="home-place-list">
-        <a href="/restaurants/krasny-prospekt"><span>01</span><div><strong>Красный проспект</strong><small>Городская кофейня · с 07:30</small></div><b>↗</b></a>
-        <a href="/restaurants"><span>02</span><div><strong>Парк Победы</strong><small>Кофе для прогулки · с 09:00</small></div><b>↗</b></a>
-        <a href="/restaurants"><span>03</span><div><strong>Аэропорт Толмачёво</strong><small>Перед вылетом · с 06:00</small></div><b>↗</b></a>
-      </div>
-    </section>
+    <section class="home-app-loyalty" aria-labelledby="loyalty-title"><div class="loyalty-copy"><p class="eyebrow">приложение и клуб друзей</p><h2 id="loyalty-title">Любимое —<br />под рукой</h2><p>Заказывайте быстрее, копите бонусы и узнавайте о новинках раньше всех.</p><a href="/app">О приложении <span>→</span></a></div><div class="loyalty-points"><strong>1<span>₽</span> = 1 балл</strong><p>Начисляем за любимые заказы</p><div><b>ЧК</b><i>●</i><i>●</i><i>●</i></div></div></section>
 
-    <section class="home-now" aria-labelledby="now-title">
-      <header><p class="eyebrow">в чашке кофе сегодня</p><h2 id="now-title">Есть повод<br />заглянуть</h2></header>
-      <div class="home-now-items">
-        <a class="home-event" href={featuredEvent ? `/events/${featuredEvent.slug}` : '/events'}>
-          <p>{eventDate} · события</p>
-          <h3>{featuredEvent?.title ?? 'Вечера, которые хочется не спешить'}</h3>
-          <span>{featuredEvent?.excerpt ?? 'Музыка, встречи и маленькие поводы остаться за кофе подольше.'}</span>
-          <b>Смотреть афишу →</b>
-          <i aria-hidden="true">♪</i>
-        </a>
-        <a class="home-promo" href={featuredPromotion ? `/promotions/${featuredPromotion.slug}` : '/promotions'}>
-          <div><p>Акции и новинки</p><h3>{featuredPromotion?.title ?? 'Новые вкусы уже в меню'}</h3><span>{featuredPromotion?.excerpt ?? 'Собрали сезонные предложения, ради которых стоит заглянуть сегодня.'}</span><b>Все предложения →</b></div>
-          <strong>{featuredPromotion?.ctaLabel ?? 'new'}</strong>
-        </a>
-      </div>
-    </section>
+    <section class="home-journal" aria-labelledby="journal-title"><header class="section-heading"><div><p class="eyebrow">журнал чашка кофе</p><h2 id="journal-title">Читайте<br />медленнее</h2></div><a href="/journal">Все статьи <span>→</span></a></header><div class="journal-list">{journal.map((article, index) => <a href={`/journal/${article.slug}`} class:list={['journal-entry', { 'journal-featured': index === 0 }]}><img src={article.imageUrl ?? productFallbacks[index]} alt="" loading="lazy" /><div><small>журнал · {index + 1}</small><h3>{article.title}</h3><p>{article.excerpt}</p><span>Читать <b>→</b></span></div></a>)}</div></section>
 
-    <section class="home-app" aria-labelledby="app-title">
-      <div class="home-app-copy">
-        <p class="eyebrow">чашка кофе в телефоне</p>
-        <h2 id="app-title">Нужное —<br />под рукой</h2>
-        <p>Заказывайте быстрее, копите бонусы и первыми узнавайте о том, что появляется в любимой кофейне.</p>
-        <a class="button button-dark" href="/app">О приложении <span>→</span></a>
-      </div>
-      <div class="home-app-object" aria-hidden="true">
-        <div class="app-phone"><i></i><span>ЧК</span><small>Доброе утро</small><b>Что будем<br />сегодня?</b><em>☕</em></div>
-        <div class="app-note">Кофе<br />по пути <strong>↗</strong></div>
-      </div>
-    </section>
+    <div class="home-marquee" aria-label="Чашка кофе: кофе, завтраки, десерты и встречи"><div>ЧАШКА КОФЕ <i>✦</i> КОФЕ <i>✦</i> ЗАВТРАКИ <i>✦</i> ДЕСЕРТЫ <i>✦</i> ВСТРЕЧИ <i>✦</i> ЧАШКА КОФЕ <i>✦</i> КОФЕ <i>✦</i> ЗАВТРАКИ <i>✦</i> ДЕСЕРТЫ <i>✦</i> ВСТРЕЧИ <i>✦</i></div></div>
   </div>
 </PageShell>
 
+<script>
+  const gallery = document.querySelector<HTMLElement>('[data-home-gallery]')
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+  if (gallery) {
+    const slides = [...gallery.querySelectorAll<HTMLElement>('[data-slide]')]
+    const dots = [...gallery.querySelectorAll<HTMLButtonElement>('[data-gallery-dot]')]
+    const previous = gallery.querySelector<HTMLButtonElement>('[data-gallery-prev]')
+    const next = gallery.querySelector<HTMLButtonElement>('[data-gallery-next]')
+    let active = 0
+    let timeout = 0
+    let paused = false
+    const show = (index: number) => {
+      active = (index + slides.length) % slides.length
+      slides.forEach((slide, slideIndex) => {
+        const isActive = slideIndex === active
+        slide.classList.toggle('is-active', isActive)
+        slide.setAttribute('aria-hidden', String(!isActive))
+        const video = slide.querySelector('video')
+        if (!video) return
+        if (isActive) void video.play().catch(() => undefined)
+        else { video.pause(); video.currentTime = 0 }
+      })
+      dots.forEach((dot, dotIndex) => dot.classList.toggle('is-active', dotIndex === active))
+      schedule()
+    }
+    const schedule = () => {
+      window.clearTimeout(timeout)
+      if (paused || reduceMotion.matches || slides.length < 2) return
+      const duration = Number(slides[active]?.dataset.duration ?? 7) * 1_000
+      timeout = window.setTimeout(() => show(active + 1), duration)
+    }
+    const pause = () => { paused = true; window.clearTimeout(timeout) }
+    const resume = () => { paused = false; schedule() }
+    previous?.addEventListener('click', () => show(active - 1))
+    next?.addEventListener('click', () => show(active + 1))
+    dots.forEach((dot, index) => dot.addEventListener('click', () => show(index)))
+    gallery.addEventListener('mouseenter', pause)
+    gallery.addEventListener('mouseleave', resume)
+    gallery.addEventListener('focusin', pause)
+    gallery.addEventListener('focusout', resume)
+    document.addEventListener('visibilitychange', () => document.hidden ? pause() : resume())
+    reduceMotion.addEventListener('change', schedule)
+    schedule()
+  }
+</script>
+
 <style>
-  .home-page{padding:14px}.home-page a{text-decoration:none;color:inherit}.eyebrow{margin:0;color:#718b2d;text-transform:uppercase;letter-spacing:.14em;font-size:10px;font-weight:800}.home-hero{position:relative;isolation:isolate;min-height:clamp(540px,43vw,680px);overflow:hidden;border-radius:22px;background:#e8e2d8}.home-hero>img{position:absolute;z-index:-2;inset:0;width:100%;height:100%;object-fit:cover}.home-hero:after{position:absolute;z-index:-1;inset:0;content:'';background:linear-gradient(90deg,rgba(251,250,247,.99) 0%,rgba(251,250,247,.92) 30%,rgba(251,250,247,.18) 61%,rgba(251,250,247,0) 78%)}.home-hero-copy{max-width:645px;padding:clamp(65px,7vw,115px) clamp(32px,6vw,104px)}.home-hero h1,.home-route h2,.home-showcase h2,.home-places h2,.home-now h2,.home-app h2{margin:19px 0 0;color:#26211d;font-size:clamp(52px,5.45vw,92px);line-height:.86;letter-spacing:-.094em}.home-lead{max-width:370px;margin:25px 0 0;color:#5e5851;font-size:15px;line-height:1.6}.home-hero-actions{display:flex;align-items:center;gap:25px;margin-top:31px}.button{display:inline-flex;align-items:center;justify-content:center;gap:26px;padding:16px 19px;border-radius:10px;font-size:11px;font-weight:800;transition:transform .25s,background .25s}.button:hover{transform:translateY(-2px)}.button span{font-size:18px;line-height:0}.button-dark{background:#2a211c;color:#fff}.button-dark:hover{background:#4a3a2f}.text-action{padding-bottom:3px;border-bottom:1px solid #342c26;font-size:11px;font-weight:800;transition:color .2s}.text-action:hover{color:#637b2e}.text-action span{margin-left:8px}.home-hero-meta{position:absolute;right:clamp(30px,4vw,65px);bottom:31px;z-index:1;display:flex;align-items:end;gap:44px}.home-hero-meta p{margin:0;color:#4f4942;font-size:11px;line-height:1.45}.home-hero-meta a{padding-bottom:3px;border-bottom:1px solid #6c655c;font-size:10px;font-weight:800}.home-hero-meta a span{margin-left:8px}.home-route{display:grid;grid-template-columns:.72fr 1.28fr;gap:clamp(44px,8vw,132px);padding:clamp(96px,10.5vw,160px) clamp(19px,5.2vw,91px)}.home-route h2,.home-now h2,.home-places h2,.home-app h2{font-size:clamp(46px,4.65vw,79px)}.home-route-links{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #dedbd4;border-left:1px solid #dedbd4}.home-route-links a{position:relative;min-height:210px;padding:22px;border-right:1px solid #dedbd4;border-bottom:1px solid #dedbd4;background:#fcfbf8;transition:background .25s,color .25s}.home-route-links a:hover{background:#293b30;color:#fff}.home-route-links a>span{color:#799633;font-size:10px;font-weight:800}.home-route-links strong{display:block;margin-top:74px;font-size:25px;line-height:.9;letter-spacing:-.07em}.home-route-links small{display:block;max-width:170px;margin-top:9px;color:#777069;font-size:10px;line-height:1.4;transition:color .25s}.home-route-links b{position:absolute;right:22px;bottom:19px;color:#799633;font-size:19px;font-weight:500}.home-route-links a:hover small{color:#dbe4d9}.home-showcase{display:grid;grid-template-columns:1.08fr .92fr;grid-template-rows:320px 320px;gap:14px}.home-showcase>a{position:relative;isolation:isolate;overflow:hidden;border-radius:22px}.home-showcase img{position:absolute;z-index:-2;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .6s cubic-bezier(.2,.7,.2,1)}.home-showcase>a:hover img{transform:scale(1.045)}.showcase-menu{grid-row:span 2;color:#fff}.showcase-menu:after,.showcase-places:after{position:absolute;z-index:-1;inset:0;content:'';background:linear-gradient(180deg,rgba(28,24,20,.06) 25%,rgba(28,24,20,.77) 100%)}.home-showcase>a>div:not(.showcase-mark){position:absolute;left:clamp(25px,3.7vw,61px);bottom:clamp(27px,4vw,62px)}.home-showcase p{margin:0;color:#d4e67a;text-transform:uppercase;letter-spacing:.14em;font-size:10px;font-weight:800}.home-showcase h2{margin-top:13px;color:#fff;font-size:clamp(33px,3.5vw,58px)}.home-showcase span{display:inline-flex;gap:21px;margin-top:22px;padding-bottom:3px;border-bottom:1px solid rgba(255,255,255,.75);color:#fff;font-size:11px;font-weight:800}.home-showcase span b{font-size:17px;line-height:0}.showcase-delivery{padding:39px clamp(28px,4vw,57px);background:#293b30;color:#fff}.showcase-delivery p{color:#c7dc6b}.showcase-delivery h2{font-size:clamp(38px,3.8vw,62px)}.showcase-delivery .showcase-mark{position:absolute;right:39px;top:35px;display:grid;place-items:center;width:58px;aspect-ratio:1;border-radius:50%;background:#e9edd9;color:#293b30;font-size:28px}.showcase-delivery span{position:absolute;bottom:38px;left:clamp(28px,4vw,57px)}.showcase-places{background:#ddd9ce;color:#fff}.home-places{display:grid;grid-template-columns:.75fr 1.25fr;gap:clamp(55px,9vw,145px);padding:clamp(100px,11vw,175px) clamp(19px,5.2vw,91px)}.home-places-copy>p:not(.eyebrow){max-width:372px;margin:25px 0 28px;color:#625c55;font-size:14px;line-height:1.67}.home-place-list{align-self:end;border-top:1px solid #dedbd4}.home-place-list a{min-height:104px;display:grid;grid-template-columns:45px 1fr auto;gap:17px;align-items:center;border-bottom:1px solid #dedbd4;transition:padding .2s,color .2s}.home-place-list a:hover{padding-left:12px;color:#5f7b2d}.home-place-list>a>span{font-size:10px;color:#799633;font-weight:800}.home-place-list strong{display:block;font-size:23px;letter-spacing:-.065em}.home-place-list small{display:block;margin-top:6px;color:#706a63;font-size:10px}.home-place-list b{font-weight:500;font-size:18px}.home-now{display:grid;grid-template-columns:.72fr 1.28fr;gap:clamp(44px,8vw,132px);padding:clamp(92px,10vw,158px) clamp(19px,5.2vw,91px);background:#f0ede6}.home-now-items{display:grid;grid-template-columns:1fr 1fr;gap:12px}.home-event,.home-promo{position:relative;isolation:isolate;display:block;min-height:347px;padding:29px;overflow:hidden;border-radius:18px}.home-event{background:#293b30;color:#fff}.home-event p,.home-promo p{margin:0;text-transform:uppercase;letter-spacing:.14em;font-size:10px;font-weight:800}.home-event p{color:#c7dc6b}.home-now h3{max-width:275px;margin:18px 0 0;font-size:clamp(27px,2.3vw,39px);line-height:.92;letter-spacing:-.075em}.home-now span{display:block;max-width:270px;margin-top:16px;font-size:12px;line-height:1.55}.home-now b{position:absolute;bottom:27px;left:29px;font-size:10px}.home-event i{position:absolute;z-index:-1;right:8px;bottom:-45px;color:#c4dc6b;font:normal 190px/1 Georgia,serif}.home-promo{background:#e9dfd2}.home-promo p{color:#926f3c}.home-promo h3{color:#29231e}.home-promo span{color:#635d55}.home-promo strong{position:absolute;right:22px;bottom:22px;display:grid;place-items:center;width:88px;aspect-ratio:1;border-radius:50%;background:#d36649;color:#fff;font-size:20px;letter-spacing:-.07em;transform:rotate(-9deg)}.home-app{position:relative;isolation:isolate;display:grid;grid-template-columns:1fr .75fr;min-height:505px;margin-top:14px;overflow:hidden;border-radius:22px;background:#dce7d4;padding:clamp(56px,6.3vw,106px) clamp(28px,5.2vw,91px)}.home-app-copy{position:relative;z-index:1}.home-app-copy>p:not(.eyebrow){max-width:375px;margin:24px 0 28px;color:#566254;font-size:14px;line-height:1.64}.home-app-object{position:relative;align-self:end;justify-self:center;width:290px;height:350px}.app-phone{position:absolute;right:27px;bottom:-42px;width:180px;height:323px;padding:37px 17px;border:8px solid #29221d;border-radius:32px;background:#fbfaf6;box-shadow:18px 23px 0 rgba(55,70,47,.15);transform:rotate(7deg)}.app-phone i{position:absolute;top:0;left:50%;width:57px;height:14px;transform:translateX(-50%);border-radius:0 0 10px 10px;background:#29221d}.app-phone span{display:block;margin-top:6px;color:#2b3928;font-size:30px;font-weight:800;letter-spacing:-.16em}.app-phone small{display:block;margin-top:20px;color:#77716a;font-size:9px}.app-phone b{display:block;margin-top:7px;color:#28221e;font-size:21px;line-height:.9;letter-spacing:-.08em}.app-phone em{display:grid;place-items:center;width:102px;aspect-ratio:1;margin:26px auto 0;border-radius:50%;background:#c5dc6b;font-size:45px;font-style:normal}.app-note{position:absolute;bottom:25px;left:0;padding:18px 20px;border-radius:13px;background:#293b30;color:#fff;font-size:16px;font-weight:800;line-height:.9;letter-spacing:-.07em;transform:rotate(-7deg)}.app-note strong{display:block;margin-top:11px;color:#c8dc70;font-size:18px;font-weight:500}@media(max-width:880px){.home-page{padding:0}.home-hero{min-height:calc(100svh - 72px);border-radius:0}.home-hero:after{background:linear-gradient(180deg,rgba(251,250,247,.98) 0%,rgba(251,250,247,.88) 45%,rgba(251,250,247,.12) 84%,transparent)}.home-hero-copy{padding:62px 20px}.home-hero h1{font-size:clamp(49px,13vw,68px)}.home-lead{font-size:14px}.home-hero-actions{gap:18px}.home-hero-meta{right:20px;bottom:23px;gap:19px}.home-hero-meta p{font-size:9px}.home-route{display:block;padding:82px 20px}.home-route-links{margin-top:34px}.home-route-links a{min-height:172px;padding:17px}.home-route-links strong{margin-top:58px;font-size:21px}.home-route-links small{font-size:9px}.home-route-links b{right:17px;bottom:15px}.home-showcase{grid-template-columns:1fr;grid-template-rows:460px 310px 310px;gap:8px}.home-showcase>a{border-radius:0}.showcase-menu{grid-row:auto}.home-showcase>a>div:not(.showcase-mark){left:20px;bottom:32px}.home-showcase h2{font-size:46px}.showcase-delivery{padding:32px 20px}.showcase-delivery .showcase-mark{right:20px;top:26px}.showcase-delivery span{left:20px;bottom:27px}.home-places{display:block;padding:84px 20px}.home-places-copy>p:not(.eyebrow){font-size:14px}.home-place-list{margin-top:37px}.home-place-list a{grid-template-columns:34px 1fr auto;min-height:97px;gap:11px}.home-place-list strong{font-size:19px}.home-now{display:block;padding:84px 20px}.home-now-items{grid-template-columns:1fr;gap:8px;margin-top:34px}.home-event,.home-promo{min-height:290px;padding:22px;border-radius:18px}.home-now b{left:22px;bottom:22px}.home-promo strong{right:18px;bottom:18px;width:78px;font-size:17px}.home-app{display:block;min-height:640px;margin:0;border-radius:0;padding:58px 20px 0}.home-app h2{font-size:51px}.home-app-object{width:275px;height:330px;margin:45px auto 0}.app-phone{right:18px;width:166px;height:300px}.app-note{left:0;bottom:36px}.app-phone em{width:93px;margin-top:24px}}
+  .home-page{padding:14px;background:#fcfbf8}.home-page a{text-decoration:none;color:inherit}.eyebrow{margin:0;color:#769230;text-transform:uppercase;letter-spacing:.14em;font-size:10px;font-weight:800}.home-gallery{min-height:clamp(530px,43vw,680px)}.gallery-stage{position:relative;height:100%;min-height:inherit;overflow:hidden;border-radius:23px;background:#e8e2d9}.gallery-slide{position:absolute;inset:0;display:grid;align-items:center;opacity:0;pointer-events:none;transition:opacity .7s ease}.gallery-slide.is-active{z-index:1;opacity:1;pointer-events:auto}.gallery-slide>img,.gallery-slide>video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.gallery-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(252,251,248,.98) 0%,rgba(252,251,248,.89) 29%,rgba(252,251,248,.16) 64%,transparent 82%)}.gallery-copy{position:relative;width:min(600px,47%);margin-left:clamp(31px,6vw,104px);padding:45px 0}.gallery-copy>p{margin:0;color:#6d8930;text-transform:uppercase;letter-spacing:.14em;font-size:10px;font-weight:800}.gallery-copy h1,.section-heading h2,.home-moment h2,.home-route h2,.home-home-coffee h2,.home-app-loyalty h2{margin:19px 0 0;color:#25201c;font-size:clamp(53px,5.45vw,93px);line-height:.86;letter-spacing:-.095em}.gallery-copy>span{display:block;max-width:360px;margin-top:25px;color:#5c564f;font-size:15px;line-height:1.6}.gallery-copy>a,.moment-copy>a,.home-coffee-visual+*,.route-main a,.loyalty-copy a{display:inline-flex;align-items:center;gap:25px;margin-top:31px;padding:16px 20px;border-radius:999px;background:#1f3b2e;color:#fff;font-size:11px;font-weight:800;transition:transform .2s,background .2s}.gallery-copy>a:hover,.moment-copy>a:hover,.route-main a:hover,.loyalty-copy a:hover{transform:translateY(-2px);background:#315b45}.gallery-copy>a b{font-size:18px}.gallery-controls{position:absolute;z-index:2;right:clamp(20px,3vw,52px);bottom:27px;display:flex;align-items:center;gap:8px}.gallery-controls>button{width:44px;height:44px;border:0;border-radius:50%;background:#fcfbf8;color:#1f3b2e;font:500 19px Montserrat,Arial,sans-serif;cursor:pointer}.gallery-dots{display:flex;gap:7px;margin:0 12px}.gallery-dots button{width:8px;height:8px;padding:0;border:1px solid #4d4a43;border-radius:50%;background:transparent;cursor:pointer}.gallery-dots button.is-active{background:#1f3b2e}.home-bestsellers,.home-menu,.home-journal{padding:clamp(82px,9vw,145px) clamp(20px,5.2vw,90px)}.section-heading{display:flex;align-items:end;justify-content:space-between;gap:35px}.section-heading h2{font-size:clamp(44px,4.7vw,79px)}.section-heading>a{padding-bottom:5px;border-bottom:1px solid #39332d;font-size:11px;font-weight:800}.section-heading>a span{margin-left:19px;font-size:17px}.bestseller-list{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:37px}.bestseller-card{min-width:0}.bestseller-image{position:relative;aspect-ratio:1/.94;overflow:hidden;border-radius:18px;background:#f0ede6}.bestseller-image img{width:100%;height:100%;object-fit:cover;transition:transform .45s}.bestseller-card:hover img{transform:scale(1.05)}.bestseller-image span{position:absolute;top:14px;left:14px;padding:7px 9px;border-radius:999px;background:rgba(252,251,248,.92);font-size:9px;font-weight:800;text-transform:uppercase}.bestseller-info{padding:16px 4px 0}.bestseller-info small{color:#738f2e;text-transform:uppercase;letter-spacing:.1em;font-size:9px;font-weight:800}.bestseller-info h3{margin:8px 0 0;font-size:20px;letter-spacing:-.06em}.bestseller-info p{min-height:35px;margin:7px 0 0;color:#6d665e;font-size:11px;line-height:1.45}.bestseller-info strong{display:block;margin-top:13px;font-size:13px}.home-bento{display:grid;grid-template-columns:1.06fr .83fr .83fr;grid-template-rows:282px 282px 180px;gap:12px}.bento-card{position:relative;isolation:isolate;display:block;overflow:hidden;border-radius:22px;padding:29px}.bento-card>div:first-child{position:relative;z-index:1}.bento-card p{margin:0;color:#687d35;text-transform:uppercase;letter-spacing:.13em;font-size:9px;font-weight:800}.bento-card h2{margin:10px 0 0;color:#25201c;font-size:clamp(28px,2.6vw,47px);line-height:.88;letter-spacing:-.08em}.round-arrow{display:grid;position:absolute;right:18px;top:18px;place-items:center;width:37px;height:37px;border:1px solid currentColor;border-radius:50%;font-size:16px;font-weight:500;transition:transform .2s,background .2s}.bento-card:hover .round-arrow{transform:translate(2px,-2px);background:rgba(255,255,255,.36)}.bento-app{grid-row:span 2;background:#ece2d8}.bento-app h2{max-width:315px}.bento-phone{position:absolute;right:clamp(29px,4vw,72px);bottom:-90px;width:207px;height:360px;padding:38px 20px;border:9px solid #25201c;border-radius:36px;background:#fbfaf6;box-shadow:16px 19px 0 rgba(75,65,53,.13);transform:rotate(8deg)}.bento-phone b{font-size:32px;letter-spacing:-.16em}.bento-phone i{display:grid;place-items:center;width:110px;aspect-ratio:1;margin:41px auto 0;border-radius:50%;background:#bddb3d;font-size:47px;font-style:normal}.bento-coffee{background:#e5d9bc}.coffee-pack{position:absolute;right:44px;bottom:22px;width:126px;height:177px;padding:46px 19px 17px;border-radius:11px 11px 17px 17px;background:#a8c224;box-shadow:11px 11px 0 rgba(87,92,45,.17);transform:rotate(8deg)}.coffee-pack:before{position:absolute;top:-11px;left:0;width:100%;height:22px;border-radius:8px;background:#90aa18;content:''}.coffee-pack b{display:block;font-size:42px;letter-spacing:-.18em}.coffee-pack small{position:absolute;bottom:16px;font-size:11px;font-weight:800}.bento-event{background:#1f3b2e;color:#fff}.bento-event p{color:#c4dc62}.bento-event h2{color:#fff}.bento-event>i{position:absolute;right:-8px;bottom:-53px;color:#bddb3d;font:normal 170px/1 Georgia,serif}.bento-promo{grid-column:span 2;background:#e5eadb}.bento-promo strong{position:absolute;right:46px;bottom:32px;display:grid;place-items:center;width:94px;aspect-ratio:1;border-radius:50%;background:#dd6045;color:#fff;font-size:21px;letter-spacing:-.08em;transform:rotate(-8deg)}.bento-bakery{background:#f0ebe3}.bento-bakery>i,.bento-certificates>i{position:absolute;right:28px;bottom:24px;color:#c19d5e;font-size:68px;font-style:normal}.bento-certificates{grid-column:span 2;background:#dae7d0}.bento-certificates>i{color:#91ac19}.home-moment{display:grid;grid-template-columns:1.03fr .97fr;min-height:505px;margin-top:14px;overflow:hidden;border-radius:22px;background:#f0ece5}.moment-image{min-height:360px;overflow:hidden}.moment-image img{width:100%;height:100%;object-fit:cover}.moment-copy{padding:clamp(48px,6.2vw,96px)}.home-moment h2{font-size:clamp(42px,4.5vw,74px);white-space:pre-line}.moment-copy>p:not(.eyebrow){max-width:360px;margin:24px 0 0;color:#615b54;font-size:14px;line-height:1.65}.moment-copy>a{margin-top:29px}.home-menu{padding-bottom:clamp(92px,10vw,165px)}.menu-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:232px 232px 160px;gap:12px;margin-top:37px}.menu-tile{position:relative;isolation:isolate;display:block;overflow:hidden;border-radius:18px;padding:24px;background:#f0eee8}.menu-tile>span{position:relative;z-index:1;display:block;font-size:clamp(20px,2vw,31px);font-weight:800;line-height:.94;letter-spacing:-.07em}.menu-tile>i{position:absolute;right:28px;bottom:18px;font-size:72px;font-style:normal}.menu-main{grid-row:span 2;grid-column:span 2;color:#fff}.menu-main:after{position:absolute;z-index:-1;inset:0;content:'';background:linear-gradient(180deg,rgba(32,28,23,.04),rgba(32,28,23,.72))}.menu-main>img{position:absolute;z-index:-2;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .5s}.menu-main:hover img{transform:scale(1.045)}.menu-main span{font-size:clamp(29px,3vw,46px)}.menu-main>b{position:absolute;z-index:1;bottom:24px;left:24px;font-size:12px}.menu-tile-coffee{background:#e1e6d7}.menu-tile-coffee i{right:31px;color:#567744}.menu-tile-seasonal{background:#1f3b2e;color:#fff}.menu-tile-seasonal span{color:#fff}.menu-tile-seasonal strong{position:absolute;right:25px;bottom:23px;color:#bddb3d;font-size:32px;letter-spacing:-.1em}.menu-tile-hot{background:#f0e4d9}.menu-tile-hot i{color:#d06248}.menu-tile-salad{background:#e5ebdc}.menu-tile-salad i{color:#80a134}.menu-tile-dessert{background:#e9dfd0}.menu-tile-dessert i{color:#ae8a52}.home-route{display:grid;grid-template-columns:1.05fr .95fr;min-height:630px;margin:0;overflow:hidden;border-radius:22px;background:#e3e9dc}.route-main{position:relative;isolation:isolate;overflow:hidden}.route-main>img{position:absolute;z-index:-2;inset:0;width:100%;height:100%;object-fit:cover}.route-main:after{position:absolute;z-index:-1;inset:0;content:'';background:linear-gradient(90deg,rgba(29,45,35,.91),rgba(29,45,35,.44))}.route-main>div{padding:clamp(48px,6.3vw,102px);color:#fff}.route-main .eyebrow{color:#c5dc6c}.route-main h2{color:#fff;font-size:clamp(43px,4.7vw,79px)}.route-main a{margin-top:30px;background:#fff;color:#1f3b2e}.route-list{align-self:end;padding:clamp(26px,4vw,63px)}.route-list a{position:relative;display:grid;grid-template-columns:1fr auto;gap:9px;min-height:123px;padding:25px 60px 25px 0;border-top:1px solid rgba(43,58,45,.2)}.route-list a:last-child{border-bottom:1px solid rgba(43,58,45,.2)}.route-list a>span{font-size:24px;font-weight:800;letter-spacing:-.065em}.route-list small{grid-column:1;color:#647060;font-size:11px}.route-list .round-arrow{top:calc(50% - 18px);right:0;color:#1f3b2e}.home-home-coffee{position:relative;isolation:isolate;display:grid;grid-template-columns:1fr 1fr;min-height:500px;margin-top:14px;overflow:hidden;border-radius:22px;background:#d9ceac;padding:clamp(50px,6.2vw,104px)}.home-home-coffee>div:first-child{position:relative;z-index:1}.home-home-coffee h2{font-size:clamp(47px,4.8vw,80px)}.home-home-coffee p:not(.eyebrow){max-width:360px;margin:24px 0 0;color:#5e5747;font-size:14px;line-height:1.65}.home-home-coffee a{display:inline-flex;gap:25px;margin-top:29px;padding-bottom:4px;border-bottom:1px solid #393229;font-size:11px;font-weight:800}.home-coffee-visual{position:relative;align-self:end;justify-self:center;width:265px;height:325px;border-radius:22px 22px 41px 41px;background:#91a91e;box-shadow:19px 21px 0 rgba(92,84,56,.17);transform:rotate(8deg)}.home-coffee-visual:before{position:absolute;top:-15px;left:0;width:100%;height:29px;border-radius:11px;background:#839a19;content:''}.home-coffee-visual span{position:absolute;top:76px;left:46px;color:#243020;font-size:78px;font-weight:800;letter-spacing:-.2em}.home-coffee-visual small{position:absolute;bottom:37px;left:48px;color:#243020;font-size:15px;font-weight:800;line-height:.9}.home-coffee-visual i{position:absolute;right:-48px;bottom:8px;display:grid;place-items:center;width:120px;aspect-ratio:1;border-radius:50%;background:#fbf8ef;font-size:49px;font-style:normal;transform:rotate(-8deg)}.home-app-loyalty{display:grid;grid-template-columns:1fr .85fr;min-height:495px;margin-top:14px;overflow:hidden;border-radius:22px;background:#e9e2d9;padding:clamp(50px,6.2vw,102px)}.home-app-loyalty h2{font-size:clamp(46px,4.7vw,79px)}.loyalty-copy>p:not(.eyebrow){max-width:360px;margin:24px 0 0;color:#625c54;font-size:14px;line-height:1.65}.loyalty-points{position:relative;align-self:center;justify-self:center;width:min(100%,375px);min-height:245px;padding:35px;border-radius:22px;background:#1f3b2e;color:#fff;box-shadow:16px 17px 0 rgba(80,70,58,.13);transform:rotate(-4deg)}.loyalty-points strong{display:block;color:#bddb3d;font-size:51px;line-height:.9;letter-spacing:-.1em}.loyalty-points strong span{font-size:25px}.loyalty-points>p{margin:18px 0 0;color:#e6ece3;font-size:13px}.loyalty-points>div{position:absolute;right:30px;bottom:28px;display:flex;align-items:center;gap:8px}.loyalty-points b{margin-right:11px;font-size:28px;letter-spacing:-.15em}.loyalty-points i{display:block;width:13px;height:13px;border-radius:50%;background:#bddb3d}.home-journal{padding-bottom:clamp(86px,10vw,150px)}.journal-list{display:grid;grid-template-columns:1.08fr .96fr .96fr;gap:12px;margin-top:37px}.journal-entry{position:relative;isolation:isolate;min-height:400px;overflow:hidden;border-radius:20px;background:#e7e3da}.journal-entry>img{position:absolute;z-index:-2;inset:0;width:100%;height:100%;object-fit:cover}.journal-entry:after{position:absolute;z-index:-1;inset:0;content:'';background:linear-gradient(180deg,rgba(31,27,22,.03),rgba(31,27,22,.76))}.journal-entry>div{position:absolute;right:25px;bottom:25px;left:25px;color:#fff}.journal-entry small{color:#c5dc6c;text-transform:uppercase;letter-spacing:.12em;font-size:9px;font-weight:800}.journal-entry h3{margin:11px 0 0;font-size:clamp(23px,2.2vw,36px);line-height:.93;letter-spacing:-.075em}.journal-entry p{margin:13px 0 0;font-size:11px;line-height:1.5}.journal-entry span{display:block;margin-top:21px;padding-bottom:3px;border-bottom:1px solid rgba(255,255,255,.8);width:max-content;font-size:10px;font-weight:800}.journal-entry span b{margin-left:16px;font-size:15px}.home-marquee{margin:0 -14px -14px;overflow:hidden;border-top:1px solid #dcd7cf;border-bottom:1px solid #dcd7cf;white-space:nowrap;background:#bddb3d;color:#1f3b2e}.home-marquee>div{display:inline-block;padding:17px 0;font-size:clamp(27px,3.1vw,52px);font-weight:800;letter-spacing:-.09em;animation:marquee 28s linear infinite}.home-marquee i{margin:0 22px;font-style:normal;color:#f8f6ee}@keyframes marquee{to{transform:translateX(-50%)}}@media(max-width:980px){.home-page{padding:0}.home-gallery{min-height:calc(100svh - 72px)}.gallery-stage{border-radius:0}.gallery-shade{background:linear-gradient(180deg,rgba(252,251,248,.98) 0%,rgba(252,251,248,.88) 46%,rgba(252,251,248,.12) 86%,transparent)}.gallery-copy{width:auto;margin:0;padding:61px 20px}.gallery-copy h1{font-size:clamp(49px,13vw,68px)}.gallery-copy>span{font-size:14px}.gallery-controls{right:20px;bottom:20px}.gallery-controls>button{width:40px;height:40px}.gallery-dots{margin:0 7px}.home-bestsellers,.home-menu,.home-journal{padding:82px 20px}.section-heading{align-items:start}.section-heading h2{font-size:48px}.section-heading>a{margin-top:38px;font-size:10px;white-space:nowrap}.bestseller-list{display:flex;gap:10px;margin:34px -20px 0;padding:0 20px 8px;overflow:auto;scroll-snap-type:x mandatory}.bestseller-card{flex:0 0 72%;scroll-snap-align:start}.bestseller-info h3{font-size:21px}.home-bento{grid-template-columns:1fr 1fr;grid-template-rows:400px 245px 245px 178px;gap:8px}.bento-card{border-radius:0;padding:20px}.bento-app{grid-column:1/-1;grid-row:auto}.bento-phone{right:24px;bottom:-95px;width:183px;height:326px}.bento-phone i{width:94px;margin-top:33px}.bento-coffee{grid-column:span 1}.coffee-pack{right:17px;bottom:14px;width:95px;height:137px;padding:32px 14px}.coffee-pack b{font-size:31px}.bento-event{grid-column:span 1}.bento-event h2,.bento-promo h2,.bento-bakery h2,.bento-certificates h2{font-size:30px}.bento-promo{grid-column:span 2}.bento-bakery{grid-column:span 1}.bento-certificates{grid-column:span 1}.bento-promo strong{right:21px;bottom:18px;width:70px;font-size:15px}.home-moment{display:flex;min-height:0;margin:0;flex-direction:column-reverse;border-radius:0}.moment-image{height:330px;min-height:0}.moment-copy{padding:57px 20px}.home-moment h2{font-size:48px}.home-menu{padding-bottom:83px}.menu-grid{grid-template-columns:1fr 1fr;grid-template-rows:295px 184px 184px 160px;gap:8px;margin-top:33px}.menu-tile{border-radius:16px;padding:18px}.menu-main{grid-column:1/-1;grid-row:auto}.menu-main span{font-size:37px}.menu-main>b{left:18px;bottom:18px}.menu-tile-dessert{grid-column:span 2}.home-route{display:flex;min-height:0;margin:0;flex-direction:column;border-radius:0}.route-main{height:490px}.route-main>div{padding:55px 20px}.route-main h2{font-size:52px}.route-list{padding:0 20px 58px}.route-list a{min-height:106px;padding:23px 53px 23px 0}.route-list a>span{font-size:20px}.home-home-coffee{display:block;min-height:650px;margin:0;border-radius:0;padding:58px 20px}.home-home-coffee h2{font-size:53px}.home-coffee-visual{width:218px;height:270px;margin:78px auto 0}.home-coffee-visual span{top:60px;left:35px;font-size:65px}.home-coffee-visual small{left:37px;bottom:28px}.home-coffee-visual i{right:-51px;width:104px}.home-app-loyalty{display:block;min-height:620px;margin:0;border-radius:0;padding:58px 20px}.home-app-loyalty h2{font-size:52px}.loyalty-points{margin:58px auto 0;transform:rotate(-3deg)}.journal-list{display:flex;gap:9px;margin:34px -20px 0;padding:0 20px 8px;overflow:auto;scroll-snap-type:x mandatory}.journal-entry{flex:0 0 83%;min-height:405px;scroll-snap-align:start}.home-marquee{margin:0;}.home-marquee>div{animation-duration:23s}@media(prefers-reduced-motion:reduce){.gallery-slide,.bestseller-image img,.round-arrow,.gallery-copy>a,.home-marquee>div{transition:none;animation:none}}}
 </style>
