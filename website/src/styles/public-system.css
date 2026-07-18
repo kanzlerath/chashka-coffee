@@ -29,3 +29,113 @@
 
 /* One public shape language: controls intentionally use the same radius as surfaces. */
 .page-shell :is(.button,.hero a:not(.site-logo),.stores a,.filters button,.category-nav a,.point-picker,.card-actions a,.note a,.back,.lead-form input,.lead-form textarea,.lead-form button,.job-list a,.event-list a,.lead a,.alternatives a){border-radius:var(--radius)}
+
+/*
+ * Public-site consolidation
+ *
+ * A number of the early templates shipped their own page-level `body`,
+ * `header`, `footer`, and control rules. The public-site class gives the
+ * shared storefront a stronger, deliberate cascade boundary: a new page can
+ * still compose its content freely, but cannot accidentally bring back a
+ * second visual system around the shared header, footer or controls.
+ */
+html.public-site{--paper:#fcfbf8;--canvas:#f2f1ec;--ink:#231e1b;--muted:#6d6760;--line:#e4dfd7;--moss:#1f3b2e;--moss-deep:#182e24;--moss-soft:#dce7d4;--lime:#bdd65a;--sand:#f3eee7;--radius:24px;--content-gutter:clamp(22px,4.6vw,78px);--page-edge:clamp(22px,4.6vw,78px);background:var(--canvas);color:var(--ink);font-family:Montserrat,Arial,sans-serif}
+body.public-site{min-width:320px;margin:0;padding:0;background:var(--canvas);color:var(--ink);overflow-x:hidden}
+body.public-site .page-shell{width:min(calc(100% - 28px),1680px);min-height:100svh;margin:14px auto 0;background:transparent}
+body.public-site .page-shell>.site-header{position:sticky;top:14px;z-index:50;margin:0 0 14px;border:1px solid var(--line);border-radius:var(--radius);background:rgba(252,251,248,.96);box-shadow:0 12px 28px rgba(35,30,27,.055);backdrop-filter:blur(14px)}
+body.public-site .page-shell>.site-footer{width:100vw;margin:14px calc(50% - 50vw) 0;border-radius:0}
+body.public-site .public-main{min-width:0;overflow:visible}
+body.public-site .public-main>:is(.hero,.intro,.directory,.catalog,.services,.ready,.benefits,.how,.events,.offers,.proof,.vacancies,.articles,.nominals,.story,.about,.content,.body,.menu-shell,.category,.road){scroll-margin-top:114px}
+
+/* Typography has one scale regardless of the route. */
+body.public-site .page-shell :is(h1,h2,h3,p){text-wrap:balance}
+body.public-site .page-shell h1{font-size:clamp(52px,5.8vw,100px);line-height:.88;letter-spacing:-.09em}
+body.public-site .page-shell h2{letter-spacing:-.075em;line-height:.92}
+body.public-site .page-shell :is(.eyebrow,.section-kicker,.hero>div>p:first-child,.heading>p,.headline>p,.hero>p,.lead>div>p,.articles>p,.story>p,.archive>div>p,.form>div>p,.download>div>p,.catalog>div>p,.intro-copy>.eyebrow){color:#6f902b;font-size:11px;font-weight:800;letter-spacing:.13em;line-height:1.25;text-transform:uppercase}
+body.public-site .page-shell :is(.hero>div>p:not(.eyebrow),.hero>div>span,.hero>span,.intro-copy>p:not(.eyebrow),.body p,.content p){color:var(--muted);line-height:1.65}
+
+/* One shape language: surfaces and controls deliberately share the same radius. */
+body.public-site .page-shell :is(.hero,.story,.ending,.custom,.download,.app,.delivery,.delivery-panel,.form,.contact-form,.note,.lead,.support,.strip,.rules,.alternatives,.facts,.map-section,.menu-callout,.menu-banner,.formats-heading,.archive,.levels,.app-banner,.map-panel,.unavailable){border-radius:var(--radius)}
+body.public-site .page-shell :is(.service-card,.ecosystem-card,.grid>article,.benefits article,.steps article,.how-grid article,.restaurant,.item,.format-list article,.values article,.articles article,.offer-list article,.nominals article,.job-list article,.event-list article,.restaurant-grid article){border-radius:var(--radius)}
+body.public-site .page-shell :is(.button,.hero a:not(.site-logo),.stores a,.delivery a,.card-actions a,.point-picker,.category-nav a,.filters button,.note a,.lead a,.back,.job-list a,.event-list a,.alternatives a,.rules a,.map-link,.site-menu-button,.footer-cta a,.lead-form :is(input,textarea,button),.form :is(input,textarea,button),.contact-form :is(input,textarea,button)){min-height:46px;border-radius:var(--radius)!important}
+body.public-site .page-shell :is(.button,.hero a:not(.site-logo),.stores a,.delivery a,.card-actions a,.note a,.lead a,.rules a,.map-link,.job-list a,.event-list a,.alternatives a,.lead-form button,.form button,.contact-form button){display:inline-flex;align-items:center;justify-content:center;gap:0;border:1px solid transparent;background:var(--moss);color:#fff;font-size:12px;font-weight:800;line-height:1.1;text-decoration:none;transition:transform .2s ease,background-color .2s ease,color .2s ease,border-color .2s ease,box-shadow .2s ease}
+body.public-site .page-shell :is(.button,.hero a:not(.site-logo),.stores a,.delivery a,.card-actions a,.note a,.lead a,.rules a,.map-link,.job-list a,.event-list a,.alternatives a,.lead-form button,.form button,.contact-form button):hover{box-shadow:0 9px 18px rgba(31,59,46,.14);transform:translateY(-2px);background:#294b3a}
+body.public-site .page-shell :is(.button,.hero a:not(.site-logo),.stores a,.delivery a,.card-actions a,.note a,.lead a,.rules a,.map-link,.job-list a,.event-list a,.alternatives a,.lead-form button,.form button,.contact-form button):focus-visible{outline:3px solid rgba(189,214,90,.85);outline-offset:3px}
+body.public-site .page-shell :is(.button,.hero a:not(.site-logo),.stores a,.delivery a,.card-actions a,.note a,.lead a,.rules a,.map-link,.job-list a,.event-list a,.alternatives a) :is(span,b,i){display:none}
+body.public-site .page-shell :is(.filters button,.category-nav a,.point-picker,.back){display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-size:12px;font-weight:800;text-decoration:none;transition:background-color .2s ease,color .2s ease,border-color .2s ease,transform .2s ease}
+body.public-site .page-shell :is(.filters button,.category-nav a,.point-picker,.back):hover{border-color:var(--moss);background:var(--moss);color:#fff;transform:translateY(-1px)}
+body.public-site .page-shell :is(.lead-form input,.lead-form textarea,.form input,.form textarea,.contact-form input,.contact-form textarea){border:1px solid var(--line);background:#fffdf9;color:var(--ink);outline:none;transition:border-color .18s ease,box-shadow .18s ease}
+body.public-site .page-shell :is(.lead-form input,.lead-form textarea,.form input,.form textarea,.contact-form input,.contact-form textarea):focus{border-color:#6f902b;box-shadow:0 0 0 3px rgba(189,214,90,.24)}
+
+/* Shared editorial blocks. The page-specific content retains its own rhythm. */
+body.public-site .page-shell .hero{margin:0;min-height:min(48vw,680px);border:0;box-shadow:none}
+body.public-site .page-shell .hero:not(:has(img)){background:var(--sand)}
+body.public-site .page-shell .hero>div{padding:clamp(52px,6.8vw,112px)}
+body.public-site .page-shell .hero:after{background:linear-gradient(90deg,#fcfbf8 0%,rgba(252,251,248,.9) 38%,rgba(252,251,248,.18) 70%,transparent 100%)}
+body.public-site .page-shell .hero>img{object-fit:cover}
+body.public-site .page-shell .hero h1{max-width:750px;color:var(--ink)}
+body.public-site .page-shell .hero :is(span,.hero>div>p:last-child){max-width:450px;font-size:16px}
+body.public-site .page-shell .hero>i,body.public-site .page-shell .hero>em,body.public-site .page-shell .hero>strong,body.public-site .page-shell .hero>b{color:var(--lime)}
+body.public-site .page-shell :is(.directory,.catalog,.services,.ready,.benefits,.how,.events,.offers,.proof,.vacancies,.articles,.nominals,.road){padding:clamp(84px,9vw,150px) var(--content-gutter)}
+body.public-site .page-shell :is(.directory,.catalog,.services,.ready,.benefits,.how,.events,.offers,.proof,.vacancies,.articles,.nominals,.road) :is(.heading h2,.headline h2,.section-heading h2,.directory-top h2,.catalog>div>h2){font-size:clamp(42px,4.9vw,78px)}
+body.public-site .page-shell :is(.story,.ending,.custom,.download,.app,.delivery,.delivery-panel,.form,.contact-form,.note,.lead,.support,.strip,.rules,.alternatives,.facts,.map-section,.menu-callout,.menu-banner,.archive,.levels,.app-banner,.unavailable){margin:0 0 14px;box-shadow:none}
+body.public-site .page-shell :is(.story,.ending,.custom,.download,.app,.lead,.rules,.alternatives,.facts,.map-section,.menu-callout,.menu-banner,.archive,.app-banner,.unavailable){background:var(--sand)}
+body.public-site .page-shell :is(.delivery,.delivery-panel,.form,.contact-form,.note,.support,.strip,.levels){background:var(--moss);color:#fff}
+body.public-site .page-shell :is(.delivery,.delivery-panel,.form,.contact-form,.note,.support,.strip,.levels) :is(h1,h2,h3,p,span){color:inherit}
+body.public-site .page-shell :is(.delivery,.delivery-panel,.form,.contact-form,.note,.support,.strip,.levels) .eyebrow{color:var(--lime)}
+body.public-site .page-shell :is(.service-card,.ecosystem-card,.grid>article,.benefits article,.steps article,.how-grid article,.restaurant,.item,.format-list article,.values article,.articles article,.offer-list article,.nominals article,.job-list article,.event-list article){border:1px solid var(--line);box-shadow:none;overflow:hidden}
+body.public-site .page-shell :is(.service-card,.ecosystem-card,.grid>article,.benefits article,.steps article,.how-grid article,.restaurant,.item,.format-list article,.values article,.articles article,.offer-list article,.nominals article,.job-list article,.event-list article):hover{border-color:#c8d5b9;box-shadow:0 14px 24px rgba(35,30,27,.055)}
+body.public-site .page-shell .restaurant{background:#fffdf9}
+body.public-site .page-shell .item{background:#fffdf9}
+body.public-site .page-shell .item-image{overflow:hidden;border-radius:var(--radius)}
+body.public-site .page-shell .item-image img,.public-site .page-shell .restaurant-image img{transition:transform .35s cubic-bezier(.22,1,.36,1)}
+body.public-site .page-shell :is(.item,.restaurant):hover :is(.item-image img,.restaurant-image img){transform:scale(1.035)}
+body.public-site .page-shell .badge{border-radius:var(--radius);background:var(--lime);color:var(--moss);font-weight:800}
+body.public-site .page-shell .restaurant-image{overflow:hidden;border-radius:var(--radius)}
+body.public-site .page-shell .restaurant-image span{border-radius:var(--radius);background:rgba(252,251,248,.95);color:var(--moss)}
+body.public-site .page-shell .facts aside{background:#e9dfcf}
+body.public-site .page-shell .photo-grid img{border-radius:var(--radius)}
+body.public-site .page-shell .category-nav{gap:8px;border:0}
+body.public-site .page-shell .category-nav a{padding:12px 17px;white-space:nowrap}
+body.public-site .page-shell .category-nav a:first-child,.public-site .page-shell .filters .is-active{border-color:var(--moss);background:var(--moss);color:#fff}
+body.public-site .page-shell .map-panel{background:#e7ede3}
+body.public-site .page-shell .map-panel a{border-radius:var(--radius)}
+body.public-site .page-shell .content{max-width:1000px;margin:0 auto;padding:clamp(84px,9vw,150px) var(--content-gutter)}
+body.public-site .page-shell .content section{border-color:var(--line)}
+body.public-site .page-shell .body{max-width:790px;margin:0 auto;padding:clamp(84px,9vw,145px) var(--content-gutter) 58px}
+body.public-site .page-shell .body blockquote{border-color:var(--line);color:var(--ink)}
+body.public-site .page-shell .back{margin:0 var(--content-gutter) 88px}
+
+/* Homepage uses a bespoke composition, but consumes the same surface and control tokens. */
+body.public-site .home-page :is(.ui-button,.product-card,.product-card-image,.bento-card,.home-day,.menu-tile,.menu-all,.places-stage,.home-home-coffee,.home-app-loyalty,.loyalty-points,.journal-card,.stories-media){border-radius:var(--radius)!important}
+body.public-site .home-page .ui-button{min-height:46px;padding-inline:21px}
+body.public-site .home-page .ui-button:hover{box-shadow:0 9px 18px rgba(31,59,46,.14)}
+body.public-site .home-page .product-card{border-color:var(--line)}
+body.public-site .home-page .product-card-image{border-radius:calc(var(--radius) - 7px)!important}
+body.public-site .home-page .product-card-image span{border-radius:var(--radius)!important}
+body.public-site .home-page .place-filters button{border-radius:var(--radius)!important}
+body.public-site .home-page .menu-all b{border-radius:var(--radius)!important}
+body.public-site .home-page .bento-card:focus-visible,body.public-site .home-page .menu-tile:focus-visible,body.public-site .home-page .journal-card:focus-visible{outline:3px solid var(--lime);outline-offset:3px}
+
+/* Template-specific leakage safeguards: these pages used to style raw header/footer/body selectors. */
+body.public-site .site-header :is(.site-header-main,.site-nav,.site-actions,.site-more-links,.site-logo){font-family:Montserrat,Arial,sans-serif}
+body.public-site .site-footer :is(.footer-intro,.footer-grid,.footer-bottom){font-family:Montserrat,Arial,sans-serif}
+body.public-site .page-shell> :is(header,footer).site-header,body.public-site .page-shell> :is(header,footer).site-footer{box-sizing:border-box}
+body.public-site .page-shell .shell{max-width:none;margin:0;overflow:visible;border:0;border-radius:0;background:transparent;box-shadow:none}
+
+@media(max-width:980px){
+  body.public-site .page-shell{width:100%;margin:0}
+  body.public-site .page-shell>.site-header{top:0;margin:0;border:0;border-radius:0;box-shadow:none}
+  body.public-site .page-shell .hero{min-height:590px;margin:0 12px;border-radius:var(--radius)}
+  body.public-site .page-shell :is(.story,.ending,.custom,.download,.app,.delivery,.delivery-panel,.form,.contact-form,.note,.lead,.support,.strip,.rules,.alternatives,.facts,.map-section,.menu-callout,.menu-banner,.archive,.levels,.app-banner,.unavailable){margin-right:12px;margin-left:12px;border-radius:var(--radius)}
+  body.public-site .page-shell :is(.directory,.catalog,.services,.ready,.benefits,.how,.events,.offers,.proof,.vacancies,.articles,.nominals,.road){padding:72px 20px}
+  body.public-site .page-shell :is(.service-card,.ecosystem-card,.grid>article,.benefits article,.steps article,.how-grid article,.restaurant,.item,.format-list article,.values article,.articles article,.offer-list article,.nominals article,.job-list article,.event-list article){border-radius:var(--radius)}
+  body.public-site .page-shell .site-footer{margin-top:12px}
+}
+@media(max-width:700px){
+  body.public-site .page-shell .hero{min-height:560px}
+  body.public-site .page-shell h1{font-size:clamp(48px,14vw,64px)}
+  body.public-site .page-shell .hero>div{padding:46px 25px}
+  body.public-site .page-shell :is(.directory,.catalog,.services,.ready,.benefits,.how,.events,.offers,.proof,.vacancies,.articles,.nominals,.road){padding:68px 20px}
+  body.public-site .page-shell :is(.story,.ending,.custom,.download,.app,.delivery,.delivery-panel,.form,.contact-form,.note,.lead,.support,.strip,.rules,.alternatives,.facts,.map-section,.menu-callout,.menu-banner,.archive,.levels,.app-banner,.unavailable){margin-right:12px;margin-left:12px}
+}

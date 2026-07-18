@@ -26,7 +26,7 @@ try {
 
 const defaultSlides = [
   { mediaType: 'IMAGE', mediaUrl: '/images/home-morning-v2.png', posterUrl: null, eyebrow: 'С хорошего кофе', title: 'Начните день\nв своём ритме', description: 'Завтрак, любимый кофе и немного времени для себя.', ctaLabel: 'Открыть меню', ctaUrl: '/restaurants/krasny-prospekt/menu', durationSeconds: 7 },
-  { mediaType: 'IMAGE', mediaUrl: '/images/home-breakfast.png', posterUrl: null, eyebrow: 'В каждом районе', title: 'Место, куда\nхочется зайти', description: 'Встретиться, поработать или просто сделать паузу.', ctaLabel: 'Найти кофейню', ctaUrl: '/restaurants', durationSeconds: 7 },
+  { mediaType: 'IMAGE', mediaUrl: '/images/home-breakfast.png', posterUrl: null, eyebrow: 'В каждом районе', title: 'Место, куда\nхочется зайти', description: 'Встретиться, поработать или просто сделать паузу.', ctaLabel: 'Найти ресторан', ctaUrl: '/restaurants', durationSeconds: 7 },
   { mediaType: 'IMAGE', mediaUrl: '/images/restaurants-hero.png', posterUrl: null, eyebrow: 'Любимое — ближе', title: 'Кофе и еда\nс доставкой', description: 'Привезём из ближайшей «Чашки кофе» бережно и вовремя.', ctaLabel: 'Заказать доставку', ctaUrl: '/delivery', durationSeconds: 7 },
 ]
 const slides = homepage?.slides.length ? homepage.slides : defaultSlides
@@ -90,7 +90,7 @@ const daySection = homepage?.daySection?.parts.length ? homepage.daySection : de
 const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
 ---
 
-<PageShell title="Чашка кофе" description="Чашка кофе — сеть кофеен в Новосибирске: завтраки, десерты, кофе и места для хорошего дня." image="/images/home-morning-v2.png">
+<PageShell title="Чашка кофе" description="Чашка кофе — сеть ресторанов в Новосибирске: завтраки, десерты, кофе и места для хорошего дня." image="/images/home-morning-v2.png">
   <div class="home-page">
     <section class="home-stories" data-home-stories aria-label="Актуальное в Чашке кофе">
       <div class="stories-media">
@@ -152,7 +152,7 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
         <div class="place-feature">
           {allPlaces.map((place, index) => <article class:list={{ 'is-active': index === 0 }} data-place-panel={place.slug} data-place-group={place.group}>
             <img src={place.coverImageUrl ?? productFallbacks[index % productFallbacks.length]} alt="" loading="lazy" />
-            <div><p>{place.group === 'airport' ? 'Аэропорт' : 'Город'}</p><h3>{place.name.replace('Чашка кофе — ', '')}</h3><span>{place.address}<br />{place.openingHoursLabel}</span><a class="ui-button ui-button--fill" href={`/restaurants/${place.slug}`}>Открыть кофейню</a></div>
+            <div><p>{place.group === 'airport' ? 'Аэропорт' : 'Город'}</p><h3>{place.name.replace('Чашка кофе — ', '')}</h3><span>{place.address}<br />{place.openingHoursLabel}</span><a class="ui-button ui-button--fill" href={`/restaurants/${place.slug}`}>Открыть ресторан</a></div>
           </article>)}
         </div>
         <div class="place-list">{allPlaces.map((place) => <button data-place-button={place.slug} type="button"><span>{place.name.replace('Чашка кофе — ', '')}</span><small>{place.address}</small></button>)}</div>

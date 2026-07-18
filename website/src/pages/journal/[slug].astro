@@ -1,7 +1,7 @@
 ---
 import StoryDetail from '../../components/StoryDetail.astro';
 import { getContentSlugs } from '../../lib/public-api';
-const stories={'coffee-morning':{title:'Кофе для первого тёплого утра',intro:'Как выбрать напиток, который не спорит с вашим настроением.',meta:'Гид · 5 минут'},'croissant-now':{title:'Почему круассан лучше есть сразу',intro:'Немного масла, много слоёв и один простой совет от кондитера.',meta:'Еда · 3 минуты'},'novosibirsk-route':{title:'Маршрут выходного дня по Новосибирску',intro:'Парки, набережная и кофейни для хорошей паузы.',meta:'Город · 7 минут'},'after-roasting':{title:'Что происходит с зерном после обжарки',intro:'Разбираемся без сложных слов — только вкус и любопытство.',meta:'Кофе · 6 минут'}};
+const stories={'coffee-morning':{title:'Кофе для первого тёплого утра',intro:'Как выбрать напиток, который не спорит с вашим настроением.',meta:'Гид · 5 минут'},'croissant-now':{title:'Почему круассан лучше есть сразу',intro:'Немного масла, много слоёв и один простой совет от кондитера.',meta:'Еда · 3 минуты'},'novosibirsk-route':{title:'Маршрут выходного дня по Новосибирску',intro:'Парки, набережная и рестораны для хорошей паузы.',meta:'Город · 7 минут'},'after-roasting':{title:'Что происходит с зерном после обжарки',intro:'Разбираемся без сложных слов — только вкус и любопытство.',meta:'Кофе · 6 минут'}};
 type Story = { title: string; intro: string; meta: string; image?: string }
 interface Props { story?: Story }
 const fallbackStory: Story={title:'Журнал «Чашки кофе»',intro:'Материал скоро появится на странице.',meta:'Журнал'};
