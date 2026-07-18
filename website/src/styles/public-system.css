@@ -39,9 +39,9 @@
  * still compose its content freely, but cannot accidentally bring back a
  * second visual system around the shared header, footer or controls.
  */
-html.public-site{--paper:#fcfbf8;--canvas:#f2f1ec;--ink:#231e1b;--muted:#6d6760;--line:#e4dfd7;--moss:#1f3b2e;--moss-deep:#182e24;--moss-soft:#dce7d4;--lime:#bdd65a;--sand:#f3eee7;--radius:24px;--content-gutter:clamp(22px,4.6vw,78px);--page-edge:clamp(22px,4.6vw,78px);background:var(--canvas);color:var(--ink);font-family:Montserrat,Arial,sans-serif}
+html.public-site{--paper:#fcfbf8;--canvas:#f2f1ec;--ink:#231e1b;--muted:#6d6760;--line:#e4dfd7;--moss:#1f3b2e;--moss-deep:#182e24;--moss-soft:#dce7d4;--lime:#bdd65a;--sand:#f3eee7;--radius:24px;--content-gutter:clamp(22px,4.6vw,78px);--page-edge:max(clamp(24px,9vw,180px),calc(50vw - 840px));background:var(--canvas);color:var(--ink);font-family:Montserrat,Arial,sans-serif}
 body.public-site{min-width:320px;margin:0;padding:0;background:var(--canvas);color:var(--ink);overflow-x:hidden}
-body.public-site .page-shell{width:min(calc(100% - 28px),1680px);min-height:100svh;margin:14px auto 0;background:transparent}
+body.public-site .page-shell{width:min(calc(100% - var(--page-edge) - var(--page-edge)),1680px);min-height:100svh;margin:clamp(16px,1.3vw,26px) auto 0;background:transparent}
 body.public-site .page-shell>.site-header{position:sticky;top:14px;z-index:50;margin:0 0 14px;border:1px solid var(--line);border-radius:var(--radius);background:rgba(252,251,248,.96);box-shadow:0 12px 28px rgba(35,30,27,.055);backdrop-filter:blur(14px)}
 body.public-site .page-shell>.site-footer{width:100vw;margin:14px calc(50% - 50vw) 0;border-radius:0}
 body.public-site .public-main{min-width:0;overflow:visible}
