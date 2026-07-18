@@ -33,6 +33,7 @@ export const homepageBestsellerMenuItemSchema = z.object({
   slug: z.string().trim().min(1).max(120),
   name: z.string().trim().min(1).max(180),
   description: nullableText(1_000),
+  weightGrams: z.number().int().positive().nullable(),
   priceKopecks: z.number().int().nonnegative(),
   imageUrl: nullablePublicUrl,
   marketingBadge: z.enum(['NEW', 'HIT', 'SEASONAL', 'SPECIAL']).nullable(),

@@ -29,6 +29,7 @@ type MenuItemWithCategory = {
   slug: string
   name: string
   description: string | null
+  weightGrams: number | null
   priceKopecks: number
   imageUrl: string | null
   marketingBadge: 'NEW' | 'HIT' | 'SEASONAL' | 'SPECIAL' | null
@@ -47,7 +48,7 @@ type HomepageBestsellerWithItem = {
 }
 
 function menuItemDto(item: MenuItemWithCategory): HomepageBestsellerMenuItem {
-  return { id: item.id, slug: item.slug, name: item.name, description: item.description, priceKopecks: item.priceKopecks, imageUrl: item.imageUrl, marketingBadge: item.marketingBadge, categoryName: item.category.name }
+  return { id: item.id, slug: item.slug, name: item.name, description: item.description, weightGrams: item.weightGrams, priceKopecks: item.priceKopecks, imageUrl: item.imageUrl, marketingBadge: item.marketingBadge, categoryName: item.category.name }
 }
 
 function slideDto(slide: { id: string; mediaType: 'IMAGE' | 'VIDEO'; mediaUrl: string; posterUrl: string | null; eyebrow: string | null; title: string; description: string | null; ctaLabel: string | null; ctaUrl: string | null; durationSeconds: number; isPublished: boolean; position: number; createdAt: Date; updatedAt: Date }): HomepageSlide {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { upsertHomepageSlideRequestSchema } from './homepage'
+import { homepageBestsellerMenuItemSchema, upsertHomepageSlideRequestSchema } from './homepage'
 
 describe('homepage contracts', () => {
   const slide = {
@@ -28,5 +28,19 @@ describe('homepage contracts', () => {
   test('rejects untrusted media and CTA URLs', () => {
     expect(() => upsertHomepageSlideRequestSchema.parse({ ...slide, mediaUrl: 'javascript:alert(1)' })).toThrow()
     expect(() => upsertHomepageSlideRequestSchema.parse({ ...slide, ctaUrl: 'ftp://media.example.test/coffee' })).toThrow()
+  })
+
+  test('exposes a bestseller output when the catalogue item has one', () => {
+    expect(homepageBestsellerMenuItemSchema.parse({
+      id: '019a2f17-453e-7c1a-9c04-4e468e7eb514',
+      slug: 'cappuccino',
+      name: 'Капучино',
+      description: 'Кофе с молоком',
+      weightGrams: 320,
+      priceKopecks: 29000,
+      imageUrl: '/images/cappuccino.png',
+      marketingBadge: 'HIT',
+      categoryName: 'Кофе',
+    })).toMatchObject({ weightGrams: 320 })
   })
 })
