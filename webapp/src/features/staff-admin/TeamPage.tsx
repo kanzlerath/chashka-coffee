@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createStaffUserRequestSchema, staffUserListResponseSchema, staffUserResponseSchema, type CreateStaffUserRequest } from '@chashka-coffee/contracts'
 import { useMemo, useState } from 'react'
 
+import { AdminPageHeader } from '@/components/admin'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -20,8 +21,10 @@ export function TeamPage() {
   })
   const canSubmit = useMemo(() => draft.email.length > 0 && draft.password.length >= 8, [draft])
 
-  return <section className="mx-auto grid w-full max-w-7xl gap-6 px-5 py-9 lg:grid-cols-[1fr_.9fr]">
-    <Card><CardHeader><CardTitle>Команда</CardTitle><CardDescription>Доступ к админке есть только у добавленных здесь сотрудников.</CardDescription></CardHeader><CardContent className="grid gap-2">
+  return <section className="admin-page">
+    <AdminPageHeader eyebrow="Настройки" title="Команда и доступы" description="Регистрации в админке нет — доступ появляется только после приглашения сотрудника." />
+    <div className="grid gap-6 lg:grid-cols-[1.05fr_.95fr]">
+    <Card><CardHeader><CardTitle>Сотрудники</CardTitle><CardDescription>Пользователи, у которых есть доступ к админке.</CardDescription></CardHeader><CardContent className="grid gap-2">
       {staff.isPending && <CardDescription>Загружаем сотрудников…</CardDescription>}
       {staff.data?.users.map((user) => <div key={user.id} className="flex items-center justify-between gap-4 rounded-xl border p-4"><div><strong>{user.displayName ?? user.email}</strong><p className="mt-1 text-sm text-muted-foreground">{user.email}</p></div><span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold">{user.role === 'ADMIN' ? 'Администратор' : 'Редактор'}</span></div>)}
       {staff.isError && <p className="text-sm text-destructive">Не удалось загрузить сотрудников.</p>}
@@ -36,5 +39,6 @@ export function TeamPage() {
         <Button type="submit" size="lg" disabled={!canSubmit || create.isPending}>{create.isPending ? 'Создаём…' : 'Выдать доступ'}</Button>
       </form>
     </CardContent></Card>
+    </div>
   </section>
 }

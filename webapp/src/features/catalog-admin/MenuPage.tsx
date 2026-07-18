@@ -7,6 +7,7 @@ import type {
   UpsertMenuRequest,
 } from '@chashka-coffee/contracts'
 import { useMemo, useState } from 'react'
+import { AdminPageHeader } from '@/components/admin'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -90,8 +91,10 @@ export function MenuPage() {
   }
 
   return (
-    <section className="mx-auto grid w-full max-w-7xl gap-6 px-5 py-9 lg:grid-cols-[300px_minmax(0,1fr)]">
-      <Card>
+    <section className="admin-page">
+      <AdminPageHeader eyebrow="Каталог" title="Меню" description="Создавайте базовые наборы, категории и блюда. Затем назначайте меню конкретным ресторанам." />
+      <div className="grid gap-6 lg:grid-cols-[minmax(16rem,.55fr)_minmax(0,1.45fr)]">
+      <Card className="admin-resource-list">
         <CardHeader>
           <CardTitle>Наборы меню</CardTitle>
           <CardDescription>Базовые меню для ресторанов сети.</CardDescription>
@@ -99,8 +102,8 @@ export function MenuPage() {
         <CardContent className="grid gap-2">
           {menus.data?.menus.map((entry) => (
             <button
-              className="rounded-xl border p-3 text-left transition-colors hover:bg-muted data-[active=true]:border-primary data-[active=true]:bg-muted"
-              data-active={entry.id === selectedId}
+              className="admin-list-row"
+              data-selected={entry.id === selectedId || undefined}
               key={entry.id}
               onClick={() => { setSelectedId(entry.id); setEditingItemId(null); setCategoryId('') }}
               type="button"
@@ -191,6 +194,7 @@ export function MenuPage() {
             </Editor>
           </div>
         </> : <Card><CardContent className="py-14 text-muted-foreground">Выберите набор меню слева.</CardContent></Card>}
+      </div>
       </div>
     </section>
   )

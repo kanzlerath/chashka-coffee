@@ -21,6 +21,7 @@ import {
 } from '@chashka-coffee/contracts'
 import { useEffect, useMemo, useState } from 'react'
 
+import { AdminPageHeader, AdminTabs } from '@/components/admin'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -48,6 +49,7 @@ export function HomepagePage() {
   const [daySectionDraft, setDaySectionDraft] = useState<UpsertHomepageDaySectionRequest>(emptyDaySection)
   const [dayPart, setDayPart] = useState<HomepageDayPart | null>(null)
   const [dayPartDraft, setDayPartDraft] = useState<UpsertHomepageDayPartRequest>(emptyDayPart())
+  const [panel, setPanel] = useState<'slides' | 'bestsellers' | 'day'>('slides')
   const homepage = useQuery({ queryKey: ['admin', 'homepage'], queryFn: () => api.request('/api/admin/homepage', homepageAdminResponseSchema) })
   const refresh = () => void queryClient.invalidateQueries({ queryKey: ['admin', 'homepage'] })
 
@@ -95,32 +97,36 @@ export function HomepagePage() {
     onSuccess: () => { setDayPart(null); setDayPartDraft(emptyDayPart(daySection?.id)); refresh() },
   })
 
-  return <section className="mx-auto grid w-full max-w-7xl gap-6 px-5 py-9 xl:grid-cols-2">
-    <Card>
+  return <section className="admin-page admin-homepage-workspace">
+    <AdminPageHeader eyebrow="Публикация" title="Главная страница" description="Настраивайте сценарии первого экрана, подборку бестселлеров и блок с поводами зайти." />
+    <AdminTabs label="Раздел главной страницы" value={panel} onChange={setPanel} tabs={[{ value: 'slides', label: 'Первый экран' }, { value: 'bestsellers', label: 'Бестселлеры' }, { value: 'day', label: 'Поводы зайти' }]} />
+    <div className="admin-homepage-panel">
+    {panel === 'slides' ? <Card>
       <CardHeader><CardTitle>Галерея первого экрана</CardTitle><CardDescription>Слайды идут по порядку. Видео воспроизводится без звука и использует постер до загрузки.</CardDescription></CardHeader>
       <CardContent className="grid gap-5">
         <div className="grid gap-2">{homepage.data?.slides.map((entry) => <button className="flex items-center justify-between rounded-xl border p-3 text-left hover:bg-muted" key={entry.id} onClick={() => { setSlide(entry); setSlideDraft(toSlideDraft(entry)) }} type="button"><span><b className="block">{entry.title}</b><small className="text-muted-foreground">{entry.mediaType === 'VIDEO' ? 'Видео' : 'Изображение'} · {entry.isPublished ? 'опубликован' : 'черновик'}</small></span><span className="text-muted-foreground">{entry.position}</span></button>)}</div>
         <Button onClick={() => { setSlide(null); setSlideDraft({ ...emptySlide, position: (homepage.data?.slides.length ?? 0) * 10 + 10 }) }} type="button" variant="outline">Новый слайд</Button>
         <SlideForm draft={slideDraft} onChange={setSlideDraft} onRemove={slide ? () => removeSlide.mutate(slide.id) : undefined} onSave={() => saveSlide.mutate()} saving={saveSlide.isPending} deleting={removeSlide.isPending} error={saveSlide.isError} />
       </CardContent>
-    </Card>
+    </Card> : null}
 
-    <Card>
+    {panel === 'bestsellers' ? <Card>
       <CardHeader><CardTitle>Бестселлеры</CardTitle><CardDescription>Выберите реальные позиции меню. Их название, цена и фотография на главной всегда совпадают с каталогом.</CardDescription></CardHeader>
       <CardContent className="grid gap-5">
         <div className="grid gap-2">{homepage.data?.bestsellers.map((entry) => <button className="flex items-center justify-between rounded-xl border p-3 text-left hover:bg-muted" key={entry.id} onClick={() => { setBestseller(entry); setBestsellerDraft(toBestsellerDraft(entry)) }} type="button"><span><b className="block">{entry.item.name}</b><small className="text-muted-foreground">{entry.badge ?? entry.item.marketingBadge ?? entry.item.categoryName} · {entry.isPublished ? 'опубликован' : 'черновик'}</small></span><span className="text-muted-foreground">{entry.position}</span></button>)}</div>
         <Button onClick={() => { setBestseller(null); setBestsellerDraft({ ...emptyBestseller, position: (homepage.data?.bestsellers.length ?? 0) * 10 + 10 }) }} type="button" variant="outline">Добавить позицию</Button>
         <BestsellerForm menuItems={homepage.data?.menuItems ?? []} draft={bestsellerDraft} onChange={setBestsellerDraft} onRemove={bestseller ? () => removeBestseller.mutate(bestseller.id) : undefined} onSave={() => saveBestseller.mutate()} saving={saveBestseller.isPending} deleting={removeBestseller.isPending} error={saveBestseller.isError} />
       </CardContent>
-    </Card>
+    </Card> : null}
 
-    <Card className="xl:col-span-2">
+    {panel === 'day' ? <Card>
       <CardHeader><CardTitle>Поводы зайти сегодня</CardTitle><CardDescription>Настройте заголовок блока и три периода дня. Каждая строка ведёт на выбранную страницу сайта.</CardDescription></CardHeader>
       <CardContent className="grid gap-5">
         <DaySectionForm draft={daySectionDraft} onChange={setDaySectionDraft} onSave={() => saveDaySection.mutate()} saving={saveDaySection.isPending} error={saveDaySection.isError} />
         {daySection ? <><div className="grid gap-2 border-t pt-5">{daySection.parts.map((entry) => <button className="flex items-center justify-between rounded-xl border p-3 text-left hover:bg-muted" key={entry.id} onClick={() => { setDayPart(entry); setDayPartDraft(toDayPartDraft(entry)) }} type="button"><span><b className="block">{entry.label} · {entry.title}</b><small className="text-muted-foreground">{entry.isPublished ? 'опубликован' : 'черновик'} · {entry.ctaUrl ?? 'без ссылки'}</small></span><span className="text-muted-foreground">{entry.position}</span></button>)}</div><Button onClick={() => { setDayPart(null); setDayPartDraft({ ...emptyDayPart(daySection.id), position: (daySection.parts.length ?? 0) * 10 + 10 }) }} type="button" variant="outline">Добавить период дня</Button><DayPartForm draft={dayPartDraft} onChange={setDayPartDraft} onRemove={dayPart ? () => removeDayPart.mutate(dayPart.id) : undefined} onSave={() => saveDayPart.mutate()} saving={saveDayPart.isPending} deleting={removeDayPart.isPending} error={saveDayPart.isError} /></> : <p className="text-sm text-muted-foreground">Сначала сохраните заголовок блока, затем добавьте периоды дня.</p>}
       </CardContent>
-    </Card>
+    </Card> : null}
+    </div>
   </section>
 }
 

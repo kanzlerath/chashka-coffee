@@ -41,7 +41,7 @@ export function LoginForm({
         await auth.login(result.data as LoginRequest)
       } catch (caughtError) {
         setFormError(
-          caughtError instanceof ApiRequestError ? caughtError.message : 'Unexpected auth error',
+          caughtError instanceof ApiRequestError ? caughtError.message : 'Не удалось войти. Повторите попытку.',
         )
       }
     },
@@ -59,7 +59,7 @@ export function LoginForm({
           name="email"
           children={(field) => (
             <Field data-invalid={hasErrors(fieldErrors.email)}>
-              <FieldLabel htmlFor={emailId}>Email</FieldLabel>
+              <FieldLabel htmlFor={emailId}>E-mail</FieldLabel>
               <Input
                 id={emailId}
                 name={field.name}
@@ -87,7 +87,7 @@ export function LoginForm({
           name="password"
           children={(field) => (
             <Field data-invalid={hasErrors(fieldErrors.password)}>
-              <FieldLabel htmlFor={passwordId}>Password</FieldLabel>
+              <FieldLabel htmlFor={passwordId}>Пароль</FieldLabel>
               <Input
                 id={passwordId}
                 name={field.name}
@@ -116,7 +116,7 @@ export function LoginForm({
           selector={(state) => state.isSubmitting}
           children={(isSubmitting) => (
             <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? 'Working...' : 'Login'}
+              {isSubmitting ? 'Входим…' : 'Войти'}
             </Button>
           )}
         />
