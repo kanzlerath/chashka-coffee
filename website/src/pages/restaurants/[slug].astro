@@ -1,5 +1,6 @@
 ---
 import PageShell from '../../layouts/PageShell.astro';
+import type { RestaurantDetail } from '@chashka-coffee/contracts';
 type RestaurantPage = {
   slug: string
   title: string
@@ -31,7 +32,17 @@ export function getStaticPaths() {
   return ['krasny-prospekt', 'ulitsa-lenina', 'akademgorodok', 'galereya-novosibirsk', 'rechnoy-vokzal', 'ploshchad-lenina', 'vertical-apart-hotel', 'central-park', 'zaeltsovsky-park', 'mikhaylovskaya-naberegnaya', 'tolmachevo-domestic', 'tolmachevo-international', 'tolmachevo-arrivals'].map((slug) => ({ params: { slug } }))
 }
 
-const restaurant = restaurants.find(({ slug }) => slug === Astro.params.slug) ?? restaurants[0]
+let restaurant = restaurants.find(({ slug }) => slug === Astro.params.slug) ?? restaurants[0]
+const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
+try {
+  const response = await fetch(`${apiUrl}/api/restaurants/${restaurant.slug}`)
+  if (response.ok) {
+    const { restaurant: detail } = await response.json() as { restaurant: RestaurantDetail }
+    const title = detail.name.replace('Чашка кофе — ', '')
+    const schedule = detail.openingHours.map((entry) => entry.isClosed ? '' : `${entry.opensAt ?? ''}–${entry.closesAt ?? ''}`).find(Boolean) ?? detail.openingHoursLabel
+    restaurant = { slug: detail.slug, title, address: detail.address, phone: detail.phone, format: detail.format === 'PARK' ? 'Кофейня в парке' : detail.format === 'AIRPORT' ? 'Кофейня в аэропорту' : detail.format === 'APART_HOTEL' ? 'Кофейня при апарт-отеле' : 'Городская кофейня', schedule, description: detail.description ?? 'Подробности о кофейне скоро появятся на странице.', image: detail.coverImageUrl ?? restaurant.image }
+  }
+} catch { /* static editorial fallback remains available */ }
 const mapsQuery = encodeURIComponent(restaurant.address)
 ---
 

@@ -1,6 +1,7 @@
 ---
 import StoryDetail from '../../components/StoryDetail.astro';
 export function getStaticPaths(){const jobs={barista:{title:'Бариста',intro:'Готовить кофе, улыбаться гостям и знать любимый десерт постоянных гостей.',meta:'Рестораны в центре · от 45 000 ₽'},manager:{title:'Менеджер зала',intro:'Собирать спокойную смену и делать так, чтобы гостям хотелось задержаться.',meta:'Красный проспект · от 55 000 ₽'},'pastry-chef':{title:'Кондитер',intro:'Работать со свежей выпечкой и превращать простые ингредиенты в повод зайти.',meta:'Производство · по итогам встречи'}};return Object.entries(jobs).map(([slug,story])=>({params:{slug},props:{story}}));}
-const {story}=Astro.props;
+let {story}=Astro.props;
+try { const response = await fetch(`${import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'}/api/jobs/${Astro.params.slug}`); if (response.ok) { const { opening } = await response.json(); story = { title: opening.title, intro: opening.description ?? story.intro, meta: [opening.department, opening.location, opening.employmentType].filter(Boolean).join(' · ') || story.meta } } } catch { /* static editorial fallback remains available */ }
 ---
 <StoryDetail eyebrow="вакансия чашка кофе" action="Ко всем вакансиям" actionHref="/jobs" {...story}/>

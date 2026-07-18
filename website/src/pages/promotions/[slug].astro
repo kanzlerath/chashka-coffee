@@ -1,6 +1,7 @@
 ---
 import StoryDetail from '../../components/StoryDetail.astro';
 export function getStaticPaths(){const promotions={'summer-breakfasts':{title:'Летние завтраки',intro:'Любимые блюда и кофе по специальной цене — до 12:00 по будням.',meta:'Действует до 31 августа'},'coffee-to-go':{title:'Кофе с собой',intro:'Второй напиток для прогулки, дороги или человека рядом.',meta:'Предложение действует каждый день'},'dessert-cappuccino':{title:'Десерт к капучино',intro:'Добавьте к напитку немного сладкого настроения.',meta:'Предложение действует до конца месяца'}};return Object.entries(promotions).map(([slug,story])=>({params:{slug},props:{story}}));}
-const {story}=Astro.props;
+let {story}=Astro.props;
+try { const response = await fetch(`${import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'}/api/content/${Astro.params.slug}`); if (response.ok) { const { entry } = await response.json(); story = { title: entry.title, intro: entry.excerpt ?? entry.body ?? story.intro, meta: entry.endsAt ? `До ${new Date(entry.endsAt).toLocaleDateString('ru-RU')}` : story.meta } } } catch { /* static editorial fallback remains available */ }
 ---
 <StoryDetail eyebrow="акция чашка кофе" action="Ко всем акциям" actionHref="/promotions" {...story}/>
