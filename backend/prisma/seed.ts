@@ -113,6 +113,8 @@ const openingHours = [
 ]
 
 async function resetCatalog() {
+  await db.homepageDayPart.deleteMany()
+  await db.homepageDaySection.deleteMany()
   await db.homepageBestseller.deleteMany()
   await db.homepageSlide.deleteMany()
   await db.menuItemOverride.deleteMany()
@@ -272,6 +274,21 @@ async function seed() {
       const menuItemId = homepageItemsBySlug.get(slug)
       return menuItemId ? [{ menuItemId, badge, position, isPublished: true }] : []
     }),
+  })
+
+  await db.homepageDaySection.create({
+    data: {
+      title: 'Поводы\nзайти сегодня',
+      description: 'Сначала завтрак, потом встреча, а вечером — время для себя. Выбирайте свой ритм.',
+      isPublished: true,
+      parts: {
+        create: [
+          { label: 'Утро', title: 'Завтраки\nдо 12:00', description: 'Медленные утра и кофе, который не нужно торопить.', ctaUrl: '/restaurants/krasny-prospekt/menu', position: 10, isPublished: true },
+          { label: 'Днём', title: 'Встречи\nв городе', description: 'Ресторан рядом, когда нужно место для своих людей.', ctaUrl: '/restaurants', position: 20, isPublished: true },
+          { label: 'Вечером', title: 'События\nи музыка', description: 'Поводы задержаться дольше обычного.', ctaUrl: '/events', position: 30, isPublished: true },
+        ],
+      },
+    },
   })
 
   const [restaurantCount, menuCount, itemCount] = await Promise.all([

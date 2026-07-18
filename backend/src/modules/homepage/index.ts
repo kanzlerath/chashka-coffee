@@ -1,15 +1,23 @@
 import {
   homepageAdminResponseSchema,
   homepageBestsellerResponseSchema,
+  homepageDayPartResponseSchema,
+  homepageDaySectionResponseSchema,
   homepageOperationSuccessResponseSchema,
   homepagePublicResponseSchema,
   homepageSlideResponseSchema,
   upsertHomepageBestsellerRequestSchema,
+  upsertHomepageDayPartRequestSchema,
+  upsertHomepageDaySectionRequestSchema,
   upsertHomepageSlideRequestSchema,
   type HomepageBestseller,
+  type HomepageDayPart,
+  type HomepageDaySection,
   type HomepageBestsellerMenuItem,
   type HomepageSlide,
   type UpsertHomepageBestsellerRequest,
+  type UpsertHomepageDayPartRequest,
+  type UpsertHomepageDaySectionRequest,
   type UpsertHomepageSlideRequest,
 } from '@chashka-coffee/contracts'
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi'
@@ -47,6 +55,29 @@ type HomepageBestsellerWithItem = {
   menuItem: MenuItemWithCategory
 }
 
+type HomepageDayPartRecord = {
+  id: string
+  sectionId: string
+  label: string
+  title: string
+  description: string | null
+  ctaUrl: string | null
+  position: number
+  isPublished: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+type HomepageDaySectionRecord = {
+  id: string
+  title: string
+  description: string | null
+  isPublished: boolean
+  createdAt: Date
+  updatedAt: Date
+  parts: HomepageDayPartRecord[]
+}
+
 function menuItemDto(item: MenuItemWithCategory): HomepageBestsellerMenuItem {
   return { id: item.id, slug: item.slug, name: item.name, description: item.description, weightGrams: item.weightGrams, priceKopecks: item.priceKopecks, imageUrl: item.imageUrl, marketingBadge: item.marketingBadge, categoryName: item.category.name }
 }
@@ -59,11 +90,27 @@ function bestsellerDto(bestseller: HomepageBestsellerWithItem): HomepageBestsell
   return { id: bestseller.id, menuItemId: bestseller.menuItemId, badge: bestseller.badge, position: bestseller.position, isPublished: bestseller.isPublished, item: menuItemDto(bestseller.menuItem), createdAt: bestseller.createdAt.toISOString(), updatedAt: bestseller.updatedAt.toISOString() }
 }
 
+function dayPartDto(part: HomepageDayPartRecord): HomepageDayPart {
+  return { ...part, createdAt: part.createdAt.toISOString(), updatedAt: part.updatedAt.toISOString() }
+}
+
+function daySectionDto(section: HomepageDaySectionRecord): HomepageDaySection {
+  return { ...section, parts: section.parts.map(dayPartDto), createdAt: section.createdAt.toISOString(), updatedAt: section.updatedAt.toISOString() }
+}
+
 function slideInput(input: UpsertHomepageSlideRequest) {
   return input
 }
 
 function bestsellerInput(input: UpsertHomepageBestsellerRequest) {
+  return input
+}
+
+function daySectionInput(input: UpsertHomepageDaySectionRequest) {
+  return input
+}
+
+function dayPartInput(input: UpsertHomepageDayPartRequest) {
   return input
 }
 
@@ -80,23 +127,30 @@ export function createHomepageModule({ db, requireAuth, requireAdmin }: { db: Db
   const createBestseller = createRoute({ method: 'post', path: '/homepage/bestsellers', request: { body: { content: { 'application/json': { schema: upsertHomepageBestsellerRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: homepageBestsellerResponseSchema } }, description: 'Homepage bestseller created' } } })
   const updateBestseller = createRoute({ method: 'put', path: '/homepage/bestsellers/{id}', request: { params: idParams, body: { content: { 'application/json': { schema: upsertHomepageBestsellerRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: homepageBestsellerResponseSchema } }, description: 'Homepage bestseller updated' }, 404: { content: errorContent, description: 'Homepage bestseller not found' } } })
   const deleteBestseller = createRoute({ method: 'delete', path: '/homepage/bestsellers/{id}', request: { params: idParams }, responses: { 200: { content: { 'application/json': { schema: homepageOperationSuccessResponseSchema } }, description: 'Homepage bestseller deleted' }, 404: { content: errorContent, description: 'Homepage bestseller not found' } } })
+  const createDaySection = createRoute({ method: 'post', path: '/homepage/day-section', request: { body: { content: { 'application/json': { schema: upsertHomepageDaySectionRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: homepageDaySectionResponseSchema } }, description: 'Homepage day section created' } } })
+  const updateDaySection = createRoute({ method: 'put', path: '/homepage/day-section/{id}', request: { params: idParams, body: { content: { 'application/json': { schema: upsertHomepageDaySectionRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: homepageDaySectionResponseSchema } }, description: 'Homepage day section updated' }, 404: { content: errorContent, description: 'Homepage day section not found' } } })
+  const createDayPart = createRoute({ method: 'post', path: '/homepage/day-parts', request: { body: { content: { 'application/json': { schema: upsertHomepageDayPartRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: homepageDayPartResponseSchema } }, description: 'Homepage day part created' } } })
+  const updateDayPart = createRoute({ method: 'put', path: '/homepage/day-parts/{id}', request: { params: idParams, body: { content: { 'application/json': { schema: upsertHomepageDayPartRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: homepageDayPartResponseSchema } }, description: 'Homepage day part updated' }, 404: { content: errorContent, description: 'Homepage day part not found' } } })
+  const deleteDayPart = createRoute({ method: 'delete', path: '/homepage/day-parts/{id}', request: { params: idParams }, responses: { 200: { content: { 'application/json': { schema: homepageOperationSuccessResponseSchema } }, description: 'Homepage day part deleted' }, 404: { content: errorContent, description: 'Homepage day part not found' } } })
 
   routes.openapi(publicHomepage, async (c) => {
-    const [slides, bestsellers] = await Promise.all([
+    const [slides, bestsellers, daySection] = await Promise.all([
       db.homepageSlide.findMany({ where: { isPublished: true }, orderBy: [{ position: 'asc' }, { createdAt: 'asc' }] }),
       db.homepageBestseller.findMany({ where: { isPublished: true }, include: { menuItem: { include: { category: true } } }, orderBy: [{ position: 'asc' }, { createdAt: 'asc' }] }),
+      db.homepageDaySection.findFirst({ where: { isPublished: true }, include: { parts: { where: { isPublished: true }, orderBy: [{ position: 'asc' }, { createdAt: 'asc' }] } }, orderBy: { createdAt: 'asc' } }),
     ])
-    return c.json({ slides: slides.map(slideDto), bestsellers: bestsellers.map(bestsellerDto) }, 200)
+    return c.json({ slides: slides.map(slideDto), bestsellers: bestsellers.map(bestsellerDto), daySection: daySection ? daySectionDto(daySection) : null }, 200)
   })
 
   adminRoutes.openapi(adminHomepage, async (c) => {
-    const [slides, bestsellers, menuItems] = await Promise.all([
+    const [slides, bestsellers, menuItems, daySection] = await Promise.all([
       db.homepageSlide.findMany({ orderBy: [{ position: 'asc' }, { createdAt: 'asc' }] }),
       db.homepageBestseller.findMany({ include: { menuItem: { include: { category: true } } }, orderBy: [{ position: 'asc' }, { createdAt: 'asc' }] }),
       db.menuItem.findMany({ include: { category: true }, orderBy: [{ category: { position: 'asc' } }, { position: 'asc' }, { name: 'asc' }] }),
+      db.homepageDaySection.findFirst({ include: { parts: { orderBy: [{ position: 'asc' }, { createdAt: 'asc' }] } }, orderBy: { createdAt: 'asc' } }),
     ])
     const uniqueMenuItems = [...new Map(menuItems.map((item) => [item.slug, item])).values()]
-    return c.json({ slides: slides.map(slideDto), bestsellers: bestsellers.map(bestsellerDto), menuItems: uniqueMenuItems.map(menuItemDto) }, 200)
+    return c.json({ slides: slides.map(slideDto), bestsellers: bestsellers.map(bestsellerDto), daySection: daySection ? daySectionDto(daySection) : null, menuItems: uniqueMenuItems.map(menuItemDto) }, 200)
   })
 
   adminRoutes.openapi(createSlide, async (c) => {
@@ -137,6 +191,38 @@ export function createHomepageModule({ db, requireAuth, requireAdmin }: { db: Db
       return c.json({ success: true as const }, 200)
     } catch {
       throw new AppError(404, 'NOT_FOUND', 'Homepage bestseller not found')
+    }
+  })
+  adminRoutes.openapi(createDaySection, async (c) => {
+    const section = await db.homepageDaySection.create({ data: daySectionInput(c.req.valid('json')), include: { parts: true } })
+    return c.json({ daySection: daySectionDto(section) }, 201)
+  })
+  adminRoutes.openapi(updateDaySection, async (c) => {
+    try {
+      const section = await db.homepageDaySection.update({ where: { id: c.req.valid('param').id }, data: daySectionInput(c.req.valid('json')), include: { parts: { orderBy: [{ position: 'asc' }, { createdAt: 'asc' }] } } })
+      return c.json({ daySection: daySectionDto(section) }, 200)
+    } catch {
+      throw new AppError(404, 'NOT_FOUND', 'Homepage day section not found')
+    }
+  })
+  adminRoutes.openapi(createDayPart, async (c) => {
+    const part = await db.homepageDayPart.create({ data: dayPartInput(c.req.valid('json')) })
+    return c.json({ dayPart: dayPartDto(part) }, 201)
+  })
+  adminRoutes.openapi(updateDayPart, async (c) => {
+    try {
+      const part = await db.homepageDayPart.update({ where: { id: c.req.valid('param').id }, data: dayPartInput(c.req.valid('json')) })
+      return c.json({ dayPart: dayPartDto(part) }, 200)
+    } catch {
+      throw new AppError(404, 'NOT_FOUND', 'Homepage day part not found')
+    }
+  })
+  adminRoutes.openapi(deleteDayPart, async (c) => {
+    try {
+      await db.homepageDayPart.delete({ where: { id: c.req.valid('param').id } })
+      return c.json({ success: true as const }, 200)
+    } catch {
+      throw new AppError(404, 'NOT_FOUND', 'Homepage day part not found')
     }
   })
 

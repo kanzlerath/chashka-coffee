@@ -55,9 +55,38 @@ export type HomepageBestseller = z.infer<typeof homepageBestsellerSchema>
 export const upsertHomepageBestsellerRequestSchema = homepageBestsellerSchema.omit({ id: true, item: true, createdAt: true, updatedAt: true }).strict()
 export type UpsertHomepageBestsellerRequest = z.infer<typeof upsertHomepageBestsellerRequestSchema>
 
+export const homepageDayPartSchema = z.object({
+  id: uuid,
+  sectionId: uuid,
+  label: z.string().trim().min(1).max(80),
+  title: z.string().trim().min(1).max(180),
+  description: nullableText(500),
+  ctaUrl: nullablePublicUrl,
+  position: z.number().int().nonnegative(),
+  isPublished: z.boolean(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+})
+export type HomepageDayPart = z.infer<typeof homepageDayPartSchema>
+export const homepageDaySectionSchema = z.object({
+  id: uuid,
+  title: z.string().trim().min(1).max(180),
+  description: nullableText(500),
+  isPublished: z.boolean(),
+  parts: z.array(homepageDayPartSchema),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+})
+export type HomepageDaySection = z.infer<typeof homepageDaySectionSchema>
+export const upsertHomepageDaySectionRequestSchema = homepageDaySectionSchema.omit({ id: true, parts: true, createdAt: true, updatedAt: true }).strict()
+export type UpsertHomepageDaySectionRequest = z.infer<typeof upsertHomepageDaySectionRequestSchema>
+export const upsertHomepageDayPartRequestSchema = homepageDayPartSchema.omit({ id: true, createdAt: true, updatedAt: true }).strict()
+export type UpsertHomepageDayPartRequest = z.infer<typeof upsertHomepageDayPartRequestSchema>
+
 export const homepagePublicResponseSchema = z.object({
   slides: z.array(homepageSlideSchema),
   bestsellers: z.array(homepageBestsellerSchema),
+  daySection: homepageDaySectionSchema.nullable(),
 })
 export type HomepagePublicResponse = z.infer<typeof homepagePublicResponseSchema>
 
@@ -68,4 +97,6 @@ export type HomepageAdminResponse = z.infer<typeof homepageAdminResponseSchema>
 
 export const homepageSlideResponseSchema = z.object({ slide: homepageSlideSchema })
 export const homepageBestsellerResponseSchema = z.object({ bestseller: homepageBestsellerSchema })
+export const homepageDaySectionResponseSchema = z.object({ daySection: homepageDaySectionSchema })
+export const homepageDayPartResponseSchema = z.object({ dayPart: homepageDayPartSchema })
 export const homepageOperationSuccessResponseSchema = z.object({ success: z.literal(true) })

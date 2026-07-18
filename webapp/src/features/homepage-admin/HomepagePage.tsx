@@ -2,16 +2,24 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   homepageAdminResponseSchema,
   homepageBestsellerResponseSchema,
+  homepageDayPartResponseSchema,
+  homepageDaySectionResponseSchema,
   homepageOperationSuccessResponseSchema,
   homepageSlideResponseSchema,
   upsertHomepageBestsellerRequestSchema,
+  upsertHomepageDayPartRequestSchema,
+  upsertHomepageDaySectionRequestSchema,
   upsertHomepageSlideRequestSchema,
   type HomepageBestseller,
+  type HomepageDayPart,
+  type HomepageDaySection,
   type HomepageSlide,
   type UpsertHomepageBestsellerRequest,
+  type UpsertHomepageDayPartRequest,
+  type UpsertHomepageDaySectionRequest,
   type UpsertHomepageSlideRequest,
 } from '@chashka-coffee/contracts'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -24,6 +32,8 @@ const emptySlide: UpsertHomepageSlideRequest = {
   ctaLabel: null, ctaUrl: null, durationSeconds: 7, isPublished: false, position: 10,
 }
 const emptyBestseller: UpsertHomepageBestsellerRequest = { menuItemId: '', badge: null, position: 10, isPublished: true }
+const emptyDaySection: UpsertHomepageDaySectionRequest = { title: 'Поводы зайти сегодня', description: null, isPublished: true }
+const emptyDayPart = (sectionId = ''): UpsertHomepageDayPartRequest => ({ sectionId, label: '', title: '', description: null, ctaUrl: null, position: 10, isPublished: true })
 const nullable = (value: string) => value.trim() || null
 
 export function HomepagePage() {
@@ -34,8 +44,19 @@ export function HomepagePage() {
   const [slideDraft, setSlideDraft] = useState<UpsertHomepageSlideRequest>(emptySlide)
   const [bestseller, setBestseller] = useState<HomepageBestseller | null>(null)
   const [bestsellerDraft, setBestsellerDraft] = useState<UpsertHomepageBestsellerRequest>(emptyBestseller)
+  const [daySection, setDaySection] = useState<HomepageDaySection | null>(null)
+  const [daySectionDraft, setDaySectionDraft] = useState<UpsertHomepageDaySectionRequest>(emptyDaySection)
+  const [dayPart, setDayPart] = useState<HomepageDayPart | null>(null)
+  const [dayPartDraft, setDayPartDraft] = useState<UpsertHomepageDayPartRequest>(emptyDayPart())
   const homepage = useQuery({ queryKey: ['admin', 'homepage'], queryFn: () => api.request('/api/admin/homepage', homepageAdminResponseSchema) })
   const refresh = () => void queryClient.invalidateQueries({ queryKey: ['admin', 'homepage'] })
+
+  useEffect(() => {
+    if (!homepage.data?.daySection || daySection?.id === homepage.data.daySection.id) return
+    setDaySection(homepage.data.daySection)
+    setDaySectionDraft(toDaySectionDraft(homepage.data.daySection))
+    setDayPartDraft(emptyDayPart(homepage.data.daySection.id))
+  }, [daySection?.id, homepage.data?.daySection])
 
   const saveSlide = useMutation({
     mutationFn: () => slide
@@ -57,6 +78,22 @@ export function HomepagePage() {
     mutationFn: (id: string) => api.request(`/api/admin/homepage/bestsellers/${id}`, homepageOperationSuccessResponseSchema, { method: 'DELETE' }),
     onSuccess: () => { setBestseller(null); setBestsellerDraft(emptyBestseller); refresh() },
   })
+  const saveDaySection = useMutation({
+    mutationFn: () => daySection
+      ? api.request(`/api/admin/homepage/day-section/${daySection.id}`, homepageDaySectionResponseSchema, { method: 'PUT', body: upsertHomepageDaySectionRequestSchema.parse(daySectionDraft) })
+      : api.request('/api/admin/homepage/day-section', homepageDaySectionResponseSchema, { method: 'POST', body: upsertHomepageDaySectionRequestSchema.parse(daySectionDraft) }),
+    onSuccess: ({ daySection: saved }) => { setDaySection(saved); setDaySectionDraft(toDaySectionDraft(saved)); setDayPartDraft(emptyDayPart(saved.id)); refresh() },
+  })
+  const saveDayPart = useMutation({
+    mutationFn: () => dayPart
+      ? api.request(`/api/admin/homepage/day-parts/${dayPart.id}`, homepageDayPartResponseSchema, { method: 'PUT', body: upsertHomepageDayPartRequestSchema.parse(dayPartDraft) })
+      : api.request('/api/admin/homepage/day-parts', homepageDayPartResponseSchema, { method: 'POST', body: upsertHomepageDayPartRequestSchema.parse(dayPartDraft) }),
+    onSuccess: ({ dayPart: saved }) => { setDayPart(saved); setDayPartDraft(toDayPartDraft(saved)); refresh() },
+  })
+  const removeDayPart = useMutation({
+    mutationFn: (id: string) => api.request(`/api/admin/homepage/day-parts/${id}`, homepageOperationSuccessResponseSchema, { method: 'DELETE' }),
+    onSuccess: () => { setDayPart(null); setDayPartDraft(emptyDayPart(daySection?.id)); refresh() },
+  })
 
   return <section className="mx-auto grid w-full max-w-7xl gap-6 px-5 py-9 xl:grid-cols-2">
     <Card>
@@ -74,6 +111,14 @@ export function HomepagePage() {
         <div className="grid gap-2">{homepage.data?.bestsellers.map((entry) => <button className="flex items-center justify-between rounded-xl border p-3 text-left hover:bg-muted" key={entry.id} onClick={() => { setBestseller(entry); setBestsellerDraft(toBestsellerDraft(entry)) }} type="button"><span><b className="block">{entry.item.name}</b><small className="text-muted-foreground">{entry.badge ?? entry.item.marketingBadge ?? entry.item.categoryName} · {entry.isPublished ? 'опубликован' : 'черновик'}</small></span><span className="text-muted-foreground">{entry.position}</span></button>)}</div>
         <Button onClick={() => { setBestseller(null); setBestsellerDraft({ ...emptyBestseller, position: (homepage.data?.bestsellers.length ?? 0) * 10 + 10 }) }} type="button" variant="outline">Добавить позицию</Button>
         <BestsellerForm menuItems={homepage.data?.menuItems ?? []} draft={bestsellerDraft} onChange={setBestsellerDraft} onRemove={bestseller ? () => removeBestseller.mutate(bestseller.id) : undefined} onSave={() => saveBestseller.mutate()} saving={saveBestseller.isPending} deleting={removeBestseller.isPending} error={saveBestseller.isError} />
+      </CardContent>
+    </Card>
+
+    <Card className="xl:col-span-2">
+      <CardHeader><CardTitle>Поводы зайти сегодня</CardTitle><CardDescription>Настройте заголовок блока и три периода дня. Каждая строка ведёт на выбранную страницу сайта.</CardDescription></CardHeader>
+      <CardContent className="grid gap-5">
+        <DaySectionForm draft={daySectionDraft} onChange={setDaySectionDraft} onSave={() => saveDaySection.mutate()} saving={saveDaySection.isPending} error={saveDaySection.isError} />
+        {daySection ? <><div className="grid gap-2 border-t pt-5">{daySection.parts.map((entry) => <button className="flex items-center justify-between rounded-xl border p-3 text-left hover:bg-muted" key={entry.id} onClick={() => { setDayPart(entry); setDayPartDraft(toDayPartDraft(entry)) }} type="button"><span><b className="block">{entry.label} · {entry.title}</b><small className="text-muted-foreground">{entry.isPublished ? 'опубликован' : 'черновик'} · {entry.ctaUrl ?? 'без ссылки'}</small></span><span className="text-muted-foreground">{entry.position}</span></button>)}</div><Button onClick={() => { setDayPart(null); setDayPartDraft({ ...emptyDayPart(daySection.id), position: (daySection.parts.length ?? 0) * 10 + 10 }) }} type="button" variant="outline">Добавить период дня</Button><DayPartForm draft={dayPartDraft} onChange={setDayPartDraft} onRemove={dayPart ? () => removeDayPart.mutate(dayPart.id) : undefined} onSave={() => saveDayPart.mutate()} saving={saveDayPart.isPending} deleting={removeDayPart.isPending} error={saveDayPart.isError} /></> : <p className="text-sm text-muted-foreground">Сначала сохраните заголовок блока, затем добавьте периоды дня.</p>}
       </CardContent>
     </Card>
   </section>
@@ -106,6 +151,32 @@ function BestsellerForm({ menuItems, draft, onChange, onSave, onRemove, saving, 
   </form>
 }
 
+function DaySectionForm({ draft, onChange, onSave, saving, error }: { draft: UpsertHomepageDaySectionRequest; onChange: (value: UpsertHomepageDaySectionRequest) => void; onSave: () => void; saving: boolean; error: boolean }) {
+  const change = <K extends keyof UpsertHomepageDaySectionRequest>(key: K, value: UpsertHomepageDaySectionRequest[K]) => onChange({ ...draft, [key]: value })
+  return <form className="grid gap-3" onSubmit={(event) => { event.preventDefault(); onSave() }}>
+    <Field label="Заголовок слева"><Input onChange={(event) => change('title', event.target.value)} required value={draft.title} /></Field>
+    <Field label="Описание слева"><Textarea onChange={(event) => change('description', nullable(event.target.value))} value={draft.description ?? ''} /></Field>
+    <label className="flex items-center gap-2 text-sm font-medium"><input checked={draft.isPublished} onChange={(event) => change('isPublished', event.target.checked)} type="checkbox" />Показывать на сайте</label>
+    {error ? <p className="text-sm text-destructive">Не удалось сохранить блок. Проверьте обязательные поля.</p> : null}
+    <div><Button disabled={saving} type="submit">{saving ? 'Сохраняем…' : 'Сохранить блок'}</Button></div>
+  </form>
+}
+
+function DayPartForm({ draft, onChange, onSave, onRemove, saving, deleting, error }: { draft: UpsertHomepageDayPartRequest; onChange: (value: UpsertHomepageDayPartRequest) => void; onSave: () => void; onRemove?: () => void; saving: boolean; deleting: boolean; error: boolean }) {
+  const change = <K extends keyof UpsertHomepageDayPartRequest>(key: K, value: UpsertHomepageDayPartRequest[K]) => onChange({ ...draft, [key]: value })
+  return <form className="grid gap-3 border-t pt-5" onSubmit={(event) => { event.preventDefault(); onSave() }}>
+    <div className="grid gap-3 sm:grid-cols-2"><Field label="Метка"><Input onChange={(event) => change('label', event.target.value)} placeholder="Утро" required value={draft.label} /></Field><Field label="Порядок"><Input min={0} onChange={(event) => change('position', Number(event.target.value))} type="number" value={draft.position} /></Field></div>
+    <Field label="Заголовок"><Input onChange={(event) => change('title', event.target.value)} placeholder="Завтраки до 12:00" required value={draft.title} /></Field>
+    <Field label="Короткое описание"><Textarea onChange={(event) => change('description', nullable(event.target.value))} value={draft.description ?? ''} /></Field>
+    <Field label="Ссылка"><Input onChange={(event) => change('ctaUrl', nullable(event.target.value))} placeholder="/restaurants/krasny-prospekt/menu" value={draft.ctaUrl ?? ''} /></Field>
+    <label className="flex items-center gap-2 text-sm font-medium"><input checked={draft.isPublished} onChange={(event) => change('isPublished', event.target.checked)} type="checkbox" />Показывать на сайте</label>
+    {error ? <p className="text-sm text-destructive">Не удалось сохранить период дня. Проверьте обязательные поля.</p> : null}
+    <div className="flex flex-wrap gap-2"><Button disabled={saving} type="submit">{saving ? 'Сохраняем…' : 'Сохранить период'}</Button>{onRemove ? <Button disabled={deleting} onClick={onRemove} type="button" variant="outline">Удалить</Button> : null}</div>
+  </form>
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="grid gap-1.5 text-sm font-medium">{label}{children}</label> }
 function toSlideDraft(entry: HomepageSlide): UpsertHomepageSlideRequest { const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...draft } = entry; return draft }
 function toBestsellerDraft(entry: HomepageBestseller): UpsertHomepageBestsellerRequest { const { id: _id, item: _item, createdAt: _createdAt, updatedAt: _updatedAt, ...draft } = entry; return draft }
+function toDaySectionDraft(entry: HomepageDaySection | null): UpsertHomepageDaySectionRequest { if (!entry) return emptyDaySection; const { id: _id, parts: _parts, createdAt: _createdAt, updatedAt: _updatedAt, ...draft } = entry; return draft }
+function toDayPartDraft(entry: HomepageDayPart): UpsertHomepageDayPartRequest { const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...draft } = entry; return draft }

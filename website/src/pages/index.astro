@@ -39,6 +39,14 @@ const defaultBestsellers = [
   { slug: 'ricotta-syrniki', name: 'Сырники из рикотты', price: '490 ₽', output: '220 г', badge: 'Любимое', imageUrl: productFallbacks[2], categoryName: 'Завтраки' },
   { slug: 'filter-coffee', name: 'Фильтр-кофе', price: '240 ₽', output: '250 мл', badge: 'Новинка', imageUrl: productFallbacks[3], categoryName: 'Кофе' },
 ]
+const badgeTone = (badge: string | null | undefined) => {
+  const value = badge?.toLocaleLowerCase('ru') ?? ''
+  if (value.includes('хит')) return 'hit'
+  if (value.includes('нов')) return 'new'
+  if (value.includes('сезон') || value.includes('лет')) return 'seasonal'
+  if (value.includes('люб')) return 'favourite'
+  return 'special'
+}
 const bestsellers = homepage?.bestsellers.length
   ? homepage.bestsellers.map((entry, index) => ({
       slug: entry.item.slug,
@@ -46,10 +54,11 @@ const bestsellers = homepage?.bestsellers.length
       price: `${Math.round(entry.item.priceKopecks / 100)} ₽`,
       output: outputLabel(entry.item.weightGrams),
       badge: badgeLabel(entry.badge ?? entry.item.marketingBadge),
+      badgeTone: badgeTone(badgeLabel(entry.badge ?? entry.item.marketingBadge)),
       imageUrl: entry.item.imageUrl ?? productFallbacks[index % productFallbacks.length],
       categoryName: entry.item.categoryName,
     }))
-  : defaultBestsellers
+  : defaultBestsellers.map((item) => ({ ...item, badgeTone: badgeTone(item.badge) }))
 const featuredPromotion = promotions.at(0) ?? null
 const featuredEvent = events.at(0) ?? null
 const journal = articles.slice(0, 2).length ? articles.slice(0, 2) : [
@@ -68,6 +77,16 @@ const placeGroups = [
   { id: 'airport', label: 'Аэропорт', places: airportPlaces },
 ]
 const allPlaces = placeGroups.flatMap((group) => group.places.map((place) => ({ ...place, group: group.id })))
+const defaultDaySection = {
+  title: 'Поводы\nзайти сегодня',
+  description: 'Сначала завтрак, потом встреча, а вечером — время для себя. Выбирайте свой ритм.',
+  parts: [
+    { id: 'morning', label: 'Утро', title: 'Завтраки\nдо 12:00', description: 'Медленные утра и кофе, который не нужно торопить.', ctaUrl: '/restaurants/krasny-prospekt/menu' },
+    { id: 'daytime', label: 'Днём', title: 'Встречи\nв городе', description: 'Ресторан рядом, когда нужно место для своих людей.', ctaUrl: '/restaurants' },
+    { id: 'evening', label: 'Вечером', title: 'События\nи музыка', description: 'Поводы задержаться дольше обычного.', ctaUrl: featuredEvent ? `/events/${featuredEvent.slug}` : '/events' },
+  ],
+}
+const daySection = homepage?.daySection?.parts.length ? homepage.daySection : defaultDaySection
 const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
 ---
 
@@ -75,7 +94,7 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
   <div class="home-page">
     <section class="home-stories" data-home-stories aria-label="Актуальное в Чашке кофе">
       <div class="stories-media">
-        {slides.map((slide, index) => <article class:list={['story-media-item', { 'is-active': index === 0 }]} data-story-media aria-hidden={index === 0 ? 'false' : 'true'}>
+        {slides.map((slide, index) => <article class:list={['story-media-item', { 'is-active': index === 0 }]} data-story-duration={slide.durationSeconds} data-story-media aria-hidden={index === 0 ? 'false' : 'true'}>
           {slide.mediaType === 'VIDEO'
             ? <video autoplay={index === 0} loop muted playsinline poster={slide.posterUrl ?? undefined} preload={index === 0 ? 'auto' : 'metadata'} src={slide.mediaUrl}></video>
             : <img src={slide.mediaUrl} alt="" fetchpriority={index === 0 ? 'high' : undefined} loading={index === 0 ? 'eager' : 'lazy'} />}
@@ -96,7 +115,7 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
 
     <section class="home-bestsellers home-section" aria-labelledby="bestsellers-title">
       <header class="home-section-head"><div><h2 id="bestsellers-title">Бестселлеры</h2><p>Выбирают чаще всего</p></div></header>
-      <div class="bestseller-list">{bestsellers.map((item) => <a href="/restaurants/krasny-prospekt/menu" class="product-card"><div class="product-card-image"><img src={item.imageUrl} alt="" loading="lazy" />{item.badge && <span>{item.badge}</span>}</div><div class="product-card-info"><small>{item.categoryName}</small><h3>{item.name}</h3><div><span>{item.output}</span><strong>{item.price}</strong></div></div></a>)}</div>
+      <div class="bestseller-list">{bestsellers.map((item) => <a href="/restaurants/krasny-prospekt/menu" class="product-card"><div class="product-card-image"><img src={item.imageUrl} alt="" loading="lazy" />{item.badge && <span class={`product-badge product-badge--${item.badgeTone}`}>{item.badge}</span>}</div><div class="product-card-info"><small>{item.categoryName}</small><h3>{item.name}</h3><div><span>{item.output}</span><strong>{item.price}</strong></div></div></a>)}</div>
       <a class="ui-button ui-button--outline section-action" href="/restaurants/krasny-prospekt/menu">Смотреть все</a>
     </section>
 
@@ -110,12 +129,8 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
     </section>
 
     <section class="home-day" aria-labelledby="day-title">
-      <div class="day-intro"><p class="story-kicker">День в Чашке кофе</p><h2 id="day-title">Поводы<br />зайти сегодня</h2><p>Сначала завтрак, потом встреча, а вечером — время для себя. Выбирайте свой ритм.</p></div>
-      <div class="day-stops">
-        <a href="/restaurants/krasny-prospekt/menu"><small>Утро</small><h3>Завтраки<br />до 12:00</h3><p>Медленные утра и кофе, который не нужно торопить.</p></a>
-        <a href="/restaurants"><small>Днём</small><h3>Встречи<br />в городе</h3><p>Кофейня рядом, когда нужно место для своих людей.</p></a>
-        <a href={featuredEvent ? `/events/${featuredEvent.slug}` : '/events'}><small>Вечером</small><h3>События<br />и музыка</h3><p>Поводы задержаться дольше обычного.</p></a>
-      </div>
+      <div class="day-intro"><h2 id="day-title">{daySection.title.split('\n').map((line) => <>{line}<br /></>)}</h2>{daySection.description && <p>{daySection.description}</p>}</div>
+      <div class="day-stops">{daySection.parts.map((part) => <a href={part.ctaUrl ?? '/'}><small>{part.label}</small><h3>{part.title.split('\n').map((line) => <>{line}<br /></>)}</h3>{part.description && <p>{part.description}</p>}</a>)}</div>
     </section>
 
     <section class="home-menu home-section" aria-labelledby="menu-title">
@@ -132,7 +147,7 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
     </section>
 
     <section class="home-places home-section" data-home-places aria-labelledby="places-title">
-      <header class="home-section-head places-heading"><div><h2 id="places-title">Кофейни в городе</h2><p>Места, в которые хочется возвращаться</p></div><div class="place-filters" role="tablist" aria-label="Формат кофейни">{placeGroups.map((group, index) => <button class:list={{ 'is-active': index === 0 }} data-place-filter={group.id} type="button" role="tab" aria-selected={index === 0}>{group.label}</button>)}</div></header>
+      <header class="home-section-head places-heading"><div><h2 id="places-title">Рестораны в городе</h2><p>Места, в которые хочется возвращаться</p></div></header>
       <div class="places-stage">
         <div class="place-feature">
           {allPlaces.map((place, index) => <article class:list={{ 'is-active': index === 0 }} data-place-panel={place.slug} data-place-group={place.group}>
@@ -140,18 +155,16 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
             <div><p>{place.group === 'airport' ? 'Аэропорт' : 'Город'}</p><h3>{place.name.replace('Чашка кофе — ', '')}</h3><span>{place.address}<br />{place.openingHoursLabel}</span><a class="ui-button ui-button--fill" href={`/restaurants/${place.slug}`}>Открыть кофейню</a></div>
           </article>)}
         </div>
-        <div class="place-list">
-          {placeGroups.map((group) => <div data-place-list-group={group.id}>{group.places.map((place) => <button data-place-button={place.slug} type="button"><span>{place.name.replace('Чашка кофе — ', '')}</span><small>{place.address}</small></button>)}</div>)}
-        </div>
+        <div class="place-list">{allPlaces.map((place) => <button data-place-button={place.slug} type="button"><span>{place.name.replace('Чашка кофе — ', '')}</span><small>{place.address}</small></button>)}</div>
       </div>
-      <a class="ui-button ui-button--outline section-action" href="/restaurants">Все кофейни</a>
+      <a class="ui-button ui-button--outline section-action" href="/restaurants">Все рестораны</a>
     </section>
 
     <section class="home-home-coffee" aria-labelledby="home-coffee-title"><div><p class="story-kicker">Кофе для дома</p><h2 id="home-coffee-title">Заварите<br />свой момент</h2><p>Зерно, дрипы и капсулы для утра дома, офиса или дороги, которую вы выбираете сами.</p><a class="ui-button ui-button--fill" href="/coffee">Выбрать кофе</a></div><div class="home-coffee-visual" aria-hidden="true"><span>ЧК</span><small>зерно<br />для дома</small><i>☕</i></div></section>
 
     <section class="home-app-loyalty" aria-labelledby="loyalty-title"><div class="loyalty-copy"><p class="story-kicker">Приложение и клуб друзей</p><h2 id="loyalty-title">Любимое —<br />под рукой</h2><p>Заказывайте быстрее, копите бонусы и узнавайте о новинках раньше всех.</p><a class="ui-button ui-button--fill" href="/app">О приложении</a></div><div class="loyalty-points"><strong>1<span>₽</span> = 1 балл</strong><p>Начисляем за любимые заказы</p><div><b>ЧК</b><i></i><i></i><i></i></div></div></section>
 
-    <section class="home-journal home-section" aria-labelledby="journal-title"><header class="home-section-head"><div><h2 id="journal-title">Читайте медленнее</h2><p>Истории о кофе, людях и городе</p></div></header><div class="journal-list">{journal.map((article, index) => <a href={`/journal/${article.slug}`} class="journal-card"><img src={article.imageUrl ?? productFallbacks[index]} alt="" loading="lazy" /><div><small>Журнал · {index + 1}</small><h3>{article.title}</h3><p>{article.excerpt}</p><span>Читать далее</span></div></a>)}</div><a class="ui-button ui-button--outline section-action" href="/journal">Посмотреть все</a></section>
+    <section class="home-journal home-section" aria-labelledby="journal-title"><header class="home-section-head"><div><h2 id="journal-title">Читайте медленнее</h2><p>Истории о кофе, людях и городе</p></div></header><div class="journal-list">{journal.map((article, index) => <a href={`/journal/${article.slug}`} class="journal-card"><img src={article.imageUrl ?? productFallbacks[index]} alt="" loading="lazy" /><div><h3>{article.title}</h3><p>{article.excerpt}</p><span>Читать далее</span></div></a>)}</div><a class="ui-button ui-button--outline section-action" href="/journal">Посмотреть все</a></section>
 
     <div class="home-marquee" aria-label="Чашка кофе: кофе, завтраки, десерты и встречи"><div>ЧАШКА КОФЕ <i>✦</i> КОФЕ <i>✦</i> ЗАВТРАКИ <i>✦</i> ДЕСЕРТЫ <i>✦</i> ВСТРЕЧИ <i>✦</i> ЧАШКА КОФЕ <i>✦</i> КОФЕ <i>✦</i> ЗАВТРАКИ <i>✦</i> ДЕСЕРТЫ <i>✦</i> ВСТРЕЧИ <i>✦</i></div></div>
   </div>
@@ -172,8 +185,7 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
     const schedule = () => {
       window.clearTimeout(timeout)
       if (paused || reduceMotion.matches || media.length < 2) return
-      const control = controls[active]
-      const duration = Number(control?.style.getPropertyValue('--story-duration').replace('s', '') ?? 7) * 1_000
+      const duration = Math.min(30, Math.max(3, Number(media[active]?.dataset.storyDuration ?? 7))) * 1_000
       timeout = window.setTimeout(() => show(active + 1), duration)
     }
     const show = (index: number) => {
@@ -205,25 +217,57 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
 
   const places = document.querySelector<HTMLElement>('[data-home-places]')
   if (places) {
-    const filters = [...places.querySelectorAll<HTMLButtonElement>('[data-place-filter]')]
     const panels = [...places.querySelectorAll<HTMLElement>('[data-place-panel]')]
-    const groups = [...places.querySelectorAll<HTMLElement>('[data-place-list-group]')]
     const rows = [...places.querySelectorAll<HTMLButtonElement>('[data-place-button]')]
     const select = (slug: string) => {
       panels.forEach((panel) => panel.classList.toggle('is-active', panel.dataset.placePanel === slug))
       rows.forEach((row) => row.classList.toggle('is-active', row.dataset.placeButton === slug))
     }
-    const filter = (group: string) => {
-      filters.forEach((button) => { const active = button.dataset.placeFilter === group; button.classList.toggle('is-active', active); button.setAttribute('aria-selected', String(active)) })
-      groups.forEach((list) => list.hidden = list.dataset.placeListGroup !== group)
-      const first = panels.find((panel) => panel.dataset.placeGroup === group)
-      if (first?.dataset.placePanel) select(first.dataset.placePanel)
-    }
-    filters.forEach((button) => button.addEventListener('click', () => filter(button.dataset.placeFilter ?? 'city')))
     rows.forEach((row) => row.addEventListener('click', () => row.dataset.placeButton && select(row.dataset.placeButton)))
   }
 </script>
 
 <style>
   .home-page{background:transparent}.home-page a{text-decoration:none;color:inherit}.story-kicker{margin:0;color:#758f2c;text-transform:uppercase;letter-spacing:.13em;font-size:10px;font-weight:800}.ui-button{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 23px;border:1px solid currentColor;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.02em;transition:transform .22s ease,background .22s ease,color .22s ease,border-color .22s ease}.ui-button:hover{transform:translateY(-2px)}.ui-button--fill{border-color:#1f3b2e;background:#1f3b2e;color:#fff!important}.ui-button--fill:hover{background:#315b45;border-color:#315b45}.ui-button--outline{border-color:#29241f;background:transparent;color:#29241f!important}.ui-button--outline:hover{background:#29241f;color:#fff!important}.home-stories{display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,.9fr);min-height:min(650px,calc(100svh - 142px));gap:clamp(28px,5vw,88px);align-items:stretch}.stories-media{position:relative;min-height:inherit;overflow:hidden;border-radius:23px;background:#d9d1c4}.story-media-item{position:absolute;inset:0;opacity:0;transition:opacity .55s ease}.story-media-item.is-active{opacity:1}.story-media-item img,.story-media-item video{width:100%;height:100%;object-fit:cover}.story-progress{position:absolute;z-index:2;right:clamp(18px,2.5vw,35px);bottom:clamp(18px,2.5vw,35px);left:clamp(18px,2.5vw,35px);display:flex;gap:7px}.story-progress button{position:relative;flex:1;height:4px;padding:0;overflow:hidden;border:0;border-radius:999px;background:rgba(255,255,255,.45);cursor:pointer}.story-progress button:after{position:absolute;inset:0;transform:scaleX(0);transform-origin:left;background:#fff;content:''}.story-progress button.is-active:after{animation:story-progress var(--story-duration) linear forwards}@keyframes story-progress{to{transform:scaleX(1)}}.stories-copy{position:relative;min-height:inherit}.story-copy-item{position:absolute;top:50%;left:0;width:100%;opacity:0;pointer-events:none;transform:translateY(calc(-50% + 9px));transition:opacity .4s ease,transform .4s ease}.story-copy-item.is-active{opacity:1;pointer-events:auto;transform:translateY(-50%)}.story-copy-item h1{margin:19px 0 0;color:#25201c;font-size:clamp(55px,5.8vw,96px);line-height:.84;letter-spacing:-.105em}.story-description{max-width:370px;margin:26px 0 0;color:#655f58;font-size:16px;line-height:1.56}.story-copy-item .ui-button{margin-top:33px}.home-section{padding:clamp(94px,10.5vw,170px) 0}.home-section-head{display:flex;align-items:end;justify-content:space-between;gap:32px}.home-section-head h2{margin:0;color:#25201c;font-size:36px;line-height:.96;letter-spacing:-.075em}.home-section-head p{margin:12px 0 0;color:#25201c;font-size:16px;line-height:1.42}.bestseller-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:37px}.product-card{display:block;overflow:hidden;border:1px solid #e0dcd4;border-radius:22px;background:#f7f5f0;padding:11px;transition:transform .25s ease,box-shadow .25s ease,background .25s ease}.product-card:hover{background:#fffdf9;box-shadow:0 16px 34px rgba(50,40,29,.1);transform:translateY(-5px)}.product-card-image{position:relative;aspect-ratio:1/.98;overflow:hidden;border-radius:15px;background:#ebe7df}.product-card-image:after{position:absolute;inset:0;background:linear-gradient(180deg,transparent 50%,rgba(30,29,25,.16));content:'';opacity:0;transition:opacity .25s}.product-card:hover .product-card-image:after{opacity:1}.product-card-image img{width:100%;height:100%;object-fit:cover;transition:transform .45s ease}.product-card:hover img{transform:scale(1.055)}.product-card-image span{position:absolute;z-index:1;top:12px;left:12px;padding:7px 10px;border-radius:999px;background:rgba(255,253,249,.94);color:#29241f;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}.product-card-info{padding:16px 4px 2px}.product-card-info small{color:#706a62;text-transform:uppercase;letter-spacing:.1em;font-size:9px;font-weight:800}.product-card-info h3{margin:9px 0 18px;color:#29241f;font-size:20px;line-height:1;letter-spacing:-.065em}.product-card-info>div{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#706a62;font-size:11px}.product-card-info strong{color:#29241f;font-size:14px}.section-action{margin:34px auto 0;display:flex;width:max-content;min-width:172px}.home-bento{display:grid;grid-template-columns:1.06fr .83fr .83fr;grid-template-rows:282px 282px 180px;gap:12px}.bento-card{position:relative;isolation:isolate;display:block;overflow:hidden;border-radius:22px;padding:29px;transition:transform .25s ease,filter .25s ease}.bento-card:hover{transform:translateY(-4px);filter:brightness(.985)}.bento-card h2{position:relative;z-index:2;max-width:310px;margin:0;color:#25201c;font-size:clamp(29px,2.7vw,47px);line-height:.88;letter-spacing:-.085em}.bento-art{transition:transform .35s ease}.bento-card:hover .bento-art{transform:rotate(3deg) translateY(-8px)}.bento-app{grid-row:span 2;background:#ece2d8}.bento-phone{position:absolute;right:clamp(29px,4vw,72px);bottom:-90px;width:207px;height:360px;padding:38px 20px;border:9px solid #25201c;border-radius:36px;background:#fbfaf6;box-shadow:16px 19px 0 rgba(75,65,53,.13);transform:rotate(8deg)}.bento-phone b{font-size:32px;letter-spacing:-.16em}.bento-phone i{display:grid;place-items:center;width:110px;aspect-ratio:1;margin:41px auto 0;border-radius:50%;background:#bddb3d;font-size:47px;font-style:normal}.bento-coffee{background:#e5d9bc}.coffee-pack{position:absolute;right:44px;bottom:22px;width:126px;height:177px;padding:46px 19px 17px;border-radius:11px 11px 17px 17px;background:#a8c224;box-shadow:11px 11px 0 rgba(87,92,45,.17);transform:rotate(8deg)}.coffee-pack:before{position:absolute;top:-11px;left:0;width:100%;height:22px;border-radius:8px;background:#90aa18;content:''}.coffee-pack b{display:block;font-size:42px;letter-spacing:-.18em}.coffee-pack small{position:absolute;bottom:16px;font-size:11px;font-weight:800}.bento-event{background:#1f3b2e;color:#fff}.bento-event h2{color:#fff}.event-note{position:absolute;right:-8px;bottom:-53px;color:#bddb3d;font:normal 170px/1 Georgia,serif}.bento-promo{grid-column:span 2;background:#e5eadb}.bento-promo strong{position:absolute;right:46px;bottom:32px;display:grid;place-items:center;width:94px;aspect-ratio:1;border-radius:50%;background:#dd6045;color:#fff;font-size:21px;letter-spacing:-.08em;transform:rotate(-8deg)}.bento-bakery{background:#f0ebe3}.bento-bakery>i,.bento-certificates>i{position:absolute;right:28px;bottom:24px;color:#c19d5e;font-size:68px;font-style:normal}.bento-certificates{grid-column:span 2;background:#dae7d0}.bento-certificates>i{color:#91ac19}.home-day{display:grid;grid-template-columns:.76fr 1.24fr;gap:clamp(35px,7vw,120px);padding:clamp(66px,8vw,124px);background:#1f3b2e;color:#fff}.day-intro h2{margin:17px 0 0;color:#fff;font-size:clamp(49px,5.2vw,82px);line-height:.86;letter-spacing:-.1em}.day-intro>p:last-child{max-width:310px;margin:25px 0 0;color:#dce5d9;font-size:14px;line-height:1.6}.day-stops{align-self:end;border-top:1px solid rgba(255,255,255,.3)}.day-stops a{display:grid;grid-template-columns:70px 1fr minmax(150px,.8fr);gap:20px;align-items:start;padding:22px 0;border-bottom:1px solid rgba(255,255,255,.3);transition:padding .25s ease,color .25s ease}.day-stops a:hover{padding-left:10px;color:#c5dc68}.day-stops small{color:#c5dc68;text-transform:uppercase;letter-spacing:.1em;font-size:10px;font-weight:800}.day-stops h3{margin:0;font-size:clamp(21px,2vw,31px);line-height:.94;letter-spacing:-.065em}.day-stops p{margin:2px 0 0;color:#dce5d9;font-size:12px;line-height:1.5}.home-menu{padding-bottom:clamp(96px,10vw,164px)}.menu-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:232px 232px 160px 118px;gap:12px;margin-top:37px}.menu-tile{position:relative;isolation:isolate;display:block;overflow:hidden;border-radius:18px;padding:24px;transition:transform .25s ease}.menu-tile:hover{transform:translateY(-3px)}.menu-tile>span{position:relative;z-index:1;display:block;font-size:clamp(20px,2vw,31px);font-weight:800;line-height:.94;letter-spacing:-.07em}.menu-tile>i{position:absolute;right:28px;bottom:18px;font-size:72px;font-style:normal}.menu-main{grid-row:span 2;grid-column:span 2;color:#fff}.menu-main:after{position:absolute;z-index:-1;inset:0;content:'';background:linear-gradient(180deg,rgba(32,28,23,.04),rgba(32,28,23,.72))}.menu-main>img{position:absolute;z-index:-2;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .5s}.menu-main:hover img{transform:scale(1.045)}.menu-main span{font-size:clamp(29px,3vw,46px)}.menu-tile-coffee{background:#e1e6d7}.menu-tile-coffee i{right:31px;color:#567744}.menu-tile-seasonal{background:#1f3b2e;color:#fff}.menu-tile-seasonal span{color:#fff}.menu-tile-seasonal strong{position:absolute;right:25px;bottom:23px;color:#bddb3d;font-size:32px;letter-spacing:-.1em}.menu-tile-hot{background:#f0e4d9}.menu-tile-hot i{color:#d06248}.menu-tile-salad{background:#e5ebdc}.menu-tile-salad i{color:#80a134}.menu-tile-dessert{background:#e9dfd0}.menu-all{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:0 27px;border-radius:18px;background:#e9e6dc;color:#25201c;transition:background .22s ease,transform .22s ease}.menu-all:hover{background:#dce7d4;transform:translateY(-3px)}.menu-all span{font-size:clamp(20px,2vw,31px);font-weight:800;letter-spacing:-.07em}.menu-all b{display:grid;place-items:center;width:47px;height:47px;border-radius:50%;background:#1f3b2e;color:#fff;font-size:22px;font-weight:400}.home-places{padding-top:0}.places-heading{align-items:end}.place-filters{display:flex;gap:8px}.place-filters button{min-height:43px;padding:0 17px;border:1px solid #d7d1c8;border-radius:999px;background:transparent;color:#25201c;cursor:pointer;font:800 11px Montserrat,Arial,sans-serif;transition:background .2s,color .2s}.place-filters button.is-active{border-color:#1f3b2e;background:#1f3b2e;color:#fff}.places-stage{display:grid;grid-template-columns:1.1fr .9fr;min-height:585px;margin-top:37px;background:#e6ebe0}.place-feature{position:relative;overflow:hidden}.place-feature article{position:absolute;inset:0;isolation:isolate;opacity:0;pointer-events:none;transition:opacity .35s ease}.place-feature article.is-active{opacity:1;pointer-events:auto}.place-feature img{position:absolute;z-index:-2;inset:0;width:100%;height:100%;object-fit:cover}.place-feature article:after{position:absolute;z-index:-1;inset:0;background:linear-gradient(90deg,rgba(29,45,35,.9),rgba(29,45,35,.35));content:''}.place-feature article>div{position:absolute;bottom:clamp(30px,4vw,65px);left:clamp(30px,5vw,78px);color:#fff}.place-feature p{margin:0;color:#c5dc68;text-transform:uppercase;letter-spacing:.12em;font-size:10px;font-weight:800}.place-feature h3{max-width:480px;margin:18px 0 0;font-size:clamp(36px,4vw,65px);line-height:.88;letter-spacing:-.09em}.place-feature span{display:block;margin-top:21px;color:#e7ede5;font-size:12px;line-height:1.55}.place-feature .ui-button{margin-top:29px;border-color:#fff;background:#fff;color:#1f3b2e!important}.place-list{align-self:center;padding:clamp(30px,5vw,76px)}.place-list>div{display:grid}.place-list button{display:grid;gap:8px;padding:23px 0;border:0;border-top:1px solid rgba(43,58,45,.2);background:transparent;color:#25201c;text-align:left;cursor:pointer}.place-list button:last-child{border-bottom:1px solid rgba(43,58,45,.2)}.place-list button span{font-size:clamp(21px,2vw,31px);font-weight:800;line-height:.95;letter-spacing:-.065em;transition:color .2s}.place-list button small{color:#6e776c;font-size:11px}.place-list button:hover span,.place-list button.is-active span{color:#728f2e}.home-home-coffee{position:relative;isolation:isolate;display:grid;grid-template-columns:1fr 1fr;min-height:500px;margin-top:14px;overflow:hidden;border-radius:22px;background:#d9ceac;padding:clamp(50px,6.2vw,104px)}.home-home-coffee>div:first-child{position:relative;z-index:1}.home-home-coffee h2,.home-app-loyalty h2{margin:18px 0 0;color:#25201c;font-size:clamp(47px,4.8vw,80px);line-height:.87;letter-spacing:-.095em}.home-home-coffee p:not(.story-kicker),.loyalty-copy>p:not(.story-kicker){max-width:360px;margin:24px 0 0;color:#5e5747;font-size:14px;line-height:1.65}.home-home-coffee .ui-button,.loyalty-copy .ui-button{margin-top:29px}.home-coffee-visual{position:relative;align-self:end;justify-self:center;width:265px;height:325px;border-radius:22px 22px 41px 41px;background:#91a91e;box-shadow:19px 21px 0 rgba(92,84,56,.17);transform:rotate(8deg)}.home-coffee-visual:before{position:absolute;top:-15px;left:0;width:100%;height:29px;border-radius:11px;background:#839a19;content:''}.home-coffee-visual span{position:absolute;top:76px;left:46px;color:#243020;font-size:78px;font-weight:800;letter-spacing:-.2em}.home-coffee-visual small{position:absolute;bottom:37px;left:48px;color:#243020;font-size:15px;font-weight:800;line-height:.9}.home-coffee-visual i{position:absolute;right:-48px;bottom:8px;display:grid;place-items:center;width:120px;aspect-ratio:1;border-radius:50%;background:#fbf8ef;font-size:49px;font-style:normal;transform:rotate(-8deg)}.home-app-loyalty{display:grid;grid-template-columns:1fr .85fr;min-height:495px;margin-top:14px;overflow:hidden;border-radius:22px;background:#e9e2d9;padding:clamp(50px,6.2vw,102px)}.loyalty-points{position:relative;align-self:center;justify-self:center;width:min(100%,375px);min-height:245px;padding:35px;border-radius:22px;background:#1f3b2e;color:#fff;box-shadow:16px 17px 0 rgba(80,70,58,.13);transform:rotate(-4deg)}.loyalty-points strong{display:block;color:#bddb3d;font-size:51px;line-height:.9;letter-spacing:-.1em}.loyalty-points strong span{font-size:25px}.loyalty-points>p{margin:18px 0 0;color:#e6ece3;font-size:13px}.loyalty-points>div{position:absolute;right:30px;bottom:28px;display:flex;align-items:center;gap:8px}.loyalty-points b{margin-right:11px;font-size:28px;letter-spacing:-.15em}.loyalty-points i{display:block;width:13px;height:13px;border-radius:50%;background:#bddb3d}.home-journal{padding-bottom:clamp(86px,10vw,150px)}.journal-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:37px}.journal-card{display:grid;grid-template-columns:1fr 1fr;min-height:300px;overflow:hidden;border-radius:20px;background:#e8e5de;transition:transform .25s ease,box-shadow .25s ease}.journal-card:hover{box-shadow:0 16px 32px rgba(50,40,29,.1);transform:translateY(-4px)}.journal-card>img{width:100%;height:100%;object-fit:cover}.journal-card>div{display:flex;flex-direction:column;align-items:flex-start;padding:clamp(22px,3vw,42px)}.journal-card small{color:#728f2e;text-transform:uppercase;letter-spacing:.12em;font-size:9px;font-weight:800}.journal-card h3{margin:17px 0 0;color:#25201c;font-size:clamp(22px,2.1vw,34px);line-height:.92;letter-spacing:-.075em}.journal-card p{margin:15px 0 0;color:#655f58;font-size:12px;line-height:1.55}.journal-card span{margin-top:auto;padding-top:22px;border-bottom:1px solid #25201c;color:#25201c;font-size:10px;font-weight:800}.home-marquee{width:100vw;margin:0 calc(50% - 50vw);overflow:hidden;border-top:1px solid #dcd7cf;border-bottom:1px solid #dcd7cf;white-space:nowrap;background:#bddb3d;color:#1f3b2e}.home-marquee>div{display:inline-block;padding:17px 0;font-size:clamp(27px,3.1vw,52px);font-weight:800;letter-spacing:-.09em;animation:marquee 28s linear infinite}.home-marquee i{margin:0 22px;font-style:normal;color:#f8f6ee}@keyframes marquee{to{transform:translateX(-50%)}}@media(max-width:980px){.home-page{padding:0}.home-stories{display:flex;min-height:0;gap:0;flex-direction:column}.stories-media{min-height:48svh;border-radius:0}.stories-copy{min-height:360px;padding:54px 20px;background:#f1f0eb}.story-copy-item{right:20px;left:20px;width:auto}.story-copy-item h1{font-size:clamp(49px,13vw,69px)}.story-description{font-size:14px}.home-section{padding:82px 20px}.home-section-head{align-items:start;display:block}.home-section-head h2{font-size:36px}.home-section-head p{font-size:15px}.bestseller-list{display:flex;gap:10px;margin:34px -20px 0;padding:0 20px 8px;overflow:auto;scroll-snap-type:x mandatory}.product-card{flex:0 0 72%;scroll-snap-align:start}.product-card-info h3{font-size:21px}.home-bento{grid-template-columns:1fr 1fr;grid-template-rows:400px 245px 245px 178px;gap:8px}.bento-card{border-radius:0;padding:20px}.bento-app{grid-column:1/-1;grid-row:auto}.bento-phone{right:24px;bottom:-95px;width:183px;height:326px}.bento-phone i{width:94px;margin-top:33px}.bento-coffee{grid-column:span 1}.coffee-pack{right:17px;bottom:14px;width:95px;height:137px;padding:32px 14px}.coffee-pack b{font-size:31px}.bento-event{grid-column:span 1}.bento-event h2,.bento-promo h2,.bento-bakery h2,.bento-certificates h2{font-size:30px}.bento-promo{grid-column:span 2}.bento-bakery{grid-column:span 1}.bento-certificates{grid-column:span 1}.bento-promo strong{right:21px;bottom:18px;width:70px;font-size:15px}.home-day{display:block;padding:64px 20px}.day-intro h2{font-size:52px}.day-stops{margin-top:46px}.day-stops a{grid-template-columns:60px 1fr;gap:12px}.day-stops p{grid-column:2;margin-top:3px}.home-menu{padding-bottom:83px}.menu-grid{grid-template-columns:1fr 1fr;grid-template-rows:295px 184px 184px 160px 100px;gap:8px;margin-top:33px}.menu-tile{border-radius:16px;padding:18px}.menu-main{grid-column:1/-1;grid-row:auto}.menu-main span{font-size:37px}.menu-tile-dessert{grid-column:span 2}.menu-all{padding:0 19px}.menu-all b{width:43px;height:43px}.places-heading{display:block}.place-filters{margin-top:26px}.places-stage{display:flex;min-height:0;margin:33px -20px 0;flex-direction:column}.place-feature{height:490px}.place-feature article>div{right:20px;bottom:48px;left:20px}.place-feature h3{font-size:47px}.place-list{padding:0 20px 58px}.place-list button{padding:21px 0}.home-home-coffee{display:block;min-height:650px;margin:0;border-radius:0;padding:58px 20px}.home-home-coffee h2{font-size:53px}.home-coffee-visual{width:218px;height:270px;margin:78px auto 0}.home-coffee-visual span{top:60px;left:35px;font-size:65px}.home-coffee-visual small{left:37px;bottom:28px}.home-coffee-visual i{right:-51px;width:104px}.home-app-loyalty{display:block;min-height:620px;margin:0;border-radius:0;padding:58px 20px}.home-app-loyalty h2{font-size:52px}.loyalty-points{margin:58px auto 0;transform:rotate(-3deg)}.journal-list{display:flex;gap:10px;margin:34px -20px 0;padding:0 20px 8px;overflow:auto;scroll-snap-type:x}.journal-card{grid-template-columns:1fr 1fr;flex:0 0 95%;min-height:265px;scroll-snap-align:start}.journal-card>div{padding:20px}.journal-card h3{font-size:23px}.journal-card p{font-size:11px}.home-marquee{margin:0}.home-marquee>div{animation-duration:23s}}@media(prefers-reduced-motion:reduce){.story-media-item,.story-copy-item,.story-progress button:after,.product-card,.product-card-image img,.bento-card,.bento-art,.menu-tile,.menu-main>img,.journal-card,.home-marquee>div{transition:none;animation:none}.story-progress button.is-active:after{transform:scaleX(1)}}
+</style>
+
+<style>
+  :global(html){scroll-behavior:smooth}
+  .home-page{--home-radius:var(--radius)}
+  .ui-button,.home-stories,.product-card,.product-card-image,.bento-card,.home-day,.menu-tile,.menu-all,.places-stage,.home-home-coffee,.home-app-loyalty,.loyalty-points,.journal-card{border-radius:var(--home-radius)}
+  .ui-button{border-radius:var(--home-radius);min-height:50px;padding-inline:25px}
+  .home-stories{overflow:hidden}
+  .story-progress button{border-radius:var(--home-radius)}
+  .product-card{padding:11px;background:#f7f5f0}
+  .product-card-image{border-radius:var(--home-radius)}
+  .product-badge{position:absolute;z-index:1;top:12px;left:12px;padding:8px 11px;border:1px solid transparent;border-radius:var(--home-radius);font-size:9px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;box-shadow:0 5px 14px rgba(45,34,26,.12)}
+  .product-badge--hit{background:#ef603f;color:#fff;border-color:#f99070}
+  .product-badge--new{background:#bddb3d;color:#1f3b2e;border-color:#d9ec83}
+  .product-badge--seasonal{background:#f2c86f;color:#503616;border-color:#f8d895}
+  .product-badge--favourite{background:#365f4a;color:#fff;border-color:#73947f}
+  .product-badge--special{background:#f8f4ed;color:#1f3b2e;border-color:#d3cabd}
+  .product-card-image>span:not(.product-badge){border-radius:var(--home-radius)}
+  .product-card-info small{color:#1f3b2e}
+  .bento-card{border-radius:var(--home-radius)}
+  .home-day{margin-top:clamp(32px,5vw,80px);border-radius:var(--home-radius)}
+  .day-intro h2{margin-top:0}
+  .day-stops{align-self:stretch;display:grid;grid-template-rows:repeat(3,1fr)}
+  .day-stops a{align-items:center;min-height:0}
+  .menu-tile,.menu-all{border-radius:var(--home-radius)}
+  .menu-all b{border-radius:var(--home-radius)}
+  .home-places{padding-top:0}
+  .places-stage{height:585px;min-height:0;overflow:hidden;border-radius:var(--home-radius)}
+  .place-list{align-self:stretch;height:100%;overflow-y:auto;padding-block:clamp(30px,5vw,76px);scrollbar-color:#8ba23b transparent;scrollbar-width:thin}
+  .place-list::-webkit-scrollbar{width:7px}.place-list::-webkit-scrollbar-thumb{border-radius:var(--home-radius);background:#8ba23b}
+  .home-home-coffee,.home-app-loyalty,.loyalty-points,.journal-card{border-radius:var(--home-radius)}
+  .home-coffee-visual{border-radius:var(--home-radius) var(--home-radius) calc(var(--home-radius) * 2) calc(var(--home-radius) * 2)}
+  .journal-card small{display:none}
+  @media(max-width:980px){
+    .home-stories,.stories-media,.bento-card,.home-day,.menu-tile,.menu-all,.places-stage,.home-home-coffee,.home-app-loyalty,.loyalty-points,.journal-card{border-radius:var(--home-radius)}
+    .home-day{margin:48px 20px 0;padding:54px 20px}
+    .day-stops a{align-items:center}
+    .places-stage{height:auto;margin-right:0;margin-left:0;border-radius:var(--home-radius)}
+    .place-list{max-height:390px;padding:0 20px 30px}
+    .home-home-coffee,.home-app-loyalty{margin:0 20px;padding:58px 20px}
+  }
 </style>

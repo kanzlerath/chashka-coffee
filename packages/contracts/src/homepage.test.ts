@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { homepageBestsellerMenuItemSchema, upsertHomepageSlideRequestSchema } from './homepage'
+import { homepageBestsellerMenuItemSchema, upsertHomepageDayPartRequestSchema, upsertHomepageDaySectionRequestSchema, upsertHomepageSlideRequestSchema } from './homepage'
 
 describe('homepage contracts', () => {
   const slide = {
@@ -42,5 +42,15 @@ describe('homepage contracts', () => {
       marketingBadge: 'HIT',
       categoryName: 'Кофе',
     })).toMatchObject({ weightGrams: 320 })
+  })
+
+  test('accepts an editable day section with a linked day part', () => {
+    const section = upsertHomepageDaySectionRequestSchema.parse({ title: 'Поводы зайти сегодня', description: 'Выбирайте свой ритм.', isPublished: true })
+    const part = upsertHomepageDayPartRequestSchema.parse({
+      sectionId: '019a2f17-453e-7c1a-9c04-4e468e7eb514', label: 'Утро', title: 'Завтраки до 12:00',
+      description: 'Медленные утра и кофе.', ctaUrl: '/restaurants/krasny-prospekt/menu', position: 10, isPublished: true,
+    })
+    expect(section.title).toBe('Поводы зайти сегодня')
+    expect(part.ctaUrl).toBe('/restaurants/krasny-prospekt/menu')
   })
 })

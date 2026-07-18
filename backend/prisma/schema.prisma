@@ -158,6 +158,36 @@ model HomepageBestseller {
   @@map("homepage_bestsellers")
 }
 
+model HomepageDaySection {
+  id          String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  title       String            @db.VarChar(180)
+  description String?           @db.VarChar(500)
+  isPublished Boolean           @default(false) @map("is_published")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+  parts       HomepageDayPart[]
+
+  @@index([isPublished], map: "homepage_day_sections_published_idx")
+  @@map("homepage_day_sections")
+}
+
+model HomepageDayPart {
+  id          String             @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  sectionId   String             @db.Uuid @map("section_id")
+  label       String             @db.VarChar(80)
+  title       String             @db.VarChar(180)
+  description String?            @db.VarChar(500)
+  ctaUrl      String?            @map("cta_url")
+  position    Int                @default(0)
+  isPublished Boolean            @default(false) @map("is_published")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+  section     HomepageDaySection @relation(fields: [sectionId], references: [id], onDelete: Cascade, map: "homepage_day_parts_section_id_fkey")
+
+  @@index([sectionId, isPublished, position], map: "homepage_day_parts_section_published_position_idx")
+  @@map("homepage_day_parts")
+}
+
 model MediaAsset {
   id          String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
   objectKey   String   @unique @map("object_key") @db.VarChar(1024)
