@@ -1,7 +1,14 @@
 ---
 import PageShell from '../layouts/PageShell.astro';
 
-type FeaturedEntry = { slug: string; title: string; excerpt: string | null; ctaLabel: string | null; eventStartsAt: string | null }
+type FeaturedEntry = {
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  ctaLabel: string | null;
+  eventStartsAt: string | null;
+}
+
 const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
 let featuredEvent: FeaturedEntry | null = null
 let featuredPromotion: FeaturedEntry | null = null
@@ -13,84 +20,110 @@ try {
   ])
   if (eventsResponse.ok) featuredEvent = (await eventsResponse.json()).entries.at(0) ?? null
   if (promotionsResponse.ok) featuredPromotion = (await promotionsResponse.json()).entries.at(0) ?? null
-} catch { /* editorial fallback remains available when the local API is unavailable */ }
+} catch { /* Editorial fallbacks keep the local website complete without the API. */ }
 
 const eventDate = featuredEvent?.eventStartsAt
   ? new Date(featuredEvent.eventStartsAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
-  : '24 мая'
+  : 'Каждую неделю'
 ---
 
-<PageShell title="Чашка кофе" description="Чашка кофе — сеть кофеен в Новосибирске: завтраки, десерты, кофе и места для хорошего дня.">
-  <div class="home">
+<PageShell
+  title="Чашка кофе"
+  description="Чашка кофе — сеть кофеен в Новосибирске: завтраки, десерты, кофе и места для хорошего дня."
+  image="/images/home-morning-v2.png"
+>
+  <div class="home-page">
     <section class="home-hero" aria-labelledby="page-title">
-      <img src="/images/home-breakfast.png" alt="Капучино и круассан на светлом столе" />
+      <img src="/images/home-morning-v2.png" alt="Капучино и круассан в светлой кофейне" fetchpriority="high" />
       <div class="home-hero-copy">
-        <p class="home-kicker">Новосибирск · с 2006 года</p>
-        <h1 id="page-title">Хороший день<br />начинается<br />с хорошего кофе</h1>
-        <p>Свежая выпечка, авторские блюда и любимый кофе — каждый день рядом.</p>
-        <div class="home-actions">
-          <a class="home-button home-button-dark" href="/restaurants/krasny-prospekt/menu">Смотреть меню <span>→</span></a>
-          <a class="home-inline-link" href="/restaurants">Найти кофейню <span>↗</span></a>
+        <p class="eyebrow">Чашка кофе · Новосибирск</p>
+        <h1 id="page-title">День начинается<br />с любимого места</h1>
+        <p class="home-lead">Кофе, завтраки и время для себя — в городе, который всегда куда-то спешит.</p>
+        <div class="home-hero-actions">
+          <a class="button button-dark" href="/restaurants/krasny-prospekt/menu">Выбрать меню <span>→</span></a>
+          <a class="text-action" href="/restaurants">Найти кофейню <span>↗</span></a>
         </div>
       </div>
-      <div class="home-hero-pagination" aria-hidden="true"><i></i><i></i><i></i></div>
-    </section>
-
-    <section class="home-delivery" aria-label="Доставка">
-      <div class="home-delivery-icon" aria-hidden="true">↗</div>
-      <div><p>Любимое — ближе</p><h2>Доставка из ресторанов</h2><span>Привезём завтрак, кофе или десерт бережно и вовремя.</span></div>
-      <a class="home-button home-button-light" href="/delivery">Заказать доставку <span>→</span></a>
-    </section>
-
-    <section class="home-index" aria-labelledby="home-index-title">
-      <div class="home-section-heading"><p class="home-kicker">всё для хорошего дня</p><h2 id="home-index-title">Выберите<br />свой повод</h2></div>
-      <div class="home-index-links">
-        <a href="/restaurants"><b>01</b><span>⌖</span><strong>Кофейни</strong><small>Адреса и время работы</small><i>↗</i></a>
-        <a href="/restaurants/krasny-prospekt/menu"><b>02</b><span>⌇</span><strong>Меню</strong><small>Завтраки, десерты, кофе</small><i>↗</i></a>
-        <a href="/app"><b>03</b><span>▣</span><strong>Приложение</strong><small>Заказ и клуб друзей</small><i>↗</i></a>
-        <a href="/loyalty"><b>04</b><span>✦</span><strong>Клуб друзей</strong><small>Бонусы и привилегии</small><i>↗</i></a>
+      <div class="home-hero-meta" aria-label="Ключевая информация">
+        <p>Кофе, завтраки,<br />десерты и встречи</p>
+        <a href="/about">О «Чашке кофе» <span>↗</span></a>
       </div>
     </section>
 
-    <section class="home-feature-grid" aria-label="Главные разделы">
-      <a class="home-feature home-feature-menu" href="/restaurants/krasny-prospekt/menu">
-        <img src="/images/home-hero-v1.png" alt="Кофе и выпечка" loading="lazy" />
-        <div><p>Меню</p><h2>Завтраки,<br />кофе и десерты</h2><span>Открыть меню <b>→</b></span></div>
+    <section class="home-route" aria-labelledby="route-title">
+      <header class="home-route-heading">
+        <p class="eyebrow">с чего начнём?</p>
+        <h2 id="route-title">Выберите свой<br />сценарий</h2>
+      </header>
+      <nav class="home-route-links" aria-label="Основные разделы">
+        <a href="/delivery"><span>01</span><strong>Заказать<br />доставку</strong><small>Любимые блюда — домой или в офис</small><b>→</b></a>
+        <a href="/restaurants/krasny-prospekt/menu"><span>02</span><strong>Открыть<br />меню</strong><small>Завтраки, обеды и десерты</small><b>→</b></a>
+        <a href="/restaurants"><span>03</span><strong>Найти<br />кофейню</strong><small>13 точек по всему городу</small><b>→</b></a>
+        <a href="/loyalty"><span>04</span><strong>Зайти<br />в клуб</strong><small>Бонусы и привилегии для друзей</small><b>→</b></a>
+      </nav>
+    </section>
+
+    <section class="home-showcase" aria-label="Главные возможности Чашки кофе">
+      <a class="showcase-menu" href="/restaurants/krasny-prospekt/menu">
+        <img src="/images/home-hero-v1.png" alt="Кофе и свежая выпечка" loading="lazy" />
+        <div><p>Выбирайте своё</p><h2>Меню<br />на каждый час</h2><span>Завтраки, обеды, кофе и десерты <b>→</b></span></div>
       </a>
-      <a class="home-feature home-feature-places" href="/restaurants">
-        <div><p>Кофейни</p><h2>13 мест<br />в городе</h2><span>Найти рядом <b>→</b></span></div>
-        <img src="/images/restaurants-hero.png" alt="Интерьер кофейни" loading="lazy" />
+      <a class="showcase-delivery" href="/delivery">
+        <div class="showcase-mark" aria-hidden="true">↗</div>
+        <p>Доставка</p><h2>Любимое —<br />ближе</h2><span>Кофе и еда из ближайшей кофейни <b>→</b></span>
       </a>
-      <a class="home-feature home-feature-app" href="/app">
-        <div><p>Приложение</p><h2>Любимое<br />в телефоне</h2><span>Быстрый заказ и бонусы</span></div>
-        <div class="home-phone" aria-hidden="true"><i></i><b>ЧК</b><small>Доброе утро</small><strong>Что будем<br />сегодня?</strong><em>☕</em></div>
+      <a class="showcase-places" href="/restaurants">
+        <img src="/images/restaurants-hero.png" alt="Светлый интерьер кофейни" loading="lazy" />
+        <div><p>Кофейни</p><h2>Всегда<br />по пути</h2><span>Посмотреть на карте <b>→</b></span></div>
       </a>
     </section>
 
-    <section class="home-today" aria-labelledby="today-title">
-      <div class="home-today-heading"><p class="home-kicker">сегодня в чашке кофе</p><h2 id="today-title">Есть повод<br />заглянуть</h2></div>
-      <div class="home-today-list">
-        <a href={featuredPromotion ? `/promotions/${featuredPromotion.slug}` : '/promotions'} class="home-today-promo">
-          <p>Акции и новинки</p><h3>{featuredPromotion?.title ?? 'Маленькие поводы зайти'}</h3><span>{featuredPromotion?.excerpt ?? 'Любимые позиции, сезонные вкусы и предложения на каждый день.'}</span><strong>{featuredPromotion?.ctaLabel ?? '−20%'}</strong><b>Смотреть акции →</b>
+    <section class="home-places" aria-labelledby="places-title">
+      <div class="home-places-copy">
+        <p class="eyebrow">13 кофеен в новосибирске</p>
+        <h2 id="places-title">Место<br />для своего<br />ритма</h2>
+        <p>Забежать за фильтром, встретиться с друзьями или задержаться на длинный завтрак — выбирайте точку рядом с вами.</p>
+        <a class="button button-dark" href="/restaurants">Все кофейни <span>→</span></a>
+      </div>
+      <div class="home-place-list">
+        <a href="/restaurants/krasny-prospekt"><span>01</span><div><strong>Красный проспект</strong><small>Городская кофейня · с 07:30</small></div><b>↗</b></a>
+        <a href="/restaurants"><span>02</span><div><strong>Парк Победы</strong><small>Кофе для прогулки · с 09:00</small></div><b>↗</b></a>
+        <a href="/restaurants"><span>03</span><div><strong>Аэропорт Толмачёво</strong><small>Перед вылетом · с 06:00</small></div><b>↗</b></a>
+      </div>
+    </section>
+
+    <section class="home-now" aria-labelledby="now-title">
+      <header><p class="eyebrow">в чашке кофе сегодня</p><h2 id="now-title">Есть повод<br />заглянуть</h2></header>
+      <div class="home-now-items">
+        <a class="home-event" href={featuredEvent ? `/events/${featuredEvent.slug}` : '/events'}>
+          <p>{eventDate} · события</p>
+          <h3>{featuredEvent?.title ?? 'Вечера, которые хочется не спешить'}</h3>
+          <span>{featuredEvent?.excerpt ?? 'Музыка, встречи и маленькие поводы остаться за кофе подольше.'}</span>
+          <b>Смотреть афишу →</b>
+          <i aria-hidden="true">♪</i>
         </a>
-        <a href={featuredEvent ? `/events/${featuredEvent.slug}` : '/events'} class="home-today-event">
-          <div><p>{eventDate} · события</p><h3>{featuredEvent?.title ?? 'Вечер джаза в парке'}</h3><span>{featuredEvent?.excerpt ?? 'Живая музыка, кофе и длинный вечер в хорошей компании.'}</span><b>Смотреть афишу →</b></div><i aria-hidden="true">♪</i>
+        <a class="home-promo" href={featuredPromotion ? `/promotions/${featuredPromotion.slug}` : '/promotions'}>
+          <div><p>Акции и новинки</p><h3>{featuredPromotion?.title ?? 'Новые вкусы уже в меню'}</h3><span>{featuredPromotion?.excerpt ?? 'Собрали сезонные предложения, ради которых стоит заглянуть сегодня.'}</span><b>Все предложения →</b></div>
+          <strong>{featuredPromotion?.ctaLabel ?? 'new'}</strong>
         </a>
       </div>
     </section>
 
-    <section class="home-locations" aria-labelledby="locations-title">
-      <div class="home-locations-copy"><p class="home-kicker">рядом с вами</p><h2 id="locations-title">Кофе —<br />по пути</h2><p>В центре города, в парках, у набережной и перед вылетом. Выбирайте удобную точку и приходите в гости.</p><a class="home-button home-button-dark" href="/restaurants">Все кофейни <span>→</span></a></div>
-      <div class="home-location-tabs"><a href="/restaurants?area=CITY"><b>В городе</b><span>7 кофеен</span></a><a href="/restaurants?area=PARK"><b>В парках</b><span>3 кофейни</span></a><a href="/restaurants?area=AIRPORT"><b>В аэропорту</b><span>3 кофейни</span></a></div>
-    </section>
-
-    <section class="home-app-cta" aria-labelledby="app-title">
-      <div><p class="home-kicker">чашка кофе — в телефоне</p><h2 id="app-title">Больше любимого<br />в приложении</h2><p>Заказывайте быстрее, копите бонусы и первыми узнавайте о новинках.</p><a class="home-button home-button-dark" href="/app">Скачать приложение <span>→</span></a></div>
-      <div class="home-app-visual" aria-hidden="true"><div class="home-app-cup">☕</div><span>ЧК</span></div>
+    <section class="home-app" aria-labelledby="app-title">
+      <div class="home-app-copy">
+        <p class="eyebrow">чашка кофе в телефоне</p>
+        <h2 id="app-title">Нужное —<br />под рукой</h2>
+        <p>Заказывайте быстрее, копите бонусы и первыми узнавайте о том, что появляется в любимой кофейне.</p>
+        <a class="button button-dark" href="/app">О приложении <span>→</span></a>
+      </div>
+      <div class="home-app-object" aria-hidden="true">
+        <div class="app-phone"><i></i><span>ЧК</span><small>Доброе утро</small><b>Что будем<br />сегодня?</b><em>☕</em></div>
+        <div class="app-note">Кофе<br />по пути <strong>↗</strong></div>
+      </div>
     </section>
   </div>
 </PageShell>
 
 <style>
-  .home{padding:14px}.home a{text-decoration:none;color:inherit}.home-hero{position:relative;isolation:isolate;min-height:min(48vw,735px);overflow:hidden;border-radius:23px;background:#e9e3d9}.home-hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.home-hero:after{content:'';position:absolute;z-index:-1;inset:0;background:linear-gradient(90deg,rgba(252,251,248,.98) 0%,rgba(252,251,248,.88) 31%,rgba(252,251,248,.12) 63%,transparent 80%)}.home-hero-copy{position:relative;z-index:1;max-width:645px;padding:clamp(60px,7vw,122px) clamp(34px,6.1vw,106px)}.home-kicker{margin:0;color:#718c2c;text-transform:uppercase;letter-spacing:.13em;font-size:10px;font-weight:700}.home-hero h1,.home-section-heading h2,.home-feature h2,.home-today h2,.home-locations h2,.home-app-cta h2{margin:18px 0 0;color:#25201c;font-size:clamp(54px,5.65vw,98px);line-height:.87;letter-spacing:-.09em}.home-hero-copy>p:not(.home-kicker){max-width:390px;margin:27px 0 0;color:#56514c;font-size:16px;line-height:1.55}.home-actions{display:flex;align-items:center;gap:25px;margin-top:32px}.home-button{display:inline-flex;align-items:center;justify-content:center;gap:26px;padding:17px 20px;border-radius:10px;font-size:12px;font-weight:700;transition:transform .2s,background .2s}.home-button:hover{transform:translateY(-2px)}.home-button span{font-size:19px;line-height:0}.home-button-dark{background:#2a211c;color:#fff}.home-button-dark:hover{background:#45362c}.home-button-light{background:#fff;color:#2a211c}.home-inline-link{padding-bottom:3px;border-bottom:1px solid currentColor;font-size:12px;font-weight:700}.home-inline-link span{margin-left:7px}.home-hero-pagination{position:absolute;z-index:1;bottom:29px;left:clamp(34px,6.1vw,106px);display:flex;gap:7px}.home-hero-pagination i{width:7px;height:7px;border:1px solid #4a433d;border-radius:50%}.home-hero-pagination i:first-child{background:#2a211c}.home-delivery{display:grid;grid-template-columns:58px 1fr auto;gap:24px;align-items:center;margin-top:14px;padding:30px clamp(28px,4vw,64px);border-radius:22px;background:#263b2f;color:#fff}.home-delivery-icon{display:grid;place-items:center;width:58px;height:58px;border-radius:12px;background:#f1eedf;color:#263b2f;font-size:29px}.home-delivery p{margin:0;color:#c6dc6c;text-transform:uppercase;letter-spacing:.13em;font-size:10px;font-weight:700}.home-delivery h2{margin:8px 0 0;font-size:clamp(27px,2.8vw,44px);line-height:.9;letter-spacing:-.075em}.home-delivery span{display:block;margin-top:7px;color:#d9e2d9;font-size:12px}.home-index{display:grid;grid-template-columns:.8fr 1.2fr;gap:clamp(44px,7vw,115px);padding:clamp(95px,11vw,170px) clamp(20px,5.2vw,92px)}.home-section-heading h2,.home-today h2,.home-locations h2{font-size:clamp(47px,4.7vw,80px)}.home-index-links{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #dedad2;border-left:1px solid #dedad2}.home-index-links a{position:relative;min-height:190px;padding:22px;border-right:1px solid #dedad2;border-bottom:1px solid #dedad2;background:#fcfbf8;transition:background .2s}.home-index-links a:hover{background:#f2f0e9}.home-index-links b{display:block;color:#829d37;font-size:10px}.home-index-links> a >span{position:absolute;top:19px;right:20px;font-size:25px;color:#82776a}.home-index-links strong{display:block;margin-top:75px;font-size:25px;letter-spacing:-.065em}.home-index-links small{display:block;margin-top:7px;color:#6b655e;font-size:11px}.home-index-links i{position:absolute;right:21px;bottom:20px;color:#718d2b;font-style:normal}.home-feature-grid{display:grid;grid-template-columns:1.05fr .95fr;grid-template-rows:330px 330px;gap:14px}.home-feature{position:relative;isolation:isolate;overflow:hidden;border-radius:22px;min-height:0}.home-feature>img{position:absolute;z-index:-2;inset:0;width:100%;height:100%;object-fit:cover}.home-feature>div:not(.home-phone){position:absolute;left:clamp(26px,3.3vw,58px);bottom:clamp(26px,3.6vw,60px);z-index:1}.home-feature:after{content:'';position:absolute;z-index:-1;inset:0;background:linear-gradient(180deg,rgba(29,25,21,.05) 16%,rgba(29,25,21,.77) 100%)}.home-feature p{margin:0;color:#d9ed86;text-transform:uppercase;letter-spacing:.13em;font-size:10px;font-weight:700}.home-feature h2{margin-top:12px;color:#fff;font-size:clamp(32px,3.35vw,57px)}.home-feature span{display:inline-flex;gap:24px;margin-top:22px;padding-bottom:3px;border-bottom:1px solid rgba(255,255,255,.7);color:#fff;font-size:12px;font-weight:700}.home-feature span b{font-size:17px;line-height:0}.home-feature-menu{grid-row:span 2}.home-feature-places{background:#e1e8db}.home-feature-places:after{background:linear-gradient(90deg,rgba(36,47,39,.76) 0%,rgba(36,47,39,.08) 74%)}.home-feature-app{background:#f0e7dc}.home-feature-app:after{display:none}.home-feature-app>div:not(.home-phone){top:45px;bottom:auto}.home-feature-app p{color:#788d35}.home-feature-app h2{color:#27221e}.home-feature-app span{border-color:#35302b;color:#35302b}.home-phone{position:absolute;right:clamp(25px,4vw,69px);bottom:-91px;width:174px;height:310px;padding:40px 16px;border:8px solid #2a211c;border-radius:31px;background:#fbfaf5;box-shadow:16px 19px 0 rgba(86,71,54,.12);transform:rotate(8deg);color:#29231e}.home-phone i{position:absolute;top:0;left:50%;width:56px;height:14px;transform:translateX(-50%);border-radius:0 0 11px 11px;background:#2a211c}.home-phone b{display:block;margin-top:7px;font-size:27px;letter-spacing:-.13em}.home-phone small{display:block;margin-top:19px;color:#7b746b;font-size:9px}.home-phone strong{display:block;margin-top:6px;font-size:20px;line-height:.9;letter-spacing:-.08em}.home-phone em{display:grid;place-items:center;width:100px;aspect-ratio:1;margin:26px auto 0;border-radius:50%;background:#c4dc6b;font-size:44px;font-style:normal}.home-today{display:grid;grid-template-columns:.72fr 1.28fr;gap:clamp(42px,7vw,115px);padding:clamp(98px,11vw,165px) clamp(20px,5.2vw,92px)}.home-today-list{display:grid;grid-template-columns:1fr 1fr;gap:14px}.home-today-promo,.home-today-event{position:relative;min-height:335px;padding:29px;border-radius:22px;overflow:hidden}.home-today-promo{background:#eee4d8}.home-today-event{background:#263b2f;color:#fff}.home-today p{margin:0;text-transform:uppercase;letter-spacing:.13em;font-size:10px;font-weight:700}.home-today-promo p{color:#8e743f}.home-today-event p{color:#c8df70}.home-today h3{max-width:290px;margin:18px 0 0;font-size:clamp(27px,2.4vw,39px);line-height:.92;letter-spacing:-.075em}.home-today span{display:block;max-width:275px;margin-top:15px;font-size:12px;line-height:1.58}.home-today b{position:absolute;bottom:26px;left:29px;font-size:11px}.home-today-promo strong{position:absolute;right:24px;bottom:23px;display:grid;place-items:center;width:92px;aspect-ratio:1;border-radius:50%;background:#d86246;color:#fff;font-size:24px;letter-spacing:-.08em;transform:rotate(-8deg)}.home-today-event i{position:absolute;right:14px;bottom:-38px;color:#c6dc6c;font-family:Georgia,serif;font-size:175px;font-style:normal;line-height:1}.home-locations{margin:0;padding:clamp(52px,6vw,102px) clamp(28px,5.2vw,92px);border-radius:22px;background:#e4e9dd;display:grid;grid-template-columns:.8fr 1.2fr;gap:clamp(44px,7vw,120px);align-items:end}.home-locations-copy>p:not(.home-kicker){max-width:360px;margin:24px 0 28px;color:#555f53;font-size:14px;line-height:1.65}.home-location-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.home-location-tabs a{position:relative;isolation:isolate;display:flex;min-height:200px;padding:17px;flex-direction:column;justify-content:flex-end;overflow:hidden;border-radius:15px;color:#fff;background:#4f5f4d}.home-location-tabs a:nth-child(1){background:linear-gradient(180deg,rgba(20,24,20,.15),rgba(20,24,20,.75)),url('/images/restaurants-hero.png') center/cover}.home-location-tabs a:nth-child(2){background:linear-gradient(135deg,#78926d,#315443)}.home-location-tabs a:nth-child(3){background:linear-gradient(135deg,#858173,#2d3333)}.home-location-tabs b{font-size:19px;letter-spacing:-.055em}.home-location-tabs span{margin-top:5px;font-size:10px}.home-app-cta{position:relative;isolation:isolate;display:grid;grid-template-columns:1fr .75fr;min-height:480px;margin-top:14px;overflow:hidden;border-radius:22px;background:#efe8de;padding:clamp(52px,6.5vw,108px) clamp(28px,5.2vw,92px)}.home-app-cta>div:first-child{position:relative;z-index:1}.home-app-cta>div:first-child>p:not(.home-kicker){max-width:385px;margin:23px 0 29px;color:#5e5952;font-size:14px;line-height:1.6}.home-app-visual{position:relative;align-self:end;justify-self:center;width:285px;height:328px;border-radius:48% 48% 18% 18%;background:#afc356;transform:rotate(-7deg);box-shadow:22px 24px 0 rgba(90,80,65,.12)}.home-app-visual span{position:absolute;left:44px;bottom:34px;color:#273020;font-size:71px;font-weight:800;letter-spacing:-.17em}.home-app-cup{position:absolute;right:40px;top:42px;display:grid;place-items:center;width:115px;aspect-ratio:1;border-radius:50%;background:#f8f5ee;font-size:52px;transform:rotate(7deg)}@media(max-width:840px){.home{padding:0}.home-hero{min-height:calc(100svh - 72px);border-radius:0}.home-hero:after{background:linear-gradient(180deg,rgba(252,251,248,.97) 0%,rgba(252,251,248,.87) 43%,rgba(252,251,248,.12) 82%,transparent)}.home-hero-copy{padding:62px 20px}.home-hero h1{font-size:clamp(49px,13vw,67px)}.home-hero-copy>p:not(.home-kicker){font-size:14px;margin-top:22px}.home-actions{gap:18px;margin-top:26px}.home-button{padding:15px 16px}.home-hero-pagination{bottom:22px;left:20px}.home-delivery{grid-template-columns:52px 1fr;margin:12px;padding:23px;border-radius:18px;gap:13px 17px}.home-delivery-icon{width:52px;height:52px}.home-delivery h2{font-size:29px}.home-delivery span,.home-delivery .home-button{grid-column:1/-1}.home-delivery .home-button{justify-self:start;margin-top:4px}.home-index{display:block;padding:82px 20px}.home-index-links{margin-top:34px}.home-index-links a{min-height:164px;padding:17px}.home-index-links strong{margin-top:62px;font-size:21px}.home-index-links small{font-size:10px}.home-feature-grid{grid-template-columns:1fr;grid-template-rows:470px 310px 450px;gap:8px}.home-feature{border-radius:0}.home-feature-menu{grid-row:auto}.home-feature>div:not(.home-phone){left:20px;bottom:34px}.home-feature h2{font-size:44px}.home-feature-app>div:not(.home-phone){top:40px;bottom:auto}.home-phone{right:25px;bottom:-76px}.home-today{display:block;padding:84px 20px}.home-today-list{grid-template-columns:1fr;gap:8px;margin-top:34px}.home-today-promo,.home-today-event{min-height:290px;border-radius:18px;padding:22px}.home-today b{left:22px;bottom:22px}.home-today-promo strong{right:20px;bottom:19px;width:80px;font-size:21px}.home-locations{display:block;border-radius:0;padding:57px 20px}.home-locations-copy>p:not(.home-kicker){font-size:14px}.home-location-tabs{margin-top:34px;grid-template-columns:1fr 1fr}.home-location-tabs a{min-height:190px}.home-location-tabs a:first-child{grid-column:1/-1}.home-app-cta{display:block;min-height:640px;margin:0;border-radius:0;padding:58px 20px 0}.home-app-cta h2{font-size:51px}.home-app-visual{width:240px;height:278px;margin:58px auto -47px}.home-app-visual span{left:39px;bottom:27px;font-size:60px}.home-app-cup{right:33px;top:33px;width:97px;font-size:44px}}
+  .home-page{padding:14px}.home-page a{text-decoration:none;color:inherit}.eyebrow{margin:0;color:#718b2d;text-transform:uppercase;letter-spacing:.14em;font-size:10px;font-weight:800}.home-hero{position:relative;isolation:isolate;min-height:clamp(540px,43vw,680px);overflow:hidden;border-radius:22px;background:#e8e2d8}.home-hero>img{position:absolute;z-index:-2;inset:0;width:100%;height:100%;object-fit:cover}.home-hero:after{position:absolute;z-index:-1;inset:0;content:'';background:linear-gradient(90deg,rgba(251,250,247,.99) 0%,rgba(251,250,247,.92) 30%,rgba(251,250,247,.18) 61%,rgba(251,250,247,0) 78%)}.home-hero-copy{max-width:645px;padding:clamp(65px,7vw,115px) clamp(32px,6vw,104px)}.home-hero h1,.home-route h2,.home-showcase h2,.home-places h2,.home-now h2,.home-app h2{margin:19px 0 0;color:#26211d;font-size:clamp(52px,5.45vw,92px);line-height:.86;letter-spacing:-.094em}.home-lead{max-width:370px;margin:25px 0 0;color:#5e5851;font-size:15px;line-height:1.6}.home-hero-actions{display:flex;align-items:center;gap:25px;margin-top:31px}.button{display:inline-flex;align-items:center;justify-content:center;gap:26px;padding:16px 19px;border-radius:10px;font-size:11px;font-weight:800;transition:transform .25s,background .25s}.button:hover{transform:translateY(-2px)}.button span{font-size:18px;line-height:0}.button-dark{background:#2a211c;color:#fff}.button-dark:hover{background:#4a3a2f}.text-action{padding-bottom:3px;border-bottom:1px solid #342c26;font-size:11px;font-weight:800;transition:color .2s}.text-action:hover{color:#637b2e}.text-action span{margin-left:8px}.home-hero-meta{position:absolute;right:clamp(30px,4vw,65px);bottom:31px;z-index:1;display:flex;align-items:end;gap:44px}.home-hero-meta p{margin:0;color:#4f4942;font-size:11px;line-height:1.45}.home-hero-meta a{padding-bottom:3px;border-bottom:1px solid #6c655c;font-size:10px;font-weight:800}.home-hero-meta a span{margin-left:8px}.home-route{display:grid;grid-template-columns:.72fr 1.28fr;gap:clamp(44px,8vw,132px);padding:clamp(96px,10.5vw,160px) clamp(19px,5.2vw,91px)}.home-route h2,.home-now h2,.home-places h2,.home-app h2{font-size:clamp(46px,4.65vw,79px)}.home-route-links{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #dedbd4;border-left:1px solid #dedbd4}.home-route-links a{position:relative;min-height:210px;padding:22px;border-right:1px solid #dedbd4;border-bottom:1px solid #dedbd4;background:#fcfbf8;transition:background .25s,color .25s}.home-route-links a:hover{background:#293b30;color:#fff}.home-route-links a>span{color:#799633;font-size:10px;font-weight:800}.home-route-links strong{display:block;margin-top:74px;font-size:25px;line-height:.9;letter-spacing:-.07em}.home-route-links small{display:block;max-width:170px;margin-top:9px;color:#777069;font-size:10px;line-height:1.4;transition:color .25s}.home-route-links b{position:absolute;right:22px;bottom:19px;color:#799633;font-size:19px;font-weight:500}.home-route-links a:hover small{color:#dbe4d9}.home-showcase{display:grid;grid-template-columns:1.08fr .92fr;grid-template-rows:320px 320px;gap:14px}.home-showcase>a{position:relative;isolation:isolate;overflow:hidden;border-radius:22px}.home-showcase img{position:absolute;z-index:-2;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .6s cubic-bezier(.2,.7,.2,1)}.home-showcase>a:hover img{transform:scale(1.045)}.showcase-menu{grid-row:span 2;color:#fff}.showcase-menu:after,.showcase-places:after{position:absolute;z-index:-1;inset:0;content:'';background:linear-gradient(180deg,rgba(28,24,20,.06) 25%,rgba(28,24,20,.77) 100%)}.home-showcase>a>div:not(.showcase-mark){position:absolute;left:clamp(25px,3.7vw,61px);bottom:clamp(27px,4vw,62px)}.home-showcase p{margin:0;color:#d4e67a;text-transform:uppercase;letter-spacing:.14em;font-size:10px;font-weight:800}.home-showcase h2{margin-top:13px;color:#fff;font-size:clamp(33px,3.5vw,58px)}.home-showcase span{display:inline-flex;gap:21px;margin-top:22px;padding-bottom:3px;border-bottom:1px solid rgba(255,255,255,.75);color:#fff;font-size:11px;font-weight:800}.home-showcase span b{font-size:17px;line-height:0}.showcase-delivery{padding:39px clamp(28px,4vw,57px);background:#293b30;color:#fff}.showcase-delivery p{color:#c7dc6b}.showcase-delivery h2{font-size:clamp(38px,3.8vw,62px)}.showcase-delivery .showcase-mark{position:absolute;right:39px;top:35px;display:grid;place-items:center;width:58px;aspect-ratio:1;border-radius:50%;background:#e9edd9;color:#293b30;font-size:28px}.showcase-delivery span{position:absolute;bottom:38px;left:clamp(28px,4vw,57px)}.showcase-places{background:#ddd9ce;color:#fff}.home-places{display:grid;grid-template-columns:.75fr 1.25fr;gap:clamp(55px,9vw,145px);padding:clamp(100px,11vw,175px) clamp(19px,5.2vw,91px)}.home-places-copy>p:not(.eyebrow){max-width:372px;margin:25px 0 28px;color:#625c55;font-size:14px;line-height:1.67}.home-place-list{align-self:end;border-top:1px solid #dedbd4}.home-place-list a{min-height:104px;display:grid;grid-template-columns:45px 1fr auto;gap:17px;align-items:center;border-bottom:1px solid #dedbd4;transition:padding .2s,color .2s}.home-place-list a:hover{padding-left:12px;color:#5f7b2d}.home-place-list>a>span{font-size:10px;color:#799633;font-weight:800}.home-place-list strong{display:block;font-size:23px;letter-spacing:-.065em}.home-place-list small{display:block;margin-top:6px;color:#706a63;font-size:10px}.home-place-list b{font-weight:500;font-size:18px}.home-now{display:grid;grid-template-columns:.72fr 1.28fr;gap:clamp(44px,8vw,132px);padding:clamp(92px,10vw,158px) clamp(19px,5.2vw,91px);background:#f0ede6}.home-now-items{display:grid;grid-template-columns:1fr 1fr;gap:12px}.home-event,.home-promo{position:relative;isolation:isolate;display:block;min-height:347px;padding:29px;overflow:hidden;border-radius:18px}.home-event{background:#293b30;color:#fff}.home-event p,.home-promo p{margin:0;text-transform:uppercase;letter-spacing:.14em;font-size:10px;font-weight:800}.home-event p{color:#c7dc6b}.home-now h3{max-width:275px;margin:18px 0 0;font-size:clamp(27px,2.3vw,39px);line-height:.92;letter-spacing:-.075em}.home-now span{display:block;max-width:270px;margin-top:16px;font-size:12px;line-height:1.55}.home-now b{position:absolute;bottom:27px;left:29px;font-size:10px}.home-event i{position:absolute;z-index:-1;right:8px;bottom:-45px;color:#c4dc6b;font:normal 190px/1 Georgia,serif}.home-promo{background:#e9dfd2}.home-promo p{color:#926f3c}.home-promo h3{color:#29231e}.home-promo span{color:#635d55}.home-promo strong{position:absolute;right:22px;bottom:22px;display:grid;place-items:center;width:88px;aspect-ratio:1;border-radius:50%;background:#d36649;color:#fff;font-size:20px;letter-spacing:-.07em;transform:rotate(-9deg)}.home-app{position:relative;isolation:isolate;display:grid;grid-template-columns:1fr .75fr;min-height:505px;margin-top:14px;overflow:hidden;border-radius:22px;background:#dce7d4;padding:clamp(56px,6.3vw,106px) clamp(28px,5.2vw,91px)}.home-app-copy{position:relative;z-index:1}.home-app-copy>p:not(.eyebrow){max-width:375px;margin:24px 0 28px;color:#566254;font-size:14px;line-height:1.64}.home-app-object{position:relative;align-self:end;justify-self:center;width:290px;height:350px}.app-phone{position:absolute;right:27px;bottom:-42px;width:180px;height:323px;padding:37px 17px;border:8px solid #29221d;border-radius:32px;background:#fbfaf6;box-shadow:18px 23px 0 rgba(55,70,47,.15);transform:rotate(7deg)}.app-phone i{position:absolute;top:0;left:50%;width:57px;height:14px;transform:translateX(-50%);border-radius:0 0 10px 10px;background:#29221d}.app-phone span{display:block;margin-top:6px;color:#2b3928;font-size:30px;font-weight:800;letter-spacing:-.16em}.app-phone small{display:block;margin-top:20px;color:#77716a;font-size:9px}.app-phone b{display:block;margin-top:7px;color:#28221e;font-size:21px;line-height:.9;letter-spacing:-.08em}.app-phone em{display:grid;place-items:center;width:102px;aspect-ratio:1;margin:26px auto 0;border-radius:50%;background:#c5dc6b;font-size:45px;font-style:normal}.app-note{position:absolute;bottom:25px;left:0;padding:18px 20px;border-radius:13px;background:#293b30;color:#fff;font-size:16px;font-weight:800;line-height:.9;letter-spacing:-.07em;transform:rotate(-7deg)}.app-note strong{display:block;margin-top:11px;color:#c8dc70;font-size:18px;font-weight:500}@media(max-width:880px){.home-page{padding:0}.home-hero{min-height:calc(100svh - 72px);border-radius:0}.home-hero:after{background:linear-gradient(180deg,rgba(251,250,247,.98) 0%,rgba(251,250,247,.88) 45%,rgba(251,250,247,.12) 84%,transparent)}.home-hero-copy{padding:62px 20px}.home-hero h1{font-size:clamp(49px,13vw,68px)}.home-lead{font-size:14px}.home-hero-actions{gap:18px}.home-hero-meta{right:20px;bottom:23px;gap:19px}.home-hero-meta p{font-size:9px}.home-route{display:block;padding:82px 20px}.home-route-links{margin-top:34px}.home-route-links a{min-height:172px;padding:17px}.home-route-links strong{margin-top:58px;font-size:21px}.home-route-links small{font-size:9px}.home-route-links b{right:17px;bottom:15px}.home-showcase{grid-template-columns:1fr;grid-template-rows:460px 310px 310px;gap:8px}.home-showcase>a{border-radius:0}.showcase-menu{grid-row:auto}.home-showcase>a>div:not(.showcase-mark){left:20px;bottom:32px}.home-showcase h2{font-size:46px}.showcase-delivery{padding:32px 20px}.showcase-delivery .showcase-mark{right:20px;top:26px}.showcase-delivery span{left:20px;bottom:27px}.home-places{display:block;padding:84px 20px}.home-places-copy>p:not(.eyebrow){font-size:14px}.home-place-list{margin-top:37px}.home-place-list a{grid-template-columns:34px 1fr auto;min-height:97px;gap:11px}.home-place-list strong{font-size:19px}.home-now{display:block;padding:84px 20px}.home-now-items{grid-template-columns:1fr;gap:8px;margin-top:34px}.home-event,.home-promo{min-height:290px;padding:22px;border-radius:18px}.home-now b{left:22px;bottom:22px}.home-promo strong{right:18px;bottom:18px;width:78px;font-size:17px}.home-app{display:block;min-height:640px;margin:0;border-radius:0;padding:58px 20px 0}.home-app h2{font-size:51px}.home-app-object{width:275px;height:330px;margin:45px auto 0}.app-phone{right:18px;width:166px;height:300px}.app-note{left:0;bottom:36px}.app-phone em{width:93px;margin-top:24px}}
 </style>
