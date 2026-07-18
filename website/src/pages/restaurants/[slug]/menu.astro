@@ -1,8 +1,9 @@
 ---
 import PageShell from '../../../layouts/PageShell.astro';
 import type { RestaurantMenuResponse } from '@chashka-coffee/contracts'
+import { getRestaurantSlugs } from '../../../lib/public-api';
 
-export function getStaticPaths() { return ['krasny-prospekt', 'ulitsa-lenina', 'akademgorodok', 'galereya-novosibirsk', 'rechnoy-vokzal', 'ploshchad-lenina', 'vertical-apart-hotel', 'central-park', 'zaeltsovsky-park', 'mikhaylovskaya-naberegnaya', 'tolmachevo-domestic', 'tolmachevo-international', 'tolmachevo-arrivals'].map((slug) => ({ params: { slug } })) }
+export async function getStaticPaths() { return (await getRestaurantSlugs(['krasny-prospekt', 'ulitsa-lenina', 'akademgorodok', 'galereya-novosibirsk', 'rechnoy-vokzal', 'ploshchad-lenina', 'vertical-apart-hotel', 'central-park', 'zaeltsovsky-park', 'mikhaylovskaya-naberegnaya', 'tolmachevo-domestic', 'tolmachevo-international', 'tolmachevo-arrivals'])).map((slug) => ({ params: { slug } })) }
 const { slug } = Astro.params
 const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
 let data: RestaurantMenuResponse | null = null

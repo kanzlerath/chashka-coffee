@@ -30,4 +30,6 @@ import { defineConfig } from 'astro/config';
 //      path". Note: built-in per-page ISR is not part of the default
 //      DigitalOcean/Yandex static path; use rebuilds or CDN/runtime cache
 //      freshness instead.
-export default defineConfig({});
+export default defineConfig({
+  site: process.env.PUBLIC_SITE_URL,
+});

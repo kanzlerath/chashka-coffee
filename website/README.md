@@ -50,6 +50,13 @@ Astro publishes pages from `src/pages`. Static assets live in `public`.
 
 ## Deployment
 
+Set these build-time variables for the public site before a production build:
+
+- `PUBLIC_API_URL` — externally reachable API URL used while Astro generates the public catalogue pages.
+- `PUBLIC_SITE_URL` — canonical public website URL, for example `https://chashkacoffee.ru`. It is used for canonical and Open Graph links.
+
+New published restaurants, menu pages, promotions, events, journal materials and vacancies are read from the API during each static build. Publish or change content in the admin panel, then rebuild/redeploy the website to generate its URL in the static output.
+
 When the website has only fully prerendered output and no server islands or runtime-rendered routes, the build output in `website/dist` is fully static. Production deployment uses DigitalOcean App Platform Static Sites from the full Git monorepo branch with `bun install --frozen-lockfile && bun run build:website` and `website/dist` by default. Generate the concrete spec with `bun run deploy:do:specs website`; App Platform builds from Git, not from local `dist`. If website links to the browser app, `PUBLIC_WEBAPP_URL` must be a concrete build-time URL and the website must be redeployed after it changes. Follow the shared runbook in [../docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md). If the user explicitly chooses Yandex Cloud, deploy the built `website/dist` output through Yandex Object Storage static website hosting plus Cloud CDN by following [../docs/YANDEX_CLOUD.md](../docs/YANDEX_CLOUD.md).
 
 On the default DigitalOcean/Yandex path, "regeneration" means redeploying static output or letting CDN/runtime cache refresh. It is not the same product feature as built-in Next/Vercel on-demand ISR.

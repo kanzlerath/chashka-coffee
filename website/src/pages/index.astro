@@ -1,12 +1,5 @@
 ---
 import PageShell from '../layouts/PageShell.astro';
-
-const nav = [
-  ["Рестораны", "/restaurants"],
-  ["Меню", "/restaurants/krasny-prospekt/menu"],
-  ["Доставка", "/app"],
-  ["О нас", "/about"],
-];
 type FeaturedEntry = { slug: string; title: string; excerpt: string | null; ctaLabel: string | null; eventStartsAt: string | null }
 const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
 let featuredEvent: FeaturedEntry | null = null
