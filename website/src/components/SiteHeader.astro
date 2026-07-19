@@ -242,14 +242,17 @@ const mobile = [...primary, ...moreGroups.flatMap((group) => group.links)]
 
     .site-more-categories > div { gap: 4px; }
     .site-more-categories button {
+      position: relative;
       min-height: 32px;
       justify-content: flex-start;
-      gap: 10px;
+      gap: 0;
       color: #625d57;
     }
     .site-more-categories button:hover { color: #1f3b2e; }
     .site-more-categories button.is-active { color: #625d57; }
     .site-more-categories button span {
+      position: absolute;
+      left: -17px;
       flex: 0 0 7px;
       width: 7px;
       height: 7px;

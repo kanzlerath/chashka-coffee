@@ -1,5 +1,6 @@
 ---
 import PageShell from '../layouts/PageShell.astro';
+import DishDialog from '../components/DishDialog.astro';
 import type { ContentEntry, HomepagePublicResponse, RestaurantSummary } from '@chashka-coffee/contracts';
 
 const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
@@ -34,10 +35,10 @@ const productFallbacks = ['/images/home-breakfast.png', '/images/home-hero-v1.pn
 const badgeLabel = (value: string | null | undefined) => ({ NEW: 'Новинка', HIT: 'Хит', SEASONAL: 'Сезонное', SPECIAL: 'Специальное' }[value ?? ''] ?? value ?? null)
 const outputLabel = (weightGrams: number | null) => weightGrams ? `${weightGrams} г` : '1 порция'
 const defaultBestsellers = [
-  { slug: 'avocado-toast', name: 'Тост с авокадо', price: '590 ₽', output: '260 г', badge: 'Хит', imageUrl: productFallbacks[0], categoryName: 'Завтраки' },
-  { slug: 'cappuccino', name: 'Капучино', price: '290 ₽', output: '300 мл', badge: 'Классика', imageUrl: productFallbacks[1], categoryName: 'Кофе' },
-  { slug: 'ricotta-syrniki', name: 'Сырники из рикотты', price: '490 ₽', output: '220 г', badge: 'Любимое', imageUrl: productFallbacks[2], categoryName: 'Завтраки' },
-  { slug: 'filter-coffee', name: 'Фильтр-кофе', price: '240 ₽', output: '250 мл', badge: 'Новинка', imageUrl: productFallbacks[3], categoryName: 'Кофе' },
+  { slug: 'avocado-toast', name: 'Тост с авокадо', price: '590 ₽', output: '260 г', badge: 'Хит', imageUrl: productFallbacks[0], categoryName: 'Завтраки', description: 'Хрустящий хлеб, авокадо и яйцо пашот.', ingredients: 'Хлеб на закваске, авокадо, яйцо, лимонный сок.', allergens: ['Глютен', 'Яйцо'], dietaryMarks: ['Вегетарианское'], calories: '520', proteins: '18 г', fats: '27 г', carbohydrates: '46 г' },
+  { slug: 'cappuccino', name: 'Капучино', price: '290 ₽', output: '300 мл', badge: 'Классика', imageUrl: productFallbacks[1], categoryName: 'Кофе', description: 'Эспрессо и нежная молочная текстура.', ingredients: 'Кофе, молоко.', allergens: ['Молочный продукт'], dietaryMarks: [], calories: null, proteins: null, fats: null, carbohydrates: null },
+  { slug: 'ricotta-syrniki', name: 'Сырники из рикотты', price: '490 ₽', output: '220 г', badge: 'Любимое', imageUrl: productFallbacks[2], categoryName: 'Завтраки', description: 'Нежные сырники с ягодным соусом.', ingredients: 'Рикотта, яйцо, рисовая мука, сахар.', allergens: ['Яйцо', 'Молочный продукт'], dietaryMarks: ['Без глютена'], calories: null, proteins: null, fats: null, carbohydrates: null },
+  { slug: 'filter-coffee', name: 'Фильтр-кофе', price: '240 ₽', output: '250 мл', badge: 'Новинка', imageUrl: productFallbacks[3], categoryName: 'Кофе', description: 'Чистая и выразительная чашка дня.', ingredients: 'Кофе, вода.', allergens: [], dietaryMarks: [], calories: null, proteins: null, fats: null, carbohydrates: null },
 ]
 const badgeTone = (badge: string | null | undefined) => {
   const value = badge?.toLocaleLowerCase('ru') ?? ''
@@ -57,8 +58,22 @@ const bestsellers = homepage?.bestsellers.length
       badgeTone: badgeTone(badgeLabel(entry.badge ?? entry.item.marketingBadge)),
       imageUrl: entry.item.imageUrl ?? productFallbacks[index % productFallbacks.length],
       categoryName: entry.item.categoryName,
+      description: entry.item.description ?? '',
+      ingredients: '',
+      allergens: [] as string[],
+      dietaryMarks: [] as string[],
+      calories: null,
+      proteins: null,
+      fats: null,
+      carbohydrates: null,
     }))
   : defaultBestsellers.map((item) => ({ ...item, badgeTone: badgeTone(item.badge) }))
+const bestsellerPayload = (item: (typeof bestsellers)[number]) => JSON.stringify({
+  name:item.name,categoryName:item.categoryName,description:item.description,ingredients:item.ingredients,
+  allergens:item.allergens,dietaryMarks:item.dietaryMarks,weight:item.output,price:item.price,
+  calories:item.calories,proteins:item.proteins,fats:item.fats,carbohydrates:item.carbohydrates,
+  imageUrl:item.imageUrl,badge:item.badge,badgeTone:item.badgeTone,
+})
 const featuredPromotion = promotions.at(0) ?? null
 const featuredEvent = events.at(0) ?? null
 const journal = articles.slice(0, 2).length ? articles.slice(0, 2) : [
@@ -122,7 +137,7 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
 
     <section class="home-bestsellers home-section" aria-labelledby="bestsellers-title">
       <header class="home-section-head"><div><h2 id="bestsellers-title">Бестселлеры</h2><p>Выбирают чаще всего</p></div></header>
-      <div class="bestseller-list">{bestsellers.map((item) => <a href="/restaurants/krasny-prospekt/menu" class="product-card"><div class="product-card-image"><img src={item.imageUrl} alt="" loading="lazy" />{item.badge && <span class={`product-badge product-badge--${item.badgeTone}`}>{item.badge}</span>}</div><div class="product-card-info"><small>{item.categoryName}</small><h3>{item.name}</h3><div><span>{item.output}</span><strong>{item.price}</strong></div></div></a>)}</div>
+      <div class="bestseller-list">{bestsellers.map((item) => <button type="button" class="product-card" data-dish-trigger data-dish={bestsellerPayload(item)} aria-haspopup="dialog"><div class="product-card-image"><img src={item.imageUrl} alt="" loading="lazy" />{item.badge && <span class={`product-badge product-badge--${item.badgeTone}`}>{item.badge}</span>}</div><div class="product-card-info"><small>{item.categoryName}</small><h3>{item.name}</h3><div><span>{item.output}</span><strong>{item.price}</strong></div></div></button>)}</div>
       <a class="ui-button ui-button--outline section-action" href="/restaurants/krasny-prospekt/menu">Смотреть все</a>
     </section>
 
@@ -131,8 +146,8 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
       <a class="bento-card bento-coffee" href="/coffee"><h2>Кофе<br />для дома</h2><div class="bento-art coffee-pack" aria-hidden="true"><b>ЧК</b><small>зерно</small></div></a>
       <a class="bento-card bento-event" href={featuredEvent ? `/events/${featuredEvent.slug}` : '/events'}><h2>{eventTitle}</h2><i class="event-note" aria-hidden="true">♪</i></a>
       <a class="bento-card bento-promo" href={featuredPromotion ? `/promotions/${featuredPromotion.slug}` : '/promotions'}><h2>Акции<br />и новинки</h2><strong>{featuredPromotion?.ctaLabel ?? '−20%'}</strong></a>
-      <a class="bento-card bento-bakery" href="/bakery"><h2>Кондитерская</h2><i aria-hidden="true">◒</i></a>
       <a class="bento-card bento-certificates" href="/certificates"><h2>Сертификаты</h2><i aria-hidden="true">✦</i></a>
+      <a class="bento-card bento-bakery" href="/bakery"><h2>Кондитерская</h2><i aria-hidden="true">◒</i></a>
     </section>
 
     <section class="home-day" aria-labelledby="day-title">
@@ -149,7 +164,7 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
         <a class="menu-tile menu-tile-hot" href="/restaurants/krasny-prospekt/menu"><span>Горячие<br />блюда</span><i aria-hidden="true">⌁</i></a>
         <a class="menu-tile menu-tile-salad" href="/restaurants/krasny-prospekt/menu"><span>Закуски<br />и салаты</span><i aria-hidden="true">●</i></a>
         <a class="menu-tile menu-tile-dessert" href="/bakery"><span>Десерты<br />и выпечка</span><i aria-hidden="true">✳</i></a>
-        <a class="menu-all" href="/restaurants/krasny-prospekt/menu"><span>Посмотреть все блюда</span><b aria-hidden="true">↑</b></a>
+        <a class="menu-all" href="/restaurants/krasny-prospekt/menu"><span>Посмотреть все блюда</span><b aria-hidden="true">›</b></a>
       </div>
     </section>
 
@@ -159,7 +174,7 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
         <div class="place-feature">
           {allPlaces.map((place, index) => <article class:list={{ 'is-active': index === 0 }} data-place-panel={place.slug} data-place-group={place.group}>
             <img src={place.coverImageUrl ?? productFallbacks[index % productFallbacks.length]} alt="" loading="lazy" />
-            <div><p>{place.group === 'airport' ? 'Аэропорт' : 'Город'}</p><h3>{place.name.replace('Чашка кофе — ', '')}</h3><span>{place.address}<br />{place.openingHoursLabel}</span><a class="ui-button ui-button--fill" href={`/restaurants/${place.slug}`}>Открыть ресторан</a></div>
+            <div><h3>{place.name.replace('Чашка кофе — ', '')}</h3><span>{place.address}<br />{place.openingHoursLabel}</span><a class="ui-button ui-button--fill" href={`/restaurants/${place.slug}`}>Подробнее</a></div>
           </article>)}
         </div>
         <div class="place-list">{allPlaces.map((place) => <button data-place-button={place.slug} type="button"><span>{place.name.replace('Чашка кофе — ', '')}</span><small>{place.address}</small></button>)}</div>
@@ -174,6 +189,7 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
     <section class="home-journal home-section" aria-labelledby="journal-title"><header class="home-section-head"><div><h2 id="journal-title">Читайте медленнее</h2><p>Истории о кофе, людях и городе</p></div></header><div class="journal-list">{journal.map((article, index) => <a href={`/journal/${article.slug}`} class="journal-card"><img src={article.imageUrl ?? productFallbacks[index]} alt="" loading="lazy" /><div><h3>{article.title}</h3><p>{article.excerpt}</p><span>Читать далее</span></div></a>)}</div><a class="ui-button ui-button--outline section-action" href="/journal">Посмотреть все</a></section>
 
     <div class="home-marquee" aria-label="Чашка кофе: кофе, завтраки, десерты и встречи"><div>ЧАШКА КОФЕ <i>✦</i> КОФЕ <i>✦</i> ЗАВТРАКИ <i>✦</i> ДЕСЕРТЫ <i>✦</i> ВСТРЕЧИ <i>✦</i> ЧАШКА КОФЕ <i>✦</i> КОФЕ <i>✦</i> ЗАВТРАКИ <i>✦</i> ДЕСЕРТЫ <i>✦</i> ВСТРЕЧИ <i>✦</i></div></div>
+    <DishDialog />
   </div>
 </PageShell>
 
@@ -312,24 +328,28 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
   .story-arrows svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
   .story-progress button{border-radius:var(--home-radius)}
   .product-card{padding:11px;background:#f7f5f0}
+  button.product-card{width:100%;appearance:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+  button.product-card:focus-visible{outline:3px solid #bddb3d;outline-offset:4px}
   .product-card-image{border-radius:var(--home-radius)}
-  .product-badge{position:absolute;z-index:1;top:12px;left:12px;padding:8px 11px;border:1px solid transparent;border-radius:var(--home-radius);font-size:9px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;box-shadow:0 5px 14px rgba(45,34,26,.12)}
-  .product-badge--hit{background:#ef603f;color:#fff;border-color:#f99070}
-  .product-badge--new{background:#bddb3d;color:#1f3b2e;border-color:#d9ec83}
-  .product-badge--seasonal{background:#f2c86f;color:#503616;border-color:#f8d895}
-  .product-badge--favourite{background:#365f4a;color:#fff;border-color:#73947f}
-  .product-badge--special{background:#f8f4ed;color:#1f3b2e;border-color:#d3cabd}
+  .product-badge{position:absolute;z-index:1;top:12px;left:12px;padding:8px 11px;border:0;border-radius:var(--home-radius);font-size:9px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;box-shadow:none}
+  .product-badge--hit{background:#ef603f;color:#fff}
+  .product-badge--new{background:#bddb3d;color:#1f3b2e}
+  .product-badge--seasonal{background:#f2c86f;color:#503616}
+  .product-badge--favourite{background:#4b87a5;color:#fff}
+  .product-badge--special{background:#7278a9;color:#fff}
   .product-card-image>span:not(.product-badge){border-radius:var(--home-radius)}
   .product-card-info small{color:#1f3b2e}
+  .ui-button--outline:hover{border-color:#bddb3d;background:#bddb3d;color:#1f3b2e!important}
   .bento-card{border-radius:var(--home-radius)}
   .home-day{margin-top:clamp(32px,5vw,80px);border-radius:var(--home-radius)}
   .day-intro h2{margin-top:0}
   .day-stops{align-self:stretch;display:grid;grid-template-rows:repeat(3,1fr)}
   .day-stops a{align-items:center;min-height:0}
   .menu-tile,.menu-all{border-radius:var(--home-radius)}
-  .menu-all b{border-radius:var(--home-radius)}
+  .menu-all b{width:auto;height:auto;border-radius:0;background:transparent;color:#6f902b;font-size:42px;line-height:1;transform:translateY(-2px)}
   .home-places{padding-top:0}
   .places-stage{height:585px;min-height:0;overflow:hidden;border-radius:var(--home-radius)}
+  .place-feature h3{margin-top:0;font-size:clamp(28px,3vw,48px)}
   .place-list{align-self:stretch;height:100%;overflow-y:auto;padding-block:clamp(30px,5vw,76px);scrollbar-color:#8ba23b transparent;scrollbar-width:thin}
   .place-list::-webkit-scrollbar{width:7px}.place-list::-webkit-scrollbar-thumb{border-radius:var(--home-radius);background:#8ba23b}
   .home-home-coffee,.home-app-loyalty,.loyalty-points,.journal-card{border-radius:var(--home-radius)}

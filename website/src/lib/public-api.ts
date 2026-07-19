@@ -1,4 +1,4 @@
-import type { ContentEntry, JobOpening, RestaurantSummary } from '@chashka-coffee/contracts'
+import type { ContentEntry, JobOpening, ManagedPage, ManagedPageKey, Product, ProductType, RestaurantSummary } from '@chashka-coffee/contracts'
 
 const apiOrigin = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
 
@@ -26,4 +26,35 @@ export async function getJobSlugs(fallback: string[]) {
 export async function getRestaurantSlugs(fallback: string[]) {
   const response = await getJson<{ restaurants: Pick<RestaurantSummary, 'slug'>[] }>('/api/restaurants')
   return uniqueSlugs([...fallback, ...(response?.restaurants.map(({ slug }) => slug) ?? [])])
+}
+
+export async function getProducts(type: ProductType) {
+  const response = await getJson<{ products: Product[] }>(`/api/products?type=${type}`)
+  return response?.products ?? []
+}
+
+export async function getProduct(slug: string) {
+  const response = await getJson<{ product: Product }>(`/api/products/${slug}`)
+  return response?.product ?? null
+}
+
+export async function getProductSlugs(type: ProductType, fallback: string[]) {
+  const products = await getProducts(type)
+  return uniqueSlugs([...fallback, ...products.map(({ slug }) => slug)])
+}
+
+export async function getManagedPage(key: ManagedPageKey) {
+  const response = await getJson<{ page: ManagedPage }>(`/api/pages/${key}`)
+  return response?.page ?? null
+}
+
+export async function getContent(type: ContentEntry['type']) {
+  const response = await getJson<{ entries: ContentEntry[] }>(`/api/content?type=${type}`)
+  return response?.entries ?? []
+}
+
+export async function getContentEntry(type: ContentEntry['type'], slug: string) {
+  void type
+  const response = await getJson<{ entry: ContentEntry }>(`/api/content/${slug}`)
+  return response?.entry ?? null
 }
