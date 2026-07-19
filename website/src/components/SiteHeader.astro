@@ -30,7 +30,7 @@ const moreGroups = [
     links: [
       ['bakery', 'Кондитерская', '/bakery'],
       ['banquets', 'Банкеты', '/banquets'],
-      ['catering', 'Кейтеринг', '/corporate'],
+      ['catering', 'Кейтеринг', 'https://catering-denisivanov.ru/'],
     ],
   },
   {
@@ -80,7 +80,7 @@ const mobile = [...primary, ...moreGroups.flatMap((group) => group.links)]
       </section>
       <section class="site-more-details" aria-label="Подразделы">
         {moreGroups.map((group, index) => <div class:list={['site-more-group', { 'is-active': index === 0 }]} id={`site-more-panel-${index}`} data-more-panel={index} aria-hidden={index === 0 ? 'false' : 'true'} inert={index !== 0}>
-          <div>{group.links.map(([key, label, href]) => <a class:list={[{ active: active === key }]} href={href}>{label}</a>)}</div>
+          <div>{group.links.map(([key, label, href]) => <a class:list={[{ active: active === key }]} href={href} target={href.startsWith('http') ? '_blank' : undefined} rel={href.startsWith('http') ? 'noreferrer' : undefined}>{label}</a>)}</div>
         </div>)}
       </section>
       <section class="site-more-preview" aria-label="Материалы раздела">
@@ -94,7 +94,7 @@ const mobile = [...primary, ...moreGroups.flatMap((group) => group.links)]
 
 <div class="site-menu" id="site-menu" aria-hidden="true">
   <div class="site-menu-top"><span>Навигация</span><button type="button" aria-label="Закрыть меню">Закрыть <b>×</b></button></div>
-  <nav aria-label="Мобильная навигация">{mobile.map(([key, label, href], index) => <a class:list={[{ active: active === key }]} href={href}><small>0{index + 1}</small><span>{label}</span><b>↗</b></a>)}</nav>
+  <nav aria-label="Мобильная навигация">{mobile.map(([key, label, href], index) => <a class:list={[{ active: active === key }]} href={href} target={href.startsWith('http') ? '_blank' : undefined} rel={href.startsWith('http') ? 'noreferrer' : undefined}><small>0{index + 1}</small><span>{label}</span><b>↗</b></a>)}</nav>
   <div class="site-menu-bottom"><a href="/contacts">Написать нам <span>→</span></a><p>Новосибирск<br />с 2006 года</p></div>
 </div>
 

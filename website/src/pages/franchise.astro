@@ -1,11 +1,14 @@
 ---
 import PageShell from '../layouts/PageShell.astro';
 import LeadForm from '../components/LeadForm.astro';
+import ContentBlocks from '../components/ContentBlocks.astro';
+import { getManagedPage } from '../lib/public-api';
 const formats = [
   ['01', 'Городской ресторан', 'От 80 м²', 'Полноценное место для завтраков, встреч и длинных разговоров.'],
   ['02', 'Ресторан в аэропорту', 'От 45 м²', 'Понятный сервис для гостей в пути: кофе, еда и короткая пауза перед вылетом.'],
 ];
 const stages = ['Знакомимся', 'Оцениваем локацию', 'Проектируем', 'Открываемся'];
+const page = await getManagedPage('FRANCHISE');
 ---
 <PageShell title="Франшиза" active="franchise">
       <section class="hero">
@@ -20,9 +23,9 @@ const stages = ['Знакомимся', 'Оцениваем локацию', 'П
       </section>
 
       <section class="proof">
-        <p>вместе с 2006 года</p>
+        <p>вместе с 2003 года</p>
         <h2>Строим не сеть.<br />Строим привычку заходить.</h2>
-        <div class="numbers"><article><b>20</b><span>лет рядом<br />с гостями</span></article><article><b>13</b><span>ресторанов<br />в Новосибирске</span></article><article><b>2</b><span>формата для<br />разных локаций</span></article></div>
+        <div class="numbers"><article><b>23</b><span>года рядом<br />с гостями</span></article><article><b>13</b><span>ресторанов<br />в Новосибирске</span></article><article><b>2</b><span>формата для<br />разных локаций</span></article></div>
       </section>
 
       <section class="formats">
@@ -36,6 +39,8 @@ const stages = ['Знакомимся', 'Оцениваем локацию', 'П
       </section>
 
       <section class="road"><p>путь к открытию</p><div>{stages.map((stage,index)=><article><b>0{index+1}</b><span>{stage}</span></article>)}</div></section>
+
+      {page && <ContentBlocks blocks={page.blocks}/>} 
 
       <section class="form" id="form">
         <div><p>узнать условия</p><h2>Давайте<br />обсудим<br />вашу идею</h2><span>Оставьте контакты — пришлём презентацию и договоримся о первом разговоре.</span></div>
