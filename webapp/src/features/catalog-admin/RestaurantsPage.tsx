@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/features/auth'
+import { ApiRequestError } from '@/platform/api/http-client'
 import { CatalogAdminApi } from './api'
 
 const defaultHours: RestaurantOpeningHoursEntry[] = [
@@ -115,7 +116,7 @@ export function RestaurantsPage() {
         {restaurantMenu.isError ? <p className="text-sm text-muted-foreground">Назначьте набор меню, чтобы настроить позиции только для этой точки.</p> : null}
         {!selected ? <p className="text-sm text-muted-foreground">Сначала сохраните ресторан, затем назначьте ему набор меню.</p> : null}
         </> : null}
-        {save.isError && <p className="text-sm text-destructive">Не удалось сохранить. Проверьте обязательные поля и уникальность адреса страницы.</p>}
+        {save.isError && <p className="text-sm text-destructive">{saveErrorMessage(save.error)}</p>}
         <Button type="submit" size="lg" disabled={save.isPending}>{save.isPending ? 'Сохраняем…' : selected ? 'Сохранить изменения' : 'Создать ресторан'}</Button>
       </form>
     </CardContent></Card>
@@ -135,6 +136,11 @@ function toDraft(restaurant: AdminRestaurant): UpsertRestaurantRequest {
 }
 const formatLabel = { CITY: 'Город', PARK: 'Город', AIRPORT: 'Аэропорт', APART_HOTEL: 'Город' }
 const dayLabel = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
+
+function saveErrorMessage(error: unknown) {
+  if (error instanceof ApiRequestError && error.code === 'CONFLICT') return error.message
+  return 'Не удалось сохранить. Проверьте обязательные поля и уникальность адреса страницы.'
+}
 
 function LocalOverrides({ categories, item, draft, onEdit, onChange, onCancel, onSave, onReset, saving }: {
   categories: AdminRestaurantMenuDetailResponse['categories']; item: LocalMenuItem | null; draft: UpsertRestaurantMenuItemOverrideRequest

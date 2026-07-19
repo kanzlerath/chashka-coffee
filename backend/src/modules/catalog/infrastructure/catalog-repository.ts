@@ -16,6 +16,7 @@ import type {
   UpsertRestaurantMenuItemOverrideRequest,
 } from '@chashka-coffee/contracts'
 import { Prisma } from '../../../generated/prisma/client'
+import { CatalogConflictError } from '../application/errors'
 
 import type { DbClient } from '../../../db'
 import type { CatalogRepository } from '../application/ports'
@@ -192,9 +193,14 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
     },
 
     async createRestaurant(input) {
-      const { openingHours, ...data } = input
-      const restaurant = await db.restaurant.create({ data: { ...data, openingHours: { create: openingHours } }, include: { openingHours: { orderBy: { dayOfWeek: 'asc' } } } })
-      return toAdminRestaurant(restaurant)
+      try {
+        const { openingHours, ...data } = input
+        const restaurant = await db.restaurant.create({ data: { ...data, openingHours: { create: openingHours } }, include: { openingHours: { orderBy: { dayOfWeek: 'asc' } } } })
+        return toAdminRestaurant(restaurant)
+      } catch (error) {
+        if (isUniqueConstraintError(error)) throw new CatalogConflictError('restaurant_slug')
+        throw error
+      }
     },
 
     async updateRestaurant(id, input) {
@@ -207,6 +213,7 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
         return toAdminRestaurant(restaurant)
       } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') return null
+        if (isUniqueConstraintError(error)) throw new CatalogConflictError('restaurant_slug')
         throw error
       }
     },
@@ -394,4 +401,8 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
       }
     },
   }
+}
+
+function isUniqueConstraintError(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'
 }

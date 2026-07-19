@@ -26,6 +26,7 @@ import { z } from 'zod'
 import { AppError, validationErrorHook } from '../../../http/errors'
 import type { AuthHttpEnv } from '../../auth'
 import type { CatalogService } from '../application/catalog-service'
+import { executeCatalog } from './errors'
 
 const errorContent = { 'application/json': { schema: apiErrorSchema } }
 const idParams = z.object({ id: z.uuid() })
@@ -43,6 +44,7 @@ const createRouteDefinition = createRoute({
   responses: {
     201: { content: { 'application/json': { schema: adminRestaurantResponseSchema } }, description: 'Restaurant created' },
     400: { content: errorContent, description: 'Invalid payload' },
+    409: { content: errorContent, description: 'Restaurant slug already exists' },
     401: { content: errorContent, description: 'Authentication required' },
   },
 })
@@ -53,6 +55,7 @@ const updateRoute = createRoute({
   request: { params: idParams, body: { content: { 'application/json': { schema: upsertRestaurantRequestSchema } } } },
   responses: {
     200: { content: { 'application/json': { schema: adminRestaurantResponseSchema } }, description: 'Restaurant updated' },
+    409: { content: errorContent, description: 'Restaurant slug already exists' },
     404: { content: errorContent, description: 'Restaurant not found' },
   },
 })
@@ -85,12 +88,12 @@ export function createCatalogAdminRoutes({ service, requireAuth, requireAdmin }:
   routes.use('*', requireAuth, requireAdmin)
 
   routes.openapi(listRoute, async (c) => c.json({ restaurants: await service.listAdminRestaurants() }, 200))
-  routes.openapi(createRouteDefinition, async (c) => c.json({ restaurant: await service.createRestaurant(c.req.valid('json')) }, 201))
-  routes.openapi(updateRoute, async (c) => {
+  routes.openapi(createRouteDefinition, async (c) => executeCatalog(async () => c.json({ restaurant: await service.createRestaurant(c.req.valid('json')) }, 201)))
+  routes.openapi(updateRoute, async (c) => executeCatalog(async () => {
     const restaurant = await service.updateRestaurant(c.req.valid('param').id, c.req.valid('json'))
     if (!restaurant) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found')
     return c.json({ restaurant }, 200)
-  })
+  }))
   routes.openapi(deleteRoute, async (c) => {
     const deleted = await service.deleteRestaurant(c.req.valid('param').id)
     if (!deleted) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found')
