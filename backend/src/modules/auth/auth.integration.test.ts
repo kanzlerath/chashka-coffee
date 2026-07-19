@@ -3,6 +3,7 @@ import { afterAll, beforeEach, describe, expect, test } from 'bun:test'
 import { createApp } from '../../app'
 import { createPrisma } from '../../db'
 import type { AppEnv } from '../../env'
+import { hashPassword } from './infrastructure/passwords'
 
 const databaseUrl = process.env.TEST_DATABASE_URL
 
@@ -34,8 +35,9 @@ maybeDescribe('auth API integration', () => {
     await prisma.$disconnect()
   })
 
-  test('registers, reads me, refreshes, and logs out', async () => {
-    const register = await app.request('/api/auth/token/register', {
+  test('logs in, reads me, refreshes, and logs out', async () => {
+    await createUser('user@example.com', 'password123', 'User')
+    const login = await app.request('/api/auth/token/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -43,25 +45,24 @@ maybeDescribe('auth API integration', () => {
       body: JSON.stringify({
         email: 'user@example.com',
         password: 'password123',
-        displayName: 'User',
       }),
     })
-    const registerBody = await register.json()
+    const loginBody = await login.json()
 
-    expect(register.status).toBe(201)
-    expect(registerBody.user.email).toBe('user@example.com')
-    expect(registerBody.accessToken).toBeString()
-    expect(registerBody.refreshToken).toBeString()
-    expect(register.headers.get('set-cookie')).toBeNull()
+    expect(login.status).toBe(200)
+    expect(loginBody.user.email).toBe('user@example.com')
+    expect(loginBody.accessToken).toBeString()
+    expect(loginBody.refreshToken).toBeString()
+    expect(login.headers.get('set-cookie')).toBeNull()
 
     const me = await app.request('/api/auth/me', {
       headers: {
-        Authorization: `Bearer ${registerBody.accessToken}`,
+        Authorization: `Bearer ${loginBody.accessToken}`,
       },
     })
     expect(me.status).toBe(200)
     const meBody = await me.json()
-    expect(meBody).toEqual({ user: registerBody.user })
+    expect(meBody).toEqual({ user: loginBody.user })
     expect('sessionId' in meBody.user).toBe(false)
 
     const refresh = await app.request('/api/auth/token/refresh', {
@@ -69,13 +70,13 @@ maybeDescribe('auth API integration', () => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ refreshToken: registerBody.refreshToken }),
+      body: JSON.stringify({ refreshToken: loginBody.refreshToken }),
     })
     const refreshBody = await refresh.json()
     expect(refresh.status).toBe(200)
     expect(refreshBody.accessToken).toBeString()
     expect(refreshBody.refreshToken).toBeString()
-    expect(refreshBody.refreshToken).not.toBe(registerBody.refreshToken)
+    expect(refreshBody.refreshToken).not.toBe(loginBody.refreshToken)
     expect(refresh.headers.get('set-cookie')).toBeNull()
 
     const staleRefresh = await app.request('/api/auth/token/refresh', {
@@ -83,7 +84,7 @@ maybeDescribe('auth API integration', () => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ refreshToken: registerBody.refreshToken }),
+      body: JSON.stringify({ refreshToken: loginBody.refreshToken }),
     })
     expect(staleRefresh.status).toBe(401)
 
@@ -107,7 +108,8 @@ maybeDescribe('auth API integration', () => {
   })
 
   test('allows only one concurrent refresh rotation for the same token', async () => {
-    const register = await app.request('/api/auth/token/register', {
+    await createUser('race@example.com')
+    const login = await app.request('/api/auth/token/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -117,7 +119,7 @@ maybeDescribe('auth API integration', () => {
         password: 'password123',
       }),
     })
-    const registerBody = await register.json()
+    const loginBody = await login.json()
 
     const refreshRequests = await Promise.all([
       app.request('/api/auth/token/refresh', {
@@ -125,14 +127,14 @@ maybeDescribe('auth API integration', () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ refreshToken: registerBody.refreshToken }),
+        body: JSON.stringify({ refreshToken: loginBody.refreshToken }),
       }),
       app.request('/api/auth/token/refresh', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ refreshToken: registerBody.refreshToken }),
+        body: JSON.stringify({ refreshToken: loginBody.refreshToken }),
       }),
     ])
 
@@ -151,7 +153,8 @@ maybeDescribe('auth API integration', () => {
   })
 
   test('web auth never exposes its HttpOnly refresh token when the client platform header is spoofed', async () => {
-    const register = await app.request('/api/auth/register', {
+    await createUser('web-cookie@example.com')
+    const login = await app.request('/api/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -162,11 +165,11 @@ maybeDescribe('auth API integration', () => {
         password: 'password123',
       }),
     })
-    const registerBody = await register.json()
-    const setCookie = register.headers.get('set-cookie')
+    const loginBody = await login.json()
+    const setCookie = login.headers.get('set-cookie')
 
-    expect(register.status).toBe(201)
-    expect(registerBody.refreshToken).toBeUndefined()
+    expect(login.status).toBe(200)
+    expect(loginBody.refreshToken).toBeUndefined()
     expect(setCookie).toContain('chashka_coffee_refresh=')
     expect(setCookie).toContain('HttpOnly')
     expect(setCookie).toContain('SameSite=Lax')
@@ -216,7 +219,8 @@ maybeDescribe('auth API integration', () => {
       },
       prisma,
     })
-    const register = await productionApp.request('/api/auth/register', {
+    await createUser('production-cookie@example.com')
+    const login = await productionApp.request('/api/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -227,13 +231,13 @@ maybeDescribe('auth API integration', () => {
         password: 'password123',
       }),
     })
-    const registerBody = await register.json()
-    const setCookie = register.headers.get('set-cookie')
+    const loginBody = await login.json()
+    const setCookie = login.headers.get('set-cookie')
 
-    expect(register.status).toBe(201)
-    expect(register.headers.get('access-control-allow-origin')).toBe('https://web.example.com')
-    expect(register.headers.get('access-control-allow-credentials')).toBe('true')
-    expect(registerBody.refreshToken).toBeUndefined()
+    expect(login.status).toBe(200)
+    expect(login.headers.get('access-control-allow-origin')).toBe('https://web.example.com')
+    expect(login.headers.get('access-control-allow-credentials')).toBe('true')
+    expect(loginBody.refreshToken).toBeUndefined()
     expect(setCookie).toContain('chashka_coffee_refresh=')
     expect(setCookie).toContain('HttpOnly')
     expect(setCookie).toContain('Secure')
@@ -249,7 +253,8 @@ maybeDescribe('auth API integration', () => {
       },
       prisma,
     })
-    const register = await productionApp.request('/api/auth/register', {
+    await createUser('csrf-cookie@example.com')
+    const login = await productionApp.request('/api/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -260,7 +265,7 @@ maybeDescribe('auth API integration', () => {
         password: 'password123',
       }),
     })
-    const cookie = register.headers.get('set-cookie')!.split(';')[0]
+    const cookie = login.headers.get('set-cookie')!.split(';')[0]
 
     const noOriginRefresh = await productionApp.request('/api/auth/refresh', {
       method: 'POST',
@@ -303,7 +308,7 @@ maybeDescribe('auth API integration', () => {
     const unauthorizedMe = await app.request('/api/auth/me')
     expect(unauthorizedMe.status).toBe(401)
 
-    const invalidRegister = await app.request('/api/auth/register', {
+    const invalidLogin = await app.request('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -311,16 +316,16 @@ maybeDescribe('auth API integration', () => {
         password: 'short',
       }),
     })
-    const body = await invalidRegister.json()
+    const body = await invalidLogin.json()
 
-    expect(invalidRegister.status).toBe(400)
+    expect(invalidLogin.status).toBe(400)
     expect(body.error.code).toBe('VALIDATION_ERROR')
     expect(body.error.message).toBe('Invalid request payload')
     expect(Array.isArray(body.error.details)).toBe(true)
   })
 
   test('me rejects revoked, expired, and missing sessions', async () => {
-    const revoked = await registerForMeGuard('me-revoked@example.com')
+    const revoked = await loginForMeGuard('me-revoked@example.com')
     await prisma.authSession.updateMany({
       where: {
         userId: revoked.userId,
@@ -336,7 +341,7 @@ maybeDescribe('auth API integration', () => {
     })
     expect(revokedMe.status).toBe(401)
 
-    const expired = await registerForMeGuard('me-expired@example.com')
+    const expired = await loginForMeGuard('me-expired@example.com')
     await prisma.authSession.updateMany({
       where: {
         userId: expired.userId,
@@ -352,7 +357,7 @@ maybeDescribe('auth API integration', () => {
     })
     expect(expiredMe.status).toBe(401)
 
-    const missing = await registerForMeGuard('me-missing@example.com')
+    const missing = await loginForMeGuard('me-missing@example.com')
     await prisma.authSession.deleteMany({
       where: {
         userId: missing.userId,
@@ -366,25 +371,26 @@ maybeDescribe('auth API integration', () => {
     expect(missingMe.status).toBe(401)
   })
 
-  test('rejects duplicate email and invalid login', async () => {
+  test('keeps public registration unavailable and rejects invalid login', async () => {
     const payload = {
       email: 'dupe@example.com',
       password: 'password123',
     }
 
-    await app.request('/api/auth/register', {
+    const cookieRegistration = await app.request('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
-
-    const duplicate = await app.request('/api/auth/register', {
+    const tokenRegistration = await app.request('/api/auth/token/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
-    expect(duplicate.status).toBe(409)
+    expect(cookieRegistration.status).toBe(404)
+    expect(tokenRegistration.status).toBe(404)
 
+    await createUser(payload.email, payload.password)
     const invalidLogin = await app.request('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -396,38 +402,32 @@ maybeDescribe('auth API integration', () => {
     expect(invalidLogin.status).toBe(401)
   })
 
-  test('returns one created user and one conflict for concurrent duplicate registration', async () => {
-    const payload = {
-      email: 'register-race@example.com',
-      password: 'password123',
-    }
+  test('creates independent sessions for concurrent valid logins', async () => {
+    const payload = { email: 'login-race@example.com', password: 'password123' }
+    await createUser(payload.email, payload.password)
 
     const [first, second] = await Promise.all([
-      app.request('/api/auth/register', {
+      app.request('/api/auth/token/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       }),
-      app.request('/api/auth/register', {
+      app.request('/api/auth/token/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       }),
     ])
 
-    const statuses = [first.status, second.status].sort((left, right) => left - right)
-    expect(statuses).toEqual([201, 409])
+    expect([first.status, second.status]).toEqual([200, 200])
 
-    const users = await prisma.user.count({
-      where: {
-        email: payload.email,
-      },
-    })
-    expect(users).toBe(1)
+    const sessions = await prisma.authSession.count({ where: { user: { email: payload.email }, revokedAt: null } })
+    expect(sessions).toBe(2)
   })
 
-  async function registerForMeGuard(email: string) {
-    const register = await app.request('/api/auth/token/register', {
+  async function loginForMeGuard(email: string) {
+    await createUser(email)
+    const login = await app.request('/api/auth/token/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -437,7 +437,7 @@ maybeDescribe('auth API integration', () => {
         password: 'password123',
       }),
     })
-    const registerBody = await register.json()
+    const loginBody = await login.json()
     const user = await prisma.user.findUniqueOrThrow({
       where: {
         email,
@@ -447,12 +447,23 @@ maybeDescribe('auth API integration', () => {
       },
     })
 
-    expect(register.status).toBe(201)
-    expect(registerBody.accessToken).toBeString()
+    expect(login.status).toBe(200)
+    expect(loginBody.accessToken).toBeString()
 
     return {
-      accessToken: registerBody.accessToken as string,
+      accessToken: loginBody.accessToken as string,
       userId: user.id,
     }
+  }
+
+  async function createUser(email: string, password = 'password123', displayName: string | null = null) {
+    return prisma.user.create({
+      data: {
+        email,
+        passwordHash: await hashPassword(password),
+        displayName,
+        role: 'EDITOR',
+      },
+    })
   }
 })
