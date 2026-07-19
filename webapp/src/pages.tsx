@@ -32,6 +32,8 @@ import { HomepagePage } from '@/features/homepage-admin'
 import { JobsPage } from '@/features/jobs-admin'
 import { LeadsPage } from '@/features/leads-admin'
 import { MediaPage } from '@/features/media-admin'
+import { ManagedPagesPage } from '@/features/pages-admin'
+import { ProductsPage } from '@/features/products-admin'
 import { TeamPage } from '@/features/staff-admin'
 
 const coreNavigation = [
@@ -42,6 +44,8 @@ const coreNavigation = [
 
 const adminNavigation = [
   { to: '/homepage', label: 'Главная', icon: DashboardSquare01Icon },
+  { to: '/pages', label: 'Страницы', icon: File01Icon },
+  { to: '/products', label: 'Кофе и торты', icon: MenuRestaurantIcon },
   { to: '/content', label: 'Материалы', icon: File01Icon },
   { to: '/media', label: 'Медиатека', icon: Image01Icon },
   { to: '/leads', label: 'Заявки', icon: InboxIcon },
@@ -311,6 +315,22 @@ export function HomepageAdminRoute() {
   if (!auth.user) return <HomePage />
   if (auth.user.role !== 'ADMIN') return <AccessDenied title="Главная страница" description="Настройка главной доступна администраторам." />
   return <HomepagePage />
+}
+
+export function ProductsAdminRoute() {
+  const auth = useAuth()
+  if (auth.isBootstrapping) return <LoadingState />
+  if (!auth.user) return <HomePage />
+  if (auth.user.role !== 'ADMIN') return <AccessDenied title="Кофе и торты" description="Каталог товаров доступен администраторам." />
+  return <ProductsPage />
+}
+
+export function ManagedPagesAdminRoute() {
+  const auth = useAuth()
+  if (auth.isBootstrapping) return <LoadingState />
+  if (!auth.user) return <HomePage />
+  if (auth.user.role !== 'ADMIN') return <AccessDenied title="Страницы" description="Редактор страниц доступен администраторам." />
+  return <ManagedPagesPage />
 }
 
 function AccessDenied({ title, description }: { title: string; description: string }) {

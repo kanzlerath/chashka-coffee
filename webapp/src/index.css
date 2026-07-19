@@ -334,3 +334,46 @@
     .admin-login-intro h1 { font-size: 2.8rem; }
   }
 }
+
+@layer components {
+  .admin-form-section,
+  .admin-block-editor,
+  .admin-variant-editor {
+    display: grid;
+    gap: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: color-mix(in oklab, var(--muted) 42%, var(--card));
+    padding: 1rem;
+  }
+
+  .admin-form-section h3,
+  .admin-block-toolbar strong,
+  .admin-variant-editor header strong { font-size: .92rem; font-weight: 720; }
+  .admin-block-toolbar,
+  .admin-variant-editor > header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .admin-block-toolbar p,
+  .admin-variant-editor header p { margin: .2rem 0 0; color: var(--muted-foreground); font-size: .78rem; line-height: 1.4; }
+  .admin-block-empty { border: 1px dashed var(--border); border-radius: .85rem; color: var(--muted-foreground); padding: 2.2rem 1rem; text-align: center; font-size: .84rem; }
+  .admin-block-list { display: grid; gap: .75rem; }
+  .admin-block-card { display: grid; gap: 1rem; border: 1px solid var(--border); border-radius: .9rem; background: var(--card); padding: 1rem; }
+  .admin-block-card > header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--border); padding-bottom: .7rem; }
+  .admin-block-card > header > div:first-child { display: flex; align-items: center; gap: .65rem; }
+  .admin-block-card > header span { color: var(--muted-foreground); font-size: .7rem; font-variant-numeric: tabular-nums; }
+  .admin-block-card > header strong { font-size: .84rem; }
+  .admin-block-actions { display: flex; align-items: center; gap: .25rem; }
+  .admin-block-actions label { display: flex; align-items: center; gap: .35rem; margin-right: .35rem; color: var(--muted-foreground); font-size: .72rem; }
+  .admin-advanced-fields { border: 1px solid var(--border); border-radius: .9rem; padding: .85rem 1rem; }
+  .admin-advanced-fields summary { cursor: pointer; font-size: .82rem; font-weight: 650; }
+  .admin-variant-editor { background: transparent; }
+  .admin-variant-row { display: grid; grid-template-columns: minmax(9rem,1fr) 7.5rem 7.5rem auto auto; align-items: center; gap: .6rem; border-top: 1px solid var(--border); padding-top: .75rem; }
+  .admin-variant-row label { display: flex; align-items: center; gap: .35rem; white-space: nowrap; font-size: .75rem; }
+
+  @media (max-width: 760px) {
+    .admin-block-toolbar,
+    .admin-variant-editor > header,
+    .admin-block-card > header { align-items: stretch; flex-direction: column; }
+    .admin-block-actions { flex-wrap: wrap; }
+    .admin-variant-row { grid-template-columns: 1fr 1fr; }
+  }
+}
