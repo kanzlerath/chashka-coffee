@@ -21,8 +21,12 @@ import { CatalogConflictError } from '../application/errors'
 import type { DbClient } from '../../../db'
 import type { CatalogRepository } from '../application/ports'
 
-function toScheduleException(value: { id: string; date: Date; label: string; opensAt: string | null; closesAt: string | null; isClosed: boolean }) {
-  return { ...value, date: value.date.toISOString().slice(0, 10) }
+function toOpeningHours(entries: { dayOfWeek: number; opensAt: string | null; closesAt: string | null; isClosed: boolean }[]) {
+  return entries.map(({ dayOfWeek, opensAt, closesAt, isClosed }) => ({ dayOfWeek, opensAt, closesAt, isClosed }))
+}
+
+function toScheduleException({ id, date, label, opensAt, closesAt, isClosed }: { id: string; date: Date; label: string; opensAt: string | null; closesAt: string | null; isClosed: boolean }) {
+  return { id, date: date.toISOString().slice(0, 10), label, opensAt, closesAt, isClosed }
 }
 
 function openingHoursLabel(openingHours: { dayOfWeek: number; opensAt: string | null; closesAt: string | null; isClosed: boolean }[]) {
@@ -78,7 +82,7 @@ function toAdminRestaurant(restaurant: {
     longitude: restaurant.longitude === null ? null : Number(restaurant.longitude),
     yandexMapsUrl: restaurant.yandexMapsUrl,
     twoGisUrl: restaurant.twoGisUrl,
-    openingHours: restaurant.openingHours ?? [],
+    openingHours: toOpeningHours(restaurant.openingHours ?? []),
     menuId: restaurant.menuAssignments?.[0]?.menu.id ?? null,
     menuName: restaurant.menuAssignments?.[0]?.menu.name ?? null,
     createdAt: restaurant.createdAt.toISOString(),
@@ -182,7 +186,7 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
         longitude: restaurant.longitude === null ? null : Number(restaurant.longitude),
         yandexMapsUrl: restaurant.yandexMapsUrl,
         twoGisUrl: restaurant.twoGisUrl,
-        openingHours: restaurant.openingHours,
+        openingHours: toOpeningHours(restaurant.openingHours),
         scheduleExceptions: restaurant.scheduleExceptions.map(toScheduleException),
       }
     },
