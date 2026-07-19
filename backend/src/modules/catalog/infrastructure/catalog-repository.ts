@@ -36,7 +36,7 @@ function openingHoursLabel(openingHours: { dayOfWeek: number; opensAt: string | 
 }
 
 function toRestaurantSummary(restaurant: {
-  id: string; slug: string; name: string; format: 'CITY' | 'PARK' | 'AIRPORT' | 'APART_HOTEL'; area: 'CITY' | 'PARK' | 'AIRPORT'; isAtApartHotel: boolean; city: string; address: string; phone: string; coverImageUrl: string | null; openingHours: { dayOfWeek: number; opensAt: string | null; closesAt: string | null; isClosed: boolean }[]
+  id: string; slug: string; name: string; format: 'CITY' | 'PARK' | 'AIRPORT' | 'APART_HOTEL'; area: 'CITY' | 'PARK' | 'AIRPORT'; isAtApartHotel: boolean; city: string; address: string; phone: string; coverImageUrl: string | null; latitude: Prisma.Decimal | null; longitude: Prisma.Decimal | null; openingHours: { dayOfWeek: number; opensAt: string | null; closesAt: string | null; isClosed: boolean }[]
 }): RestaurantSummary {
   return {
     id: restaurant.id,
@@ -50,6 +50,8 @@ function toRestaurantSummary(restaurant: {
     phone: restaurant.phone,
     openingHoursLabel: openingHoursLabel(restaurant.openingHours),
     coverImageUrl: restaurant.coverImageUrl,
+    latitude: restaurant.latitude === null ? null : Number(restaurant.latitude),
+    longitude: restaurant.longitude === null ? null : Number(restaurant.longitude),
   }
 }
 

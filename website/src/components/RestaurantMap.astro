@@ -1,0 +1,34 @@
+---
+import type { RestaurantSummary } from '@chashka-coffee/contracts'
+interface Props { restaurants: RestaurantSummary[]; apiKey?: string }
+const { restaurants, apiKey = '' } = Astro.props
+const points = restaurants.flatMap((restaurant) => restaurant.latitude != null && restaurant.longitude != null ? [{ slug:restaurant.slug, name:restaurant.name.replace('Чашка кофе — ', ''), address:restaurant.address, latitude:restaurant.latitude, longitude:restaurant.longitude }] : [])
+---
+<section class="restaurant-map" data-restaurant-map data-api-key={apiKey} data-points={JSON.stringify(points)} aria-label="Карта ресторанов">
+  <div class="restaurant-map-canvas" data-map-canvas></div>
+  <div class="restaurant-map-fallback" data-map-fallback>
+    <div><p>Рестораны на карте</p><h2>{points.length ? `${points.length} точек с координатами` : 'Координаты появятся из админки'}</h2><span>{apiKey ? 'Карта загружается…' : 'Добавьте PUBLIC_YANDEX_MAPS_API_KEY в website/.env для интерактивной карты.'}</span></div>
+  </div>
+</section>
+
+<style>.restaurant-map{position:relative;height:min(58vw,690px);min-height:440px;overflow:hidden;border-radius:var(--radius);background:#e2e9dd}.restaurant-map-canvas{position:absolute;inset:0}.restaurant-map-fallback{position:absolute;inset:0;display:flex;align-items:end;padding:clamp(28px,5vw,72px);background:radial-gradient(circle at 76% 28%,rgba(189,219,61,.46),transparent 21%),linear-gradient(135deg,#dce7d4,#f3eee7)}.restaurant-map-fallback[hidden]{display:none}.restaurant-map-fallback>div{max-width:510px}.restaurant-map-fallback p{margin:0;color:#6f902b;font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.restaurant-map-fallback h2{margin:13px 0;font-size:clamp(34px,4vw,62px);line-height:.91;letter-spacing:-.075em}.restaurant-map-fallback span{color:#5f655c;font-size:13px;line-height:1.55}@media(max-width:700px){.restaurant-map{height:520px;min-height:0}}</style>
+
+<script>
+  type MapPoint = { slug:string; name:string; address:string; latitude:number; longitude:number }
+  declare global { interface Window { ymaps?: { ready(callback:()=>void):void; Map:new(element:HTMLElement,state:unknown,options?:unknown)=>{geoObjects:{add(object:unknown):void};setBounds(bounds:number[][],options?:unknown):void;destroy():void}; Placemark:new(coordinates:number[],properties:unknown,options?:unknown)=>unknown } } }
+  document.querySelectorAll<HTMLElement>('[data-restaurant-map]').forEach((root) => {
+    const apiKey=root.dataset.apiKey;const canvas=root.querySelector<HTMLElement>('[data-map-canvas]');const fallback=root.querySelector<HTMLElement>('[data-map-fallback]')
+    let points:MapPoint[]=[];try{points=JSON.parse(root.dataset.points??'[]') as MapPoint[]}catch{}
+    if(!apiKey||!canvas||!points.length)return
+    const initialize=()=>window.ymaps?.ready(()=>{
+      if(!window.ymaps)return
+      const center=points.reduce((value,point)=>[value[0]+point.latitude/points.length,value[1]+point.longitude/points.length],[0,0])
+      const map=new window.ymaps.Map(canvas,{center,zoom:11,controls:['zoomControl']},{suppressMapOpenBlock:true})
+      points.forEach((point)=>map.geoObjects.add(new window.ymaps!.Placemark([point.latitude,point.longitude],{balloonContentHeader:point.name,balloonContentBody:`${point.address}<br><a href="/restaurants/${point.slug}">Подробнее</a>`},{preset:'islands#darkGreenCoffeeIcon'})))
+      if(points.length>1)map.setBounds(points.map((point)=>[point.latitude,point.longitude]),{checkZoomRange:true,zoomMargin:60})
+      if(fallback)fallback.hidden=true
+    })
+    if(window.ymaps){initialize();return}
+    const script=document.createElement('script');script.src=`https://api-maps.yandex.ru/2.1/?apikey=${encodeURIComponent(apiKey)}&lang=ru_RU`;script.async=true;script.onload=initialize;document.head.append(script)
+  })
+</script>

@@ -38,6 +38,8 @@ export const restaurantSummarySchema = z.object({
   phone: z.string().trim().min(1).max(40),
   openingHoursLabel: z.string().trim().min(1).max(180),
   coverImageUrl: z.url().nullable(),
+  latitude: z.number().min(-90).max(90).nullable().optional(),
+  longitude: z.number().min(-180).max(180).nullable().optional(),
 })
 export type RestaurantSummary = z.infer<typeof restaurantSummarySchema>
 
