@@ -92,16 +92,13 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
 
 <PageShell title="Чашка кофе" description="Чашка кофе — сеть ресторанов в Новосибирске: завтраки, десерты, кофе и места для хорошего дня." image="/images/home-morning-v2.png">
   <div class="home-page">
-    <section class="home-stories" data-home-stories aria-label="Актуальное в Чашке кофе">
+    <section class="home-stories" data-home-stories aria-label="Актуальное в Чашке кофе" aria-roledescription="карусель" tabindex="0">
       <div class="stories-media">
-        {slides.map((slide, index) => <article class:list={['story-media-item', { 'is-active': index === 0 }]} data-story-duration={slide.durationSeconds} data-story-media aria-hidden={index === 0 ? 'false' : 'true'}>
+        {slides.map((slide, index) => <article class:list={['story-media-item', { 'is-active': index === 0 }]} data-story-media aria-hidden={index === 0 ? 'false' : 'true'}>
           {slide.mediaType === 'VIDEO'
-            ? <video autoplay={index === 0} loop muted playsinline poster={slide.posterUrl ?? undefined} preload={index === 0 ? 'auto' : 'metadata'} src={slide.mediaUrl}></video>
+            ? <video loop muted playsinline poster={slide.posterUrl ?? undefined} preload={index === 0 ? 'auto' : 'metadata'} src={slide.mediaUrl}></video>
             : <img src={slide.mediaUrl} alt="" fetchpriority={index === 0 ? 'high' : undefined} loading={index === 0 ? 'eager' : 'lazy'} />}
         </article>)}
-        <div class="story-progress" aria-label="Выбор истории">
-          {slides.map((slide, index) => <button class:list={{ 'is-active': index === 0 }} type="button" data-story-control={index} style={`--story-duration:${slide.durationSeconds}s`} aria-label={`История ${index + 1}: ${slide.title.replace('\n', ' ')}`}></button>)}
-        </div>
       </div>
       <div class="stories-copy">
         {slides.map((slide, index) => <article class:list={['story-copy-item', { 'is-active': index === 0 }]} data-story-copy aria-hidden={index === 0 ? 'false' : 'true'}>
@@ -111,6 +108,16 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
           {slide.ctaLabel && slide.ctaUrl && <a class="ui-button ui-button--fill" href={slide.ctaUrl}>{slide.ctaLabel}</a>}
         </article>)}
       </div>
+      {slides.length > 1 && <div class="story-navigation" aria-label="Управление историями">
+        <div class="story-progress" aria-label="Выбор истории">
+          {slides.map((slide, index) => <button class:list={{ 'is-active': index === 0 }} type="button" data-story-control={index} aria-current={index === 0 ? 'true' : undefined} aria-label={`История ${index + 1}: ${slide.title.replace('\n', ' ')}`}></button>)}
+        </div>
+        <p class="story-counter"><span data-story-current>01</span> / {String(slides.length).padStart(2, '0')}</p>
+        <div class="story-arrows">
+          <button type="button" data-story-previous aria-label="Предыдущая история"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="m11 3-6 6 6 6" /></svg></button>
+          <button type="button" data-story-next aria-label="Следующая история"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="m7 3 6 6-6 6" /></svg></button>
+        </div>
+      </div>}
     </section>
 
     <section class="home-bestsellers home-section" aria-labelledby="bestsellers-title">
@@ -171,24 +178,22 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
 </PageShell>
 
 <script>
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
   const stories = document.querySelector<HTMLElement>('[data-home-stories]')
 
   if (stories) {
     const media = [...stories.querySelectorAll<HTMLElement>('[data-story-media]')]
     const copy = [...stories.querySelectorAll<HTMLElement>('[data-story-copy]')]
     const controls = [...stories.querySelectorAll<HTMLButtonElement>('[data-story-control]')]
+    const previous = stories.querySelector<HTMLButtonElement>('[data-story-previous]')
+    const next = stories.querySelector<HTMLButtonElement>('[data-story-next]')
+    const current = stories.querySelector<HTMLElement>('[data-story-current]')
     let active = 0
-    let timeout = 0
-    let paused = false
+    let pointerId: number | null = null
+    let startX = 0
+    let startY = 0
 
-    const schedule = () => {
-      window.clearTimeout(timeout)
-      if (paused || reduceMotion.matches || media.length < 2) return
-      const duration = Math.min(30, Math.max(3, Number(media[active]?.dataset.storyDuration ?? 7))) * 1_000
-      timeout = window.setTimeout(() => show(active + 1), duration)
-    }
     const show = (index: number) => {
+      if (!media.length) return
       active = (index + media.length) % media.length
       media.forEach((item, itemIndex) => {
         const isActive = itemIndex === active
@@ -200,19 +205,39 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
         else { video.pause(); video.currentTime = 0 }
       })
       copy.forEach((item, itemIndex) => { item.classList.toggle('is-active', itemIndex === active); item.setAttribute('aria-hidden', String(itemIndex !== active)) })
-      controls.forEach((control, controlIndex) => control.classList.toggle('is-active', controlIndex === active))
-      schedule()
+      controls.forEach((control, controlIndex) => {
+        const isActive = controlIndex === active
+        control.classList.toggle('is-active', isActive)
+        control.toggleAttribute('aria-current', isActive)
+      })
+      if (current) current.textContent = String(active + 1).padStart(2, '0')
     }
-    const pause = () => { paused = true; window.clearTimeout(timeout) }
-    const resume = () => { paused = false; schedule() }
     controls.forEach((control, index) => control.addEventListener('click', () => show(index)))
-    stories.addEventListener('mouseenter', pause)
-    stories.addEventListener('mouseleave', resume)
-    stories.addEventListener('focusin', pause)
-    stories.addEventListener('focusout', resume)
-    document.addEventListener('visibilitychange', () => document.hidden ? pause() : resume())
-    reduceMotion.addEventListener('change', schedule)
-    schedule()
+    previous?.addEventListener('click', () => show(active - 1))
+    next?.addEventListener('click', () => show(active + 1))
+    stories.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowLeft') { event.preventDefault(); show(active - 1) }
+      if (event.key === 'ArrowRight') { event.preventDefault(); show(active + 1) }
+    })
+    stories.addEventListener('pointerdown', (event) => {
+      const target = event.target
+      if ((target instanceof Element && target.closest('a, button')) || media.length < 2) return
+      pointerId = event.pointerId
+      startX = event.clientX
+      startY = event.clientY
+      stories.setPointerCapture(event.pointerId)
+      stories.classList.add('is-dragging')
+    })
+    stories.addEventListener('pointerup', (event) => {
+      if (pointerId !== event.pointerId) return
+      const distanceX = event.clientX - startX
+      const distanceY = event.clientY - startY
+      if (Math.abs(distanceX) > 54 && Math.abs(distanceX) > Math.abs(distanceY)) show(active + (distanceX < 0 ? 1 : -1))
+      if (stories.hasPointerCapture(event.pointerId)) stories.releasePointerCapture(event.pointerId)
+      pointerId = null
+      stories.classList.remove('is-dragging')
+    })
+    stories.addEventListener('pointercancel', () => { pointerId = null; stories.classList.remove('is-dragging') })
   }
 
   const places = document.querySelector<HTMLElement>('[data-home-places]')
@@ -236,7 +261,30 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
   .home-page{--home-radius:var(--radius)}
   .ui-button,.home-stories,.product-card,.product-card-image,.bento-card,.home-day,.menu-tile,.menu-all,.places-stage,.home-home-coffee,.home-app-loyalty,.loyalty-points,.journal-card{border-radius:var(--home-radius)}
   .ui-button{border-radius:var(--home-radius);min-height:50px;padding-inline:25px}
-  .home-stories{overflow:hidden}
+  .home-stories{position:relative;isolation:isolate;display:block;min-height:calc(100svh - 126px);overflow:hidden;background:#1a2f24;touch-action:pan-y;cursor:grab}
+  .home-stories.is-dragging{cursor:grabbing;user-select:none}
+  .stories-media{position:absolute;z-index:-2;inset:0;min-height:0;overflow:hidden;border-radius:0!important;background:#1a2f24}
+  .stories-media:after{position:absolute;z-index:2;inset:0;background:linear-gradient(90deg,rgba(16,24,19,.7) 0%,rgba(16,24,19,.28) 48%,rgba(16,24,19,.06) 78%),linear-gradient(0deg,rgba(16,24,19,.52) 0%,transparent 48%);content:'';pointer-events:none}
+  .story-media-item{opacity:0;transform:scale(1.04);transition:opacity .54s ease,transform 1.1s cubic-bezier(.22,1,.36,1)}
+  .story-media-item.is-active{opacity:1;transform:scale(1.001)}
+  .stories-copy{position:absolute;z-index:3;inset:0;min-height:0;pointer-events:none}
+  .story-copy-item{top:auto;bottom:clamp(42px,6.2vw,92px);left:clamp(28px,5.4vw,88px);width:min(600px,calc(100% - 56px));opacity:0;pointer-events:none;transform:translateY(20px);transition:opacity .35s ease,transform .52s cubic-bezier(.22,1,.36,1)}
+  .story-copy-item.is-active{opacity:1;pointer-events:auto;transform:none}
+  .home-stories .story-kicker{color:#bddb3d}
+  .story-copy-item h1{max-width:620px;margin:16px 0 0;color:#fff;font-size:clamp(58px,6.7vw,120px);line-height:.82;letter-spacing:-.11em;text-shadow:0 2px 16px rgba(0,0,0,.12)}
+  .story-description{max-width:420px;margin:25px 0 0;color:rgba(255,255,255,.88);font-size:16px;line-height:1.55}
+  .story-copy-item .ui-button{margin-top:30px;border-color:#fff;background:#fff;color:#1f3b2e!important}
+  .story-copy-item .ui-button:hover{border-color:#bddb3d;background:#bddb3d}
+  .story-navigation{position:absolute;z-index:4;right:clamp(22px,3.3vw,54px);bottom:clamp(28px,3.6vw,58px);display:flex;align-items:center;gap:17px}
+  .story-progress{position:static;display:flex;gap:6px}
+  .story-progress button{position:static;flex:0 0 auto;width:34px;height:4px;padding:0;overflow:visible;border:0;border-radius:var(--home-radius);background:rgba(255,255,255,.38);cursor:pointer;transition:width .25s ease,background .25s ease}
+  .story-progress button:after{display:none!important}
+  .story-progress button.is-active{width:57px;background:#bddb3d}
+  .story-counter{margin:0;color:#fff;font-size:12px;font-weight:800;letter-spacing:.08em}
+  .story-arrows{display:flex;gap:7px}
+  .story-arrows button{display:grid;place-items:center;width:44px;height:44px;border:1px solid rgba(255,255,255,.65);border-radius:var(--home-radius);background:rgba(28,40,31,.18);color:#fff;cursor:pointer;transition:background .2s ease,border-color .2s ease,transform .2s ease}
+  .story-arrows button:hover{border-color:#bddb3d;background:#bddb3d;color:#1f3b2e;transform:translateY(-2px)}
+  .story-arrows svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
   .story-progress button{border-radius:var(--home-radius)}
   .product-card{padding:11px;background:#f7f5f0}
   .product-card-image{border-radius:var(--home-radius)}
@@ -264,6 +312,14 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
   .journal-card small{display:none}
   @media(max-width:980px){
     .home-stories,.stories-media,.bento-card,.home-day,.menu-tile,.menu-all,.places-stage,.home-home-coffee,.home-app-loyalty,.loyalty-points,.journal-card{border-radius:var(--home-radius)}
+    .home-stories{display:block;min-height:calc(100svh - 72px);margin:0}
+    .stories-media{display:block;min-height:0;border-radius:0!important}
+    .story-copy-item{right:24px;bottom:88px;left:24px;width:auto}
+    .story-copy-item h1{font-size:clamp(52px,14vw,74px)}
+    .story-description{max-width:330px;margin-top:20px;font-size:14px}
+    .story-navigation{right:20px;bottom:20px;gap:11px}
+    .story-progress{gap:5px}.story-progress button{width:24px}.story-progress button.is-active{width:42px}
+    .story-counter{font-size:10px}.story-arrows button{width:40px;height:40px}
     .home-day{margin:48px 20px 0;padding:54px 20px}
     .day-stops a{align-items:center}
     .places-stage{height:auto;margin-right:0;margin-left:0;border-radius:var(--home-radius)}
