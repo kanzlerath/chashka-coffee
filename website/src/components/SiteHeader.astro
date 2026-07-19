@@ -10,6 +10,10 @@ const primary = [
 const moreGroups = [
   {
     title: 'Сервис',
+    preview: [
+      { src: '/images/home-hero-v1.png', label: 'Доставка', href: '/delivery' },
+      { src: '/images/home-morning-v2.png', label: 'Приложение', href: '/app' },
+    ],
     links: [
       ['delivery', 'Доставка', '/delivery'],
       ['app', 'Приложение', '/app'],
@@ -19,6 +23,10 @@ const moreGroups = [
   },
   {
     title: 'Для повода',
+    preview: [
+      { src: '/images/home-breakfast.png', label: 'Кондитерская', href: '/bakery' },
+      { src: '/images/restaurants-hero.png', label: 'Банкеты', href: '/banquets' },
+    ],
     links: [
       ['bakery', 'Кондитерская', '/bakery'],
       ['banquets', 'Банкеты', '/banquets'],
@@ -27,6 +35,10 @@ const moreGroups = [
   },
   {
     title: 'Читать и узнавать',
+    preview: [
+      { src: '/images/home-morning-v2.png', label: 'Журнал', href: '/journal' },
+      { src: '/images/home-breakfast.png', label: 'Акции', href: '/promotions' },
+    ],
     links: [
       ['promotions', 'Акции', '/promotions'],
       ['events', 'События', '/events'],
@@ -35,6 +47,10 @@ const moreGroups = [
   },
   {
     title: 'О компании',
+    preview: [
+      { src: '/images/restaurants-hero.png', label: 'О сети', href: '/about' },
+      { src: '/images/home-hero-v1.png', label: 'Франшиза', href: '/franchise' },
+    ],
     links: [
       ['franchise', 'Франшиза', '/franchise'],
       ['jobs', 'Вакансии', '/jobs'],
@@ -58,10 +74,23 @@ const mobile = [...primary, ...moreGroups.flatMap((group) => group.links)]
     <div class="site-actions"><span class="site-account-slot" aria-hidden="true"></span><button class="site-menu-button" type="button" aria-controls="site-menu" aria-expanded="false"><span>Меню</span><i></i><i></i></button></div>
   </div>
   <nav class="site-more-links" id="site-more-links" aria-label="Остальные разделы" aria-hidden="true" inert>
-    {moreGroups.map((group) => <section class="site-more-group" aria-label={group.title}>
-      <p>{group.title}</p>
-      <div>{group.links.map(([key, label, href]) => <a class:list={[{ active: active === key }]} href={href}>{label}</a>)}</div>
-    </section>)}
+    <div class="site-more-catalog">
+      <section class="site-more-categories" aria-label="Разделы">
+        <p>Разделы</p>
+        <div>{moreGroups.map((group, index) => <button class:list={{ 'is-active': index === 0 }} type="button" data-more-category={index} aria-controls={`site-more-panel-${index}`} aria-pressed={index === 0 ? 'true' : 'false'}>{group.title}<span aria-hidden="true">↗</span></button>)}</div>
+      </section>
+      <section class="site-more-details" aria-label="Подразделы">
+        {moreGroups.map((group, index) => <div class:list={['site-more-group', { 'is-active': index === 0 }]} id={`site-more-panel-${index}`} data-more-panel={index} aria-hidden={index === 0 ? 'false' : 'true'} inert={index !== 0}>
+          <p>{group.title}</p>
+          <div>{group.links.map(([key, label, href]) => <a class:list={[{ active: active === key }]} href={href}>{label}</a>)}</div>
+        </div>)}
+      </section>
+      <section class="site-more-preview" aria-label="Материалы раздела">
+        {moreGroups.map((group, index) => <div class:list={['site-more-preview-set', { 'is-active': index === 0 }]} data-more-preview={index} aria-hidden={index === 0 ? 'false' : 'true'} inert={index !== 0}>
+          {group.preview.map((item) => <a href={item.href}><img src={item.src} alt="" loading="lazy" /><span>{item.label}</span></a>)}
+        </div>)}
+      </section>
+    </div>
   </nav>
 </header>
 
@@ -75,6 +104,9 @@ const mobile = [...primary, ...moreGroups.flatMap((group) => group.links)]
   const header = document.querySelector<HTMLElement>('[data-site-header]')
   const moreToggle = header?.querySelector<HTMLButtonElement>('.site-more-toggle')
   const moreLinks = header?.querySelector<HTMLElement>('#site-more-links')
+  const moreCategories = [...header?.querySelectorAll<HTMLButtonElement>('[data-more-category]') ?? []]
+  const morePanels = [...header?.querySelectorAll<HTMLElement>('[data-more-panel]') ?? []]
+  const morePreviews = [...header?.querySelectorAll<HTMLElement>('[data-more-preview]') ?? []]
   const menu = document.querySelector('#site-menu')
   const opener = header?.querySelector<HTMLButtonElement>('.site-menu-button')
   const closer = menu?.querySelector<HTMLButtonElement>('button')
@@ -96,6 +128,25 @@ const mobile = [...primary, ...moreGroups.flatMap((group) => group.links)]
     if (expanded) moreLinks?.removeAttribute('inert')
     else moreLinks?.setAttribute('inert', '')
   }
+  const selectMoreCategory = (index: number) => {
+    moreCategories.forEach((button, buttonIndex) => {
+      const isActive = buttonIndex === index
+      button.classList.toggle('is-active', isActive)
+      button.setAttribute('aria-pressed', String(isActive))
+    })
+    morePanels.forEach((panel, panelIndex) => {
+      const isActive = panelIndex === index
+      panel.classList.toggle('is-active', isActive)
+      panel.setAttribute('aria-hidden', String(!isActive))
+      panel.toggleAttribute('inert', !isActive)
+    })
+    morePreviews.forEach((preview, previewIndex) => {
+      const isActive = previewIndex === index
+      preview.classList.toggle('is-active', isActive)
+      preview.setAttribute('aria-hidden', String(!isActive))
+      preview.toggleAttribute('inert', !isActive)
+    })
+  }
   const close = (returnFocus = false) => {
     menu?.classList.remove('is-open')
     opener?.setAttribute('aria-expanded', 'false')
@@ -112,6 +163,7 @@ const mobile = [...primary, ...moreGroups.flatMap((group) => group.links)]
   }
 
   moreToggle?.addEventListener('click', toggleMoreMenu)
+  moreCategories.forEach((button, index) => button.addEventListener('click', () => selectMoreCategory(index)))
   moreLinks?.querySelectorAll<HTMLAnchorElement>('a').forEach((link) => link.addEventListener('click', () => closeMoreMenu()))
   opener?.addEventListener('click', () => menu?.classList.contains('is-open') ? close() : open())
   closer?.addEventListener('click', () => close(true))
@@ -143,8 +195,8 @@ const mobile = [...primary, ...moreGroups.flatMap((group) => group.links)]
   .site-header-main{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:28px;height:81px;padding:0 clamp(22px,3.1vw,54px)}.site-logo{grid-column:2;display:grid;place-items:center;color:#231e1b;text-decoration:none}.site-logo img{object-fit:contain}
   .site-nav{grid-column:1;display:flex;align-items:center;justify-content:flex-start;gap:clamp(18px,1.9vw,32px)}.site-nav a{position:relative;padding:9px 0;color:#625d57;text-decoration:none;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.site-nav a:after{position:absolute;right:0;bottom:0;left:0;height:1px;background:#293b30;content:'';transform:scaleX(0);transition:transform .2s}.site-nav a.active,.site-nav a:hover{color:#211d19}.site-nav a.active:after{transform:scaleX(1)}
   .site-more-toggle{display:grid;place-items:center;width:27px;height:34px;padding:0;border:0;background:transparent;color:#625d57;cursor:pointer}.site-more-toggle:hover{color:#1f3b2e}.site-more-arrow{width:17px;height:12px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:2.1;transition:transform .28s cubic-bezier(.22,1,.36,1)}.site-header.is-expanded .site-more-arrow{transform:rotate(180deg)}
-  .site-more-links{position:absolute;top:calc(100% - 1px);right:-1px;left:-1px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(22px,3.2vw,58px);padding:18px clamp(22px,3.1vw,54px) 21px;border:1px solid #ebe7df;border-top:1px solid #ebe7df;border-radius:0 0 var(--radius) var(--radius);background:#fcfbf8;box-shadow:0 18px 30px rgba(54,44,35,.075);visibility:hidden;opacity:0;transform:translateY(-11px);transition:visibility 0s linear .24s,opacity .18s ease,transform .24s cubic-bezier(.22,1,.36,1);pointer-events:none}.site-header.is-expanded .site-more-links{visibility:visible;opacity:1;transform:none;transition-delay:0s;pointer-events:auto}.site-more-group{min-width:0}.site-more-group p{margin:0 0 10px;color:#758f2c;font-size:9px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.site-more-group>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 14px}.site-more-links a{padding:3px 0;color:#625d57;text-decoration:none;font-size:10px;font-weight:800;letter-spacing:.065em;line-height:1.25;text-align:left;text-transform:uppercase;transition:color .2s ease,transform .2s ease}.site-more-links a:hover,.site-more-links a.active{color:#1f3b2e;transform:translateX(2px)}
+  .site-more-links{position:absolute;top:calc(100% - 1px);right:-1px;left:-1px;padding:clamp(23px,2.4vw,38px) clamp(22px,3.1vw,54px);border:1px solid #ebe7df;border-top:1px solid #ebe7df;border-radius:0 0 var(--radius) var(--radius);background:#fcfbf8;box-shadow:0 18px 30px rgba(54,44,35,.075);visibility:hidden;opacity:0;transform:translateY(-11px);transition:visibility 0s linear .28s,opacity .2s ease,transform .28s cubic-bezier(.22,1,.36,1);pointer-events:none}.site-header.is-expanded .site-more-links{visibility:visible;opacity:1;transform:none;transition-delay:0s;pointer-events:auto}.site-more-catalog{display:grid;grid-template-columns:minmax(165px,.65fr) minmax(240px,1fr) minmax(360px,1.35fr);gap:clamp(28px,4vw,72px);align-items:stretch}.site-more-categories,.site-more-details{min-width:0}.site-more-categories>p,.site-more-group>p{margin:0 0 13px;color:#758f2c;font-size:9px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.site-more-categories>div{display:grid;gap:2px}.site-more-categories button{display:flex;align-items:center;justify-content:space-between;width:100%;padding:7px 0;border:0;background:transparent;color:#625d57;cursor:pointer;font:800 12px/1.25 Montserrat,Arial,sans-serif;letter-spacing:.08em;text-align:left;text-transform:uppercase;transition:color .2s ease,transform .2s ease}.site-more-categories button span{opacity:0;transform:translate(-3px,2px);transition:opacity .2s ease,transform .2s ease}.site-more-categories button:hover,.site-more-categories button.is-active{color:#1f3b2e}.site-more-categories button.is-active span{opacity:1;transform:translate(0,2px)}.site-more-details{position:relative;min-height:157px}.site-more-group{position:absolute;inset:0;display:grid;align-content:start;opacity:0;pointer-events:none;transform:translateY(7px);transition:opacity .22s ease,transform .28s cubic-bezier(.22,1,.36,1)}.site-more-group.is-active{opacity:1;pointer-events:auto;transform:none}.site-more-group>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 22px}.site-more-links a{padding:3px 0;color:#625d57;text-decoration:none;font-size:12px;font-weight:800;letter-spacing:.08em;line-height:1.25;text-align:left;text-transform:uppercase;transition:color .2s ease,transform .2s ease}.site-more-links a:hover,.site-more-links a.active{color:#1f3b2e;transform:translateX(2px)}.site-more-preview{position:relative;min-height:157px}.site-more-preview-set{position:absolute;inset:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;opacity:0;pointer-events:none;transform:translateY(7px);transition:opacity .22s ease,transform .28s cubic-bezier(.22,1,.36,1)}.site-more-preview-set.is-active{opacity:1;pointer-events:auto;transform:none}.site-more-preview a{position:relative;overflow:hidden;min-height:157px;border-radius:calc(var(--radius) - 7px);background:#e7e1d8;color:#fff;text-decoration:none}.site-more-preview img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .45s cubic-bezier(.22,1,.36,1)}.site-more-preview a:after{position:absolute;inset:0;background:linear-gradient(0deg,rgba(20,27,22,.6),transparent 60%);content:''}.site-more-preview a:hover img{transform:scale(1.06)}.site-more-preview span{position:absolute;z-index:1;bottom:13px;left:13px;color:#fff;font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase}
   .site-actions{grid-column:3;justify-self:end;display:flex;align-items:center}.site-account-slot{display:block;width:112px;height:42px}.site-menu-button{display:none}.site-menu{display:none}
-  @media(max-width:1260px){.site-more-links{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 40px}.site-more-group>div{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media(max-width:1220px){.site-more-catalog{grid-template-columns:minmax(145px,.55fr) minmax(218px,.9fr) minmax(290px,1.15fr);gap:28px}.site-more-group>div{gap:9px 14px}.site-more-preview a{min-height:144px}}
   @media(max-width:980px){.site-header{top:0;height:72px;overflow:visible;border:0;border-radius:0;box-shadow:none}.site-header.is-expanded{height:72px}.site-header-main{height:72px;padding:0 20px}.site-logo{grid-column:2}.site-logo img{width:39px;height:39px}.site-nav,.site-account-slot,.site-more-links{display:none}.site-actions{grid-column:3}.site-menu-button{display:grid;place-content:center;gap:4px;width:42px;height:42px;padding:0;border:1px solid #dcd7cf;border-radius:var(--radius);background:transparent;color:#293b30;font-size:0}.site-menu-button i{display:block;width:15px;height:1px;background:currentColor}.site-menu{position:fixed;z-index:100;inset:0;display:flex;padding:21px 20px calc(24px + env(safe-area-inset-bottom));background:#1f382b;color:#fcfbf8;flex-direction:column;opacity:0;pointer-events:none;transform:translateY(-2%);transition:opacity .25s,transform .25s}.site-menu.is-open{opacity:1;pointer-events:auto;transform:none}.site-menu-top{display:flex;justify-content:space-between;align-items:center;color:#c6dc6a;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}.site-menu-top button{padding:0;border:0;background:none;color:#f8f5ee;font:600 12px Montserrat,Arial,sans-serif}.site-menu-top b{margin-left:7px;font-size:23px;font-weight:400;vertical-align:-2px}.site-menu nav{display:grid;grid-template-columns:1fr 1fr;gap:0 21px;margin:auto 0}.site-menu nav a{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:5px;min-height:62px;padding:14px 0;border-top:1px solid rgba(248,247,242,.18);color:#f8f7f2;text-decoration:none;font-size:17px;font-weight:700;letter-spacing:-.06em}.site-menu nav a small{color:#c6dc6a;font-size:9px;letter-spacing:0}.site-menu nav a b{color:#c6dc6a;font-size:15px;font-weight:500}.site-menu nav a.active span{color:#c6dc6a}.site-menu-bottom{display:flex;justify-content:space-between;align-items:end;padding-top:20px;border-top:1px solid rgba(248,247,242,.18)}.site-menu-bottom a{display:inline-flex;gap:30px;padding:15px 17px;border-radius:var(--radius);background:#c6dc6a;color:#293b30;text-decoration:none;font-size:11px;font-weight:800}.site-menu-bottom p{margin:0;color:#d5d0c9;font-size:10px;line-height:1.45;text-align:right}body.menu-open{overflow:hidden}}
 </style>

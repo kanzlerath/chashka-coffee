@@ -110,7 +110,7 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
       </div>
       {slides.length > 1 && <div class="story-navigation" aria-label="Управление историями">
         <div class="story-progress" aria-label="Выбор истории">
-          {slides.map((slide, index) => <button class:list={{ 'is-active': index === 0 }} type="button" data-story-control={index} aria-current={index === 0 ? 'true' : undefined} aria-label={`История ${index + 1}: ${slide.title.replace('\n', ' ')}`}></button>)}
+          {slides.map((slide, index) => <button class:list={{ 'is-active': index === 0 }} type="button" data-story-control={index} data-story-duration={slide.durationSeconds} style={`--story-duration:${slide.durationSeconds}s`} aria-current={index === 0 ? 'true' : undefined} aria-label={`История ${index + 1}: ${slide.title.replace('\n', ' ')}`}></button>)}
         </div>
         <p class="story-counter"><span data-story-current>01</span> / {String(slides.length).padStart(2, '0')}</p>
         <div class="story-arrows">
@@ -191,6 +191,21 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
     let pointerId: number | null = null
     let startX = 0
     let startY = 0
+    let autoplayTimer: number | undefined
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+
+    const clearAutoplay = () => {
+      if (autoplayTimer === undefined) return
+      window.clearTimeout(autoplayTimer)
+      autoplayTimer = undefined
+    }
+
+    const scheduleAutoplay = () => {
+      clearAutoplay()
+      if (media.length < 2 || reduceMotion.matches || document.hidden) return
+      const duration = Number(controls[active]?.dataset.storyDuration ?? 7)
+      autoplayTimer = window.setTimeout(() => show(active + 1), Math.max(duration, 3) * 1000)
+    }
 
     const show = (index: number) => {
       if (!media.length) return
@@ -205,12 +220,15 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
         else { video.pause(); video.currentTime = 0 }
       })
       copy.forEach((item, itemIndex) => { item.classList.toggle('is-active', itemIndex === active); item.setAttribute('aria-hidden', String(itemIndex !== active)) })
+      controls.forEach((control) => { control.classList.remove('is-active'); control.removeAttribute('aria-current') })
+      if (controls.length) void stories.offsetWidth
       controls.forEach((control, controlIndex) => {
         const isActive = controlIndex === active
         control.classList.toggle('is-active', isActive)
-        control.toggleAttribute('aria-current', isActive)
+        if (isActive) control.setAttribute('aria-current', 'true')
       })
       if (current) current.textContent = String(active + 1).padStart(2, '0')
+      scheduleAutoplay()
     }
     controls.forEach((control, index) => control.addEventListener('click', () => show(index)))
     previous?.addEventListener('click', () => show(active - 1))
@@ -222,6 +240,7 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
     stories.addEventListener('pointerdown', (event) => {
       const target = event.target
       if ((target instanceof Element && target.closest('a, button')) || media.length < 2) return
+      clearAutoplay()
       pointerId = event.pointerId
       startX = event.clientX
       startY = event.clientY
@@ -233,11 +252,15 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
       const distanceX = event.clientX - startX
       const distanceY = event.clientY - startY
       if (Math.abs(distanceX) > 54 && Math.abs(distanceX) > Math.abs(distanceY)) show(active + (distanceX < 0 ? 1 : -1))
+      else show(active)
       if (stories.hasPointerCapture(event.pointerId)) stories.releasePointerCapture(event.pointerId)
       pointerId = null
       stories.classList.remove('is-dragging')
     })
-    stories.addEventListener('pointercancel', () => { pointerId = null; stories.classList.remove('is-dragging') })
+    stories.addEventListener('pointercancel', () => { pointerId = null; stories.classList.remove('is-dragging'); show(active) })
+    document.addEventListener('visibilitychange', () => document.hidden ? clearAutoplay() : show(active))
+    reduceMotion.addEventListener('change', () => reduceMotion.matches ? clearAutoplay() : show(active))
+    scheduleAutoplay()
   }
 
   const places = document.querySelector<HTMLElement>('[data-home-places]')
@@ -264,26 +287,28 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
   .home-stories{position:relative;isolation:isolate;display:block;min-height:calc(100svh - 126px);overflow:hidden;background:#1a2f24;touch-action:pan-y;cursor:grab}
   .home-stories.is-dragging{cursor:grabbing;user-select:none}
   .stories-media{position:absolute;z-index:-2;inset:0;min-height:0;overflow:hidden;border-radius:0!important;background:#1a2f24}
-  .stories-media:after{position:absolute;z-index:2;inset:0;background:linear-gradient(90deg,rgba(16,24,19,.7) 0%,rgba(16,24,19,.28) 48%,rgba(16,24,19,.06) 78%),linear-gradient(0deg,rgba(16,24,19,.52) 0%,transparent 48%);content:'';pointer-events:none}
+  .stories-media:after{position:absolute;z-index:2;inset:0;background:linear-gradient(90deg,rgba(16,24,19,.57) 0%,rgba(16,24,19,.2) 42%,rgba(16,24,19,.03) 72%),linear-gradient(0deg,rgba(16,24,19,.5) 0%,transparent 46%);content:'';pointer-events:none}
   .story-media-item{opacity:0;transform:scale(1.04);transition:opacity .54s ease,transform 1.1s cubic-bezier(.22,1,.36,1)}
   .story-media-item.is-active{opacity:1;transform:scale(1.001)}
   .stories-copy{position:absolute;z-index:3;inset:0;min-height:0;pointer-events:none}
-  .story-copy-item{top:auto;bottom:clamp(42px,6.2vw,92px);left:clamp(28px,5.4vw,88px);width:min(600px,calc(100% - 56px));opacity:0;pointer-events:none;transform:translateY(20px);transition:opacity .35s ease,transform .52s cubic-bezier(.22,1,.36,1)}
+  .story-copy-item{top:auto;bottom:clamp(40px,4vw,64px);left:clamp(28px,3.2vw,54px);width:min(430px,calc(100% - 56px));opacity:0;pointer-events:none;transform:translateY(20px);transition:opacity .35s ease,transform .52s cubic-bezier(.22,1,.36,1)}
   .story-copy-item.is-active{opacity:1;pointer-events:auto;transform:none}
   .home-stories .story-kicker{color:#bddb3d}
-  .story-copy-item h1{max-width:620px;margin:16px 0 0;color:#fff;font-size:clamp(58px,6.7vw,120px);line-height:.82;letter-spacing:-.11em;text-shadow:0 2px 16px rgba(0,0,0,.12)}
-  .story-description{max-width:420px;margin:25px 0 0;color:rgba(255,255,255,.88);font-size:16px;line-height:1.55}
-  .story-copy-item .ui-button{margin-top:30px;border-color:#fff;background:#fff;color:#1f3b2e!important}
+  .story-copy-item h1{max-width:430px;margin:11px 0 0;color:#fff;font-size:clamp(42px,4.65vw,76px);line-height:.86;letter-spacing:-.1em;text-shadow:0 2px 16px rgba(0,0,0,.12)}
+  .story-description{max-width:330px;margin:17px 0 0;color:rgba(255,255,255,.88);font-size:13px;line-height:1.52}
+  .story-copy-item .ui-button{min-height:46px;margin-top:22px;border-color:#fff;background:#fff;color:#1f3b2e!important}
   .story-copy-item .ui-button:hover{border-color:#bddb3d;background:#bddb3d}
   .story-navigation{position:absolute;z-index:4;right:clamp(22px,3.3vw,54px);bottom:clamp(28px,3.6vw,58px);display:flex;align-items:center;gap:17px}
   .story-progress{position:static;display:flex;gap:6px}
-  .story-progress button{position:static;flex:0 0 auto;width:34px;height:4px;padding:0;overflow:visible;border:0;border-radius:var(--home-radius);background:rgba(255,255,255,.38);cursor:pointer;transition:width .25s ease,background .25s ease}
-  .story-progress button:after{display:none!important}
-  .story-progress button.is-active{width:57px;background:#bddb3d}
+  .story-progress button{position:relative;flex:0 0 auto;width:34px;height:4px;padding:0;overflow:hidden;border:0;border-radius:var(--home-radius);background:rgba(255,255,255,.38);cursor:pointer;transition:width .25s ease,background .25s ease}
+  .story-progress button:after{position:absolute!important;inset:0;display:block!important;transform:scaleX(0);transform-origin:left;background:#bddb3d;content:''}
+  .story-progress button.is-active{width:57px;background:rgba(255,255,255,.38)}
+  .story-progress button.is-active:after{animation:story-progress-fill var(--story-duration,7s) linear forwards}
+  @keyframes story-progress-fill{to{transform:scaleX(1)}}
   .story-counter{margin:0;color:#fff;font-size:12px;font-weight:800;letter-spacing:.08em}
-  .story-arrows{display:flex;gap:7px}
-  .story-arrows button{display:grid;place-items:center;width:44px;height:44px;border:1px solid rgba(255,255,255,.65);border-radius:var(--home-radius);background:rgba(28,40,31,.18);color:#fff;cursor:pointer;transition:background .2s ease,border-color .2s ease,transform .2s ease}
-  .story-arrows button:hover{border-color:#bddb3d;background:#bddb3d;color:#1f3b2e;transform:translateY(-2px)}
+  .story-arrows{display:flex;gap:5px}
+  .story-arrows button{display:grid;place-items:center;width:27px;height:27px;padding:0;border:0;border-radius:0;background:transparent;color:#fff;cursor:pointer;transition:color .2s ease,transform .2s ease}
+  .story-arrows button:hover{background:transparent;color:#bddb3d}.story-arrows button[data-story-previous]:hover{transform:translateX(-3px)}.story-arrows button[data-story-next]:hover{transform:translateX(3px)}
   .story-arrows svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
   .story-progress button{border-radius:var(--home-radius)}
   .product-card{padding:11px;background:#f7f5f0}
@@ -314,12 +339,12 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
     .home-stories,.stories-media,.bento-card,.home-day,.menu-tile,.menu-all,.places-stage,.home-home-coffee,.home-app-loyalty,.loyalty-points,.journal-card{border-radius:var(--home-radius)}
     .home-stories{display:block;min-height:calc(100svh - 72px);margin:0}
     .stories-media{display:block;min-height:0;border-radius:0!important}
-    .story-copy-item{right:24px;bottom:88px;left:24px;width:auto}
-    .story-copy-item h1{font-size:clamp(52px,14vw,74px)}
-    .story-description{max-width:330px;margin-top:20px;font-size:14px}
+    .story-copy-item{right:24px;bottom:74px;left:24px;width:auto}
+    .story-copy-item h1{font-size:clamp(42px,11.5vw,64px)}
+    .story-description{max-width:300px;margin-top:15px;font-size:13px}
     .story-navigation{right:20px;bottom:20px;gap:11px}
     .story-progress{gap:5px}.story-progress button{width:24px}.story-progress button.is-active{width:42px}
-    .story-counter{font-size:10px}.story-arrows button{width:40px;height:40px}
+    .story-counter{font-size:10px}.story-arrows button{width:27px;height:27px}
     .home-day{margin:48px 20px 0;padding:54px 20px}
     .day-stops a{align-items:center}
     .places-stage{height:auto;margin-right:0;margin-left:0;border-radius:var(--home-radius)}
