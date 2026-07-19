@@ -53,15 +53,15 @@ const dishPayload = (item: RestaurantMenuResponse['categories'][number]['items']
         <h2 id="dish-dialog-title" data-dish-name></h2>
         <p class="dish-dialog-description" data-dish-description></p>
         <dl class="dish-dialog-details">
-          <div data-dish-ingredients-row><dt>Состав</dt><dd data-dish-ingredients></dd></div>
+          <div class="dish-dialog-ingredients" data-dish-ingredients-row><dt>Состав</dt><dd data-dish-ingredients></dd></div>
           <div data-dish-allergens-row><dt>Аллергены</dt><dd data-dish-allergens></dd></div>
           <div class="dish-dialog-marks" data-dish-marks-row><dt>Особенности</dt><dd data-dish-marks></dd></div>
         </dl>
         <section class="dish-dialog-nutrition" aria-labelledby="dish-nutrition-title">
-          <p id="dish-nutrition-title">Пищевая ценность</p>
-          <div><span><b data-dish-calories></b><small>ккал</small></span><span><b data-dish-proteins></b><small>белки</small></span><span><b data-dish-fats></b><small>жиры</small></span><span><b data-dish-carbohydrates></b><small>углеводы</small></span></div>
+          <div class="dish-dialog-data-card dish-dialog-nutrition-values"><p id="dish-nutrition-title">КБЖУ</p><div><span><b data-dish-calories></b><small>ккал</small></span><span><b data-dish-proteins></b><small>белки</small></span><span><b data-dish-fats></b><small>жиры</small></span><span><b data-dish-carbohydrates></b><small>углеводы</small></span></div></div>
+          <div class="dish-dialog-data-card dish-dialog-output"><p>Выход</p><strong data-dish-output></strong></div>
         </section>
-        <footer class="dish-dialog-footer"><div><span data-dish-output></span><strong data-dish-price></strong></div><a class="button" href="/app">Заказать в приложении</a></footer>
+        <footer class="dish-dialog-footer"><div class="dish-dialog-price"><span>Цена в ресторане</span><strong data-dish-price></strong></div><a class="dish-dialog-order" href="/app">Открыть в приложении</a></footer>
       </div>
     </div>
   </dialog>
@@ -76,11 +76,11 @@ const dishPayload = (item: RestaurantMenuResponse['categories'][number]['items']
 <style>
   .item{width:100%;appearance:none;border:1px solid #e0e3dc;color:inherit;font:inherit;text-align:left;cursor:pointer}
   .item:focus-visible{outline:3px solid #bddb3d;outline-offset:4px}
-  .badge{border:1px solid transparent;border-radius:var(--radius);box-shadow:0 5px 14px rgba(45,34,26,.14)}
-  .badge--hit{background:#536c42;color:#fff;border-color:#789163}
-  .badge--new{background:#bddb3d;color:#1f3b2e;border-color:#d7eb83}
-  .badge--seasonal{background:#eda46b;color:#4c2816;border-color:#f5c291}
-  .badge--special{background:#6c7ea6;color:#fff;border-color:#9eabd0}
+  .badge{border:0;border-radius:var(--radius);box-shadow:none}
+  .badge--hit{background:#d85e47;color:#fff}
+  .badge--new{background:#bddb3d;color:#1f3b2e}
+  .badge--seasonal{background:#e6ae4c;color:#483310}
+  .badge--special{background:#7278a9;color:#fff}
   .dish-dialog{width:min(1160px,calc(100vw - 48px));max-width:none;max-height:calc(100svh - 48px);margin:auto;padding:0;border:0;border-radius:var(--radius);background:#fcfbf8;color:#231e1b;box-shadow:0 28px 90px rgba(22,28,22,.28);overflow:hidden}
   .dish-dialog::backdrop{background:rgba(27,32,26,.58);backdrop-filter:blur(7px)}
   .dish-dialog[open]{animation:dish-dialog-in .3s cubic-bezier(.22,1,.36,1)}
@@ -92,18 +92,19 @@ const dishPayload = (item: RestaurantMenuResponse['categories'][number]['items']
   .dish-dialog-close svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-width:1.8}
   .dish-dialog-media{position:relative;min-height:0;overflow:hidden;background:#eeece6}
   .dish-dialog-media img{display:block;width:100%;height:100%;object-fit:cover}
-  .dish-dialog-badge{position:absolute;top:24px;left:24px;padding:8px 12px;border:1px solid transparent;border-radius:var(--radius);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 5px 14px rgba(45,34,26,.15)}
-  .dish-dialog-badge--hit{background:#536c42;color:#fff;border-color:#789163}.dish-dialog-badge--new{background:#bddb3d;color:#1f3b2e;border-color:#d7eb83}.dish-dialog-badge--seasonal{background:#eda46b;color:#4c2816;border-color:#f5c291}.dish-dialog-badge--special{background:#6c7ea6;color:#fff;border-color:#9eabd0}
+  .dish-dialog-badge{position:absolute;top:24px;left:24px;padding:8px 12px;border:0;border-radius:var(--radius);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;box-shadow:none}
+  .dish-dialog-badge--hit{background:#d85e47;color:#fff}.dish-dialog-badge--new{background:#bddb3d;color:#1f3b2e}.dish-dialog-badge--seasonal{background:#e6ae4c;color:#483310}.dish-dialog-badge--special{background:#7278a9;color:#fff}
   .dish-dialog-content{display:flex;min-height:0;flex-direction:column;padding:clamp(38px,4vw,64px);overflow:auto}
   .dish-dialog-category{margin:0;color:#1f3b2e;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
   .dish-dialog-content h2{margin:12px 54px 0 0;font-size:clamp(32px,3.2vw,54px);line-height:.9;letter-spacing:-.08em}
   .dish-dialog-description{margin:18px 0 0;color:#635e57;font-size:15px;line-height:1.55}
-  .dish-dialog-details{display:grid;gap:19px;margin:31px 0 0;padding-top:28px;border-top:1px solid #e4dfd7}
-  .dish-dialog-details>div{display:grid;gap:7px}.dish-dialog-details dt,.dish-dialog-nutrition>p{color:#817a71;font-size:11px;font-weight:700}.dish-dialog-details dd{margin:0;color:#2a2622;font-size:14px;line-height:1.5}
-  .dish-dialog-marks dd{display:flex;flex-wrap:wrap;gap:6px}.dish-dialog-marks dd span{padding:6px 9px;border-radius:var(--radius);background:#e3eadb;color:#27432f;font-size:10px;font-weight:800}
-  .dish-dialog-nutrition{margin-top:28px;padding-top:25px;border-top:1px solid #e4dfd7}.dish-dialog-nutrition>p{margin:0}.dish-dialog-nutrition>div{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}.dish-dialog-nutrition span{display:grid;gap:3px;color:#29251f}.dish-dialog-nutrition b{font-size:16px;letter-spacing:-.04em}.dish-dialog-nutrition small{color:#817a71;font-size:9px;font-weight:700;text-transform:uppercase}
-  .dish-dialog-footer{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:auto;padding-top:35px}.dish-dialog-footer>div{display:grid;gap:5px}.dish-dialog-footer span{color:#7d766c;font-size:11px}.dish-dialog-footer strong{font-size:28px;letter-spacing:-.075em}.dish-dialog-footer .button{min-width:218px;padding:0 21px;border:0;border-radius:var(--radius);font:800 12px Montserrat,Arial,sans-serif}
-  @media(max-width:760px){.dish-dialog{position:fixed;right:12px;bottom:12px;left:12px;width:auto;max-height:calc(100svh - 24px);margin:0;border-radius:var(--radius)}.dish-dialog-inner{display:block;min-height:0;max-height:calc(100svh - 24px);overflow:auto}.dish-dialog-media{height:min(48svh,390px)}.dish-dialog-content{overflow:visible;padding:29px 22px 25px}.dish-dialog-close{top:12px;right:12px;width:42px;height:42px}.dish-dialog-badge{top:16px;left:16px}.dish-dialog-content h2{margin-top:10px;font-size:36px}.dish-dialog-description{font-size:14px}.dish-dialog-details{margin-top:24px;padding-top:22px}.dish-dialog-nutrition{margin-top:24px;padding-top:21px}.dish-dialog-nutrition>div{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.dish-dialog-footer{align-items:stretch;flex-direction:column;padding-top:29px}.dish-dialog-footer>div{grid-template-columns:1fr auto;align-items:end}.dish-dialog-footer>div span{grid-row:1}.dish-dialog-footer>div strong{grid-row:1;font-size:27px}.dish-dialog-footer .button{width:100%;min-width:0;min-height:50px}}
+  .dish-dialog-details{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(150px,.8fr);gap:9px;margin:31px 0 0;padding:0;border:0}
+  .dish-dialog-details>div,.dish-dialog-data-card{display:grid;align-content:start;gap:9px;min-height:136px;padding:20px;border-radius:var(--radius);background:#f3eee7}
+  .dish-dialog-details dt,.dish-dialog-nutrition p{margin:0;color:#817a71;font-size:11px;font-weight:700}.dish-dialog-details dd{margin:0;color:#2a2622;font-size:13px;line-height:1.48}
+  .dish-dialog-marks{grid-column:1/-1;min-height:auto!important}.dish-dialog-marks dd{display:flex;flex-wrap:wrap;gap:6px}.dish-dialog-marks dd span{padding:6px 9px;border-radius:var(--radius);background:#dce7d4;color:#27432f;font-size:10px;font-weight:800}
+  .dish-dialog-nutrition{display:grid;grid-template-columns:minmax(0,1fr) minmax(145px,.38fr);gap:9px;margin-top:9px;padding:0;border:0}.dish-dialog-nutrition-values>div{display:flex;flex-wrap:wrap;gap:8px 12px}.dish-dialog-nutrition-values span{display:flex;align-items:baseline;gap:4px;color:#29251f}.dish-dialog-nutrition-values b{font-size:13px;letter-spacing:-.04em}.dish-dialog-nutrition-values small{color:#817a71;font-size:9px;font-weight:700;text-transform:uppercase}.dish-dialog-output strong{margin-top:auto;font-size:21px;letter-spacing:-.06em}
+  .dish-dialog-footer{display:flex;align-items:center;gap:19px;margin-top:auto;padding-top:18px}.dish-dialog-price{display:flex;flex:1;align-items:center;justify-content:space-between;gap:18px;min-height:78px;padding:17px 21px;border-radius:var(--radius);background:#f3eee7}.dish-dialog-price span{color:#817a71;font-size:11px;font-weight:700}.dish-dialog-price strong{font-size:31px;letter-spacing:-.075em}.dish-dialog-order{padding-bottom:3px;border-bottom:1px solid currentColor;color:#1f3b2e;font-size:11px;font-weight:800;text-decoration:none;transition:color .2s ease}.dish-dialog-order:hover{color:#7b9b2e}
+  @media(max-width:760px){.dish-dialog{position:fixed;right:12px;bottom:12px;left:12px;width:auto;max-height:calc(100svh - 24px);margin:0;border-radius:var(--radius)}.dish-dialog-inner{display:block;min-height:0;max-height:calc(100svh - 24px);overflow:auto}.dish-dialog-media{height:min(48svh,390px)}.dish-dialog-content{overflow:visible;padding:29px 22px 25px}.dish-dialog-close{top:12px;right:12px;width:42px;height:42px}.dish-dialog-badge{top:16px;left:16px}.dish-dialog-content h2{margin-top:10px;font-size:36px}.dish-dialog-description{font-size:14px}.dish-dialog-details{grid-template-columns:1fr;gap:8px;margin-top:24px}.dish-dialog-details>div,.dish-dialog-data-card{min-height:auto;padding:17px}.dish-dialog-marks{grid-column:auto}.dish-dialog-nutrition{grid-template-columns:minmax(0,1fr) 112px;gap:8px}.dish-dialog-footer{align-items:stretch;flex-direction:column;padding-top:18px}.dish-dialog-price{min-height:72px}.dish-dialog-price strong{font-size:28px}.dish-dialog-order{align-self:flex-start}}
   @media(prefers-reduced-motion:reduce){.dish-dialog[open]{animation:none}.dish-dialog-close,.item{transition:none}}
 </style>
 
