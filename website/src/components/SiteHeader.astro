@@ -76,7 +76,7 @@ const mobile = [...primary, ...moreGroups.flatMap((group) => group.links)]
   <nav class="site-more-links" id="site-more-links" aria-label="Остальные разделы" aria-hidden="true" inert>
     <div class="site-more-catalog">
       <section class="site-more-categories" aria-label="Разделы">
-        <div>{moreGroups.map((group, index) => <button class:list={{ 'is-active': index === 0 }} type="button" data-more-category={index} aria-controls={`site-more-panel-${index}`} aria-pressed={index === 0 ? 'true' : 'false'}>{group.title}<span aria-hidden="true"></span></button>)}</div>
+        <div>{moreGroups.map((group, index) => <button class:list={{ 'is-active': index === 0 }} type="button" data-more-category={index} aria-controls={`site-more-panel-${index}`} aria-pressed={index === 0 ? 'true' : 'false'}><span aria-hidden="true"></span>{group.title}</button>)}</div>
       </section>
       <section class="site-more-details" aria-label="Подразделы">
         {moreGroups.map((group, index) => <div class:list={['site-more-group', { 'is-active': index === 0 }]} id={`site-more-panel-${index}`} data-more-panel={index} aria-hidden={index === 0 ? 'false' : 'true'} inert={index !== 0}>
@@ -243,6 +243,8 @@ const mobile = [...primary, ...moreGroups.flatMap((group) => group.links)]
     .site-more-categories > div { gap: 4px; }
     .site-more-categories button {
       min-height: 32px;
+      justify-content: flex-start;
+      gap: 10px;
       color: #625d57;
     }
     .site-more-categories button:hover { color: #1f3b2e; }
@@ -257,6 +259,10 @@ const mobile = [...primary, ...moreGroups.flatMap((group) => group.links)]
       transform: scale(.4);
     }
     .site-more-categories button.is-active span { opacity: 1; transform: scale(1); }
+    .site-more-group > div {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 10px;
+    }
   }
 
   @media (max-width: 980px) {
