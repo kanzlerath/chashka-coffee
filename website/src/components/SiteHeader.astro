@@ -66,7 +66,7 @@ const mobile = [...primary, ...moreGroups.flatMap((group) => group.links)]
   <div class="site-header-main">
     <nav class="site-nav" aria-label="Основная навигация">
       {primary.map(([key, label, href]) => <a class:list={[{ active: active === key }]} href={href}>{label}</a>)}
-      <button class="site-more-toggle" type="button" aria-controls="site-more-links" aria-expanded="false" aria-label="Открыть остальные разделы" title="Остальные разделы">
+      <button class="site-more-toggle" type="button" aria-controls="site-more-links" aria-expanded="false" aria-label="Открыть остальные разделы">
         <svg class="site-more-arrow" viewBox="0 0 20 12" aria-hidden="true"><path d="m2 2 8 8 8-8" /></svg>
       </button>
     </nav>
@@ -76,12 +76,10 @@ const mobile = [...primary, ...moreGroups.flatMap((group) => group.links)]
   <nav class="site-more-links" id="site-more-links" aria-label="Остальные разделы" aria-hidden="true" inert>
     <div class="site-more-catalog">
       <section class="site-more-categories" aria-label="Разделы">
-        <p>Разделы</p>
-        <div>{moreGroups.map((group, index) => <button class:list={{ 'is-active': index === 0 }} type="button" data-more-category={index} aria-controls={`site-more-panel-${index}`} aria-pressed={index === 0 ? 'true' : 'false'}>{group.title}<span aria-hidden="true">↗</span></button>)}</div>
+        <div>{moreGroups.map((group, index) => <button class:list={{ 'is-active': index === 0 }} type="button" data-more-category={index} aria-controls={`site-more-panel-${index}`} aria-pressed={index === 0 ? 'true' : 'false'}>{group.title}<span aria-hidden="true"></span></button>)}</div>
       </section>
       <section class="site-more-details" aria-label="Подразделы">
         {moreGroups.map((group, index) => <div class:list={['site-more-group', { 'is-active': index === 0 }]} id={`site-more-panel-${index}`} data-more-panel={index} aria-hidden={index === 0 ? 'false' : 'true'} inert={index !== 0}>
-          <p>{group.title}</p>
           <div>{group.links.map(([key, label, href]) => <a class:list={[{ active: active === key }]} href={href}>{label}</a>)}</div>
         </div>)}
       </section>
@@ -199,4 +197,69 @@ const mobile = [...primary, ...moreGroups.flatMap((group) => group.links)]
   .site-actions{grid-column:3;justify-self:end;display:flex;align-items:center}.site-account-slot{display:block;width:112px;height:42px}.site-menu-button{display:none}.site-menu{display:none}
   @media(max-width:1220px){.site-more-catalog{grid-template-columns:minmax(145px,.55fr) minmax(218px,.9fr) minmax(290px,1.15fr);gap:28px}.site-more-group>div{gap:9px 14px}.site-more-preview a{min-height:144px}}
   @media(max-width:980px){.site-header{top:0;height:72px;overflow:visible;border:0;border-radius:0;box-shadow:none}.site-header.is-expanded{height:72px}.site-header-main{height:72px;padding:0 20px}.site-logo{grid-column:2}.site-logo img{width:39px;height:39px}.site-nav,.site-account-slot,.site-more-links{display:none}.site-actions{grid-column:3}.site-menu-button{display:grid;place-content:center;gap:4px;width:42px;height:42px;padding:0;border:1px solid #dcd7cf;border-radius:var(--radius);background:transparent;color:#293b30;font-size:0}.site-menu-button i{display:block;width:15px;height:1px;background:currentColor}.site-menu{position:fixed;z-index:100;inset:0;display:flex;padding:21px 20px calc(24px + env(safe-area-inset-bottom));background:#1f382b;color:#fcfbf8;flex-direction:column;opacity:0;pointer-events:none;transform:translateY(-2%);transition:opacity .25s,transform .25s}.site-menu.is-open{opacity:1;pointer-events:auto;transform:none}.site-menu-top{display:flex;justify-content:space-between;align-items:center;color:#c6dc6a;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}.site-menu-top button{padding:0;border:0;background:none;color:#f8f5ee;font:600 12px Montserrat,Arial,sans-serif}.site-menu-top b{margin-left:7px;font-size:23px;font-weight:400;vertical-align:-2px}.site-menu nav{display:grid;grid-template-columns:1fr 1fr;gap:0 21px;margin:auto 0}.site-menu nav a{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:5px;min-height:62px;padding:14px 0;border-top:1px solid rgba(248,247,242,.18);color:#f8f7f2;text-decoration:none;font-size:17px;font-weight:700;letter-spacing:-.06em}.site-menu nav a small{color:#c6dc6a;font-size:9px;letter-spacing:0}.site-menu nav a b{color:#c6dc6a;font-size:15px;font-weight:500}.site-menu nav a.active span{color:#c6dc6a}.site-menu-bottom{display:flex;justify-content:space-between;align-items:end;padding-top:20px;border-top:1px solid rgba(248,247,242,.18)}.site-menu-bottom a{display:inline-flex;gap:30px;padding:15px 17px;border-radius:var(--radius);background:#c6dc6a;color:#293b30;text-decoration:none;font-size:11px;font-weight:800}.site-menu-bottom p{margin:0;color:#d5d0c9;font-size:10px;line-height:1.45;text-align:right}body.menu-open{overflow:hidden}}
+</style>
+
+<style>
+  @media (min-width: 981px) {
+    .site-header {
+      display: grid;
+      grid-template-rows: 81px 0fr;
+      height: auto;
+      overflow: hidden;
+      transition: grid-template-rows .34s cubic-bezier(.22, 1, .36, 1), box-shadow .24s ease;
+    }
+
+    .site-header.is-expanded {
+      grid-template-rows: 81px 1fr;
+      border-bottom-color: #ebe7df;
+      border-radius: var(--radius);
+    }
+
+    .site-header-main { grid-row: 1; }
+
+    .site-more-links {
+      position: static;
+      min-height: 0;
+      overflow: hidden;
+      padding: 0 clamp(22px, 3.1vw, 54px);
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      visibility: hidden;
+      opacity: 0;
+      transform: translateY(-8px);
+      transition: padding .34s cubic-bezier(.22, 1, .36, 1), visibility 0s linear .34s, opacity .2s ease, transform .28s cubic-bezier(.22, 1, .36, 1);
+    }
+
+    .site-header.is-expanded .site-more-links {
+      padding-block: clamp(24px, 2.5vw, 38px) clamp(28px, 2.8vw, 42px);
+      visibility: visible;
+      opacity: 1;
+      transform: none;
+      transition-delay: 0s;
+    }
+
+    .site-more-categories > div { gap: 4px; }
+    .site-more-categories button {
+      min-height: 32px;
+      color: #625d57;
+    }
+    .site-more-categories button:hover { color: #1f3b2e; }
+    .site-more-categories button.is-active { color: #625d57; }
+    .site-more-categories button span {
+      flex: 0 0 7px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #bddb3d;
+      opacity: 0;
+      transform: scale(.4);
+    }
+    .site-more-categories button.is-active span { opacity: 1; transform: scale(1); }
+  }
+
+  @media (max-width: 980px) {
+    .site-header { display: block; grid-template-rows: none; }
+  }
 </style>
