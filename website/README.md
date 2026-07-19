@@ -48,12 +48,23 @@ bun run preview
 
 Astro publishes pages from `src/pages`. Static assets live in `public`.
 
+## Local Yandex Maps
+
+The restaurant directory loads Yandex Maps in the visitor's browser. Create `website/.env` and keep the browser key outside Git:
+
+```dotenv
+PUBLIC_YANDEX_MAPS_API_KEY=your_browser_api_key
+```
+
+For local development, leave the key's IP restriction empty and add `localhost` to the allowed HTTP Referer list. Do not include a protocol, port, or URL path. Add `chashkacoffee.ru` to the same Referer list before the production launch. The key is intentionally exposed to the browser; Referer restrictions are its access boundary.
+
 ## Deployment
 
 Set these build-time variables for the public site before a production build:
 
 - `PUBLIC_API_URL` — externally reachable API URL used while Astro generates the public catalogue pages.
 - `PUBLIC_SITE_URL` — canonical public website URL, for example `https://chashkacoffee.ru`. It is used for canonical and Open Graph links.
+- `PUBLIC_YANDEX_MAPS_API_KEY` — browser API key for the interactive restaurant map, restricted by HTTP Referer.
 
 New published restaurants, menu pages, promotions, events, journal materials and vacancies are read from the API during each static build. Publish or change content in the admin panel, then rebuild/redeploy the website to generate its URL in the static output.
 
