@@ -21,7 +21,7 @@ const errorContent = { 'application/json': { schema: errorSchema } }
 
 type DatabaseLead = {
   id: string
-  type: 'CONTACT' | 'RESERVATION' | 'FRANCHISE' | 'BANQUET' | 'JOB'
+  type: 'CONTACT' | 'RESERVATION' | 'FRANCHISE' | 'BANQUET' | 'JOB' | 'EVENT_REGISTRATION'
   status: 'NEW' | 'IN_PROGRESS' | 'CLOSED'
   name: string
   phone: string | null

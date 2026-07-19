@@ -55,6 +55,29 @@ enum LeadType {
   FRANCHISE
   BANQUET
   JOB
+  EVENT_REGISTRATION
+}
+
+enum ProductType {
+  COFFEE
+  CAKE
+}
+
+enum ManagedPageKey {
+  HOME
+  COFFEE
+  RESTAURANTS
+  DELIVERY
+  APP
+  LOYALTY
+  CERTIFICATES
+  BAKERY
+  FRANCHISE
+  JOBS
+  CONTACTS
+  ABOUT
+  BANQUETS
+  PROMOTIONS
 }
 
 enum LeadStatus {
@@ -106,6 +129,7 @@ model ContentEntry {
   title       String            @db.VarChar(180)
   excerpt     String?           @db.VarChar(500)
   body        String?
+  blocks      Json              @default("[]")
   imageUrl    String?           @map("image_url")
   ctaLabel    String?           @map("cta_label") @db.VarChar(80)
   ctaUrl      String?           @map("cta_url")
@@ -113,6 +137,8 @@ model ContentEntry {
   endsAt      DateTime?         @map("ends_at")
   eventStartsAt DateTime?       @map("event_starts_at")
   location    String?           @db.VarChar(220)
+  priceKopecks Int?             @map("price_kopecks")
+  registrationEnabled Boolean   @default(false) @map("registration_enabled")
   isFeatured  Boolean           @default(false) @map("is_featured")
   position    Int               @default(0)
   createdAt   DateTime          @default(now()) @map("created_at")
@@ -121,6 +147,56 @@ model ContentEntry {
   @@index([type, status, position], map: "content_entries_type_status_position_idx")
   @@index([startsAt], map: "content_entries_starts_at_idx")
   @@map("content_entries")
+}
+
+model ManagedPage {
+  id        String         @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  key       ManagedPageKey @unique
+  title     String         @db.VarChar(180)
+  blocks    Json           @default("[]")
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  @@map("managed_pages")
+}
+
+model Product {
+  id           String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  type         ProductType
+  status       PublicationStatus @default(DRAFT)
+  slug         String            @unique @db.VarChar(120)
+  name         String            @db.VarChar(180)
+  subtitle     String?           @db.VarChar(180)
+  description  String?
+  ingredients  String?
+  origin       String?           @db.VarChar(180)
+  roastLevel   String?           @map("roast_level") @db.VarChar(80)
+  tastingNotes Json              @default("[]") @map("tasting_notes")
+  imageUrl     String?           @map("image_url")
+  galleryUrls  Json              @default("[]") @map("gallery_urls")
+  details      Json              @default("[]")
+  isFeatured   Boolean           @default(false) @map("is_featured")
+  position     Int               @default(0)
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+  variants     ProductVariant[]
+
+  @@index([type, status, position], map: "products_type_status_position_idx")
+  @@map("products")
+}
+
+model ProductVariant {
+  id           String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  productId    String   @db.Uuid @map("product_id")
+  label        String   @db.VarChar(80)
+  weightGrams  Int?     @map("weight_grams")
+  priceKopecks Int      @map("price_kopecks")
+  position     Int      @default(0)
+  isAvailable  Boolean  @default(true) @map("is_available")
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade, map: "product_variants_product_id_fkey")
+
+  @@index([productId, position], map: "product_variants_product_id_position_idx")
+  @@map("product_variants")
 }
 
 model HomepageSlide {

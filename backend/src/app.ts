@@ -12,6 +12,8 @@ import { createLeadsModule } from './modules/leads'
 import { createMediaModule } from './modules/media'
 import { createJobsModule } from './modules/jobs'
 import { createHomepageModule } from './modules/homepage'
+import { createProductsModule } from './modules/products'
+import { createManagedPagesModule } from './modules/managed-pages'
 
 type CreateAppOptions = {
   env: AppEnv
@@ -26,6 +28,8 @@ export function createApp({ env, prisma }: CreateAppOptions) {
   const leads = createLeadsModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
   const jobs = createJobsModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
   const homepage = createHomepageModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
+  const products = createProductsModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
+  const managedPages = createManagedPagesModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
   const app = new OpenAPIHono<AuthHttpEnv>({
     defaultHook: validationErrorHook,
   })
@@ -64,12 +68,16 @@ export function createApp({ env, prisma }: CreateAppOptions) {
   app.route('/api/homepage', homepage.routes)
   app.route('/api/leads', leads.routes)
   app.route('/api/jobs', jobs.routes)
+  app.route('/api/products', products.routes)
+  app.route('/api/pages', managedPages.routes)
   app.route('/api/admin', catalog.adminRoutes)
   app.route('/api/admin', content.adminRoutes)
   app.route('/api/admin', homepage.adminRoutes)
   app.route('/api/admin', leads.adminRoutes)
   app.route('/api/admin', jobs.adminRoutes)
   app.route('/api/admin', media)
+  app.route('/api/admin', products.adminRoutes)
+  app.route('/api/admin', managedPages.adminRoutes)
 
   app.doc('/openapi.json', {
     openapi: '3.0.0',
