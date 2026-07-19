@@ -261,7 +261,15 @@ const mobile = [...primary, ...moreGroups.flatMap((group) => group.links)]
     .site-more-categories button.is-active span { opacity: 1; transform: scale(1); }
     .site-more-group > div {
       grid-template-columns: minmax(0, 1fr);
-      gap: 10px;
+      gap: 4px;
+    }
+    .site-more-group > div > a {
+      display: flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 0;
+      font-weight: 600;
+      letter-spacing: .065em;
     }
   }
 
