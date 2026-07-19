@@ -1,12 +1,11 @@
 ---
-import StoryDetail from '../../components/StoryDetail.astro';
-import { getContentSlugs } from '../../lib/public-api';
-const stories={'coffee-morning':{title:'Кофе для первого тёплого утра',intro:'Как выбрать напиток, который не спорит с вашим настроением.',meta:'Гид · 5 минут'},'croissant-now':{title:'Почему круассан лучше есть сразу',intro:'Немного масла, много слоёв и один простой совет от кондитера.',meta:'Еда · 3 минуты'},'novosibirsk-route':{title:'Маршрут выходного дня по Новосибирску',intro:'Парки, набережная и рестораны для хорошей паузы.',meta:'Город · 7 минут'},'after-roasting':{title:'Что происходит с зерном после обжарки',intro:'Разбираемся без сложных слов — только вкус и любопытство.',meta:'Кофе · 6 минут'}};
-type Story = { title: string; intro: string; meta: string; image?: string }
-interface Props { story?: Story }
-const fallbackStory: Story={title:'Журнал «Чашки кофе»',intro:'Материал скоро появится на странице.',meta:'Журнал'};
-export async function getStaticPaths(){return (await getContentSlugs('ARTICLE',['coffee-morning','croissant-now','novosibirsk-route','after-roasting'])).map((slug)=>({params:{slug}}));}
-let story: Story = Astro.props.story ?? stories[Astro.params.slug as keyof typeof stories] ?? fallbackStory;
-try { const response = await fetch(`${import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'}/api/content/${Astro.params.slug}`); if (response.ok) { const { entry } = await response.json(); story = { title: entry.title, intro: entry.excerpt ?? entry.body ?? story.intro, meta: 'Журнал · читать', image: entry.imageUrl ?? undefined } } } catch { /* static editorial fallback remains available */ }
+import PageShell from '../../layouts/PageShell.astro'
+import ContentBlocks from '../../components/ContentBlocks.astro'
+import { getContentEntry, getContentSlugs } from '../../lib/public-api'
+export async function getStaticPaths(){return (await getContentSlugs('ARTICLE',['coffee-for-warm-morning','coffee-morning','croissant-now','novosibirsk-route','after-roasting'])).map((slug)=>({params:{slug}}))}
+const entry = await getContentEntry('ARTICLE',Astro.params.slug!)
 ---
-<StoryDetail eyebrow="журнал чашка кофе" {...story}/>
+{entry ? <PageShell title={entry.title} active="journal" image={entry.imageUrl ?? '/images/home-morning-v2.png'}><article class="article-head"><div><p>Журнал</p><h1>{entry.title}</h1><span>{entry.excerpt}</span><small>5 минут на чтение</small></div><img src={entry.imageUrl ?? '/images/home-morning-v2.png'} alt=""/></article>{entry.blocks.length ? <ContentBlocks blocks={entry.blocks}/> : <article class="article-body"><p>{entry.body}</p></article>}<a class="back" href="/journal">Ко всем материалам</a></PageShell> : <meta http-equiv="refresh" content="0;url=/journal"/>}
+<style>
+  .article-head{display:grid;grid-template-columns:.96fr 1.04fr;min-height:680px;overflow:hidden;border-radius:var(--radius);background:#eee9e1}.article-head>div{display:flex;justify-content:flex-end;align-items:flex-start;padding:clamp(50px,6vw,95px);flex-direction:column}.article-head p{margin:0;color:#6f902b;font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.article-head h1{margin:20px 0;font-size:clamp(48px,5.5vw,90px)}.article-head span{max-width:550px;color:var(--muted);font-size:15px;line-height:1.65}.article-head small{margin-top:28px;font-weight:700}.article-head img{width:100%;height:100%;object-fit:cover}.article-body{max-width:780px;margin:auto;padding:100px 20px}.article-body p{font-size:18px;line-height:1.8}@media(max-width:800px){.article-head{grid-template-columns:1fr}.article-head>div{min-height:560px;padding:48px 25px}.article-head img{height:360px}}
+</style>

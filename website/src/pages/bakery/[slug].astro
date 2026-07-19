@@ -1,0 +1,8 @@
+---
+import ProductDetail from '../../components/ProductDetail.astro'
+import { getProduct, getProducts, getProductSlugs } from '../../lib/public-api'
+export async function getStaticPaths(){return (await getProductSlugs('CAKE',['lyubimiy','kofeiniy'])).map((slug)=>({params:{slug}}))}
+const product = await getProduct(Astro.params.slug!)
+const related = product ? (await getProducts('CAKE')).filter((item)=>item.slug!==product.slug) : []
+---
+{product ? <ProductDetail product={product} related={related}/> : <meta http-equiv="refresh" content="0;url=/bakery#catalog"/>}
