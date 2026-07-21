@@ -43,10 +43,13 @@ export class CatalogService {
   listAdminMenus() { return this.repository.listAdminMenus() }
   createMenu(input: UpsertMenuRequest) { return this.repository.createMenu(input) }
   updateMenu(id: string, input: UpsertMenuRequest) { return this.repository.updateMenu(id, input) }
+  deleteMenu(id: string) { return this.repository.deleteMenu(id) }
   getAdminMenuDetail(id: string) { return this.repository.getAdminMenuDetail(id) }
   createCategory(menuId: string, input: UpsertMenuCategoryRequest) { return this.repository.createCategory(menuId, input) }
+  deleteCategory(id: string) { return this.repository.deleteCategory(id) }
   createItem(categoryId: string, input: UpsertMenuItemRequest) { return this.repository.createItem(categoryId, input) }
   updateItem(id: string, input: UpsertMenuItemRequest) { return this.repository.updateItem(id, input) }
+  deleteItem(id: string) { return this.repository.deleteItem(id) }
   listRestaurantScheduleExceptions(restaurantId: string) { return this.repository.listRestaurantScheduleExceptions(restaurantId) }
   upsertRestaurantScheduleException(restaurantId: string, input: UpsertRestaurantScheduleExceptionRequest) { return this.repository.upsertRestaurantScheduleException(restaurantId, input) }
   deleteRestaurantScheduleException(restaurantId: string, exceptionId: string) { return this.repository.deleteRestaurantScheduleException(restaurantId, exceptionId) }

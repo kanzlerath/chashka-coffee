@@ -37,6 +37,10 @@ export class CatalogAdminApi {
     })
   }
 
+  deleteRestaurant(id: string) {
+    return this.auth.request(`/api/admin/restaurants/${id}`, operationSuccessResponseSchema, { method: 'DELETE' })
+  }
+
   assignRestaurantMenu(id: string, menuId: string | null) {
     return this.auth.request(`/api/admin/restaurants/${id}/menu`, restaurantMenuAssignmentResponseSchema, {
       method: 'PUT', body: assignRestaurantMenuRequestSchema.parse({ menuId }),
@@ -54,7 +58,10 @@ export class CatalogAdminApi {
   listMenus() { return this.auth.request('/api/admin/menus', adminMenuListResponseSchema) }
   getMenu(id: string) { return this.auth.request(`/api/admin/menus/${id}/detail`, adminMenuDetailResponseSchema) }
   createMenu(input: UpsertMenuRequest) { return this.auth.request('/api/admin/menus', adminMenuResponseSchema, { method: 'POST', body: upsertMenuRequestSchema.parse(input) }) }
+  deleteMenu(id: string) { return this.auth.request(`/api/admin/menus/${id}`, operationSuccessResponseSchema, { method: 'DELETE' }) }
   createCategory(menuId: string, input: UpsertMenuCategoryRequest) { return this.auth.request(`/api/admin/menus/${menuId}/categories`, createdIdResponseSchema, { method: 'POST', body: upsertMenuCategoryRequestSchema.parse(input) }) }
+  deleteCategory(id: string) { return this.auth.request(`/api/admin/categories/${id}`, operationSuccessResponseSchema, { method: 'DELETE' }) }
   createItem(categoryId: string, input: UpsertMenuItemRequest) { return this.auth.request(`/api/admin/categories/${categoryId}/items`, createdIdResponseSchema, { method: 'POST', body: upsertMenuItemRequestSchema.parse(input) }) }
   updateItem(id: string, input: UpsertMenuItemRequest) { return this.auth.request(`/api/admin/items/${id}`, createdIdResponseSchema, { method: 'PUT', body: upsertMenuItemRequestSchema.parse(input) }) }
+  deleteItem(id: string) { return this.auth.request(`/api/admin/items/${id}`, operationSuccessResponseSchema, { method: 'DELETE' }) }
 }

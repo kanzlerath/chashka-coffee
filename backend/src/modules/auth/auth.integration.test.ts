@@ -27,6 +27,10 @@ maybeDescribe('auth API integration', () => {
   const app = createApp({ env, prisma })
 
   beforeEach(async () => {
+    await prisma.pageView.deleteMany()
+    await prisma.product.deleteMany()
+    await prisma.restaurant.deleteMany()
+    await prisma.menu.deleteMany()
     await prisma.authSession.deleteMany()
     await prisma.user.deleteMany()
   })
@@ -425,6 +429,171 @@ maybeDescribe('auth API integration', () => {
     expect(sessions).toBe(2)
   })
 
+  test('lets an administrator manage staff while protecting the last administrator', async () => {
+    const administrator = await createUser('owner@example.com', 'password123', 'Владелец', 'ADMIN')
+    const adminLogin = await app.request('/api/auth/token/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'owner@example.com', password: 'password123' }),
+    })
+    const { accessToken } = await adminLogin.json()
+    const authorization = { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }
+
+    const created = await app.request('/api/admin/users', {
+      method: 'POST',
+      headers: authorization,
+      body: JSON.stringify({ email: 'editor@example.com', password: 'temporary-password', displayName: 'Редактор', role: 'EDITOR' }),
+    })
+    expect(created.status).toBe(201)
+    const createdBody = await created.json()
+
+    const updated = await app.request(`/api/admin/users/${createdBody.user.id}`, {
+      method: 'PUT',
+      headers: authorization,
+      body: JSON.stringify({ email: 'content@example.com', password: 'updated-password', displayName: 'Контент-менеджер', role: 'EDITOR' }),
+    })
+    expect(updated.status).toBe(200)
+    expect((await updated.json()).user).toMatchObject({ email: 'content@example.com', displayName: 'Контент-менеджер' })
+
+    const oldPassword = await app.request('/api/auth/token/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'content@example.com', password: 'temporary-password' }),
+    })
+    const newPassword = await app.request('/api/auth/token/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'content@example.com', password: 'updated-password' }),
+    })
+    expect(oldPassword.status).toBe(401)
+    expect(newPassword.status).toBe(200)
+
+    const selfDelete = await app.request(`/api/admin/users/${administrator.id}`, { method: 'DELETE', headers: authorization })
+    expect(selfDelete.status).toBe(409)
+
+    const demoteLastAdmin = await app.request(`/api/admin/users/${administrator.id}`, {
+      method: 'PUT',
+      headers: authorization,
+      body: JSON.stringify({ email: administrator.email, displayName: administrator.displayName, role: 'EDITOR' }),
+    })
+    expect(demoteLastAdmin.status).toBe(409)
+
+    const deleted = await app.request(`/api/admin/users/${createdBody.user.id}`, { method: 'DELETE', headers: authorization })
+    expect(deleted.status).toBe(200)
+    expect(await deleted.json()).toEqual({ deleted: true })
+    expect(await prisma.user.findUnique({ where: { id: createdBody.user.id } })).toBeNull()
+  })
+
+  test('records anonymous page views and exposes their summary only to administrators', async () => {
+    const visitorId = 'b3d1ac58-2630-4f66-97b8-70214886811c'
+    const record = await app.request('/api/analytics/page-view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: '/menu', visitorId, referrer: null, device: 'MOBILE' }),
+    })
+    expect(record.status).toBe(201)
+
+    const anonymousSummary = await app.request('/api/admin/analytics?days=7')
+    expect(anonymousSummary.status).toBe(401)
+
+    await createUser('analytics@example.com', 'password123', 'Аналитик', 'ADMIN')
+    const login = await app.request('/api/auth/token/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'analytics@example.com', password: 'password123' }),
+    })
+    const { accessToken } = await login.json()
+    const summary = await app.request('/api/admin/analytics?days=7', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    expect(summary.status).toBe(200)
+    expect(await summary.json()).toMatchObject({
+      periodDays: 7,
+      overview: { views: 1, visitors: 1, todayViews: 1 },
+      topPages: [{ path: '/menu', views: 1, visitors: 1 }],
+    })
+  })
+
+  test('creates duplicate-named products safely and lets administrators delete catalog records', async () => {
+    await createUser('catalog@example.com', 'password123', 'Каталог', 'ADMIN')
+    const login = await app.request('/api/auth/token/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'catalog@example.com', password: 'password123' }),
+    })
+    const { accessToken } = await login.json()
+    const headers = { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }
+    const productPayload = {
+      type: 'COFFEE', status: 'DRAFT', slug: 'ethiopia-guji', name: 'Эфиопия Гуджи',
+      subtitle: null, description: null, ingredients: null, origin: null, roastLevel: null,
+      tastingNotes: [], imageUrl: null, galleryUrls: [], details: [], isFeatured: false, position: 10,
+      variants: [{ label: '250 г', weightGrams: 250, priceKopecks: 79000, position: 10, isAvailable: true }],
+    }
+
+    const firstProduct = await app.request('/api/admin/products', { method: 'POST', headers, body: JSON.stringify(productPayload) })
+    const secondProduct = await app.request('/api/admin/products', { method: 'POST', headers, body: JSON.stringify(productPayload) })
+    const firstBody = await firstProduct.json()
+    const secondBody = await secondProduct.json()
+    expect(firstProduct.status).toBe(201)
+    expect(secondProduct.status).toBe(201)
+    expect(firstBody.product.slug).toBe('ethiopia-guji')
+    expect(secondBody.product.slug).toBe('ethiopia-guji-2')
+
+    const deletedProduct = await app.request(`/api/admin/products/${firstBody.product.id}`, { method: 'DELETE', headers })
+    expect(deletedProduct.status).toBe(200)
+    expect(await deletedProduct.json()).toEqual({ success: true })
+    expect(await prisma.product.findUnique({ where: { id: firstBody.product.id } })).toBeNull()
+
+    const restaurantPayload = {
+      slug: 'krasny-prospekt', name: 'Чашка кофе на Красном проспекте', format: 'CITY', area: 'CITY',
+      isAtApartHotel: false, city: 'Новосибирск', address: 'Красный проспект, 25', phone: '+7 383 000-00-00',
+      description: null, coverImageUrl: null, latitude: null, longitude: null, yandexMapsUrl: null, twoGisUrl: null,
+      openingHours: Array.from({ length: 7 }, (_, dayOfWeek) => ({ dayOfWeek, opensAt: '08:00', closesAt: '22:00', isClosed: false })),
+    }
+    const restaurant = await app.request('/api/admin/restaurants', { method: 'POST', headers, body: JSON.stringify(restaurantPayload) })
+    const restaurantBody = await restaurant.json()
+    expect(restaurant.status).toBe(201)
+
+    const deletedRestaurant = await app.request(`/api/admin/restaurants/${restaurantBody.restaurant.id}`, { method: 'DELETE', headers })
+    expect(deletedRestaurant.status).toBe(200)
+    expect(await deletedRestaurant.json()).toEqual({ success: true })
+    expect(await prisma.restaurant.findUnique({ where: { id: restaurantBody.restaurant.id } })).toBeNull()
+
+    const menu = await app.request('/api/admin/menus', {
+      method: 'POST', headers, body: JSON.stringify({ slug: 'main-menu', name: 'Основное меню', description: null }),
+    })
+    const menuBody = await menu.json()
+    expect(menu.status).toBe(201)
+
+    const category = await app.request(`/api/admin/menus/${menuBody.menu.id}/categories`, {
+      method: 'POST', headers, body: JSON.stringify({ slug: 'breakfasts', name: 'Завтраки', position: 10 }),
+    })
+    const categoryBody = await category.json()
+    expect(category.status).toBe(201)
+
+    const itemPayload = {
+      slug: 'avocado-toast', name: 'Тост с авокадо', description: null, ingredients: null,
+      weightGrams: 220, priceKopecks: 59000, calories: null, proteins: null, fats: null, carbohydrates: null,
+      isVegetarian: true, isSpicy: false, isLactoseFree: false, isGlutenFree: false, isLight: false,
+      marketingBadge: 'NEW', imageUrl: null, position: 10,
+    }
+    const item = await app.request(`/api/admin/categories/${categoryBody.id}/items`, {
+      method: 'POST', headers, body: JSON.stringify(itemPayload),
+    })
+    const itemBody = await item.json()
+    expect(item.status).toBe(201)
+
+    const deletedItem = await app.request(`/api/admin/items/${itemBody.id}`, { method: 'DELETE', headers })
+    expect(deletedItem.status).toBe(200)
+    expect(await deletedItem.json()).toEqual({ success: true })
+
+    const deletedCategory = await app.request(`/api/admin/categories/${categoryBody.id}`, { method: 'DELETE', headers })
+    expect(deletedCategory.status).toBe(200)
+    expect(await deletedCategory.json()).toEqual({ success: true })
+
+    const deletedMenu = await app.request(`/api/admin/menus/${menuBody.menu.id}`, { method: 'DELETE', headers })
+    expect(deletedMenu.status).toBe(200)
+    expect(await deletedMenu.json()).toEqual({ success: true })
+  })
+
   async function loginForMeGuard(email: string) {
     await createUser(email)
     const login = await app.request('/api/auth/token/login', {
@@ -456,13 +625,13 @@ maybeDescribe('auth API integration', () => {
     }
   }
 
-  async function createUser(email: string, password = 'password123', displayName: string | null = null) {
+  async function createUser(email: string, password = 'password123', displayName: string | null = null, role: 'ADMIN' | 'EDITOR' = 'EDITOR') {
     return prisma.user.create({
       data: {
         email,
         passwordHash: await hashPassword(password),
         displayName,
-        role: 'EDITOR',
+        role,
       },
     })
   }

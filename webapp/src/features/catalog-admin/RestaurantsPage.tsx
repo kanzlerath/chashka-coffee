@@ -1,13 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { AdminRestaurant, AdminRestaurantMenuDetailResponse, RestaurantOpeningHoursEntry, RestaurantScheduleException, UpsertRestaurantMenuItemOverrideRequest, UpsertRestaurantRequest, UpsertRestaurantScheduleExceptionRequest } from '@chashka-coffee/contracts'
-import { useMemo, useState } from 'react'
+import { Link, useNavigate } from '@tanstack/react-router'
+import { useEffect, useMemo, useState } from 'react'
 
-import { AdminPageHeader, AdminTabs } from '@/components/admin'
+import { AdminField, AdminFormIntro, AdminPageHeader, AdminTabs } from '@/components/admin'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/features/auth'
+import { nullableDraftText } from '@/lib/form-drafts'
+import { toPublicSlug } from '@/lib/slugify'
 import { ApiRequestError } from '@/platform/api/http-client'
 import { CatalogAdminApi } from './api'
 
@@ -31,32 +34,46 @@ const emptyRestaurant: UpsertRestaurantRequest = {
 type LocalMenuItem = AdminRestaurantMenuDetailResponse['categories'][number]['items'][number]
 const emptyScheduleException = (): UpsertRestaurantScheduleExceptionRequest => ({ date: new Date().toISOString().slice(0, 10), label: '', opensAt: '08:00', closesAt: '22:00', isClosed: false })
 
-export function RestaurantsPage() {
+export function RestaurantsPage({ mode = 'list', restaurantId }: { mode?: 'list' | 'create' | 'edit'; restaurantId?: string }) {
   const { api: authApi } = useAuth()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const api = useMemo(() => new CatalogAdminApi(authApi), [authApi])
-  const [selected, setSelected] = useState<AdminRestaurant | null>(null)
-  const [draft, setDraft] = useState<UpsertRestaurantRequest>(emptyRestaurant)
+  const [draft, setDraft] = useState<UpsertRestaurantRequest>(() => freshRestaurant())
   const [overrideItem, setOverrideItem] = useState<LocalMenuItem | null>(null)
   const [overrideDraft, setOverrideDraft] = useState<UpsertRestaurantMenuItemOverrideRequest>({ description: null, ingredients: null, weightGrams: null, priceKopecks: null })
   const [scheduleDraft, setScheduleDraft] = useState<UpsertRestaurantScheduleExceptionRequest>(emptyScheduleException)
   const [editorTab, setEditorTab] = useState<'main' | 'map' | 'schedule' | 'menu'>('main')
   const restaurants = useQuery({ queryKey: ['admin', 'restaurants'], queryFn: () => api.listRestaurants() })
+  const selected = mode === 'edit' ? restaurants.data?.restaurants.find((restaurant) => restaurant.id === restaurantId) ?? null : null
   const menus = useQuery({ queryKey: ['admin', 'menus'], queryFn: () => api.listMenus() })
   const restaurantMenu = useQuery({ queryKey: ['admin', 'restaurant-menu', selected?.id], enabled: Boolean(selected?.id && selected.menuId), queryFn: () => api.getRestaurantMenuDetail(selected!.id) })
   const scheduleExceptions = useQuery({ queryKey: ['admin', 'restaurant-schedule-exceptions', selected?.id], enabled: Boolean(selected?.id), queryFn: () => api.listRestaurantScheduleExceptions(selected!.id) })
+
+  useEffect(() => {
+    if (mode === 'create') setDraft(freshRestaurant())
+    if (selected) setDraft(toDraft(selected))
+    setOverrideItem(null)
+    setScheduleDraft(emptyScheduleException())
+    setEditorTab('main')
+  }, [mode, selected?.id])
+
   const save = useMutation({
-    mutationFn: () => selected ? api.updateRestaurant(selected.id, draft) : api.createRestaurant(draft),
-    onSuccess: (result) => {
-      setSelected(result.restaurant)
+    mutationFn: () => {
+      const payload = { ...draft, slug: draft.slug.trim() || toPublicSlug(draft.name) }
+      return selected ? api.updateRestaurant(selected.id, payload) : api.createRestaurant(payload)
+    },
+    onSuccess: async (result) => {
       setDraft(toDraft(result.restaurant))
-      void queryClient.invalidateQueries({ queryKey: ['admin', 'restaurants'] })
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'restaurants'] })
+      if (mode === 'create') {
+        await navigate({ to: '/restaurants/$restaurantId', params: { restaurantId: result.restaurant.id } })
+      }
     },
   })
   const assignMenu = useMutation({
     mutationFn: (menuId: string | null) => api.assignRestaurantMenu(selected!.id, menuId),
-    onSuccess: ({ menuId }) => {
-      setSelected((current) => current ? { ...current, menuId, menuName: menus.data?.menus.find((menu) => menu.id === menuId)?.name ?? null } : current)
+    onSuccess: () => {
       setOverrideItem(null)
       void queryClient.invalidateQueries({ queryKey: ['admin', 'restaurants'] })
       void queryClient.invalidateQueries({ queryKey: ['admin', 'restaurant-menu', selected?.id] })
@@ -72,37 +89,54 @@ export function RestaurantsPage() {
   })
   const saveScheduleException = useMutation({ mutationFn: () => api.saveRestaurantScheduleException(selected!.id, scheduleDraft), onSuccess: () => { setScheduleDraft(emptyScheduleException()); void queryClient.invalidateQueries({ queryKey: ['admin', 'restaurant-schedule-exceptions', selected?.id] }) } })
   const deleteScheduleException = useMutation({ mutationFn: (exceptionId: string) => api.deleteRestaurantScheduleException(selected!.id, exceptionId), onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['admin', 'restaurant-schedule-exceptions', selected?.id] }) })
+  const removeRestaurant = useMutation({ mutationFn: () => api.deleteRestaurant(selected!.id), onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ['admin', 'restaurants'] }); await navigate({ to: '/restaurants' }) } })
 
-  function choose(restaurant: AdminRestaurant) { setSelected(restaurant); setDraft(toDraft(restaurant)); setOverrideItem(null); setScheduleDraft(emptyScheduleException()); setEditorTab('main') }
-  function startNew() { setSelected(null); setDraft({ ...emptyRestaurant, openingHours: defaultHours.map((entry) => ({ ...entry })) }); setOverrideItem(null); setScheduleDraft(emptyScheduleException()); setEditorTab('main') }
   function change<K extends keyof UpsertRestaurantRequest>(key: K, value: UpsertRestaurantRequest[K]) { setDraft((current) => ({ ...current, [key]: value })) }
   function changeHours(dayOfWeek: number, patch: Partial<RestaurantOpeningHoursEntry>) {
     change('openingHours', draft.openingHours.map((entry) => entry.dayOfWeek === dayOfWeek ? { ...entry, ...patch } : entry))
   }
 
+  if (mode === 'list') {
+    return <section className="admin-page">
+      <AdminPageHeader eyebrow="Каталог" title="Рестораны" description="Адреса, график работы и меню каждой точки сети." actions={<Button asChild><Link to="/restaurants/new">Добавить ресторан</Link></Button>} />
+      <Card className="admin-directory-card">
+        <CardHeader><CardTitle>Все рестораны</CardTitle><CardDescription>Откройте нужную точку — её данные появятся на отдельной странице.</CardDescription></CardHeader>
+        <CardContent className="admin-directory-list">
+          {restaurants.isPending ? <p className="admin-empty-state">Загружаем рестораны…</p> : null}
+          {restaurants.data?.restaurants.map((restaurant) => <Link key={restaurant.id} to="/restaurants/$restaurantId" params={{ restaurantId: restaurant.id }} className="admin-directory-row admin-directory-row-simple">
+            <span className="admin-directory-main"><strong>{restaurant.name}</strong><small>{restaurant.address || 'Адрес пока не указан'}</small></span>
+            <span className="admin-directory-meta"><span className="admin-status-pill">{formatLabel[restaurant.format]}</span><small>{restaurant.menuName ?? 'Меню не назначено'}</small></span>
+            <span className="admin-row-action">Редактировать</span>
+          </Link>)}
+          {!restaurants.isPending && restaurants.data?.restaurants.length === 0 ? <p className="admin-empty-state">Ресторанов пока нет. Добавьте первую точку.</p> : null}
+          {restaurants.isError ? <p className="text-sm text-destructive">Не удалось загрузить рестораны. Проверьте подключение к API и повторите попытку.</p> : null}
+        </CardContent>
+      </Card>
+    </section>
+  }
+
+  if (mode === 'edit' && restaurants.isPending) return <section className="admin-page"><p className="admin-empty-state">Загружаем ресторан…</p></section>
+  if (mode === 'edit' && !selected) return <section className="admin-page"><AdminPageHeader eyebrow="Каталог" title="Ресторан не найден" description="Возможно, точка была удалена или ссылка устарела." actions={<Button asChild variant="outline"><Link to="/restaurants">К списку</Link></Button>} /></section>
+
   return <section className="admin-page">
-    <AdminPageHeader eyebrow="Каталог" title="Рестораны" description="Точки сети, адреса, график работы и индивидуальное меню каждой локации." actions={<Button type="button" onClick={startNew}>Новый ресторан</Button>} />
-    <div className="grid gap-6 lg:grid-cols-[minmax(16rem,.72fr)_minmax(0,1.28fr)]">
-    <Card className="admin-resource-list min-h-[620px]"><CardHeader><CardTitle>Все рестораны</CardTitle><CardDescription>Выберите точку для редактирования.</CardDescription></CardHeader><CardContent className="grid gap-2">
-      {restaurants.isPending && <CardDescription>Загружаем рестораны…</CardDescription>}
-      {restaurants.data?.restaurants.map((restaurant) => <button key={restaurant.id} type="button" onClick={() => choose(restaurant)} className="admin-list-row grid" data-selected={selected?.id === restaurant.id || undefined}><span><strong>{restaurant.name}</strong><span className="mt-1 block text-sm text-muted-foreground">{restaurant.address} · {formatLabel[restaurant.format]}</span><small className="mt-1 text-muted-foreground">{restaurant.menuName ?? 'Меню не назначено'}</small></span></button>)}
-      {restaurants.isError && <p className="text-sm text-destructive">Не удалось загрузить данные. Проверьте, что API запущен.</p>}
-    </CardContent></Card>
-    <Card className="admin-editor-card"><CardHeader><CardTitle>{selected ? 'Редактировать ресторан' : 'Новый ресторан'}</CardTitle><CardDescription>Базовые данные точки и назначение её меню.</CardDescription></CardHeader><CardContent>
+    <AdminPageHeader eyebrow="Рестораны" title={selected ? selected.name : 'Новый ресторан'} description={selected ? 'Изменяйте данные конкретной точки. Сохранение не затронет другие рестораны.' : 'Сначала заполните основные данные. График-исключения и локальное меню появятся после создания.'} actions={<Button asChild variant="outline"><Link to="/restaurants">К списку ресторанов</Link></Button>} />
+    <Card className="admin-editor-card admin-editor-card-wide"><CardHeader><CardTitle>{selected ? 'Настройки ресторана' : 'Основные данные'}</CardTitle><CardDescription>Поля с пометкой «обязательно» нужны для публикации точки на сайте.</CardDescription></CardHeader><CardContent>
       <form className="grid gap-4" onSubmit={(event) => { event.preventDefault(); save.mutate() }}>
         <AdminTabs label="Разделы ресторана" value={editorTab} onChange={setEditorTab} tabs={[{ value: 'main', label: 'Основное' }, { value: 'map', label: 'Карта' }, { value: 'schedule', label: 'График' }, { value: 'menu', label: 'Меню' }]} />
         {editorTab === 'main' ? <>
-        <Field label="Название"><Input required value={draft.name} onChange={(event) => change('name', event.target.value)} /></Field>
-        <Field label="Адрес страницы"><Input required value={draft.slug} placeholder="krasny-prospekt" onChange={(event) => change('slug', event.target.value)} /></Field>
-        <div className="grid gap-4 sm:grid-cols-2"><Field label="Формат"><select value={draft.format} onChange={(event) => change('format', event.target.value as UpsertRestaurantRequest['format'])}><option value="CITY">Городской ресторан</option><option value="AIRPORT">Ресторан в аэропорту</option></select></Field><Field label="Расположение"><select value={draft.area} onChange={(event) => change('area', event.target.value as UpsertRestaurantRequest['area'])}><option value="CITY">Город</option><option value="AIRPORT">Аэропорт</option></select></Field></div>
-        <div className="grid gap-4 sm:grid-cols-2"><Field label="Город"><Input required value={draft.city} onChange={(event) => change('city', event.target.value)} /></Field><Field label="Телефон"><Input required value={draft.phone} onChange={(event) => change('phone', event.target.value)} /></Field></div>
-        <Field label="Адрес"><Input required value={draft.address} onChange={(event) => change('address', event.target.value)} /></Field>
-        <Field label="Описание"><Textarea value={draft.description ?? ''} onChange={(event) => change('description', event.target.value.trim() || null)} /></Field>
-        <Field label="Обложка"><Input type="url" placeholder="https://… ссылка на фотографию" value={draft.coverImageUrl ?? ''} onChange={(event) => change('coverImageUrl', event.target.value.trim() || null)} /></Field>
+        <AdminFormIntro>Название, контакты и фотография — то, что увидит гость на странице ресторана.</AdminFormIntro>
+        <AdminField label="Название ресторана" required hint="Например: Чашка кофе на Красном проспекте"><Input required placeholder="Чашка кофе на…" value={draft.name} onChange={(event) => change('name', event.target.value)} /></AdminField>
+        <div className="grid gap-4 sm:grid-cols-2"><AdminField label="Тип ресторана" required hint="Выберите, где находится точка."><select value={draft.format} onChange={(event) => { const value = event.target.value as UpsertRestaurantRequest['format']; change('format', value); change('area', value === 'AIRPORT' ? 'AIRPORT' : 'CITY') }}><option value="CITY">В городе</option><option value="AIRPORT">В аэропорту</option></select></AdminField><AdminField label="Город" required><Input required placeholder="Новосибирск" value={draft.city} onChange={(event) => change('city', event.target.value)} /></AdminField></div>
+        <AdminField label="Адрес" required hint="Полный адрес, который можно скопировать в навигатор."><Input required placeholder="Красный проспект, 25" value={draft.address} onChange={(event) => change('address', event.target.value)} /></AdminField>
+        <AdminField label="Телефон" required hint="Показывается посетителям и используется для кнопки «Позвонить»."><Input required type="tel" placeholder="+7 (383) 123-20-20" value={draft.phone} onChange={(event) => change('phone', event.target.value)} /></AdminField>
+        <AdminField label="Короткое описание" hint="Два-три предложения об атмосфере, кухне или особенностях точки."><Textarea placeholder="Светлый городской ресторан для завтраков, встреч и неспешных ужинов." value={draft.description ?? ''} onChange={(event) => change('description', nullableDraftText(event.target.value))} /></AdminField>
+        <AdminField label="Фотография ресторана" hint="Вставьте прямую ссылку на загруженное изображение из медиатеки."><Input type="url" placeholder="https://…" value={draft.coverImageUrl ?? ''} onChange={(event) => change('coverImageUrl', nullableDraftText(event.target.value))} /></AdminField>
+        <details className="admin-advanced-fields"><summary>Технические настройки</summary><div className="pt-4"><AdminField label="Адрес страницы" hint="Можно не заполнять — адрес создастся автоматически из названия."><Input value={draft.slug} placeholder="krasny-prospekt" onChange={(event) => change('slug', event.target.value)} /></AdminField></div></details>
         </> : null}
         {editorTab === 'map' ? <>
-        <div className="grid gap-4 sm:grid-cols-2"><Field label="Ссылка на Яндекс Карты"><Input type="url" value={draft.yandexMapsUrl ?? ''} onChange={(event) => change('yandexMapsUrl', event.target.value.trim() || null)} /></Field><Field label="Ссылка на 2ГИС"><Input type="url" value={draft.twoGisUrl ?? ''} onChange={(event) => change('twoGisUrl', event.target.value.trim() || null)} /></Field></div>
-        <div className="grid gap-4 sm:grid-cols-2"><Field label="Широта"><Input type="number" step="any" value={draft.latitude ?? ''} onChange={(event) => change('latitude', event.target.value === '' ? null : Number(event.target.value))} /></Field><Field label="Долгота"><Input type="number" step="any" value={draft.longitude ?? ''} onChange={(event) => change('longitude', event.target.value === '' ? null : Number(event.target.value))} /></Field></div>
+        <AdminFormIntro>Добавьте ссылки на готовые карточки ресторана. Координаты нужны для собственной карты сайта.</AdminFormIntro>
+        <div className="grid gap-4 sm:grid-cols-2"><AdminField label="Яндекс Карты" hint="Ссылка из кнопки «Поделиться» в Яндекс Картах."><Input type="url" placeholder="https://yandex.ru/maps/…" value={draft.yandexMapsUrl ?? ''} onChange={(event) => change('yandexMapsUrl', nullableDraftText(event.target.value))} /></AdminField><AdminField label="2ГИС" hint="Ссылка на карточку ресторана в 2ГИС."><Input type="url" placeholder="https://2gis.ru/…" value={draft.twoGisUrl ?? ''} onChange={(event) => change('twoGisUrl', nullableDraftText(event.target.value))} /></AdminField></div>
+        <details className="admin-advanced-fields"><summary>Координаты для карты</summary><div className="grid gap-4 pt-4 sm:grid-cols-2"><AdminField label="Широта"><Input type="number" step="any" placeholder="55.0302" value={draft.latitude ?? ''} onChange={(event) => change('latitude', event.target.value === '' ? null : Number(event.target.value))} /></AdminField><AdminField label="Долгота"><Input type="number" step="any" placeholder="82.9204" value={draft.longitude ?? ''} onChange={(event) => change('longitude', event.target.value === '' ? null : Number(event.target.value))} /></AdminField></div></details>
         </> : null}
         {editorTab === 'schedule' ? <>
         <fieldset className="grid gap-2 rounded-xl border p-3"><legend className="px-1 text-sm font-medium">График работы</legend>{draft.openingHours.map((entry) => <div className="grid grid-cols-[74px_1fr_1fr_auto] items-center gap-2" key={entry.dayOfWeek}><span className="text-sm">{dayLabel[entry.dayOfWeek]}</span><Input aria-label={`Открытие, ${dayLabel[entry.dayOfWeek]}`} disabled={entry.isClosed} type="time" value={entry.opensAt ?? ''} onChange={(event) => changeHours(entry.dayOfWeek, { opensAt: event.target.value || null })} /><Input aria-label={`Закрытие, ${dayLabel[entry.dayOfWeek]}`} disabled={entry.isClosed} type="time" value={entry.closesAt ?? ''} onChange={(event) => changeHours(entry.dayOfWeek, { closesAt: event.target.value || null })} /><label className="flex items-center gap-1 text-xs"><input checked={entry.isClosed} type="checkbox" onChange={(event) => changeHours(entry.dayOfWeek, { isClosed: event.target.checked })} />выходной</label></div>)}</fieldset>
@@ -110,18 +144,22 @@ export function RestaurantsPage() {
         {!selected ? <p className="text-sm text-muted-foreground">Сначала сохраните ресторан, затем добавляйте отдельные исключения графика.</p> : null}
         </> : null}
         {editorTab === 'menu' ? <>
-        {selected ? <Field label="Набор меню"><select disabled={assignMenu.isPending || menus.isPending} value={selected.menuId ?? ''} onChange={(event) => assignMenu.mutate(event.target.value || null)}><option value="">Меню не назначено</option>{menus.data?.menus.map((menu) => <option key={menu.id} value={menu.id}>{menu.name}</option>)}</select><small className="text-muted-foreground">Для точки используется один основной набор. Изменение применяется сразу.</small></Field> : null}
+        {selected ? <AdminField label="Какое меню показывать" hint="Для ресторана используется один набор. Изменение применяется сразу."><select disabled={assignMenu.isPending || menus.isPending} value={selected.menuId ?? ''} onChange={(event) => assignMenu.mutate(event.target.value || null)}><option value="">Меню не назначено</option>{menus.data?.menus.map((menu) => <option key={menu.id} value={menu.id}>{menu.name}</option>)}</select></AdminField> : null}
         {assignMenu.isError && <p className="text-sm text-destructive">Не удалось назначить меню. Повторите попытку.</p>}
         {selected && restaurantMenu.data ? <LocalOverrides categories={restaurantMenu.data.categories} item={overrideItem} draft={overrideDraft} onEdit={(item) => { setOverrideItem(item); setOverrideDraft({ description: item.description, ingredients: item.ingredients, weightGrams: item.weightGrams, priceKopecks: item.priceKopecks }) }} onChange={setOverrideDraft} onCancel={() => setOverrideItem(null)} onSave={() => saveOverride.mutate()} onReset={() => resetOverride.mutate()} saving={saveOverride.isPending || resetOverride.isPending} /> : null}
         {restaurantMenu.isError ? <p className="text-sm text-muted-foreground">Назначьте набор меню, чтобы настроить позиции только для этой точки.</p> : null}
         {!selected ? <p className="text-sm text-muted-foreground">Сначала сохраните ресторан, затем назначьте ему набор меню.</p> : null}
         </> : null}
         {save.isError && <p className="text-sm text-destructive">{saveErrorMessage(save.error)}</p>}
-        <Button type="submit" size="lg" disabled={save.isPending}>{save.isPending ? 'Сохраняем…' : selected ? 'Сохранить изменения' : 'Создать ресторан'}</Button>
+        <div className="admin-form-actions"><Button type="submit" size="lg" disabled={save.isPending}>{save.isPending ? 'Сохраняем…' : selected ? 'Сохранить изменения' : 'Создать ресторан'}</Button><Button asChild type="button" variant="outline"><Link to="/restaurants">Отмена</Link></Button></div>
       </form>
     </CardContent></Card>
-    </div>
+    {selected ? <Card className="admin-danger-zone"><CardHeader><CardTitle>Удаление ресторана</CardTitle><CardDescription>Точка исчезнет с сайта вместе с локальным графиком и настройками меню. Сам набор меню сохранится.</CardDescription></CardHeader><CardContent><Button disabled={removeRestaurant.isPending} variant="destructive" onClick={() => { if (window.confirm(`Удалить ресторан «${selected.name}»?`)) removeRestaurant.mutate() }}>{removeRestaurant.isPending ? 'Удаляем…' : 'Удалить ресторан'}</Button>{removeRestaurant.isError ? <p className="admin-state-message admin-state-error">Не удалось удалить ресторан.</p> : null}</CardContent></Card> : null}
   </section>
+}
+
+function freshRestaurant(): UpsertRestaurantRequest {
+  return { ...emptyRestaurant, openingHours: defaultHours.map((entry) => ({ ...entry })) }
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="grid gap-1.5 text-sm font-medium">{label}{children}</label> }
@@ -147,7 +185,7 @@ function LocalOverrides({ categories, item, draft, onEdit, onChange, onCancel, o
   onEdit: (item: LocalMenuItem) => void; onChange: (value: UpsertRestaurantMenuItemOverrideRequest) => void; onCancel: () => void; onSave: () => void; onReset: () => void; saving: boolean
 }) {
   return <section className="grid gap-3 border-t pt-5"><div><strong>Локальные изменения меню</strong><p className="text-sm text-muted-foreground">Переопределяют базовое блюдо только в этом ресторане.</p></div>
-    {item ? <div className="grid gap-3 rounded-xl border p-3"><b>{item.name}</b><Field label="Описание"><Textarea value={draft.description ?? ''} onChange={(event) => onChange({ ...draft, description: event.target.value.trim() || null })} /></Field><Field label="Состав"><Textarea value={draft.ingredients ?? ''} onChange={(event) => onChange({ ...draft, ingredients: event.target.value.trim() || null })} /></Field><div className="grid gap-3 sm:grid-cols-2"><Field label="Цена, ₽"><Input min={0} type="number" value={draft.priceKopecks === null ? '' : draft.priceKopecks / 100} onChange={(event) => onChange({ ...draft, priceKopecks: event.target.value === '' ? null : Math.round(Number(event.target.value) * 100) })} /></Field><Field label="Вес, г"><Input min={0} type="number" value={draft.weightGrams ?? ''} onChange={(event) => onChange({ ...draft, weightGrams: event.target.value === '' ? null : Number(event.target.value) })} /></Field></div><div className="flex flex-wrap gap-2"><Button disabled={saving} onClick={onSave} type="button">Сохранить для точки</Button>{item.overridden ? <Button disabled={saving} onClick={onReset} type="button" variant="outline">Вернуть базовое</Button> : null}<Button disabled={saving} onClick={onCancel} type="button" variant="ghost">Отмена</Button></div></div> : <div className="grid gap-3">{categories.map((category) => <div className="grid gap-1" key={category.id}><b className="text-sm">{category.name}</b>{category.items.map((menuItem) => <button className="flex items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-muted" key={menuItem.id} onClick={() => onEdit(menuItem)} type="button"><span className="text-sm">{menuItem.name}</span><small className={menuItem.overridden ? 'text-primary' : 'text-muted-foreground'}>{menuItem.overridden ? 'Изменено для точки' : `${menuItem.priceKopecks / 100} ₽`}</small></button>)}</div>)}</div>}</section>
+    {item ? <div className="grid gap-3 rounded-xl border p-3"><b>{item.name}</b><Field label="Описание"><Textarea value={draft.description ?? ''} onChange={(event) => onChange({ ...draft, description: nullableDraftText(event.target.value) })} /></Field><Field label="Состав"><Textarea value={draft.ingredients ?? ''} onChange={(event) => onChange({ ...draft, ingredients: nullableDraftText(event.target.value) })} /></Field><div className="grid gap-3 sm:grid-cols-2"><Field label="Цена, ₽"><Input min={0} type="number" value={draft.priceKopecks === null ? '' : draft.priceKopecks / 100} onChange={(event) => onChange({ ...draft, priceKopecks: event.target.value === '' ? null : Math.round(Number(event.target.value) * 100) })} /></Field><Field label="Вес, г"><Input min={0} type="number" value={draft.weightGrams ?? ''} onChange={(event) => onChange({ ...draft, weightGrams: event.target.value === '' ? null : Number(event.target.value) })} /></Field></div><div className="flex flex-wrap gap-2"><Button disabled={saving} onClick={onSave} type="button">Сохранить для точки</Button>{item.overridden ? <Button disabled={saving} onClick={onReset} type="button" variant="outline">Вернуть базовое</Button> : null}<Button disabled={saving} onClick={onCancel} type="button" variant="ghost">Отмена</Button></div></div> : <div className="grid gap-3">{categories.map((category) => <div className="grid gap-1" key={category.id}><b className="text-sm">{category.name}</b>{category.items.map((menuItem) => <button className="flex items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-muted" key={menuItem.id} onClick={() => onEdit(menuItem)} type="button"><span className="text-sm">{menuItem.name}</span><small className={menuItem.overridden ? 'text-primary' : 'text-muted-foreground'}>{menuItem.overridden ? 'Изменено для точки' : `${menuItem.priceKopecks / 100} ₽`}</small></button>)}</div>)}</div>}</section>
 }
 
 function ScheduleExceptions({ exceptions, draft, loading, saving, error, onChange, onSave, onDelete }: { exceptions: RestaurantScheduleException[]; draft: UpsertRestaurantScheduleExceptionRequest; loading: boolean; saving: boolean; error: boolean; onChange: (value: UpsertRestaurantScheduleExceptionRequest) => void; onSave: () => void; onDelete: (id: string) => void }) {

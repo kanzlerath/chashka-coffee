@@ -348,6 +348,17 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
       }
     },
 
+    async deleteMenu(id) {
+      try {
+        await db.menu.delete({ where: { id } })
+        return 'deleted'
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') return 'not_found'
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') return 'in_use'
+        throw error
+      }
+    },
+
     async getAdminMenuDetail(id) {
       const menu = await db.menu.findUnique({ where: { id }, include: { _count: { select: { categories: true, restaurants: true } }, categories: { orderBy: { position: 'asc' }, include: { items: { orderBy: { position: 'asc' } } } } } })
       if (!menu) return null
@@ -390,6 +401,11 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
       return category.id
     },
 
+    async deleteCategory(id) {
+      const result = await db.menuCategory.deleteMany({ where: { id } })
+      return result.count > 0
+    },
+
     async createItem(categoryId, input) {
       const category = await db.menuCategory.findUnique({ where: { id: categoryId }, select: { id: true } })
       if (!category) return null
@@ -405,6 +421,11 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') return null
         throw error
       }
+    },
+
+    async deleteItem(id) {
+      const result = await db.menuItem.deleteMany({ where: { id } })
+      return result.count > 0
     },
   }
 }

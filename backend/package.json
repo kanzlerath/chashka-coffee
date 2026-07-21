@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "bun run prisma:generate && bun --watch src/index.ts",
+    "dev": "bun scripts/dev.mjs",
     "start": "bun run start:api",
     "start:api": "bun run prisma:generate && bun src/index.ts",
     "start:worker": "bun run prisma:generate && bun src/worker.ts",

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import {
   apiErrorSchema,
+  createStaffUserRequestSchema,
   cookieAuthResponseSchema,
   cookieLogoutRequestSchema,
   cookieRefreshRequestSchema,
@@ -13,6 +14,7 @@ import {
   tokenLogoutRequestSchema,
   tokenRefreshRequestSchema,
   tokenRefreshResponseSchema,
+  updateStaffUserRequestSchema,
 } from './index'
 
 const validUser = {
@@ -75,6 +77,39 @@ describe('auth contracts', () => {
         password: 'short',
       }),
     ).toThrow()
+  })
+
+  test('validates administrator-managed staff accounts', () => {
+    expect(createStaffUserRequestSchema.parse({
+      email: ' EDITOR@Example.COM ',
+      password: 'temporary-password',
+      displayName: ' Анна Петрова ',
+      role: 'EDITOR',
+    })).toEqual({
+      email: 'editor@example.com',
+      password: 'temporary-password',
+      displayName: 'Анна Петрова',
+      role: 'EDITOR',
+    })
+
+    expect(updateStaffUserRequestSchema.parse({
+      email: 'ADMIN@example.com',
+      displayName: null,
+      role: 'ADMIN',
+      password: '',
+    })).toEqual({
+      email: 'admin@example.com',
+      displayName: null,
+      role: 'ADMIN',
+      password: undefined,
+    })
+
+    expect(() => updateStaffUserRequestSchema.parse({
+      email: 'admin@example.com',
+      displayName: 'A',
+      role: 'ADMIN',
+      password: 'short',
+    })).toThrow()
   })
 
   test('keeps cookie requests empty and requires explicit token transport credentials', () => {

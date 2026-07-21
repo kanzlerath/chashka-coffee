@@ -9,6 +9,10 @@ export function createPrismaAuthRepository(db: DbClient): AuthRepository {
       return db.user.findUnique({ where: { email } })
     },
 
+    findUserById(id) {
+      return db.user.findUnique({ where: { id } })
+    },
+
     countUsers() {
       return db.user.count()
     },
@@ -113,6 +117,53 @@ export function createPrismaAuthRepository(db: DbClient): AuthRepository {
 
     listUsers() {
       return db.user.findMany({ orderBy: { createdAt: 'asc' } })
+    },
+
+    async updateUser(input) {
+      const { id, password, passwordHash, ...data } = input
+      try {
+        return await db.$transaction(async (tx) => {
+          const current = await tx.user.findUnique({ where: { id } })
+          if (!current) throw new AuthFailure('staff_not_found', 'Staff user was not found')
+          if (current.role === 'ADMIN' && data.role !== 'ADMIN') {
+            const adminCount = await tx.user.count({ where: { role: 'ADMIN' } })
+            if (adminCount <= 1) throw new AuthFailure('last_admin', 'The last administrator cannot be demoted')
+          }
+          return tx.user.update({
+            where: { id },
+            data: {
+              email: data.email,
+              displayName: data.displayName,
+              role: data.role,
+              ...(passwordHash ? { passwordHash } : {}),
+            },
+          })
+        })
+      } catch (error) {
+        if (isUniqueConstraintError(error)) {
+          throw new AuthFailure('email_already_exists', 'User with this email already exists')
+        }
+        throw error
+      }
+    },
+
+    async deleteUser(id) {
+      await db.$transaction(async (tx) => {
+        const current = await tx.user.findUnique({ where: { id } })
+        if (!current) throw new AuthFailure('staff_not_found', 'Staff user was not found')
+        if (current.role === 'ADMIN') {
+          const adminCount = await tx.user.count({ where: { role: 'ADMIN' } })
+          if (adminCount <= 1) throw new AuthFailure('last_admin', 'The last administrator cannot be deleted')
+        }
+        await tx.user.delete({ where: { id } })
+      })
+    },
+
+    async revokeUserSessions(input) {
+      await db.authSession.updateMany({
+        where: { userId: input.userId, revokedAt: null },
+        data: { revokedAt: input.now },
+      })
     },
   }
 }

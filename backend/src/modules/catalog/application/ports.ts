@@ -32,10 +32,13 @@ export type CatalogRepository = {
   listAdminMenus(): Promise<AdminMenu[]>
   createMenu(input: UpsertMenuRequest): Promise<AdminMenu>
   updateMenu(id: string, input: UpsertMenuRequest): Promise<AdminMenu | null>
+  deleteMenu(id: string): Promise<'deleted' | 'not_found' | 'in_use'>
   getAdminMenuDetail(id: string): Promise<AdminMenuDetailResponse | null>
   createCategory(menuId: string, input: UpsertMenuCategoryRequest): Promise<string | null>
+  deleteCategory(id: string): Promise<boolean>
   createItem(categoryId: string, input: UpsertMenuItemRequest): Promise<string | null>
   updateItem(id: string, input: UpsertMenuItemRequest): Promise<string | null>
+  deleteItem(id: string): Promise<boolean>
   listRestaurantScheduleExceptions(restaurantId: string): Promise<RestaurantScheduleException[] | null>
   upsertRestaurantScheduleException(restaurantId: string, input: UpsertRestaurantScheduleExceptionRequest): Promise<RestaurantScheduleException | null>
   deleteRestaurantScheduleException(restaurantId: string, exceptionId: string): Promise<boolean>

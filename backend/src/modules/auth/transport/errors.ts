@@ -12,6 +12,14 @@ export function toAuthAppError(error: unknown) {
     return new AppError(403, 'FORBIDDEN', error.message)
   }
 
+  if (error.kind === 'staff_not_found') {
+    return new AppError(404, 'NOT_FOUND', error.message)
+  }
+
+  if (error.kind === 'last_admin' || error.kind === 'self_delete') {
+    return new AppError(409, 'CONFLICT', error.message)
+  }
+
   return new AppError(401, 'UNAUTHORIZED', error.message)
 }
 

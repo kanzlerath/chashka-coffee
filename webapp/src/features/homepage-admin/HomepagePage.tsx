@@ -27,6 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/features/auth'
+import { nullableDraftText } from '@/lib/form-drafts'
 
 const emptySlide: UpsertHomepageSlideRequest = {
   mediaType: 'IMAGE', mediaUrl: '', posterUrl: null, eyebrow: null, title: '', description: null,
@@ -35,7 +36,7 @@ const emptySlide: UpsertHomepageSlideRequest = {
 const emptyBestseller: UpsertHomepageBestsellerRequest = { menuItemId: '', badge: null, position: 10, isPublished: true }
 const emptyDaySection: UpsertHomepageDaySectionRequest = { title: 'Поводы зайти сегодня', description: null, isPublished: true }
 const emptyDayPart = (sectionId = ''): UpsertHomepageDayPartRequest => ({ sectionId, label: '', title: '', description: null, ctaUrl: null, position: 10, isPublished: true })
-const nullable = (value: string) => value.trim() || null
+const nullable = nullableDraftText
 
 export function HomepagePage() {
   const { api: auth } = useAuth()

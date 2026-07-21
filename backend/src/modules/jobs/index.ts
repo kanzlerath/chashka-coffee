@@ -1,4 +1,4 @@
-import { jobOpeningListResponseSchema, jobOpeningResponseSchema, upsertJobOpeningRequestSchema, type JobOpening } from '@chashka-coffee/contracts'
+import { jobOpeningListResponseSchema, jobOpeningResponseSchema, operationSuccessResponseSchema, upsertJobOpeningRequestSchema, type JobOpening } from '@chashka-coffee/contracts'
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi'
 import type { MiddlewareHandler } from 'hono'
 import { z } from 'zod'
@@ -22,10 +22,12 @@ export function createJobsModule({ db, requireAuth, requireAdmin }: { db: DbClie
   const adminList = createRoute({ method: 'get', path: '/jobs', responses: { 200: { content: { 'application/json': { schema: jobOpeningListResponseSchema } }, description: 'All openings' } } })
   const create = createRoute({ method: 'post', path: '/jobs', request: { body: { content: { 'application/json': { schema: upsertJobOpeningRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: jobOpeningResponseSchema } }, description: 'Opening created' } } })
   const update = createRoute({ method: 'put', path: '/jobs/{id}', request: { params: idParams, body: { content: { 'application/json': { schema: upsertJobOpeningRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: jobOpeningResponseSchema } }, description: 'Opening updated' }, 404: { content: errorContent, description: 'Opening not found' } } })
+  const remove = createRoute({ method: 'delete', path: '/jobs/{id}', request: { params: idParams }, responses: { 200: { content: { 'application/json': { schema: operationSuccessResponseSchema } }, description: 'Opening deleted' }, 404: { content: errorContent, description: 'Opening not found' } } })
   routes.openapi(publicList, async (c) => c.json({ openings: (await db.jobOpening.findMany({ where: { isPublished: true }, orderBy: [{ position: 'asc' }, { createdAt: 'desc' }] })).map(dto) }, 200))
   routes.openapi(publicDetail, async (c) => { const opening = await db.jobOpening.findFirst({ where: { slug: c.req.valid('param').slug, isPublished: true } }); if (!opening) throw new AppError(404, 'NOT_FOUND', 'Job opening not found'); return c.json({ opening: dto(opening) }, 200) })
   adminRoutes.openapi(adminList, async (c) => c.json({ openings: (await db.jobOpening.findMany({ orderBy: [{ position: 'asc' }, { createdAt: 'desc' }] })).map(dto) }, 200))
   adminRoutes.openapi(create, async (c) => c.json({ opening: dto(await db.jobOpening.create({ data: c.req.valid('json') })) }, 201))
-  adminRoutes.openapi(update, async (c) => { try { const opening = await db.jobOpening.update({ where: { id: c.req.valid('param').id }, data: c.req.valid('json') }); return c.json({ opening: dto(opening) }, 200) } catch { throw new AppError(404, 'NOT_FOUND', 'Job opening not found') } })
+  adminRoutes.openapi(update, async (c) => { const opening = await db.jobOpening.update({ where: { id: c.req.valid('param').id }, data: c.req.valid('json') }); return c.json({ opening: dto(opening) }, 200) })
+  adminRoutes.openapi(remove, async (c) => { const deleted = await db.jobOpening.deleteMany({ where: { id: c.req.valid('param').id } }); if (deleted.count === 0) throw new AppError(404, 'NOT_FOUND', 'Job opening not found'); return c.json({ success: true as const }, 200) })
   return { routes, adminRoutes }
 }

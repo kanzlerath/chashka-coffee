@@ -47,6 +47,12 @@ VITE_API_URL=http://localhost:3000
 
 `VITE_API_URL` is build-time config. In production it must be a concrete backend origin such as `https://api.example.com`; if it changes, redeploy the App Platform Static Site so the built bundle stops using the old URL.
 
+## Admin information architecture
+
+The sidebar links to concrete work areas instead of hiding them behind tabs. Coffee, cakes, promotions, events, and journal entries have direct routes. Lists, creation, and editing are separate screens (`/...`, `/.../new`, and `/.../:id`) so a content manager never has to scroll past a long list to find a form. Technical fields such as slug and manual ordering stay in collapsed advanced sections; ordinary forms use product language, examples, and field hints.
+
+Only administrators can manage staff and view website statistics. Staff changes are enforced by the backend: the current account cannot delete itself, and the last administrator cannot be deleted or demoted. Anonymous statistics behavior is documented in [../docs/ANALYTICS.md](../docs/ANALYTICS.md).
+
 ## Deployment
 
 Production deployment for the browser app uses DigitalOcean App Platform Static Sites from the full Git monorepo branch with `bun install --frozen-lockfile && bun run build:webapp`, `webapp/dist`, and `index.html` as the SPA catch-all by default. Generate the concrete spec with `bun run deploy:do:specs webapp`; App Platform builds from Git, not from local `dist`. Follow the shared runbook in [../docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md). If the user explicitly chooses Yandex Cloud, deploy the built `webapp/dist` output through Yandex Object Storage static website hosting plus Cloud CDN by following [../docs/YANDEX_CLOUD.md](../docs/YANDEX_CLOUD.md).

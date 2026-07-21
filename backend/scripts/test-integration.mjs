@@ -26,8 +26,19 @@ function run(command, args, options = {}) {
   })
 
   if (result.status !== 0) {
-    process.exit(result.status ?? 1)
+    const error = new Error(`${command} ${args.join(' ')} failed`)
+    error.exitCode = result.status ?? 1
+    throw error
   }
+}
+
+function removeTestDatabase(env) {
+  const result = spawnSync('docker', [...composeArgs, 'down', '--volumes', '--remove-orphans'], {
+    cwd: repositoryRoot,
+    env,
+    stdio: 'inherit',
+  })
+  return result.status ?? 1
 }
 
 async function waitForComposePostgres(service, database, env) {
@@ -59,14 +70,28 @@ const env = {
   TEST_DATABASE_URL: databaseUrl,
 }
 
-if (process.env.TEST_SKIP_DOCKER !== '1') {
-  run('docker', [...composeArgs, 'up', '-d', 'postgres_test'], {
-    cwd: repositoryRoot,
-    env,
-  })
-  await waitForComposePostgres('postgres_test', 'chashka_coffee_test', env)
+let exitCode = 0
+try {
+  if (process.env.TEST_SKIP_DOCKER !== '1') {
+    run('docker', [...composeArgs, 'up', '-d', 'postgres_test'], {
+      cwd: repositoryRoot,
+      env,
+    })
+    await waitForComposePostgres('postgres_test', 'chashka_coffee_test', env)
+  }
+
+  run('bun', ['run', 'prisma:generate'], { env })
+  run('bun', ['run', 'prisma:deploy'], { env })
+  run('bun', ['test', 'src/modules/auth/auth.integration.test.ts'], { env })
+} catch (error) {
+  exitCode = typeof error === 'object' && error !== null && 'exitCode' in error
+    ? Number(error.exitCode)
+    : 1
+} finally {
+  if (process.env.TEST_SKIP_DOCKER !== '1') {
+    const cleanupExitCode = removeTestDatabase(env)
+    if (cleanupExitCode !== 0 && exitCode === 0) exitCode = cleanupExitCode
+  }
 }
 
-run('bun', ['run', 'prisma:generate'], { env })
-run('bun', ['run', 'prisma:deploy'], { env })
-run('bun', ['test', 'src/modules/auth/auth.integration.test.ts'], { env })
+process.exit(exitCode)

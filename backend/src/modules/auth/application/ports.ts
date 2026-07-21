@@ -1,4 +1,4 @@
-import type { CreateStaffUserRequest, RegisterPayload, UserDto, UserRole } from '@chashka-coffee/contracts'
+import type { CreateStaffUserRequest, RegisterPayload, UpdateStaffUserRequest, UserDto, UserRole } from '@chashka-coffee/contracts'
 
 import type { SessionMetadata } from '../domain/session'
 import type { AuthUserRecord } from '../domain/user'
@@ -11,6 +11,7 @@ export type AccessTokenPayload = {
 
 export type AuthRepository = {
   findUserByEmail(email: string): Promise<AuthUserRecord | null>
+  findUserById(id: string): Promise<AuthUserRecord | null>
   countUsers(): Promise<number>
   createPasswordUser(input: RegisterPayload & { passwordHash: string; role: UserRole }): Promise<AuthUserRecord>
   createSession(input: {
@@ -38,6 +39,9 @@ export type AuthRepository = {
   }): Promise<{ id: string; user: AuthUserRecord } | null>
   revokeSession(input: { refreshTokenHash: string; now: Date }): Promise<string | null>
   listUsers(): Promise<AuthUserRecord[]>
+  updateUser(input: UpdateStaffUserRequest & { id: string; passwordHash?: string }): Promise<AuthUserRecord>
+  deleteUser(id: string): Promise<void>
+  revokeUserSessions(input: { userId: string; now: Date }): Promise<void>
 }
 
 export type AccessTokens = {

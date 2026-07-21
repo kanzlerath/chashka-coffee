@@ -73,6 +73,11 @@ Then apply Prisma migrations:
 bun run --cwd backend prisma:migrate
 ```
 
+Start the API from the repository root with `bun run dev:backend`. If the same
+healthy backend is already listening on its configured port, the command exits
+successfully and reports the existing instance instead of printing a raw
+`EADDRINUSE` stack trace.
+
 ## Optional Port Overrides
 
 If `54329` is already in use, create a repository-root `.env` from `.env.example` and change `POSTGRES_PORT`:
@@ -91,11 +96,12 @@ After changing the port, update `backend/.env` so `DATABASE_URL` uses the same p
 
 ## Test Database
 
-`postgres_test` is reserved for integration, Docker smoke, and Playwright flows:
-
-```bash
-docker compose up -d postgres_test
-```
+`postgres_test` is reserved for automated integration, Docker smoke, and
+Playwright flows. Do not start it for normal development. The backend
+integration runner creates this isolated database only for the duration of the
+test and then removes its container, network, and volume even when a test
+fails. Docker Desktop therefore shows only the development `postgres` service
+during ordinary work.
 
 Manual default connection:
 
@@ -108,7 +114,7 @@ password: superpassword
 TEST_DATABASE_URL: postgresql://superuser:superpassword@localhost:54330/chashka_coffee_test?schema=public
 ```
 
-Automated test runners normally set a repository-derived `POSTGRES_TEST_PORT` and derive `TEST_DATABASE_URL` from it so multiple template checkouts can run in parallel. Set `POSTGRES_TEST_PORT` only when a fixed test database port is required.
+Automated test runners normally set a repository-derived `POSTGRES_TEST_PORT` and derive `TEST_DATABASE_URL` from it so multiple template checkouts can run in parallel. Set `POSTGRES_TEST_PORT` only when a fixed external test database is intentionally managed with `TEST_SKIP_DOCKER=1`.
 
 The test database name must end with `_test`. Backend integration, Docker smoke, and Playwright E2E refuse non-test database names by default so they do not write to development data.
 

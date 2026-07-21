@@ -39,7 +39,7 @@ bun run --cwd backend prisma:deploy
 
 On Windows PowerShell, use `Copy-Item backend/.env.example backend/.env` instead of `cp`. Workspace aliases are also available from the repository root: `bun run dev:backend`, `bun run build:backend`, `bun run typecheck:backend`, and `bun run test:backend`.
 
-`bun run test:integration` starts `postgres_test` from `../docker-compose.yml`, applies Prisma migrations to `chashka_coffee_test`, and runs DB-backed auth API tests. If Docker is managed separately, set `TEST_SKIP_DOCKER=1` and `TEST_DATABASE_URL`. The test database name must end with `_test` unless `TEST_ALLOW_NON_TEST_DATABASE=1` is set intentionally.
+`bun run test:integration` starts an isolated `postgres_test` from `../docker-compose.yml`, applies Prisma migrations to `chashka_coffee_test`, runs the DB-backed API tests, and removes the test container and volume afterward even on failure. Normal development keeps only the `postgres` service running. If a test database is managed separately, set `TEST_SKIP_DOCKER=1` and `TEST_DATABASE_URL`. The test database name must end with `_test` unless `TEST_ALLOW_NON_TEST_DATABASE=1` is set intentionally.
 
 `bun run smoke:docker` builds the backend Docker image, starts it against `postgres_test`, waits for `/health`, and removes only the smoke container it created.
 
@@ -88,6 +88,10 @@ Production deployment for the backend uses DigitalOcean App Platform with Digita
 - `GET /health`
 
 Passwords are hashed through `Bun.password` with Argon2id. Access tokens are short-lived JWTs through `jose`. Refresh tokens are opaque random tokens; only a SHA-256 hash is stored in the database. Refresh rotates the token and revokes the previous session.
+
+Administrator-only staff management is available under `/api/admin/users`: list and create via the collection route, and update/delete via `/api/admin/users/:id`. Changing a user's password, e-mail, or role revokes that user's active sessions. The backend prevents self-deletion and protects the last administrator from deletion or demotion.
+
+Anonymous website views are recorded through `POST /api/analytics/page-view`; the administrator summary is available through `GET /api/admin/analytics?days=30`. Data minimization and pre-launch retention work are documented in [../docs/ANALYTICS.md](../docs/ANALYTICS.md).
 
 ## Architecture
 

@@ -1,4 +1,4 @@
-import type { CreateStaffUserRequest, LoginRequest, RegisterPayload } from '@chashka-coffee/contracts'
+import type { CreateStaffUserRequest, LoginRequest, RegisterPayload, UpdateStaffUserRequest } from '@chashka-coffee/contracts'
 
 import { AuthFailure } from '../domain/errors'
 import { sessionExpiresAt, type SessionMetadata } from '../domain/session'
@@ -66,6 +66,34 @@ export class AuthService {
     const passwordHash = await this.dependencies.passwords.hash(input.password)
     const user = await this.dependencies.repository.createPasswordUser({ ...input, passwordHash })
     return toBaseUserDto(user)
+  }
+
+  async updateStaffUser(id: string, input: UpdateStaffUserRequest) {
+    const current = await this.dependencies.repository.findUserById(id)
+    if (!current) throw new AuthFailure('staff_not_found', 'Staff user was not found')
+
+    const passwordHash = input.password
+      ? await this.dependencies.passwords.hash(input.password)
+      : undefined
+    const user = await this.dependencies.repository.updateUser({ ...input, id, passwordHash })
+
+    if (passwordHash || current.role !== input.role || current.email !== input.email) {
+      await this.dependencies.repository.revokeUserSessions({
+        userId: id,
+        now: this.dependencies.clock.now(),
+      })
+    }
+
+    return toBaseUserDto(user)
+  }
+
+  async deleteStaffUser(actorUserId: string, id: string) {
+    if (actorUserId === id) {
+      throw new AuthFailure('self_delete', 'You cannot delete your own account')
+    }
+    const current = await this.dependencies.repository.findUserById(id)
+    if (!current) throw new AuthFailure('staff_not_found', 'Staff user was not found')
+    await this.dependencies.repository.deleteUser(id)
   }
 
   async refresh(refreshToken: string | undefined, metadata: SessionMetadata) {

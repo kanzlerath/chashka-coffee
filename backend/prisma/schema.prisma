@@ -32,6 +32,12 @@ enum UserRole {
   EDITOR
 }
 
+enum AnalyticsDevice {
+  DESKTOP
+  TABLET
+  MOBILE
+}
+
 enum ContentEntryType {
   PROMOTION
   EVENT
@@ -119,6 +125,20 @@ model AuthSession {
   @@index([userId], map: "auth_sessions_user_id_idx")
   @@index([expiresAt], map: "auth_sessions_expires_at_idx")
   @@map("auth_sessions")
+}
+
+model PageView {
+  id        String          @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  path      String          @db.VarChar(500)
+  visitorId String          @map("visitor_id") @db.Uuid
+  referrer  String?         @db.VarChar(1000)
+  device    AnalyticsDevice @default(DESKTOP)
+  createdAt DateTime        @default(now()) @map("created_at")
+
+  @@index([createdAt], map: "page_views_created_at_idx")
+  @@index([path, createdAt], map: "page_views_path_created_at_idx")
+  @@index([visitorId, createdAt], map: "page_views_visitor_created_at_idx")
+  @@map("page_views")
 }
 
 model ContentEntry {

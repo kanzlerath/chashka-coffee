@@ -54,3 +54,4 @@ export const productSchema = z.object({
 export type Product = z.infer<typeof productSchema>
 export const productListResponseSchema = z.object({ products: z.array(productSchema) })
 export const productResponseSchema = z.object({ product: productSchema })
+export const productDeleteResponseSchema = z.object({ success: z.literal(true) })

@@ -64,7 +64,7 @@ const deleteRoute = createRoute({
   method: 'delete',
   path: '/restaurants/{id}',
   request: { params: idParams },
-  responses: { 204: { description: 'Restaurant deleted' }, 404: { content: errorContent, description: 'Restaurant not found' } },
+  responses: { 200: { content: { 'application/json': { schema: operationSuccessResponseSchema } }, description: 'Restaurant deleted' }, 404: { content: errorContent, description: 'Restaurant not found' } },
 })
 const assignRestaurantMenuRoute = createRoute({ method: 'put', path: '/restaurants/{id}/menu', request: { params: idParams, body: { content: { 'application/json': { schema: assignRestaurantMenuRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: restaurantMenuAssignmentResponseSchema } }, description: 'Restaurant menu assignment updated' }, 404: { content: errorContent, description: 'Restaurant or menu not found' } } })
 const restaurantMenuDetailRoute = createRoute({ method: 'get', path: '/restaurants/{id}/menu-detail', request: { params: idParams }, responses: { 200: { content: { 'application/json': { schema: adminRestaurantMenuDetailResponseSchema } }, description: 'Restaurant menu with effective overrides' }, 404: { content: errorContent, description: 'Restaurant menu not found' } } })
@@ -74,10 +74,13 @@ const deleteOverrideItemRoute = createRoute({ method: 'delete', path: '/restaura
 const listMenusRoute = createRoute({ method: 'get', path: '/menus', responses: { 200: { content: { 'application/json': { schema: adminMenuListResponseSchema } }, description: 'Menu sets' } } })
 const createMenuRoute = createRoute({ method: 'post', path: '/menus', request: { body: { content: { 'application/json': { schema: upsertMenuRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: adminMenuResponseSchema } }, description: 'Menu created' } } })
 const updateMenuRoute = createRoute({ method: 'put', path: '/menus/{id}', request: { params: idParams, body: { content: { 'application/json': { schema: upsertMenuRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: adminMenuResponseSchema } }, description: 'Menu updated' } } })
+const deleteMenuRoute = createRoute({ method: 'delete', path: '/menus/{id}', request: { params: idParams }, responses: { 200: { content: { 'application/json': { schema: operationSuccessResponseSchema } }, description: 'Menu deleted' }, 404: { content: errorContent, description: 'Menu not found' }, 409: { content: errorContent, description: 'Menu is assigned to restaurants' } } })
 const menuDetailRoute = createRoute({ method: 'get', path: '/menus/{id}/detail', request: { params: idParams }, responses: { 200: { content: { 'application/json': { schema: adminMenuDetailResponseSchema } }, description: 'Menu editor detail' } } })
 const categoryRoute = createRoute({ method: 'post', path: '/menus/{id}/categories', request: { params: idParams, body: { content: { 'application/json': { schema: upsertMenuCategoryRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: createdIdResponseSchema } }, description: 'Category created' } } })
+const deleteCategoryRoute = createRoute({ method: 'delete', path: '/categories/{id}', request: { params: idParams }, responses: { 200: { content: { 'application/json': { schema: operationSuccessResponseSchema } }, description: 'Category deleted' }, 404: { content: errorContent, description: 'Category not found' } } })
 const itemRoute = createRoute({ method: 'post', path: '/categories/{id}/items', request: { params: idParams, body: { content: { 'application/json': { schema: upsertMenuItemRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: createdIdResponseSchema } }, description: 'Item created' } } })
 const updateItemRoute = createRoute({ method: 'put', path: '/items/{id}', request: { params: idParams, body: { content: { 'application/json': { schema: upsertMenuItemRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: createdIdResponseSchema } }, description: 'Item updated' }, 404: { content: errorContent, description: 'Item not found' } } })
+const deleteItemRoute = createRoute({ method: 'delete', path: '/items/{id}', request: { params: idParams }, responses: { 200: { content: { 'application/json': { schema: operationSuccessResponseSchema } }, description: 'Item deleted' }, 404: { content: errorContent, description: 'Item not found' } } })
 const scheduleExceptionParams = z.object({ id: z.uuid(), exceptionId: z.uuid() })
 const listScheduleExceptionsRoute = createRoute({ method: 'get', path: '/restaurants/{id}/schedule-exceptions', request: { params: idParams }, responses: { 200: { content: { 'application/json': { schema: restaurantScheduleExceptionListResponseSchema } }, description: 'Restaurant schedule exceptions' }, 404: { content: errorContent, description: 'Restaurant not found' } } })
 const upsertScheduleExceptionRoute = createRoute({ method: 'put', path: '/restaurants/{id}/schedule-exceptions', request: { params: idParams, body: { content: { 'application/json': { schema: upsertRestaurantScheduleExceptionRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: restaurantScheduleExceptionResponseSchema } }, description: 'Restaurant schedule exception saved' }, 404: { content: errorContent, description: 'Restaurant not found' } } })
@@ -97,7 +100,7 @@ export function createCatalogAdminRoutes({ service, requireAuth, requireAdmin }:
   routes.openapi(deleteRoute, async (c) => {
     const deleted = await service.deleteRestaurant(c.req.valid('param').id)
     if (!deleted) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found')
-    return c.body(null, 204)
+    return c.json({ success: true as const }, 200)
   })
   routes.openapi(assignRestaurantMenuRoute, async (c) => {
     const menuId = await service.assignRestaurantMenu(c.req.valid('param').id, c.req.valid('json'))
@@ -126,10 +129,18 @@ export function createCatalogAdminRoutes({ service, requireAuth, requireAdmin }:
     if (!menu) throw new AppError(404, 'NOT_FOUND', 'Menu not found')
     return c.json({ menu }, 200)
   })
+  routes.openapi(deleteMenuRoute, async (c) => {
+    const result = await service.deleteMenu(c.req.valid('param').id)
+    if (result === 'not_found') throw new AppError(404, 'NOT_FOUND', 'Menu not found')
+    if (result === 'in_use') throw new AppError(409, 'CONFLICT', 'Сначала отвяжите это меню от ресторанов.')
+    return c.json({ success: true as const }, 200)
+  })
   routes.openapi(menuDetailRoute, async (c) => { const detail = await service.getAdminMenuDetail(c.req.valid('param').id); if (!detail) throw new AppError(404, 'NOT_FOUND', 'Menu not found'); return c.json(detail, 200) })
   routes.openapi(categoryRoute, async (c) => { const id = await service.createCategory(c.req.valid('param').id, c.req.valid('json')); if (!id) throw new AppError(404, 'NOT_FOUND', 'Menu not found'); return c.json({ id }, 201) })
+  routes.openapi(deleteCategoryRoute, async (c) => { const deleted = await service.deleteCategory(c.req.valid('param').id); if (!deleted) throw new AppError(404, 'NOT_FOUND', 'Category not found'); return c.json({ success: true as const }, 200) })
   routes.openapi(itemRoute, async (c) => { const id = await service.createItem(c.req.valid('param').id, c.req.valid('json')); if (!id) throw new AppError(404, 'NOT_FOUND', 'Category not found'); return c.json({ id }, 201) })
   routes.openapi(updateItemRoute, async (c) => { const id = await service.updateItem(c.req.valid('param').id, c.req.valid('json')); if (!id) throw new AppError(404, 'NOT_FOUND', 'Menu item not found'); return c.json({ id }, 200) })
+  routes.openapi(deleteItemRoute, async (c) => { const deleted = await service.deleteItem(c.req.valid('param').id); if (!deleted) throw new AppError(404, 'NOT_FOUND', 'Menu item not found'); return c.json({ success: true as const }, 200) })
   routes.openapi(listScheduleExceptionsRoute, async (c) => { const exceptions = await service.listRestaurantScheduleExceptions(c.req.valid('param').id); if (!exceptions) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found'); return c.json({ exceptions }, 200) })
   routes.openapi(upsertScheduleExceptionRoute, async (c) => { const exception = await service.upsertRestaurantScheduleException(c.req.valid('param').id, c.req.valid('json')); if (!exception) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found'); return c.json({ exception }, 200) })
   routes.openapi(deleteScheduleExceptionRoute, async (c) => { const deleted = await service.deleteRestaurantScheduleException(c.req.valid('param').id, c.req.valid('param').exceptionId); if (!deleted) throw new AppError(404, 'NOT_FOUND', 'Exception not found'); return c.json({ success: true as const }, 200) })

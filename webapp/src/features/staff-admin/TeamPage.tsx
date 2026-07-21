@@ -1,44 +1,143 @@
+import {
+  createStaffUserRequestSchema,
+  staffUserDeleteResponseSchema,
+  staffUserListResponseSchema,
+  staffUserResponseSchema,
+  updateStaffUserRequestSchema,
+  type UserDto,
+  type UserRole,
+} from '@chashka-coffee/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createStaffUserRequestSchema, staffUserListResponseSchema, staffUserResponseSchema, type CreateStaffUserRequest } from '@chashka-coffee/contracts'
-import { useMemo, useState } from 'react'
+import { Link, useNavigate } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
 
-import { AdminPageHeader } from '@/components/admin'
+import { AdminField, AdminFormIntro, AdminPageHeader } from '@/components/admin'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/features/auth'
 
-const emptyDraft: CreateStaffUserRequest = { email: '', password: '', displayName: undefined, role: 'EDITOR' }
+type TeamPageProps = { mode?: 'list' | 'create' | 'edit'; userId?: string }
+type StaffDraft = { displayName: string; email: string; password: string; role: UserRole }
+const emptyDraft: StaffDraft = { displayName: '', email: '', password: '', role: 'EDITOR' }
 
-export function TeamPage() {
+export function TeamPage({ mode = 'list', userId }: TeamPageProps) {
+  if (mode === 'list') return <TeamList />
+  return <StaffEditor mode={mode} userId={userId} />
+}
+
+function useStaff() {
   const { api } = useAuth()
-  const queryClient = useQueryClient()
-  const [draft, setDraft] = useState(emptyDraft)
-  const staff = useQuery({ queryKey: ['admin', 'staff'], queryFn: () => api.request('/api/admin/users', staffUserListResponseSchema) })
-  const create = useMutation({
-    mutationFn: () => api.request('/api/admin/users', staffUserResponseSchema, { method: 'POST', body: createStaffUserRequestSchema.parse(draft) }),
-    onSuccess: () => { setDraft(emptyDraft); void queryClient.invalidateQueries({ queryKey: ['admin', 'staff'] }) },
-  })
-  const canSubmit = useMemo(() => draft.email.length > 0 && draft.password.length >= 8, [draft])
+  return useQuery({ queryKey: ['admin', 'staff'], queryFn: () => api.request('/api/admin/users', staffUserListResponseSchema) })
+}
 
-  return <section className="admin-page">
-    <AdminPageHeader eyebrow="Настройки" title="Команда и доступы" description="Регистрации в админке нет — доступ появляется только после приглашения сотрудника." />
-    <div className="grid gap-6 lg:grid-cols-[1.05fr_.95fr]">
-    <Card><CardHeader><CardTitle>Сотрудники</CardTitle><CardDescription>Пользователи, у которых есть доступ к админке.</CardDescription></CardHeader><CardContent className="grid gap-2">
-      {staff.isPending && <CardDescription>Загружаем сотрудников…</CardDescription>}
-      {staff.data?.users.map((user) => <div key={user.id} className="flex items-center justify-between gap-4 rounded-xl border p-4"><div><strong>{user.displayName ?? user.email}</strong><p className="mt-1 text-sm text-muted-foreground">{user.email}</p></div><span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold">{user.role === 'ADMIN' ? 'Администратор' : 'Редактор'}</span></div>)}
-      {staff.isError && <p className="text-sm text-destructive">Не удалось загрузить сотрудников.</p>}
-    </CardContent></Card>
-    <Card><CardHeader><CardTitle>Выдать доступ</CardTitle><CardDescription>Передай временный пароль сотруднику безопасным способом.</CardDescription></CardHeader><CardContent>
-      <form className="grid gap-4" onSubmit={(event) => { event.preventDefault(); create.mutate() }}>
-        <label className="grid gap-1.5 text-sm font-medium">Имя<Input value={draft.displayName ?? ''} onChange={(event) => setDraft((value) => ({ ...value, displayName: event.target.value || undefined }))} /></label>
-        <label className="grid gap-1.5 text-sm font-medium">E-mail<Input required type="email" value={draft.email} onChange={(event) => setDraft((value) => ({ ...value, email: event.target.value }))} /></label>
-        <label className="grid gap-1.5 text-sm font-medium">Временный пароль<Input required minLength={8} type="password" value={draft.password} onChange={(event) => setDraft((value) => ({ ...value, password: event.target.value }))} /></label>
-        <label className="grid gap-1.5 text-sm font-medium">Роль<select value={draft.role} onChange={(event) => setDraft((value) => ({ ...value, role: event.target.value as CreateStaffUserRequest['role'] }))}><option value="EDITOR">Редактор</option><option value="ADMIN">Администратор</option></select></label>
-        {create.isError && <p className="text-sm text-destructive">Не удалось выдать доступ. Возможно, этот e-mail уже добавлен.</p>}
-        <Button type="submit" size="lg" disabled={!canSubmit || create.isPending}>{create.isPending ? 'Создаём…' : 'Выдать доступ'}</Button>
-      </form>
-    </CardContent></Card>
-    </div>
-  </section>
+function TeamList() {
+  const { user: currentUser } = useAuth()
+  const staff = useStaff()
+
+  return (
+    <section className="admin-page">
+      <AdminPageHeader
+        eyebrow="Настройки"
+        title="Команда и доступы"
+        description="Добавляйте сотрудников, меняйте роли и закрывайте доступ. Регистрации на сайте нет: учётную запись создаёт только администратор."
+        actions={<Button asChild><Link to="/team/new">Добавить сотрудника</Link></Button>}
+      />
+      <Card>
+        <CardHeader><CardTitle>Сотрудники</CardTitle><CardDescription>{staff.data ? `${staff.data.users.length} учётных записей` : 'Загружаем список…'}</CardDescription></CardHeader>
+        <CardContent className="admin-directory-list">
+          {staff.data?.users.map((user) => (
+            <Link className="admin-directory-row" key={user.id} params={{ userId: user.id }} to="/team/$userId">
+              <span className="admin-person-avatar">{initials(user)}</span>
+              <span><strong>{user.displayName ?? 'Имя не указано'}</strong><small>{user.email}</small></span>
+              <span className="admin-role-badge">{user.role === 'ADMIN' ? 'Администратор' : 'Редактор'}</span>
+              {currentUser?.id === user.id ? <small className="admin-current-user">Это вы</small> : null}
+            </Link>
+          ))}
+          {staff.isError ? <p className="admin-state-message admin-state-error">Не удалось загрузить сотрудников.</p> : null}
+        </CardContent>
+      </Card>
+      <div className="admin-help-note"><strong>Как выбрать роль?</strong><p>Редактор работает с ресторанами и меню. Администратор дополнительно управляет публикациями, заявками, сотрудниками и настройками сайта.</p></div>
+    </section>
+  )
+}
+
+function StaffEditor({ mode, userId }: Required<Pick<TeamPageProps, 'mode'>> & { userId?: string }) {
+  const { api, user: currentUser } = useAuth()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const staff = useStaff()
+  const selected = staff.data?.users.find((user) => user.id === userId)
+  const [draft, setDraft] = useState<StaffDraft>(emptyDraft)
+
+  useEffect(() => {
+    if (mode === 'edit' && selected) {
+      setDraft({ displayName: selected.displayName ?? '', email: selected.email, password: '', role: selected.role })
+    }
+  }, [mode, selected])
+
+  const save = useMutation({
+    mutationFn: () => mode === 'create'
+      ? api.request('/api/admin/users', staffUserResponseSchema, { method: 'POST', body: createStaffUserRequestSchema.parse({ ...draft, displayName: draft.displayName || undefined }) })
+      : api.request(`/api/admin/users/${userId}`, staffUserResponseSchema, { method: 'PUT', body: updateStaffUserRequestSchema.parse({ ...draft, displayName: draft.displayName || null }) }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'staff'] })
+      if (currentUser?.id === userId) {
+        await queryClient.invalidateQueries({ queryKey: ['auth', 'me'] })
+      }
+      await navigate({ to: '/team' })
+    },
+  })
+  const remove = useMutation({
+    mutationFn: () => api.request(`/api/admin/users/${userId}`, staffUserDeleteResponseSchema, { method: 'DELETE' }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'staff'] })
+      await navigate({ to: '/team' })
+    },
+  })
+
+  if (mode === 'edit' && staff.isPending) return <section className="admin-page"><p className="admin-state-message">Загружаем сотрудника…</p></section>
+  if (mode === 'edit' && !selected) return <section className="admin-page"><AdminPageHeader eyebrow="Команда" title="Сотрудник не найден" description="Возможно, доступ уже был удалён." actions={<Button asChild variant="outline"><Link to="/team">Вернуться к команде</Link></Button>} /></section>
+
+  const isSelf = currentUser?.id === userId
+  return (
+    <section className="admin-page admin-page-editor">
+      <AdminPageHeader
+        eyebrow="Команда"
+        title={mode === 'create' ? 'Новый сотрудник' : selected?.displayName ?? selected?.email ?? 'Сотрудник'}
+        description={mode === 'create' ? 'Создайте учётную запись и передайте временный пароль сотруднику безопасным способом.' : 'Измените имя, роль или пароль. Новый пароль завершит все активные сеансы этого сотрудника.'}
+        actions={<Button asChild variant="outline"><Link to="/team">К списку сотрудников</Link></Button>}
+      />
+      <Card className="admin-editor-surface">
+        <CardHeader><CardTitle>Данные для входа</CardTitle><CardDescription>Все поля подписаны так, как их увидит сотрудник.</CardDescription></CardHeader>
+        <CardContent>
+          <form className="admin-form-stack" onSubmit={(event) => { event.preventDefault(); save.mutate() }}>
+            <AdminFormIntro>Имя отображается в админке. E-mail используется как логин.</AdminFormIntro>
+            <div className="admin-form-grid-2">
+              <AdminField label="Имя сотрудника" hint="Например: Анна Петрова"><Input placeholder="Анна Петрова" value={draft.displayName} onChange={(event) => setDraft((value) => ({ ...value, displayName: event.target.value }))} /></AdminField>
+              <AdminField label="E-mail для входа" hint="На этот адрес сотрудник будет входить в админку" required><Input required type="email" placeholder="name@chashkacoffee.ru" value={draft.email} onChange={(event) => setDraft((value) => ({ ...value, email: event.target.value }))} /></AdminField>
+            </div>
+            <AdminField label={mode === 'create' ? 'Временный пароль' : 'Новый пароль'} hint={mode === 'create' ? 'Не короче 8 символов. Передайте его сотруднику лично или в защищённом чате.' : 'Оставьте поле пустым, если пароль менять не нужно.'} required={mode === 'create'}>
+              <Input minLength={8} required={mode === 'create'} type="password" autoComplete="new-password" placeholder={mode === 'create' ? 'Минимум 8 символов' : 'Оставить текущий пароль'} value={draft.password} onChange={(event) => setDraft((value) => ({ ...value, password: event.target.value }))} />
+            </AdminField>
+            <AdminField label="Уровень доступа" hint="Администратор может управлять сотрудниками, заявками и публикациями.">
+              <select value={draft.role} onChange={(event) => setDraft((value) => ({ ...value, role: event.target.value as UserRole }))}><option value="EDITOR">Редактор — рестораны и меню</option><option value="ADMIN">Администратор — полный доступ</option></select>
+            </AdminField>
+            {save.isError ? <p className="admin-state-message admin-state-error">Не удалось сохранить. Проверьте e-mail, пароль и убедитесь, что в команде остаётся хотя бы один администратор.</p> : null}
+            <div className="admin-form-actions"><Button disabled={save.isPending} size="lg" type="submit">{save.isPending ? 'Сохраняем…' : mode === 'create' ? 'Создать сотрудника' : 'Сохранить изменения'}</Button></div>
+          </form>
+        </CardContent>
+      </Card>
+      {mode === 'edit' ? (
+        <Card className="admin-danger-zone">
+          <CardHeader><CardTitle>Закрыть доступ</CardTitle><CardDescription>{isSelf ? 'Собственную учётную запись удалить нельзя.' : 'Сотрудник больше не сможет войти. Это действие нельзя отменить.'}</CardDescription></CardHeader>
+          <CardContent><Button disabled={isSelf || remove.isPending} variant="destructive" onClick={() => { if (window.confirm(`Удалить доступ для ${selected?.displayName ?? selected?.email}?`)) remove.mutate() }}>{remove.isPending ? 'Удаляем…' : 'Удалить сотрудника'}</Button>{remove.isError ? <p className="admin-state-message admin-state-error">Не удалось удалить сотрудника. Последнего администратора удалить нельзя.</p> : null}</CardContent>
+        </Card>
+      ) : null}
+    </section>
+  )
+}
+
+function initials(user: UserDto) {
+  return (user.displayName ?? user.email).split(/[\s@]/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('')
 }

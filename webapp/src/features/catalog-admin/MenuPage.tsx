@@ -1,217 +1,88 @@
+import type { AdminMenuDetailResponse, MarketingBadge, UpsertMenuCategoryRequest, UpsertMenuItemRequest, UpsertMenuRequest } from '@chashka-coffee/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type {
-  AdminMenuDetailResponse,
-  MarketingBadge,
-  UpsertMenuCategoryRequest,
-  UpsertMenuItemRequest,
-  UpsertMenuRequest,
-} from '@chashka-coffee/contracts'
-import { useMemo, useState } from 'react'
-import { AdminPageHeader } from '@/components/admin'
+import { Link, useNavigate } from '@tanstack/react-router'
+import { useEffect, useMemo, useState } from 'react'
+
+import { AdminField, AdminFormIntro, AdminPageHeader } from '@/components/admin'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/features/auth'
+import { nullableDraftText } from '@/lib/form-drafts'
+import { toPublicSlug } from '@/lib/slugify'
 import { CatalogAdminApi } from './api'
 
+type MenuPageProps = { mode?: 'list' | 'create-menu' | 'detail' | 'create-category' | 'create-item' | 'edit-item'; menuId?: string; categoryId?: string; itemId?: string }
 const emptyMenu: UpsertMenuRequest = { slug: '', name: '', description: null }
 const emptyCategory: UpsertMenuCategoryRequest = { slug: '', name: '', position: 10 }
-const emptyItem: UpsertMenuItemRequest = {
-  slug: '', name: '', description: null, ingredients: null, weightGrams: null, priceKopecks: 0,
-  calories: null, proteins: null, fats: null, carbohydrates: null,
-  isVegetarian: false, isSpicy: false, isLactoseFree: false, isGlutenFree: false, isLight: false,
-  marketingBadge: null, imageUrl: null, position: 10,
-}
-
+const emptyItem: UpsertMenuItemRequest = { slug: '', name: '', description: null, ingredients: null, weightGrams: null, priceKopecks: 0, calories: null, proteins: null, fats: null, carbohydrates: null, isVegetarian: false, isSpicy: false, isLactoseFree: false, isGlutenFree: false, isLight: false, marketingBadge: null, imageUrl: null, position: 10 }
 type MenuItem = AdminMenuDetailResponse['categories'][number]['items'][number]
-const nullableText = (value: string) => value.trim() || null
+const nullableText = nullableDraftText
 const nullableNumber = (value: string) => value === '' ? null : Number(value)
 
-function toItemDraft(item: MenuItem): UpsertMenuItemRequest {
-  const { id: _id, ...draft } = item
-  return draft
+export function MenuPage({ mode = 'list', menuId, categoryId, itemId }: MenuPageProps) {
+  if (mode === 'list') return <MenuList />
+  if (mode === 'create-menu') return <MenuCreator />
+  if (mode === 'detail') return <MenuDetail menuId={menuId} />
+  if (mode === 'create-category') return <CategoryCreator menuId={menuId} />
+  return <ItemEditor mode={mode} menuId={menuId} categoryId={categoryId} itemId={itemId} />
 }
 
-export function MenuPage() {
-  const { api: auth } = useAuth()
-  const api = useMemo(() => new CatalogAdminApi(auth), [auth])
-  const queryClient = useQueryClient()
-  const [menu, setMenu] = useState(emptyMenu)
-  const [category, setCategory] = useState(emptyCategory)
-  const [item, setItem] = useState(emptyItem)
-  const [categoryId, setCategoryId] = useState('')
-  const [selectedId, setSelectedId] = useState('')
-  const [editingItemId, setEditingItemId] = useState<string | null>(null)
+function useCatalogApi() { const { api } = useAuth(); return useMemo(() => new CatalogAdminApi(api), [api]) }
+function useMenus() { const api = useCatalogApi(); return useQuery({ queryKey: ['admin', 'menus'], queryFn: () => api.listMenus() }) }
+function useMenuDetail(menuId?: string) { const api = useCatalogApi(); return useQuery({ queryKey: ['admin', 'menu', menuId], enabled: Boolean(menuId), queryFn: () => api.getMenu(menuId!) }) }
 
-  const menus = useQuery({ queryKey: ['admin', 'menus'], queryFn: () => api.listMenus() })
-  const detail = useQuery({
-    queryKey: ['admin', 'menu', selectedId],
-    enabled: Boolean(selectedId),
-    queryFn: () => api.getMenu(selectedId),
-  })
-  const refresh = () => {
-    void queryClient.invalidateQueries({ queryKey: ['admin', 'menus'] })
-    void queryClient.invalidateQueries({ queryKey: ['admin', 'menu', selectedId] })
-  }
-
-  const addMenu = useMutation({
-    mutationFn: () => api.createMenu(menu),
-    onSuccess: ({ menu: created }) => {
-      setSelectedId(created.id)
-      setMenu(emptyMenu)
-      refresh()
-    },
-  })
-  const addCategory = useMutation({
-    mutationFn: () => api.createCategory(selectedId, category),
-    onSuccess: () => {
-      setCategory(emptyCategory)
-      refresh()
-    },
-  })
-  const saveItem = useMutation({
-    mutationFn: () => editingItemId ? api.updateItem(editingItemId, item) : api.createItem(categoryId, item),
-    onSuccess: () => {
-      setItem(emptyItem)
-      setEditingItemId(null)
-      refresh()
-    },
-  })
-
-  const startItem = (nextCategoryId: string) => {
-    setCategoryId(nextCategoryId)
-    setItem(emptyItem)
-    setEditingItemId(null)
-  }
-  const editItem = (nextCategoryId: string, nextItem: MenuItem) => {
-    setCategoryId(nextCategoryId)
-    setItem(toItemDraft(nextItem))
-    setEditingItemId(nextItem.id)
-  }
-
-  return (
-    <section className="admin-page">
-      <AdminPageHeader eyebrow="Каталог" title="Меню" description="Создавайте базовые наборы, категории и блюда. Затем назначайте меню конкретным ресторанам." />
-      <div className="grid gap-6 lg:grid-cols-[minmax(16rem,.55fr)_minmax(0,1.45fr)]">
-      <Card className="admin-resource-list">
-        <CardHeader>
-          <CardTitle>Наборы меню</CardTitle>
-          <CardDescription>Базовые меню для ресторанов сети.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-2">
-          {menus.data?.menus.map((entry) => (
-            <button
-              className="admin-list-row"
-              data-selected={entry.id === selectedId || undefined}
-              key={entry.id}
-              onClick={() => { setSelectedId(entry.id); setEditingItemId(null); setCategoryId('') }}
-              type="button"
-            >
-              <b>{entry.name}</b>
-              <small className="block text-muted-foreground">{entry.categoryCount} категорий · {entry.restaurantCount} точек</small>
-            </button>
-          ))}
-          <form className="mt-4 grid gap-2 border-t pt-4" onSubmit={(event) => { event.preventDefault(); addMenu.mutate() }}>
-            <Input onChange={(event) => setMenu((value) => ({ ...value, name: event.target.value }))} placeholder="Название нового меню" required value={menu.name} />
-            <Input onChange={(event) => setMenu((value) => ({ ...value, slug: event.target.value }))} placeholder="city-core" required value={menu.slug} />
-            <Button disabled={addMenu.isPending} type="submit">Создать набор</Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <div className="grid min-w-0 gap-6">
-        {detail.data ? <>
-          <Card>
-            <CardHeader>
-              <CardTitle>{detail.data.menu.name}</CardTitle>
-              <CardDescription>Выберите блюдо для изменения или добавьте новое в нужную категорию.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-5">
-              {detail.data.categories.map((entry) => (
-                <section className="grid gap-2 border-t pt-4 first:border-t-0 first:pt-0" key={entry.id}>
-                  <div className="flex items-center justify-between gap-3">
-                    <b>{entry.position}. {entry.name}</b>
-                    <Button onClick={() => startItem(entry.id)} size="xs" type="button">Добавить блюдо</Button>
-                  </div>
-                  {entry.items.length === 0 ? <p className="text-sm text-muted-foreground">В этой категории пока нет блюд.</p> : (
-                    <div className="divide-y rounded-xl border">
-                      {entry.items.map((menuItem) => (
-                        <button className="flex w-full items-center justify-between gap-4 px-3 py-2 text-left hover:bg-muted" key={menuItem.id} onClick={() => editItem(entry.id, menuItem)} type="button">
-                          <span><b className="block text-sm">{menuItem.name}</b><small className="text-muted-foreground">{menuItem.weightGrams ? `${menuItem.weightGrams} г · ` : ''}{menuItem.marketingBadge ?? 'без метки'}</small></span>
-                          <span className="shrink-0 text-sm font-medium">{menuItem.priceKopecks / 100} ₽</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </section>
-              ))}
-            </CardContent>
-          </Card>
-
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)]">
-            <Editor disabled={addCategory.isPending} onSubmit={() => addCategory.mutate()} title="Новая категория">
-              <Input onChange={(event) => setCategory((value) => ({ ...value, name: event.target.value }))} placeholder="Завтраки" required value={category.name} />
-              <Input onChange={(event) => setCategory((value) => ({ ...value, slug: event.target.value }))} placeholder="breakfast" required value={category.slug} />
-              <NumberInput label="Позиция" onChange={(position) => setCategory((value) => ({ ...value, position: Number(position) }))} value={category.position} />
-            </Editor>
-
-            <Editor disabled={!categoryId || saveItem.isPending} onSubmit={() => saveItem.mutate()} title={editingItemId ? 'Редактирование блюда' : 'Новое блюдо'}>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Input onChange={(event) => setItem((value) => ({ ...value, name: event.target.value }))} placeholder="Название" required value={item.name} />
-                <Input onChange={(event) => setItem((value) => ({ ...value, slug: event.target.value }))} placeholder="avocado-toast" required value={item.slug} />
-              </div>
-              <Textarea onChange={(event) => setItem((value) => ({ ...value, description: nullableText(event.target.value) }))} placeholder="Короткое описание" value={item.description ?? ''} />
-              <Textarea onChange={(event) => setItem((value) => ({ ...value, ingredients: nullableText(event.target.value) }))} placeholder="Состав и ингредиенты" value={item.ingredients ?? ''} />
-              <div className="grid gap-3 sm:grid-cols-3">
-                <NumberInput label="Цена, ₽" min={0} onChange={(value) => setItem((draft) => ({ ...draft, priceKopecks: Math.round(Number(value) * 100) }))} required value={item.priceKopecks / 100} />
-                <NullableNumberInput label="Вес, г" onChange={(value) => setItem((draft) => ({ ...draft, weightGrams: nullableNumber(value) }))} value={item.weightGrams} />
-                <NumberInput label="Позиция" min={0} onChange={(value) => setItem((draft) => ({ ...draft, position: Number(value) }))} value={item.position} />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-4">
-                <NullableNumberInput label="Ккал" onChange={(value) => setItem((draft) => ({ ...draft, calories: nullableNumber(value) }))} value={item.calories} />
-                <NullableNumberInput label="Белки" onChange={(value) => setItem((draft) => ({ ...draft, proteins: nullableNumber(value) }))} value={item.proteins} />
-                <NullableNumberInput label="Жиры" onChange={(value) => setItem((draft) => ({ ...draft, fats: nullableNumber(value) }))} value={item.fats} />
-                <NullableNumberInput label="Углеводы" onChange={(value) => setItem((draft) => ({ ...draft, carbohydrates: nullableNumber(value) }))} value={item.carbohydrates} />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Input onChange={(event) => setItem((value) => ({ ...value, imageUrl: nullableText(event.target.value) }))} placeholder="https://… ссылка на фото" type="url" value={item.imageUrl ?? ''} />
-                <label className="grid gap-1 text-sm font-medium">Метка
-                  <select className="h-10 rounded-xl border bg-input/30 px-3" onChange={(event) => setItem((value) => ({ ...value, marketingBadge: event.target.value ? event.target.value as MarketingBadge : null }))} value={item.marketingBadge ?? ''}>
-                    <option value="">Без метки</option><option value="NEW">Новинка</option><option value="HIT">Хит</option><option value="SEASONAL">Сезонное</option><option value="SPECIAL">Спецпредложение</option>
-                  </select>
-                </label>
-              </div>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm sm:grid-cols-3">
-                <Flag checked={item.isVegetarian} label="Вегетарианское" onChange={(checked) => setItem((value) => ({ ...value, isVegetarian: checked }))} />
-                <Flag checked={item.isSpicy} label="Острое" onChange={(checked) => setItem((value) => ({ ...value, isSpicy: checked }))} />
-                <Flag checked={item.isLactoseFree} label="Без лактозы" onChange={(checked) => setItem((value) => ({ ...value, isLactoseFree: checked }))} />
-                <Flag checked={item.isGlutenFree} label="Без глютена" onChange={(checked) => setItem((value) => ({ ...value, isGlutenFree: checked }))} />
-                <Flag checked={item.isLight} label="Лёгкое" onChange={(checked) => setItem((value) => ({ ...value, isLight: checked }))} />
-              </div>
-              <p className="text-xs text-muted-foreground">{categoryId ? 'Изменения сохранятся в выбранной категории.' : 'Сначала выберите категорию кнопкой «Добавить блюдо».'}</p>
-              {editingItemId ? <Button onClick={() => { setItem(emptyItem); setEditingItemId(null) }} type="button" variant="outline">Отменить редактирование</Button> : null}
-            </Editor>
-          </div>
-        </> : <Card><CardContent className="py-14 text-muted-foreground">Выберите набор меню слева.</CardContent></Card>}
-      </div>
-      </div>
-    </section>
-  )
+function MenuList() {
+  const menus = useMenus()
+  return <section className="admin-page"><AdminPageHeader eyebrow="Каталог" title="Меню" description="Каждый набор содержит категории и блюда. Откройте набор, чтобы увидеть структуру — формы больше не спрятаны внизу страницы." actions={<Button asChild><Link to="/menus/new">Создать набор меню</Link></Button>} /><Card><CardHeader><CardTitle>Наборы меню</CardTitle><CardDescription>Набор можно назначить одному или нескольким ресторанам.</CardDescription></CardHeader><CardContent className="admin-directory-list">
+    {menus.data?.menus.map((menu) => <Link className="admin-directory-row" key={menu.id} params={{ menuId: menu.id }} to="/menus/$menuId"><span className="admin-menu-symbol">{menu.name.slice(0, 1).toUpperCase()}</span><span><strong>{menu.name}</strong><small>{menu.categoryCount} категорий · {menu.restaurantCount} ресторанов</small></span><span className="admin-row-action">Открыть</span></Link>)}
+    {!menus.isPending && menus.data?.menus.length === 0 ? <p className="admin-empty-copy">Создайте первый набор, затем добавьте в него категории и блюда.</p> : null}{menus.isError ? <p className="admin-state-message admin-state-error">Не удалось загрузить меню.</p> : null}
+  </CardContent></Card></section>
 }
 
-function Editor({ title, onSubmit, disabled, children }: { title: string; onSubmit: () => void; disabled: boolean; children: React.ReactNode }) {
-  return <Card><CardHeader><CardTitle>{title}</CardTitle></CardHeader><CardContent><form className="grid gap-3" onSubmit={(event) => { event.preventDefault(); onSubmit() }}>{children}<Button disabled={disabled} type="submit">Сохранить</Button></form></CardContent></Card>
+function MenuCreator() {
+  const api = useCatalogApi(); const navigate = useNavigate(); const queryClient = useQueryClient(); const [draft, setDraft] = useState(emptyMenu)
+  const create = useMutation({ mutationFn: () => api.createMenu({ ...draft, slug: draft.slug || toPublicSlug(draft.name) }), onSuccess: async ({ menu }) => { await queryClient.invalidateQueries({ queryKey: ['admin', 'menus'] }); await navigate({ to: '/menus/$menuId', params: { menuId: menu.id } }) } })
+  return <section className="admin-page admin-page-editor"><AdminPageHeader eyebrow="Меню" title="Новый набор меню" description="Например, основное меню ресторанов или отдельное меню аэропорта." actions={<Button asChild variant="outline"><Link to="/menus">К списку</Link></Button>} /><Card className="admin-editor-surface"><CardHeader><CardTitle>Название набора</CardTitle><CardDescription>После создания вы перейдёте к категориям и блюдам.</CardDescription></CardHeader><CardContent><form className="admin-form-stack" onSubmit={(event) => { event.preventDefault(); create.mutate() }}><AdminField label="Название" hint="Понятное внутреннее название" required><Input required placeholder="Основное меню" value={draft.name} onChange={(event) => setDraft((value) => ({ ...value, name: event.target.value }))} /></AdminField><AdminField label="Описание" hint="Для чего используется этот набор"><Textarea placeholder="Меню городских ресторанов сети" value={draft.description ?? ''} onChange={(event) => setDraft((value) => ({ ...value, description: nullableText(event.target.value) }))} /></AdminField><details className="admin-advanced-fields"><summary>Адрес страницы</summary><div className="pt-4"><AdminField label="Адрес" hint="Заполнится автоматически по названию. Меняйте только при необходимости."><Input placeholder="main-menu" value={draft.slug} onChange={(event) => setDraft((value) => ({ ...value, slug: event.target.value }))} /></AdminField></div></details>{create.isError ? <p className="admin-state-message admin-state-error">Не удалось создать набор. Возможно, такое название или адрес уже используются.</p> : null}<div className="admin-form-actions"><Button disabled={create.isPending} size="lg" type="submit">Создать и перейти к блюдам</Button></div></form></CardContent></Card></section>
 }
 
-function NumberInput({ label, value, onChange, min, required }: { label: string; value: number; onChange: (value: string) => void; min?: number; required?: boolean }) {
-  return <label className="grid gap-1 text-sm font-medium">{label}<Input min={min} onChange={(event) => onChange(event.target.value)} required={required} step="any" type="number" value={value} /></label>
+function MenuDetail({ menuId }: { menuId?: string }) {
+  const api = useCatalogApi(); const navigate = useNavigate(); const queryClient = useQueryClient(); const detail = useMenuDetail(menuId)
+  const removeMenu = useMutation({ mutationFn: () => api.deleteMenu(menuId!), onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ['admin', 'menus'] }); await navigate({ to: '/menus' }) } })
+  const removeCategory = useMutation({ mutationFn: (categoryId: string) => api.deleteCategory(categoryId), onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['admin', 'menu', menuId] }) })
+  if (detail.isPending) return <section className="admin-page"><p className="admin-state-message">Загружаем меню…</p></section>
+  if (!detail.data) return <section className="admin-page"><AdminPageHeader eyebrow="Меню" title="Набор не найден" description="Проверьте адрес или вернитесь к списку." actions={<Button asChild variant="outline"><Link to="/menus">К списку</Link></Button>} /></section>
+  return <section className="admin-page"><AdminPageHeader eyebrow="Меню" title={detail.data.menu.name} description={detail.data.menu.description ?? 'Категории и блюда этого набора.'} actions={<><Button asChild variant="outline"><Link to="/menus">Все наборы</Link></Button><Button asChild><Link params={{ menuId: menuId! }} to="/menus/$menuId/categories/new">Добавить категорию</Link></Button></>} />
+    <div className="admin-menu-categories">{detail.data.categories.map((category) => <Card key={category.id}><CardHeader><div><CardTitle>{category.name}</CardTitle><CardDescription>{category.items.length} {dishWord(category.items.length)}</CardDescription></div><div className="flex flex-wrap gap-2"><Button asChild size="sm"><Link params={{ menuId: menuId!, categoryId: category.id }} to="/menus/$menuId/categories/$categoryId/items/new">Добавить блюдо</Link></Button><Button disabled={removeCategory.isPending} size="sm" variant="ghost" onClick={() => { if (window.confirm(`Удалить категорию «${category.name}» и все её блюда?`)) removeCategory.mutate(category.id) }}>Удалить категорию</Button></div></CardHeader><CardContent className="admin-menu-item-list">{category.items.map((item) => <Link className="admin-menu-item-row" key={item.id} params={{ menuId: menuId!, itemId: item.id }} to="/menus/$menuId/items/$itemId"><span className="admin-catalog-thumb">{item.imageUrl ? <img alt="" src={item.imageUrl} /> : <span>Фото</span>}</span><span><strong>{item.name}</strong><small>{item.weightGrams ? `${item.weightGrams} г` : 'Вес не указан'}{item.marketingBadge ? ` · ${badgeLabel[item.marketingBadge]}` : ''}</small></span><b>{item.priceKopecks / 100} ₽</b></Link>)}{category.items.length === 0 ? <p className="admin-empty-copy">В категории пока нет блюд.</p> : null}</CardContent></Card>)}{detail.data.categories.length === 0 ? <div className="admin-help-note"><strong>Начните с категорий</strong><p>Например: «Завтраки», «Горячие блюда», «Кофе». После этого внутри каждой категории появится кнопка добавления блюда.</p></div> : null}</div>
+    <Card className="admin-danger-zone"><CardHeader><CardTitle>Удаление набора меню</CardTitle><CardDescription>{detail.data.menu.restaurantCount ? `Сейчас набор назначен ${detail.data.menu.restaurantCount} ресторану. Сначала выберите для него другое меню.` : 'Будут удалены все категории и блюда этого набора.'}</CardDescription></CardHeader><CardContent><Button disabled={removeMenu.isPending || detail.data.menu.restaurantCount > 0} variant="destructive" onClick={() => { if (window.confirm(`Удалить набор «${detail.data.menu.name}»?`)) removeMenu.mutate() }}>Удалить набор меню</Button>{removeMenu.isError ? <p className="admin-state-message admin-state-error">Не удалось удалить набор. Проверьте, не назначен ли он ресторану.</p> : null}</CardContent></Card>
+  </section>
 }
 
-function NullableNumberInput({ label, value, onChange }: { label: string; value: number | null; onChange: (value: string) => void }) {
-  return <label className="grid gap-1 text-sm font-medium">{label}<Input min={0} onChange={(event) => onChange(event.target.value)} step="any" type="number" value={value ?? ''} /></label>
+function CategoryCreator({ menuId }: { menuId?: string }) {
+  const api = useCatalogApi(); const navigate = useNavigate(); const queryClient = useQueryClient(); const [draft, setDraft] = useState(emptyCategory)
+  const create = useMutation({ mutationFn: () => api.createCategory(menuId!, { ...draft, slug: draft.slug || toPublicSlug(draft.name) }), onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ['admin', 'menu', menuId] }); await navigate({ to: '/menus/$menuId', params: { menuId: menuId! } }) } })
+  return <section className="admin-page admin-page-editor"><AdminPageHeader eyebrow="Меню" title="Новая категория" description="Категория объединяет блюда в понятную для гостя группу." actions={<Button asChild variant="outline"><Link params={{ menuId: menuId! }} to="/menus/$menuId">Назад к меню</Link></Button>} /><Card className="admin-editor-surface"><CardContent className="pt-6"><form className="admin-form-stack" onSubmit={(event) => { event.preventDefault(); create.mutate() }}><AdminField label="Название" hint="Например: Завтраки" required><Input required placeholder="Завтраки" value={draft.name} onChange={(event) => setDraft((value) => ({ ...value, name: event.target.value }))} /></AdminField><details className="admin-advanced-fields"><summary>Дополнительные настройки</summary><div className="admin-form-grid-2 pt-4"><AdminField label="Адрес категории" hint="Заполнится автоматически по названию"><Input placeholder="breakfast" value={draft.slug} onChange={(event) => setDraft((value) => ({ ...value, slug: event.target.value }))} /></AdminField><AdminField label="Порядок отображения" hint="Меньшее число показывается раньше"><Input min={0} type="number" value={draft.position} onChange={(event) => setDraft((value) => ({ ...value, position: Number(event.target.value) }))} /></AdminField></div></details>{create.isError ? <p className="admin-state-message admin-state-error">Не удалось создать категорию.</p> : null}<div className="admin-form-actions"><Button disabled={create.isPending} size="lg" type="submit">Создать категорию</Button></div></form></CardContent></Card></section>
 }
 
-function Flag({ checked, label, onChange }: { checked: boolean; label: string; onChange: (checked: boolean) => void }) {
-  return <label className="flex items-center gap-2"><input checked={checked} onChange={(event) => onChange(event.target.checked)} type="checkbox" />{label}</label>
+function ItemEditor({ mode, menuId, categoryId, itemId }: { mode: 'create-item' | 'edit-item'; menuId?: string; categoryId?: string; itemId?: string }) {
+  const api = useCatalogApi(); const navigate = useNavigate(); const queryClient = useQueryClient(); const detail = useMenuDetail(menuId)
+  const selected = detail.data?.categories.flatMap((category) => category.items).find((item) => item.id === itemId)
+  const [draft, setDraft] = useState<UpsertMenuItemRequest>(emptyItem)
+  useEffect(() => { if (mode === 'edit-item' && selected) setDraft(toItemDraft(selected)) }, [mode, selected])
+  const change = <K extends keyof UpsertMenuItemRequest>(key: K, value: UpsertMenuItemRequest[K]) => setDraft((current) => ({ ...current, [key]: value }))
+  const save = useMutation({ mutationFn: () => { const payload = { ...draft, slug: draft.slug || toPublicSlug(draft.name) }; return mode === 'edit-item' ? api.updateItem(itemId!, payload) : api.createItem(categoryId!, payload) }, onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ['admin', 'menu', menuId] }); await navigate({ to: '/menus/$menuId', params: { menuId: menuId! } }) } })
+  const remove = useMutation({ mutationFn: () => api.deleteItem(itemId!), onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ['admin', 'menu', menuId] }); await navigate({ to: '/menus/$menuId', params: { menuId: menuId! } }) } })
+  if (mode === 'edit-item' && detail.isPending) return <section className="admin-page"><p className="admin-state-message">Загружаем блюдо…</p></section>
+  if (mode === 'edit-item' && !selected) return <section className="admin-page"><AdminPageHeader eyebrow="Меню" title="Блюдо не найдено" description="Возможно, оно было удалено." actions={<Button asChild variant="outline"><Link params={{ menuId: menuId! }} to="/menus/$menuId">Вернуться к меню</Link></Button>} /></section>
+  return <section className="admin-page admin-page-editor"><AdminPageHeader eyebrow="Блюдо" title={mode === 'create-item' ? 'Новое блюдо' : selected?.name ?? 'Редактирование'} description="Карточка формирует публичное меню и подробное окно блюда." actions={<Button asChild variant="outline"><Link params={{ menuId: menuId! }} to="/menus/$menuId">Назад к меню</Link></Button>} /><Card className="admin-editor-surface"><CardHeader><CardTitle>Основная информация</CardTitle><CardDescription>Название, описание, фото, выход и цена.</CardDescription></CardHeader><CardContent><form className="admin-form-stack" onSubmit={(event) => { event.preventDefault(); save.mutate() }}>
+    <AdminFormIntro>Пишите так, как информацию увидит гость. Не используйте внутренние сокращения.</AdminFormIntro><div className="admin-form-grid-2"><AdminField label="Название" required><Input required placeholder="Тост с авокадо и яйцом пашот" value={draft.name} onChange={(event) => change('name', event.target.value)} /></AdminField><AdminField label="Фото" hint="Ссылка из медиатеки"><Input type="url" placeholder="https://…" value={draft.imageUrl ?? ''} onChange={(event) => change('imageUrl', nullableText(event.target.value))} /></AdminField></div><AdminField label="Короткое описание" hint="Одно-два предложения о блюде"><Textarea placeholder="Хрустящий хлеб, авокадо и нежное яйцо пашот…" value={draft.description ?? ''} onChange={(event) => change('description', nullableText(event.target.value))} /></AdminField><AdminField label="Состав" hint="Ингредиенты через запятую"><Textarea placeholder="Хлеб на закваске, авокадо, яйцо…" value={draft.ingredients ?? ''} onChange={(event) => change('ingredients', nullableText(event.target.value))} /></AdminField><div className="admin-form-grid-2"><AdminField label="Цена, ₽" required><Input min={0} required type="number" value={draft.priceKopecks / 100} onChange={(event) => change('priceKopecks', Math.round(Number(event.target.value) * 100))} /></AdminField><AdminField label="Выход, г" hint="Вес одной порции"><Input min={0} type="number" value={draft.weightGrams ?? ''} onChange={(event) => change('weightGrams', nullableNumber(event.target.value))} /></AdminField></div><div className="admin-form-grid-4"><AdminField label="Ккал"><Input min={0} type="number" value={draft.calories ?? ''} onChange={(event) => change('calories', nullableNumber(event.target.value))} /></AdminField><AdminField label="Белки, г"><Input min={0} type="number" value={draft.proteins ?? ''} onChange={(event) => change('proteins', nullableNumber(event.target.value))} /></AdminField><AdminField label="Жиры, г"><Input min={0} type="number" value={draft.fats ?? ''} onChange={(event) => change('fats', nullableNumber(event.target.value))} /></AdminField><AdminField label="Углеводы, г"><Input min={0} type="number" value={draft.carbohydrates ?? ''} onChange={(event) => change('carbohydrates', nullableNumber(event.target.value))} /></AdminField></div>
+    <section className="admin-form-section"><h3>Особенности и метка</h3><div className="admin-flag-grid"><Flag checked={draft.isVegetarian} label="Вегетарианское" onChange={(checked) => change('isVegetarian', checked)} /><Flag checked={draft.isSpicy} label="Острое" onChange={(checked) => change('isSpicy', checked)} /><Flag checked={draft.isLactoseFree} label="Без лактозы" onChange={(checked) => change('isLactoseFree', checked)} /><Flag checked={draft.isGlutenFree} label="Без глютена" onChange={(checked) => change('isGlutenFree', checked)} /><Flag checked={draft.isLight} label="Лёгкое" onChange={(checked) => change('isLight', checked)} /></div><AdminField label="Яркая метка на фото"><select value={draft.marketingBadge ?? ''} onChange={(event) => change('marketingBadge', event.target.value ? event.target.value as MarketingBadge : null)}><option value="">Без метки</option><option value="NEW">Новинка</option><option value="HIT">Хит</option><option value="SEASONAL">Сезонное</option><option value="SPECIAL">Спецпредложение</option></select></AdminField></section>
+    <details className="admin-advanced-fields"><summary>Технические настройки</summary><div className="admin-form-grid-2 pt-4"><AdminField label="Адрес блюда" hint="Заполнится автоматически по названию"><Input placeholder="avocado-toast" value={draft.slug} onChange={(event) => change('slug', event.target.value)} /></AdminField><AdminField label="Порядок отображения" hint="Меньшее число показывается раньше"><Input min={0} type="number" value={draft.position} onChange={(event) => change('position', Number(event.target.value))} /></AdminField></div></details>{save.isError ? <p className="admin-state-message admin-state-error">Не удалось сохранить блюдо. Проверьте обязательные поля и адрес.</p> : null}<div className="admin-form-actions"><Button disabled={save.isPending} size="lg" type="submit">{save.isPending ? 'Сохраняем…' : 'Сохранить блюдо'}</Button></div>
+  </form></CardContent></Card>{mode === 'edit-item' ? <Card className="admin-danger-zone"><CardHeader><CardTitle>Удаление блюда</CardTitle><CardDescription>Блюдо исчезнет из меню всех ресторанов, где используется этот набор.</CardDescription></CardHeader><CardContent><Button disabled={remove.isPending} variant="destructive" onClick={() => { if (window.confirm(`Удалить блюдо «${selected?.name}»?`)) remove.mutate() }}>{remove.isPending ? 'Удаляем…' : 'Удалить блюдо'}</Button>{remove.isError ? <p className="admin-state-message admin-state-error">Не удалось удалить блюдо.</p> : null}</CardContent></Card> : null}</section>
 }
+
+function Flag({ checked, label, onChange }: { checked: boolean; label: string; onChange: (checked: boolean) => void }) { return <label className="admin-compact-check"><input checked={checked} onChange={(event) => onChange(event.target.checked)} type="checkbox" />{label}</label> }
+function toItemDraft(item: MenuItem): UpsertMenuItemRequest { const { id: _id, ...draft } = item; return draft }
+function dishWord(value: number) { const mod10 = value % 10; const mod100 = value % 100; return mod10 === 1 && mod100 !== 11 ? 'блюдо' : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? 'блюда' : 'блюд' }
+const badgeLabel = { NEW: 'Новинка', HIT: 'Хит', SEASONAL: 'Сезонное', SPECIAL: 'Спецпредложение' } as const

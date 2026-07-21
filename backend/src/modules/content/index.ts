@@ -3,6 +3,7 @@ import {
   contentEntryResponseSchema,
   contentEntryTypeSchema,
   contentBlockListSchema,
+  operationSuccessResponseSchema,
   upsertContentEntryRequestSchema,
   type ContentEntry,
   type UpsertContentEntryRequest,
@@ -30,6 +31,7 @@ export function createContentModule({ db, requireAuth, requireAdmin }: { db: DbC
   const list = createRoute({ method: 'get', path: '/content', request: { query: z.object({ type: contentEntryTypeSchema.optional() }) }, responses: { 200: { content: { 'application/json': { schema: contentEntryListResponseSchema } }, description: 'Content entries' } } })
   const create = createRoute({ method: 'post', path: '/content', request: { body: { content: { 'application/json': { schema: upsertContentEntryRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: contentEntryResponseSchema } }, description: 'Content entry created' } } })
   const update = createRoute({ method: 'put', path: '/content/{id}', request: { params: idParams, body: { content: { 'application/json': { schema: upsertContentEntryRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: contentEntryResponseSchema } }, description: 'Content entry updated' }, 404: { content: errorContent, description: 'Content entry not found' } } })
+  const remove = createRoute({ method: 'delete', path: '/content/{id}', request: { params: idParams }, responses: { 200: { content: { 'application/json': { schema: operationSuccessResponseSchema } }, description: 'Content entry deleted' }, 404: { content: errorContent, description: 'Content entry not found' } } })
   const publicList = createRoute({ method: 'get', path: '/', request: { query: z.object({ type: contentEntryTypeSchema }) }, responses: { 200: { content: { 'application/json': { schema: contentEntryListResponseSchema } }, description: 'Published content entries' } } })
   const publicDetail = createRoute({ method: 'get', path: '/{slug}', request: { params: z.object({ slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/) }) }, responses: { 200: { content: { 'application/json': { schema: contentEntryResponseSchema } }, description: 'Published content entry' }, 404: { content: errorContent, description: 'Content entry not found' } } })
 
@@ -58,9 +60,14 @@ export function createContentModule({ db, requireAuth, requireAdmin }: { db: DbC
     try {
       const entry = await db.contentEntry.update({ where: { id: c.req.valid('param').id }, data: dates(c.req.valid('json')) })
       return c.json({ entry: dto(entry) }, 200)
-    } catch {
-      throw new AppError(404, 'NOT_FOUND', 'Content entry not found')
+    } catch (error) {
+      throw error
     }
+  })
+  adminRoutes.openapi(remove, async (c) => {
+    const deleted = await db.contentEntry.deleteMany({ where: { id: c.req.valid('param').id } })
+    if (deleted.count === 0) throw new AppError(404, 'NOT_FOUND', 'Content entry not found')
+    return c.json({ success: true as const }, 200)
   })
   return { routes, adminRoutes }
 }

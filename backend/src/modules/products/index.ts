@@ -1,5 +1,6 @@
 import {
   productDetailSchema,
+  productDeleteResponseSchema,
   productListResponseSchema,
   productResponseSchema,
   productTypeSchema,
@@ -13,6 +14,7 @@ import type { MiddlewareHandler } from 'hono'
 import { z } from 'zod'
 
 import type { DbClient } from '../../db'
+import { Prisma } from '../../generated/prisma/client'
 import { AppError, validationErrorHook } from '../../http/errors'
 import type { AuthHttpEnv } from '../auth'
 
@@ -50,7 +52,16 @@ function dto(product: ProductRecord): Product {
     tastingNotes: z.array(z.string()).parse(product.tastingNotes),
     galleryUrls: z.array(z.string()).parse(product.galleryUrls),
     details: z.array(productDetailSchema).parse(product.details),
-    variants: product.variants.map((variant) => ({ ...productVariantInputSchema.parse(variant), id: variant.id })),
+    variants: product.variants.map((variant) => ({
+      id: variant.id,
+      ...productVariantInputSchema.parse({
+        label: variant.label,
+        weightGrams: variant.weightGrams,
+        priceKopecks: variant.priceKopecks,
+        position: variant.position,
+        isAvailable: variant.isAvailable,
+      }),
+    })),
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
   }
@@ -61,6 +72,31 @@ function data(input: UpsertProductRequest) {
   return { product, variants }
 }
 
+async function availableProductSlug(db: DbClient, requestedSlug: string) {
+  const matches = await db.product.findMany({
+    where: { slug: { startsWith: requestedSlug } },
+    select: { slug: true },
+  })
+  const occupied = new Set(matches.map(({ slug }) => slug))
+  if (!occupied.has(requestedSlug)) return requestedSlug
+
+  for (let suffix = 2; suffix < 10_000; suffix += 1) {
+    const ending = `-${suffix}`
+    const candidate = `${requestedSlug.slice(0, 120 - ending.length)}${ending}`
+    if (!occupied.has(candidate)) return candidate
+  }
+
+  throw new AppError(409, 'CONFLICT', 'Не удалось подобрать свободный адрес страницы.')
+}
+
+function productWriteError(error: unknown): never {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error.code === 'P2025') throw new AppError(404, 'NOT_FOUND', 'Товар не найден.')
+    if (error.code === 'P2002') throw new AppError(409, 'CONFLICT', 'Этот адрес страницы уже занят. Укажите другой.')
+  }
+  throw error
+}
+
 export function createProductsModule({ db, requireAuth, requireAdmin }: { db: DbClient; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireAdmin: MiddlewareHandler<AuthHttpEnv> }) {
   const routes = new OpenAPIHono({ defaultHook: validationErrorHook })
   const adminRoutes = new OpenAPIHono<AuthHttpEnv>({ defaultHook: validationErrorHook })
@@ -69,8 +105,9 @@ export function createProductsModule({ db, requireAuth, requireAdmin }: { db: Db
   const publicList = createRoute({ method: 'get', path: '/', request: { query: z.object({ type: productTypeSchema }) }, responses: { 200: { content: { 'application/json': { schema: productListResponseSchema } }, description: 'Published products' } } })
   const publicDetail = createRoute({ method: 'get', path: '/{slug}', request: { params: slugParams }, responses: { 200: { content: { 'application/json': { schema: productResponseSchema } }, description: 'Published product' }, 404: { content: errorContent, description: 'Product not found' } } })
   const adminList = createRoute({ method: 'get', path: '/products', request: { query: z.object({ type: productTypeSchema.optional() }) }, responses: { 200: { content: { 'application/json': { schema: productListResponseSchema } }, description: 'Products' } } })
-  const create = createRoute({ method: 'post', path: '/products', request: { body: { content: { 'application/json': { schema: upsertProductRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: productResponseSchema } }, description: 'Product created' } } })
-  const update = createRoute({ method: 'put', path: '/products/{id}', request: { params: idParams, body: { content: { 'application/json': { schema: upsertProductRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: productResponseSchema } }, description: 'Product updated' }, 404: { content: errorContent, description: 'Product not found' } } })
+  const create = createRoute({ method: 'post', path: '/products', request: { body: { content: { 'application/json': { schema: upsertProductRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: productResponseSchema } }, description: 'Product created' }, 409: { content: errorContent, description: 'Product slug conflict' } } })
+  const update = createRoute({ method: 'put', path: '/products/{id}', request: { params: idParams, body: { content: { 'application/json': { schema: upsertProductRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: productResponseSchema } }, description: 'Product updated' }, 404: { content: errorContent, description: 'Product not found' }, 409: { content: errorContent, description: 'Product slug conflict' } } })
+  const remove = createRoute({ method: 'delete', path: '/products/{id}', request: { params: idParams }, responses: { 200: { content: { 'application/json': { schema: productDeleteResponseSchema } }, description: 'Product deleted' }, 404: { content: errorContent, description: 'Product not found' } } })
 
   routes.openapi(publicList, async (c) => {
     const products = await db.product.findMany({ where: { type: c.req.valid('query').type, status: 'PUBLISHED' }, include: includeVariants, orderBy: [{ isFeatured: 'desc' }, { position: 'asc' }, { name: 'asc' }] })
@@ -88,16 +125,29 @@ export function createProductsModule({ db, requireAuth, requireAdmin }: { db: Db
   })
   adminRoutes.openapi(create, async (c) => {
     const input = data(c.req.valid('json'))
-    const product = await db.product.create({ data: { ...input.product, variants: { create: input.variants } }, include: includeVariants })
-    return c.json({ product: dto(product as ProductRecord) }, 201)
+    try {
+      const slug = await availableProductSlug(db, input.product.slug)
+      const product = await db.product.create({ data: { ...input.product, slug, variants: { create: input.variants } }, include: includeVariants })
+      return c.json({ product: dto(product as ProductRecord) }, 201)
+    } catch (error) {
+      return productWriteError(error)
+    }
   })
   adminRoutes.openapi(update, async (c) => {
     const input = data(c.req.valid('json'))
     try {
       const product = await db.product.update({ where: { id: c.req.valid('param').id }, data: { ...input.product, variants: { deleteMany: {}, create: input.variants } }, include: includeVariants })
       return c.json({ product: dto(product as ProductRecord) }, 200)
-    } catch {
-      throw new AppError(404, 'NOT_FOUND', 'Product not found')
+    } catch (error) {
+      return productWriteError(error)
+    }
+  })
+  adminRoutes.openapi(remove, async (c) => {
+    try {
+      await db.product.delete({ where: { id: c.req.valid('param').id } })
+      return c.json({ success: true as const }, 200)
+    } catch (error) {
+      return productWriteError(error)
     }
   })
 
