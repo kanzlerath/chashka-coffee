@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { AdminRestaurant, AdminRestaurantMenuDetailResponse, RestaurantOpeningHoursEntry, RestaurantScheduleException, UpsertRestaurantMenuItemOverrideRequest, UpsertRestaurantRequest, UpsertRestaurantScheduleExceptionRequest } from '@chashka-coffee/contracts'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
+import { ZodError } from 'zod'
 
 import { AdminField, AdminFormIntro, AdminPageHeader, AdminTabs } from '@/components/admin'
 import { Button } from '@/components/ui/button'
@@ -52,7 +53,7 @@ export function RestaurantsPage({ mode = 'list', restaurantId }: { mode?: 'list'
 
   useEffect(() => {
     if (mode === 'create') setDraft(freshRestaurant())
-    if (selected) setDraft(toDraft(selected))
+    if (selected) setDraft(restaurantToDraft(selected))
     setOverrideItem(null)
     setScheduleDraft(emptyScheduleException())
     setEditorTab('main')
@@ -64,7 +65,7 @@ export function RestaurantsPage({ mode = 'list', restaurantId }: { mode?: 'list'
       return selected ? api.updateRestaurant(selected.id, payload) : api.createRestaurant(payload)
     },
     onSuccess: async (result) => {
-      setDraft(toDraft(result.restaurant))
+      setDraft(restaurantToDraft(result.restaurant))
       await queryClient.invalidateQueries({ queryKey: ['admin', 'restaurants'] })
       if (mode === 'create') {
         await navigate({ to: '/restaurants/$restaurantId', params: { restaurantId: result.restaurant.id } })
@@ -150,7 +151,7 @@ export function RestaurantsPage({ mode = 'list', restaurantId }: { mode?: 'list'
         {restaurantMenu.isError ? <p className="text-sm text-muted-foreground">Назначьте набор меню, чтобы настроить позиции только для этой точки.</p> : null}
         {!selected ? <p className="text-sm text-muted-foreground">Сначала сохраните ресторан, затем назначьте ему набор меню.</p> : null}
         </> : null}
-        {save.isError && <p className="text-sm text-destructive">{saveErrorMessage(save.error)}</p>}
+        {save.isError && <p className="text-sm text-destructive">{restaurantSaveErrorMessage(save.error)}</p>}
         <div className="admin-form-actions"><Button type="submit" size="lg" disabled={save.isPending}>{save.isPending ? 'Сохраняем…' : selected ? 'Сохранить изменения' : 'Создать ресторан'}</Button><Button asChild type="button" variant="outline"><Link to="/restaurants">Отмена</Link></Button></div>
       </form>
     </CardContent></Card>
@@ -163,8 +164,15 @@ function freshRestaurant(): UpsertRestaurantRequest {
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="grid gap-1.5 text-sm font-medium">{label}{children}</label> }
-function toDraft(restaurant: AdminRestaurant): UpsertRestaurantRequest {
-  const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...draft } = restaurant
+export function restaurantToDraft(restaurant: AdminRestaurant): UpsertRestaurantRequest {
+  const {
+    id: _id,
+    menuId: _menuId,
+    menuName: _menuName,
+    createdAt: _createdAt,
+    updatedAt: _updatedAt,
+    ...draft
+  } = restaurant
   return {
     ...draft,
     format: restaurant.format === 'AIRPORT' ? 'AIRPORT' : 'CITY',
@@ -175,9 +183,49 @@ function toDraft(restaurant: AdminRestaurant): UpsertRestaurantRequest {
 const formatLabel = { CITY: 'Город', PARK: 'Город', AIRPORT: 'Аэропорт', APART_HOTEL: 'Город' }
 const dayLabel = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
 
-function saveErrorMessage(error: unknown) {
-  if (error instanceof ApiRequestError && error.code === 'CONFLICT') return error.message
-  return 'Не удалось сохранить. Проверьте обязательные поля и уникальность адреса страницы.'
+const restaurantFieldLabels: Record<string, string> = {
+  slug: 'Адрес страницы',
+  name: 'Название ресторана',
+  format: 'Тип ресторана',
+  area: 'Тип ресторана',
+  city: 'Город',
+  address: 'Адрес',
+  phone: 'Телефон',
+  description: 'Короткое описание',
+  coverImageUrl: 'Фотография ресторана',
+  latitude: 'Широта',
+  longitude: 'Долгота',
+  yandexMapsUrl: 'Яндекс Карты',
+  twoGisUrl: '2ГИС',
+  openingHours: 'График работы',
+}
+
+export function restaurantSaveErrorMessage(error: unknown) {
+  const field = validationFieldLabel(error)
+  if (field) return `Не удалось сохранить: проверьте поле «${field}».`
+
+  if (error instanceof ApiRequestError) {
+    if (error.code === 'CONFLICT') return error.message
+    if (error.code === 'VALIDATION_ERROR') return 'Сервер отклонил данные ресторана. Проверьте поля текущего раздела.'
+    return `Не удалось сохранить ресторан: ${error.message}`
+  }
+
+  if (error instanceof TypeError) return 'Нет связи с API. Проверьте, что backend запущен, и повторите сохранение.'
+  return 'Не удалось сохранить ресторан. Повторите попытку.'
+}
+
+function validationFieldLabel(error: unknown) {
+  const issues = error instanceof ZodError
+    ? error.issues
+    : error instanceof ApiRequestError && Array.isArray(error.details)
+      ? error.details
+      : []
+  const issue = issues.find((candidate): candidate is { path: unknown[] } => {
+    if (!candidate || typeof candidate !== 'object' || !('path' in candidate)) return false
+    return Array.isArray(candidate.path) && candidate.path.length > 0
+  })
+  const field = issue?.path[0]
+  return typeof field === 'string' ? restaurantFieldLabels[field] : undefined
 }
 
 function LocalOverrides({ categories, item, draft, onEdit, onChange, onCancel, onSave, onReset, saving }: {

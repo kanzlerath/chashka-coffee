@@ -13,11 +13,13 @@ export type HttpRequestOptions = {
 export class ApiRequestError extends Error {
   readonly status: number
   readonly code: string
+  readonly details?: unknown
 
-  constructor(status: number, code: string, message: string) {
+  constructor(status: number, code: string, message: string, details?: unknown) {
     super(message)
     this.status = status
     this.code = code
+    this.details = details
   }
 }
 
@@ -63,7 +65,7 @@ async function toApiError(response: Response) {
 
   try {
     const parsed = apiErrorSchema.parse(await response.json())
-    return new ApiRequestError(response.status, parsed.error.code, parsed.error.message)
+    return new ApiRequestError(response.status, parsed.error.code, parsed.error.message, parsed.error.details)
   } catch {
     return new ApiRequestError(response.status, 'INTERNAL_ERROR', fallbackMessage)
   }
