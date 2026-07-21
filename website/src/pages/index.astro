@@ -142,12 +142,12 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
     </section>
 
     <section class="home-bento" aria-label="Разделы Чашки кофе">
-      <a class="bento-card bento-app" href="/app"><h2>Приложение<br />«Чашка кофе»</h2><div class="bento-art bento-phone" aria-hidden="true"><b>ЧК</b><i>☕</i></div></a>
-      <a class="bento-card bento-coffee" href="/coffee"><h2>Кофе<br />для дома</h2><div class="bento-art coffee-pack" aria-hidden="true"><b>ЧК</b><small>зерно</small></div></a>
-      <a class="bento-card bento-event" href={featuredEvent ? `/events/${featuredEvent.slug}` : '/events'}><h2>{eventTitle}</h2><i class="event-note" aria-hidden="true">♪</i></a>
-      <a class="bento-card bento-promo" href={featuredPromotion ? `/promotions/${featuredPromotion.slug}` : '/promotions'}><h2>Акции<br />и новинки</h2><strong>{featuredPromotion?.ctaLabel ?? '−20%'}</strong></a>
-      <a class="bento-card bento-certificates" href="/certificates"><h2>Сертификаты</h2><i aria-hidden="true">✦</i></a>
-      <a class="bento-card bento-bakery" href="/bakery"><h2>Кондитерская</h2><i aria-hidden="true">◒</i></a>
+      <a class="bento-card bento-app" href="/app"><h2>Приложение<br />«Чашка кофе»</h2><img class="bento-art bento-art-app" src="/brand/bento/App.svg" alt="" aria-hidden="true" /></a>
+      <a class="bento-card bento-coffee" href="/coffee"><h2>Кофе<br />для дома</h2><img class="bento-art bento-art-coffee" src="/brand/bento/Coffeeshop.svg" alt="" aria-hidden="true" /></a>
+      <a class="bento-card bento-event" href={featuredEvent ? `/events/${featuredEvent.slug}` : '/events'}><h2>{eventTitle}</h2><img class="bento-art bento-art-event" src="/brand/bento/Evenings.svg" alt="" aria-hidden="true" /></a>
+      <a class="bento-card bento-promo" href={featuredPromotion ? `/promotions/${featuredPromotion.slug}` : '/promotions'}><h2>Акции<br />и новинки</h2><img class="bento-art bento-art-promo" src="/brand/bento/Sale.svg" alt="" aria-hidden="true" /></a>
+      <a class="bento-card bento-certificates" href="/certificates"><h2>Сертификаты</h2><img class="bento-art bento-art-certificate" src="/brand/bento/Certificate.svg" alt="" aria-hidden="true" /></a>
+      <a class="bento-card bento-bakery" href="/bakery"><h2>Кондитерская</h2><img class="bento-art bento-art-cake" src="/brand/bento/Cake.svg" alt="" aria-hidden="true" /></a>
     </section>
 
     <section class="home-day" aria-labelledby="day-title">
@@ -302,11 +302,11 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
   .ui-button{border-radius:var(--home-radius);min-height:50px;padding-inline:25px}
   .home-stories{position:relative;isolation:isolate;display:block;min-height:calc(100svh - 126px);overflow:hidden;background:#1a2f24;touch-action:pan-y;cursor:grab}
   .home-stories.is-dragging{cursor:grabbing;user-select:none}
-  .stories-media{position:absolute;z-index:-2;inset:0;min-height:0;overflow:hidden;border-radius:0!important;background:#1a2f24}
+  .stories-media{position:absolute;z-index:1;inset:0;min-height:0;overflow:hidden;border-radius:0!important;background:#1a2f24}
   .stories-media:after{position:absolute;z-index:2;inset:0;background:linear-gradient(90deg,rgba(16,24,19,.57) 0%,rgba(16,24,19,.2) 42%,rgba(16,24,19,.03) 72%),linear-gradient(0deg,rgba(16,24,19,.5) 0%,transparent 46%);content:'';pointer-events:none}
-  .story-media-item{opacity:0;transform:scale(1.04);transition:opacity .54s ease,transform 1.1s cubic-bezier(.22,1,.36,1)}
+  .story-media-item{z-index:1;opacity:0;transform:scale(1.04);transition:opacity .54s ease,transform 1.1s cubic-bezier(.22,1,.36,1)}
   .story-media-item.is-active{opacity:1;transform:scale(1.001)}
-  .stories-copy{position:absolute;z-index:3;inset:0;min-height:0;pointer-events:none}
+  .stories-copy{position:absolute;z-index:3;inset:0;height:100%;min-height:0;padding:0;background:transparent;pointer-events:none}
   .story-copy-item{--story-inset:clamp(28px,3.5vw,58px);top:auto;bottom:var(--story-inset);left:var(--story-inset);width:min(760px,calc(100% - var(--story-inset) - var(--story-inset)));opacity:0;pointer-events:none;transform:translateY(20px);transition:opacity .35s ease,transform .52s cubic-bezier(.22,1,.36,1)}
   .story-copy-item.is-active{opacity:1;pointer-events:auto;transform:none}
   .home-stories .story-kicker{color:#bddb3d}
@@ -331,16 +331,24 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
   button.product-card{width:100%;appearance:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
   button.product-card:focus-visible{outline:3px solid #bddb3d;outline-offset:4px}
   .product-card-image{border-radius:var(--home-radius)}
+  .product-card-image>span:not(.product-badge){position:absolute;z-index:1;top:12px;left:12px;padding:7px 10px;border-radius:var(--home-radius);background:rgba(255,253,249,.94);color:#29241f;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
   .product-badge{position:absolute;z-index:1;top:12px;left:12px;padding:8px 11px;border:0;border-radius:var(--home-radius);font-size:9px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;box-shadow:none}
-  .product-badge--hit{background:#ef603f;color:#fff}
-  .product-badge--new{background:#bddb3d;color:#1f3b2e}
-  .product-badge--seasonal{background:#f2c86f;color:#503616}
-  .product-badge--favourite{background:#4b87a5;color:#fff}
-  .product-badge--special{background:#7278a9;color:#fff}
-  .product-card-image>span:not(.product-badge){border-radius:var(--home-radius)}
+  .product-card-image .product-badge--hit{background:#ef603f;color:#fff}
+  .product-card-image .product-badge--new{background:#bddb3d;color:#1f3b2e}
+  .product-card-image .product-badge--seasonal{background:#f2c86f;color:#503616}
+  .product-card-image .product-badge--favourite{background:#4b87a5;color:#fff}
+  .product-card-image .product-badge--special{background:#7278a9;color:#fff}
   .product-card-info small{color:#1f3b2e}
   .ui-button--outline:hover{border-color:#bddb3d;background:#bddb3d;color:#1f3b2e!important}
   .bento-card{border-radius:var(--home-radius)}
+  .bento-art{position:absolute;z-index:1;display:block;width:auto;height:auto;max-width:none;object-fit:contain;pointer-events:none;transition:transform .35s cubic-bezier(.22,1,.36,1)}
+  .bento-card:hover .bento-art{transform:translateY(-7px) scale(1.025)}
+  .bento-art-app{right:4%;bottom:-16%;width:66%;max-height:76%}
+  .bento-art-coffee{right:4%;bottom:-17%;width:58%;max-height:82%}
+  .bento-art-event{right:-4%;bottom:-28%;width:62%;max-height:86%}
+  .bento-art-promo{right:3%;bottom:-39%;width:38%;max-height:112%}
+  .bento-art-certificate{right:2%;bottom:-38%;width:34%;max-height:110%}
+  .bento-art-cake{right:-3%;bottom:-35%;width:55%;max-height:98%}
   .home-day{margin-top:clamp(32px,5vw,80px);border-radius:var(--home-radius)}
   .day-intro h2{margin-top:0}
   .day-stops{align-self:stretch;display:grid;grid-template-rows:repeat(3,1fr)}
@@ -357,7 +365,7 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
   .journal-card small{display:none}
   @media(max-width:980px){
     .home-stories,.stories-media,.bento-card,.home-day,.menu-tile,.menu-all,.places-stage,.home-home-coffee,.home-app-loyalty,.loyalty-points,.journal-card{border-radius:var(--home-radius)}
-    .home-stories{display:block;min-height:calc(100svh - 72px);margin:0}
+    .home-stories{display:block;min-height:calc(100svh - 116px);margin:0 var(--mobile-gutter)}
     .stories-media{display:block;min-height:0;border-radius:0!important}
     .story-copy-item{--story-inset:24px;right:24px;bottom:var(--story-inset);left:var(--story-inset);width:auto}
     .story-copy-item h1{font-size:17px;white-space:normal}
@@ -365,10 +373,23 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
     .story-navigation{right:20px;bottom:20px;gap:11px}
     .story-progress{gap:5px}.story-progress button{width:24px}.story-progress button.is-active{width:42px}
     .story-counter{font-size:10px}.story-arrows button{width:27px;height:27px}
-    .home-day{margin:48px 20px 0;padding:54px 20px}
+    .home-section{padding-right:var(--mobile-gutter);padding-left:var(--mobile-gutter)}
+    .bestseller-list,.journal-list{margin-right:calc(var(--mobile-gutter) * -1);margin-left:calc(var(--mobile-gutter) * -1);padding-right:var(--mobile-gutter);padding-left:var(--mobile-gutter)}
+    .home-bento{grid-template-columns:repeat(2,minmax(0,1fr));margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter)}
+    .bento-card{min-width:0;padding:18px}
+    .bento-card h2{max-width:100%;font-size:clamp(22px,6.8vw,28px);line-height:.91;letter-spacing:-.07em}
+    .bento-event h2,.bento-promo h2,.bento-bakery h2,.bento-certificates h2{font-size:clamp(18px,5.6vw,24px);overflow-wrap:normal;hyphens:auto}
+    .bento-bakery h2{font-size:clamp(16px,4.5vw,19px)}
+    .bento-art-app{right:7%;bottom:-18%;width:48%;max-height:70%}
+    .bento-art-coffee{right:-4%;bottom:-12%;width:78%;max-height:72%}
+    .bento-art-event{right:-10%;bottom:-14%;width:78%;max-height:70%}
+    .bento-art-promo{right:2%;bottom:-30%;width:45%;max-height:95%}
+    .bento-art-certificate{right:-4%;bottom:-30%;width:50%;max-height:92%}
+    .bento-art-cake{right:-8%;bottom:-25%;width:73%;max-height:82%}
+    .home-day{margin:48px var(--mobile-gutter) 0;padding:54px 20px}
     .day-stops a{align-items:center}
     .places-stage{height:auto;margin-right:0;margin-left:0;border-radius:var(--home-radius)}
     .place-list{max-height:390px;padding:0 20px 30px}
-    .home-home-coffee,.home-app-loyalty{margin:0 20px;padding:58px 20px}
+    .home-home-coffee,.home-app-loyalty{margin:0 var(--mobile-gutter);padding:58px 20px}
   }
 </style>
