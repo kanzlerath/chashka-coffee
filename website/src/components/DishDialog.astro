@@ -19,8 +19,11 @@
         </div>
       </div>
       <section class="dish-dialog-nutrition" aria-label="Пищевая ценность и выход">
-        <div class="dish-dialog-data-card dish-dialog-nutrition-values"><p>КБЖУ</p><div><span><b data-dish-calories></b><small>ккал</small></span><span><b data-dish-proteins></b><small>белки</small></span><span><b data-dish-fats></b><small>жиры</small></span><span><b data-dish-carbohydrates></b><small>углеводы</small></span></div></div>
-        <div class="dish-dialog-data-card dish-dialog-output"><p>Выход</p><strong data-dish-output></strong></div>
+        <span><b data-dish-calories></b><small>ккал</small></span>
+        <span><b data-dish-proteins></b><small>белки</small></span>
+        <span><b data-dish-fats></b><small>жиры</small></span>
+        <span><b data-dish-carbohydrates></b><small>углеводы</small></span>
+        <span><b data-dish-output></b><small>выход</small></span>
       </section>
       <div class="dish-dialog-price"><strong data-dish-price></strong></div>
     </div>
@@ -43,30 +46,24 @@
   .dish-dialog-badge--hit{background:#d85e47;color:#fff}.dish-dialog-badge--new{background:#bddb3d;color:#1f3b2e}.dish-dialog-badge--seasonal{background:#e6ae4c;color:#483310}.dish-dialog-badge--favourite{background:#4b87a5;color:#fff}.dish-dialog-badge--special{background:#7278a9;color:#fff}
   .dish-dialog-content{display:grid;min-height:0;grid-template-columns:minmax(0,1fr) auto;align-content:start;column-gap:18px;padding:clamp(34px,3.5vw,52px);overflow:auto}
   .dish-dialog-category{grid-column:1/-1;margin:0;color:#1f3b2e;font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
-  .dish-dialog-content h2{grid-row:2;grid-column:1;margin:10px 0 0;font-size:clamp(30px,3vw,46px);line-height:.92;letter-spacing:-.075em}
+  .dish-dialog-content h2{grid-row:2;grid-column:1;align-self:baseline;margin:10px 0 0;font-size:27px;line-height:1;letter-spacing:-.055em}
   .dish-dialog-description{grid-row:3;grid-column:1/-1;margin:15px 0 0;color:#635e57;font-size:14px;line-height:1.5}
-  .dish-dialog-price{grid-row:2;grid-column:2;align-self:start;min-height:0;margin:10px 0 0;padding:0;background:transparent}
-  .dish-dialog-price strong{font-size:27px;letter-spacing:-.055em;white-space:nowrap}
+  .dish-dialog-price{grid-row:2;grid-column:2;align-self:baseline;min-height:0;margin:10px 0 0;padding:0;background:transparent;line-height:1}
+  .dish-dialog-price strong{display:block;font-size:27px;line-height:1;letter-spacing:-.055em;white-space:nowrap}
   .dish-dialog-more{grid-row:4;grid-column:1/-1;margin-top:22px}
   .dish-dialog-more-toggle{display:none}
   .dish-dialog-more-panel{display:grid;grid-template-rows:1fr;opacity:1}
   .dish-dialog-more-panel-inner{min-height:0}
   .dish-dialog-details{display:grid;gap:14px;margin:0;padding:18px;border:0;border-radius:18px;background:#f3eee7}
   .dish-dialog-details>div{display:grid;gap:6px;min-height:0;padding:0}
-  .dish-dialog-details dt,.dish-dialog-nutrition p{margin:0;color:#817a71;font-size:10px;font-weight:700}
+  .dish-dialog-details dt{margin:0;color:#817a71;font-size:10px;font-weight:700}
   .dish-dialog-details dd{margin:0;color:#2a2622;font-size:12px;line-height:1.45}
   .dish-dialog-marks dd{display:flex;flex-wrap:wrap;gap:7px}
   :global(.dish-dialog-mark){padding:6px 10px;border:1px solid #cad8bc;border-radius:999px;background:#e3ebd7;color:#27432f;font-size:9px;font-weight:800}
-  .dish-dialog-nutrition{grid-row:5;grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:12px;margin-top:12px;padding:16px 18px;border:0;border-radius:18px;background:#f3eee7}
-  .dish-dialog-data-card{min-height:0;padding:0;background:transparent}
-  .dish-dialog-nutrition-values>p{display:none}
-  .dish-dialog-nutrition-values>div{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-  .dish-dialog-nutrition-values span{display:grid;justify-items:center;gap:3px;text-align:center}
-  .dish-dialog-nutrition-values b{font-size:14px}
-  .dish-dialog-nutrition-values small{color:#817a71;font-size:8px;font-weight:700;text-transform:uppercase}
-  .dish-dialog-output{display:grid;place-content:center;gap:4px;padding-left:12px;border-left:1px solid #dcd5cc;text-align:center}
-  .dish-dialog-output p{font-size:8px;text-transform:uppercase}
-  .dish-dialog-output strong{font-size:18px;white-space:nowrap}
+  .dish-dialog-nutrition{grid-row:5;grid-column:1/-1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin-top:12px;padding:15px 12px;border:0;border-radius:18px;background:#f3eee7}
+  .dish-dialog-nutrition span{display:grid;min-width:0;justify-items:center;align-content:center;gap:4px;text-align:center}
+  .dish-dialog-nutrition b{font-size:15px;line-height:1;letter-spacing:-.025em;white-space:nowrap}
+  .dish-dialog-nutrition small{color:#817a71;font-size:8px;font-weight:700;line-height:1;text-transform:uppercase;white-space:nowrap}
 
   @media(max-width:760px){
     .dish-dialog{position:fixed;inset:auto 12px 12px;width:auto;height:auto;max-height:calc(100svh - 24px);margin:0}
@@ -74,7 +71,7 @@
     .dish-dialog-media{height:auto}.dish-dialog-badge{top:14px;left:14px;padding:7px 10px;font-size:8px}
     .dish-dialog-content{display:grid;max-height:calc(69svh - 24px);grid-template-columns:minmax(0,1fr) auto;align-content:start;column-gap:14px;padding:18px 20px 22px;overflow:auto;overscroll-behavior:contain}
     .dish-dialog-close{top:12px;right:12px;width:42px;height:42px}
-    .dish-dialog-category{font-size:8px}.dish-dialog-content h2{margin-top:7px;font-size:clamp(26px,8vw,32px);line-height:.95}
+    .dish-dialog-category{font-size:8px}.dish-dialog-content h2{margin-top:7px;font-size:23px;line-height:1}
     .dish-dialog-description{margin-top:12px;font-size:13px;line-height:1.42}
     .dish-dialog-price{margin-top:7px}.dish-dialog-price strong{font-size:23px}
     .dish-dialog-more{margin-top:12px}
@@ -90,9 +87,8 @@
     .dish-dialog-details{gap:12px;margin-top:8px;padding:14px;border-radius:14px;background:#f7f3ed}
     .dish-dialog-details dt{font-size:9px}.dish-dialog-details dd{font-size:11px;line-height:1.42}
     :global(.dish-dialog-mark){padding:6px 9px;font-size:8px}
-    .dish-dialog-nutrition{grid-template-columns:minmax(0,1fr) 70px;gap:8px;margin-top:12px;padding:13px 12px;border-radius:14px}
-    .dish-dialog-nutrition-values>div{gap:4px}.dish-dialog-nutrition-values b{font-size:13px}.dish-dialog-nutrition-values small{font-size:7px}
-    .dish-dialog-output{gap:3px;padding-left:8px}.dish-dialog-output p{font-size:7px}.dish-dialog-output strong{font-size:16px}
+    .dish-dialog-nutrition{gap:2px;margin-top:12px;padding:13px 7px;border-radius:14px}
+    .dish-dialog-nutrition span{gap:3px}.dish-dialog-nutrition b{font-size:13px}.dish-dialog-nutrition small{font-size:7px}
   }
   @media(prefers-reduced-motion:reduce){.dish-dialog[open]{animation:none}.dish-dialog-close,.dish-dialog-more-panel,.dish-dialog-more-toggle i:before,.dish-dialog-more-toggle i:after{transition:none}}
 </style>
