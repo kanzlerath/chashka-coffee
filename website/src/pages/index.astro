@@ -26,11 +26,17 @@ try {
 } catch { /* The local fallback keeps the storefront complete before the API is available. */ }
 
 const defaultSlides = [
-  { mediaType: 'IMAGE', mediaUrl: '/images/home-morning-v2.png', posterUrl: null, eyebrow: 'С хорошего кофе', title: 'Начните день\nв своём ритме', description: 'Завтрак, любимый кофе и немного времени для себя.', ctaLabel: 'Открыть меню', ctaUrl: '/restaurants/krasny-prospekt/menu', durationSeconds: 7 },
+  { mediaType: 'IMAGE', mediaUrl: '/images/home-morning-v2.png', posterUrl: null, eyebrow: 'С хорошего кофе', title: 'Начните день\nв своём ритме', description: 'Завтрак, любимый кофе и немного времени для себя.', ctaLabel: 'Открыть меню', ctaUrl: '/menu', durationSeconds: 7 },
   { mediaType: 'IMAGE', mediaUrl: '/images/home-breakfast.png', posterUrl: null, eyebrow: 'В каждом районе', title: 'Место, куда\nхочется зайти', description: 'Встретиться, поработать или просто сделать паузу.', ctaLabel: 'Найти ресторан', ctaUrl: '/restaurants', durationSeconds: 7 },
   { mediaType: 'IMAGE', mediaUrl: '/images/restaurants-hero.png', posterUrl: null, eyebrow: 'Любимое — ближе', title: 'Кофе и еда\nс доставкой', description: 'Привезём из ближайшей «Чашки кофе» бережно и вовремя.', ctaLabel: 'Заказать доставку', ctaUrl: '/delivery', durationSeconds: 7 },
 ]
-const slides = homepage?.slides.length ? homepage.slides : defaultSlides
+const safeMenuHref = (href: string | null | undefined) => {
+  if (!href) return href
+  const menuRoute = href.match(/^\/restaurants\/([^/]+)\/menu$/)
+  if (!menuRoute) return href
+  return restaurants.some(({ slug }) => slug === menuRoute[1]) ? href : '/menu'
+}
+const slides = (homepage?.slides.length ? homepage.slides : defaultSlides).map((slide) => ({ ...slide, ctaUrl: safeMenuHref(slide.ctaUrl) }))
 const productFallbacks = ['/images/home-breakfast.png', '/images/home-hero-v1.png', '/images/home-morning-v2.png', '/images/restaurants-hero.png']
 const badgeLabel = (value: string | null | undefined) => ({ NEW: 'Новинка', HIT: 'Хит', SEASONAL: 'Сезонное', SPECIAL: 'Специальное' }[value ?? ''] ?? value ?? null)
 const outputLabel = (weightGrams: number | null) => weightGrams ? `${weightGrams} г` : '1 порция'
@@ -81,8 +87,8 @@ const journal = articles.slice(0, 2).length ? articles.slice(0, 2) : [
   { slug: 'croissant-now', title: 'Почему круассан лучше есть сразу', excerpt: 'Немного масла, много слоёв и один простой совет от кондитера.', imageUrl: '/images/home-hero-v1.png' },
 ]
 const fallbackPlaces: RestaurantSummary[] = [
-  { id: '019a2f17-453e-7c1a-9c04-4e468e7eb514', slug: 'krasny-prospekt', name: 'Чашка кофе — Красный проспект', format: 'CITY', area: 'CITY', isAtApartHotel: false, city: 'Новосибирск', address: 'Красный проспект, 25', phone: '+7 (383) 123-20-20', openingHoursLabel: 'Пн–Вс: 07:30–23:00', coverImageUrl: '/images/restaurants-hero.png' },
-  { id: '019a2f17-453e-7c1a-9c04-4e468e7eb515', slug: 'tolmachevo-domestic', name: 'Чашка кофе — Толмачёво, вылеты по России', format: 'AIRPORT', area: 'AIRPORT', isAtApartHotel: false, city: 'Обь', address: 'Аэропорт Толмачёво, сектор A', phone: '+7 (383) 123-20-30', openingHoursLabel: 'Ежедневно:  круглосуточно', coverImageUrl: '/images/home-hero-v1.png' },
+  { id: '019a2f17-453e-7c1a-9c04-4e468e7eb514', slug: 'krasny-prospekt', name: 'Чашка кофе — Красный проспект', format: 'CITY', area: 'CITY', isAtApartHotel: false, city: 'Новосибирск', address: 'Красный проспект, 25', phone: '+7 (383) 123-20-20', openingHoursLabel: 'Пн–Вс: 07:30–23:00', hasMenu: true, coverImageUrl: '/images/restaurants-hero.png' },
+  { id: '019a2f17-453e-7c1a-9c04-4e468e7eb515', slug: 'tolmachevo-domestic', name: 'Чашка кофе — Толмачёво, вылеты по России', format: 'AIRPORT', area: 'AIRPORT', isAtApartHotel: false, city: 'Обь', address: 'Аэропорт Толмачёво, сектор A', phone: '+7 (383) 123-20-30', openingHoursLabel: 'Ежедневно: круглосуточно', hasMenu: true, coverImageUrl: '/images/home-hero-v1.png' },
 ]
 const availablePlaces = restaurants.length ? restaurants : fallbackPlaces
 const cityPlaces = availablePlaces.filter((place) => place.area !== 'AIRPORT')
@@ -96,7 +102,7 @@ const defaultDaySection = {
   title: 'Поводы\nзайти сегодня',
   description: 'Сначала завтрак, потом встреча, а вечером — время для себя. Выбирайте свой ритм.',
   parts: [
-    { id: 'morning', label: 'Утро', title: 'Завтраки\nдо 12:00', description: 'Медленные утра и кофе, который не нужно торопить.', ctaUrl: '/restaurants/krasny-prospekt/menu' },
+    { id: 'morning', label: 'Утро', title: 'Завтраки\nдо 12:00', description: 'Медленные утра и кофе, который не нужно торопить.', ctaUrl: '/menu' },
     { id: 'daytime', label: 'Днём', title: 'Встречи\nв городе', description: 'Ресторан рядом, когда нужно место для своих людей.', ctaUrl: '/restaurants' },
     { id: 'evening', label: 'Вечером', title: 'События\nи музыка', description: 'Поводы задержаться дольше обычного.', ctaUrl: featuredEvent ? `/events/${featuredEvent.slug}` : '/events' },
   ],
@@ -136,9 +142,9 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
     </section>
 
     <section class="home-bestsellers home-section" aria-labelledby="bestsellers-title">
-      <header class="home-section-head"><div><h2 id="bestsellers-title">Бестселлеры</h2><p>Выбирают чаще всего</p></div></header>
+      <header class="home-section-head"><div><h2 id="bestsellers-title">Бестселлеры</h2></div></header>
       <div class="bestseller-list">{bestsellers.map((item) => <button type="button" class="product-card" data-dish-trigger data-dish={bestsellerPayload(item)} aria-haspopup="dialog"><div class="product-card-image"><img src={item.imageUrl} alt="" loading="lazy" />{item.badge && <span class={`product-badge product-badge--${item.badgeTone}`}>{item.badge}</span>}</div><div class="product-card-info"><small>{item.categoryName}</small><h3>{item.name}</h3><div><span>{item.output}</span><strong>{item.price}</strong></div></div></button>)}</div>
-      <a class="ui-button ui-button--outline section-action" href="/restaurants/krasny-prospekt/menu">Смотреть все</a>
+      <a class="ui-button ui-button--outline section-action" href="/menu">Смотреть все</a>
     </section>
 
     <section class="home-bento" aria-label="Разделы Чашки кофе">
@@ -152,24 +158,24 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
 
     <section class="home-day" aria-labelledby="day-title">
       <div class="day-intro"><h2 id="day-title">{daySection.title.split('\n').map((line) => <>{line}<br /></>)}</h2>{daySection.description && <p>{daySection.description}</p>}</div>
-      <div class="day-stops">{daySection.parts.map((part) => <a href={part.ctaUrl ?? '/'}><small>{part.label}</small><h3>{part.title.split('\n').map((line) => <>{line}<br /></>)}</h3>{part.description && <p>{part.description}</p>}</a>)}</div>
+      <div class="day-stops">{daySection.parts.map((part) => <a href={safeMenuHref(part.ctaUrl) ?? '/'}><small>{part.label}</small><h3>{part.title.split('\n').map((line) => <>{line}<br /></>)}</h3>{part.description && <p>{part.description}</p>}</a>)}</div>
     </section>
 
     <section class="home-menu home-section" aria-labelledby="menu-title">
-      <header class="home-section-head"><div><h2 id="menu-title">Меню по настроению</h2><p>Всё, что хочется сегодня</p></div></header>
+      <header class="home-section-head"><div><h2 id="menu-title">Меню по настроению</h2></div></header>
       <div class="menu-grid">
-        <a class="menu-tile menu-main" href="/restaurants/krasny-prospekt/menu"><img src="/images/home-breakfast.png" alt="Завтраки" loading="lazy" /><span>Завтраки</span></a>
-        <a class="menu-tile menu-tile-coffee" href="/restaurants/krasny-prospekt/menu"><span>Кофе</span><i aria-hidden="true">☕</i></a>
+        <a class="menu-tile menu-main" href="/menu"><img src="/images/home-breakfast.png" alt="Завтраки" loading="lazy" /><span>Завтраки</span></a>
+        <a class="menu-tile menu-tile-coffee" href="/menu"><span>Кофе</span><i aria-hidden="true">☕</i></a>
         <a class="menu-tile menu-tile-seasonal" href="/promotions"><span>Летние<br />хиты</span><strong>new</strong></a>
-        <a class="menu-tile menu-tile-hot" href="/restaurants/krasny-prospekt/menu"><span>Горячие<br />блюда</span><i aria-hidden="true">⌁</i></a>
-        <a class="menu-tile menu-tile-salad" href="/restaurants/krasny-prospekt/menu"><span>Закуски<br />и салаты</span><i aria-hidden="true">●</i></a>
+        <a class="menu-tile menu-tile-hot" href="/menu"><span>Горячие<br />блюда</span><i aria-hidden="true">⌁</i></a>
+        <a class="menu-tile menu-tile-salad" href="/menu"><span>Закуски<br />и салаты</span><i aria-hidden="true">●</i></a>
         <a class="menu-tile menu-tile-dessert" href="/bakery"><span>Десерты<br />и выпечка</span><i aria-hidden="true">✳</i></a>
-        <a class="menu-all" href="/restaurants/krasny-prospekt/menu"><span>Посмотреть все блюда</span><b aria-hidden="true">›</b></a>
+        <a class="menu-all" href="/menu"><span>Посмотреть все блюда</span><b aria-hidden="true">›</b></a>
       </div>
     </section>
 
     <section class="home-places home-section" data-home-places aria-labelledby="places-title">
-      <header class="home-section-head places-heading"><div><h2 id="places-title">Рестораны в городе</h2><p>Места, в которые хочется возвращаться</p></div></header>
+      <header class="home-section-head places-heading"><div><h2 id="places-title">Рестораны в городе</h2></div></header>
       <div class="places-stage">
         <div class="place-feature">
           {allPlaces.map((place, index) => <article class:list={{ 'is-active': index === 0 }} data-place-panel={place.slug} data-place-group={place.group}>
@@ -186,7 +192,7 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
 
     <section class="home-app-loyalty" aria-labelledby="loyalty-title"><div class="loyalty-copy"><p class="story-kicker">Приложение и клуб друзей</p><h2 id="loyalty-title">Любимое —<br />под рукой</h2><p>Заказывайте быстрее, копите бонусы и узнавайте о новинках раньше всех.</p><a class="ui-button ui-button--fill" href="/app">О приложении</a></div><div class="loyalty-points"><strong>1<span>₽</span> = 1 балл</strong><p>Начисляем за любимые заказы</p><div><b>ЧК</b><i></i><i></i><i></i></div></div></section>
 
-    <section class="home-journal home-section" aria-labelledby="journal-title"><header class="home-section-head"><div><h2 id="journal-title">Читайте медленнее</h2><p>Истории о кофе, людях и городе</p></div></header><div class="journal-list">{journal.map((article, index) => <a href={`/journal/${article.slug}`} class="journal-card"><img src={article.imageUrl ?? productFallbacks[index]} alt="" loading="lazy" /><div><h3>{article.title}</h3><p>{article.excerpt}</p><span>Читать далее</span></div></a>)}</div><a class="ui-button ui-button--outline section-action" href="/journal">Посмотреть все</a></section>
+    <section class="home-journal home-section" aria-labelledby="journal-title"><header class="home-section-head"><div><h2 id="journal-title">Читайте медленнее</h2></div></header><div class="journal-list">{journal.map((article, index) => <a href={`/journal/${article.slug}`} class="journal-card"><img src={article.imageUrl ?? productFallbacks[index]} alt="" loading="lazy" /><div><h3>{article.title}</h3><p>{article.excerpt}</p><span>Читать далее</span></div></a>)}</div><a class="ui-button ui-button--outline section-action" href="/journal">Посмотреть все</a></section>
 
     <div class="home-marquee" aria-label="Чашка кофе: кофе, завтраки, десерты и встречи"><div>ЧАШКА КОФЕ <i>✦</i> КОФЕ <i>✦</i> ЗАВТРАКИ <i>✦</i> ДЕСЕРТЫ <i>✦</i> ВСТРЕЧИ <i>✦</i> ЧАШКА КОФЕ <i>✦</i> КОФЕ <i>✦</i> ЗАВТРАКИ <i>✦</i> ДЕСЕРТЫ <i>✦</i> ВСТРЕЧИ <i>✦</i></div></div>
     <DishDialog />
@@ -327,10 +333,10 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
   .story-arrows button:hover{background:transparent;color:#bddb3d}.story-arrows button[data-story-previous]:hover{transform:translateX(-3px)}.story-arrows button[data-story-next]:hover{transform:translateX(3px)}
   .story-arrows svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
   .story-progress button{border-radius:var(--home-radius)}
-  .product-card{padding:11px;background:#f7f5f0}
-  button.product-card{width:100%;appearance:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+  .product-card{display:grid;grid-template-rows:auto 1fr;align-content:start;padding:11px;background:#f7f5f0}
+  button.product-card{width:100%;margin:0;appearance:none;color:inherit;font:inherit;text-align:left;vertical-align:top;cursor:pointer}
   button.product-card:focus-visible{outline:3px solid #bddb3d;outline-offset:4px}
-  .product-card-image{border-radius:var(--home-radius)}
+  .product-card-image{align-self:start;width:100%;border-radius:var(--home-radius)}
   .product-card-image>span:not(.product-badge){position:absolute;z-index:1;top:12px;left:12px;padding:7px 10px;border-radius:var(--home-radius);background:rgba(255,253,249,.94);color:#29241f;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
   .product-badge{position:absolute;z-index:1;top:12px;left:12px;padding:8px 11px;border:0;border-radius:var(--home-radius);font-size:9px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;box-shadow:none}
   .product-card-image .product-badge--hit{background:#ef603f;color:#fff}
@@ -338,6 +344,9 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
   .product-card-image .product-badge--seasonal{background:#f2c86f;color:#503616}
   .product-card-image .product-badge--favourite{background:#4b87a5;color:#fff}
   .product-card-image .product-badge--special{background:#7278a9;color:#fff}
+  .product-card-info{display:flex;min-width:0;flex-direction:column}
+  .product-card-info h3{margin-bottom:0}
+  .product-card-info>div{margin-top:auto;padding-top:18px}
   .product-card-info small{color:#1f3b2e}
   .ui-button--outline:hover{border-color:#bddb3d;background:#bddb3d;color:#1f3b2e!important}
   .bento-card{border-radius:var(--home-radius)}

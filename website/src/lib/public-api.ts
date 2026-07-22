@@ -25,7 +25,16 @@ export async function getJobSlugs(fallback: string[]) {
 
 export async function getRestaurantSlugs(fallback: string[]) {
   const response = await getJson<{ restaurants: Pick<RestaurantSummary, 'slug'>[] }>('/api/restaurants')
-  return uniqueSlugs([...fallback, ...(response?.restaurants.map(({ slug }) => slug) ?? [])])
+  return response
+    ? uniqueSlugs(response.restaurants.map(({ slug }) => slug))
+    : uniqueSlugs(fallback)
+}
+
+export async function getRestaurantMenuSlugs(fallback: string[]) {
+  const response = await getJson<{ restaurants: Pick<RestaurantSummary, 'slug' | 'hasMenu'>[] }>('/api/restaurants')
+  return response
+    ? uniqueSlugs(response.restaurants.filter(({ hasMenu }) => hasMenu).map(({ slug }) => slug))
+    : uniqueSlugs(fallback)
 }
 
 export async function getProducts(type: ProductType) {

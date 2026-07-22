@@ -1,0 +1,26 @@
+---
+import PageShell from '../layouts/PageShell.astro'
+import RestaurantMenu from '../components/RestaurantMenu.astro'
+import type { RestaurantMenuResponse, RestaurantSummary } from '@chashka-coffee/contracts'
+import { selectDefaultMenuRestaurant } from '../lib/default-menu'
+
+const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
+let data: RestaurantMenuResponse | null = null
+let restaurants: RestaurantSummary[] = []
+
+try {
+  const restaurantResponse = await fetch(`${apiUrl}/api/restaurants`)
+  if (restaurantResponse.ok) {
+    restaurants = (await restaurantResponse.json()).restaurants
+    const defaultRestaurant = selectDefaultMenuRestaurant(restaurants)
+    if (defaultRestaurant) {
+      const menuResponse = await fetch(`${apiUrl}/api/restaurants/${defaultRestaurant.slug}/menu`)
+      if (menuResponse.ok) data = await menuResponse.json()
+    }
+  }
+} catch { /* The page keeps a useful error state while local API is offline. */ }
+---
+
+<PageShell title={data ? `Меню — ${data.restaurant.name}` : 'Меню'} description="Актуальное меню и цены ресторана Чашка кофе." active="menu">
+  <RestaurantMenu {data} {restaurants} currentSlug={data?.restaurant.slug} />
+</PageShell>

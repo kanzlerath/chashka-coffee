@@ -175,7 +175,7 @@ function DayPartForm({ draft, onChange, onSave, onRemove, saving, deleting, erro
     <div className="grid gap-3 sm:grid-cols-2"><Field label="Метка"><Input onChange={(event) => change('label', event.target.value)} placeholder="Утро" required value={draft.label} /></Field><Field label="Порядок"><Input min={0} onChange={(event) => change('position', Number(event.target.value))} type="number" value={draft.position} /></Field></div>
     <Field label="Заголовок"><Input onChange={(event) => change('title', event.target.value)} placeholder="Завтраки до 12:00" required value={draft.title} /></Field>
     <Field label="Короткое описание"><Textarea onChange={(event) => change('description', nullable(event.target.value))} value={draft.description ?? ''} /></Field>
-    <Field label="Ссылка"><Input onChange={(event) => change('ctaUrl', nullable(event.target.value))} placeholder="/restaurants/krasny-prospekt/menu" value={draft.ctaUrl ?? ''} /></Field>
+    <Field label="Ссылка"><Input onChange={(event) => change('ctaUrl', nullable(event.target.value))} placeholder="/menu" value={draft.ctaUrl ?? ''} /></Field>
     <label className="flex items-center gap-2 text-sm font-medium"><input checked={draft.isPublished} onChange={(event) => change('isPublished', event.target.checked)} type="checkbox" />Показывать на сайте</label>
     {error ? <p className="text-sm text-destructive">Не удалось сохранить период дня. Проверьте обязательные поля.</p> : null}
     <div className="flex flex-wrap gap-2"><Button disabled={saving} type="submit">{saving ? 'Сохраняем…' : 'Сохранить период'}</Button>{onRemove ? <Button disabled={deleting} onClick={onRemove} type="button" variant="outline">Удалить</Button> : null}</div>

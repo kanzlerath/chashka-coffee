@@ -235,7 +235,7 @@ async function seed() {
         title: 'Начните день\nв своём ритме',
         description: 'Завтрак, любимый кофе и немного времени для себя.',
         ctaLabel: 'Открыть меню',
-        ctaUrl: '/restaurants/krasny-prospekt/menu',
+        ctaUrl: '/menu',
         durationSeconds: 7,
         isPublished: true,
         position: 10,
@@ -288,7 +288,7 @@ async function seed() {
       isPublished: true,
       parts: {
         create: [
-          { label: 'Утро', title: 'Завтраки\nдо 12:00', description: 'Медленные утра и кофе, который не нужно торопить.', ctaUrl: '/restaurants/krasny-prospekt/menu', position: 10, isPublished: true },
+          { label: 'Утро', title: 'Завтраки\nдо 12:00', description: 'Медленные утра и кофе, который не нужно торопить.', ctaUrl: '/menu', position: 10, isPublished: true },
           { label: 'Днём', title: 'Встречи\nв городе', description: 'Ресторан рядом, когда нужно место для своих людей.', ctaUrl: '/restaurants', position: 20, isPublished: true },
           { label: 'Вечером', title: 'События\nи музыка', description: 'Поводы задержаться дольше обычного.', ctaUrl: '/events', position: 30, isPublished: true },
         ],

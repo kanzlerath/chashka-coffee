@@ -20,6 +20,7 @@ describe('restaurant catalog contracts', () => {
       address: 'Красный проспект, 25',
       phone: '+7 (383) 123-20-20',
       openingHoursLabel: 'Пн–Пт: 07:30–22:00',
+      hasMenu: true,
       coverImageUrl: 'https://media.example.test/restaurants/krasny-prospekt.webp',
     })
 
@@ -39,6 +40,7 @@ describe('restaurant catalog contracts', () => {
         address: 'Красный проспект, 25',
         phone: '+7 (383) 123-20-20',
         openingHoursLabel: 'Пн–Пт: 07:30–22:00',
+        hasMenu: true,
         coverImageUrl: null,
       },
       menu: {
@@ -90,6 +92,7 @@ describe('restaurant catalog contracts', () => {
       address: 'Красный проспект, 25',
       phone: '+7 (383) 123-20-20',
       openingHoursLabel: 'Ежедневно: 08:00–22:00',
+      hasMenu: true,
       coverImageUrl: null,
     })).toThrow()
 
@@ -105,6 +108,7 @@ describe('restaurant catalog contracts', () => {
         address: 'Красный проспект, 25',
         phone: '+7 (383) 123-20-20',
         openingHoursLabel: 'Ежедневно: 08:00–22:00',
+        hasMenu: true,
         coverImageUrl: null,
       },
       menu: { id: '018f8d94-1f4f-7000-8000-000000000002', slug: 'city-core', name: 'Меню' },
@@ -152,7 +156,7 @@ describe('restaurant catalog contracts', () => {
     const detail = restaurantDetailResponseSchema.parse({
       restaurant: {
         id: '018f8d94-1f4f-7000-8000-000000000001', slug: 'krasny-prospekt', name: 'Чашка кофе', format: 'CITY', area: 'CITY', isAtApartHotel: false,
-        city: 'Новосибирск', address: 'Красный проспект, 25', phone: '+7 (383) 123-20-20', openingHoursLabel: 'Пн–Вс: 08:00–22:00', coverImageUrl: null,
+        city: 'Новосибирск', address: 'Красный проспект, 25', phone: '+7 (383) 123-20-20', openingHoursLabel: 'Пн–Вс: 08:00–22:00', hasMenu: true, coverImageUrl: null,
         description: 'Кофейня в центре города.', latitude: 55.03, longitude: 82.92, yandexMapsUrl: null, twoGisUrl: null,
         openingHours: [{ dayOfWeek: 1, opensAt: '08:00', closesAt: '22:00', isClosed: false }], scheduleExceptions: [],
       },

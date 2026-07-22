@@ -17,6 +17,7 @@ import type {
 } from '@chashka-coffee/contracts'
 import { Prisma } from '../../../generated/prisma/client'
 import { CatalogConflictError } from '../application/errors'
+import { formatOpeningHours } from '../domain/opening-hours'
 
 import type { DbClient } from '../../../db'
 import type { CatalogRepository } from '../application/ports'
@@ -29,14 +30,8 @@ function toScheduleException({ id, date, label, opensAt, closesAt, isClosed }: {
   return { id, date: date.toISOString().slice(0, 10), label, opensAt, closesAt, isClosed }
 }
 
-function openingHoursLabel(openingHours: { dayOfWeek: number; opensAt: string | null; closesAt: string | null; isClosed: boolean }[]) {
-  const weekday = openingHours.find((entry) => entry.dayOfWeek === 1) ?? openingHours[0]
-  if (!weekday || weekday.isClosed || !weekday.opensAt || !weekday.closesAt) return 'Уточняйте часы работы'
-  return `Пн–Вс: ${weekday.opensAt}–${weekday.closesAt}`
-}
-
 function toRestaurantSummary(restaurant: {
-  id: string; slug: string; name: string; format: 'CITY' | 'PARK' | 'AIRPORT' | 'APART_HOTEL'; area: 'CITY' | 'PARK' | 'AIRPORT'; isAtApartHotel: boolean; city: string; address: string; phone: string; coverImageUrl: string | null; latitude: Prisma.Decimal | null; longitude: Prisma.Decimal | null; openingHours: { dayOfWeek: number; opensAt: string | null; closesAt: string | null; isClosed: boolean }[]
+  id: string; slug: string; name: string; format: 'CITY' | 'PARK' | 'AIRPORT' | 'APART_HOTEL'; area: 'CITY' | 'PARK' | 'AIRPORT'; isAtApartHotel: boolean; city: string; address: string; phone: string; coverImageUrl: string | null; latitude: Prisma.Decimal | null; longitude: Prisma.Decimal | null; openingHours: { dayOfWeek: number; opensAt: string | null; closesAt: string | null; isClosed: boolean }[]; menuAssignments?: { id: string }[]
 }): RestaurantSummary {
   return {
     id: restaurant.id,
@@ -48,7 +43,8 @@ function toRestaurantSummary(restaurant: {
     city: restaurant.city,
     address: restaurant.address,
     phone: restaurant.phone,
-    openingHoursLabel: openingHoursLabel(restaurant.openingHours),
+    openingHoursLabel: formatOpeningHours(restaurant.openingHours),
+    hasMenu: Boolean(restaurant.menuAssignments?.length),
     coverImageUrl: restaurant.coverImageUrl,
     latitude: restaurant.latitude === null ? null : Number(restaurant.latitude),
     longitude: restaurant.longitude === null ? null : Number(restaurant.longitude),
@@ -104,7 +100,7 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
           ...(query.area ? { area: query.area } : {}),
           ...(query.apartHotel ? { isAtApartHotel: query.apartHotel === 'true' } : {}),
         },
-        include: { openingHours: true },
+        include: { openingHours: true, menuAssignments: { select: { id: true } } },
         orderBy: [{ area: 'asc' }, { name: 'asc' }],
       })
 
@@ -177,6 +173,7 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
         where: { slug },
         include: {
           openingHours: { orderBy: { dayOfWeek: 'asc' } },
+          menuAssignments: { select: { id: true } },
           scheduleExceptions: { orderBy: { date: 'asc' } },
         },
       })

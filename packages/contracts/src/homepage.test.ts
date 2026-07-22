@@ -11,7 +11,7 @@ describe('homepage contracts', () => {
     title: 'Холодный кофе\nдля долгого дня',
     description: 'Новая коллекция напитков уже во всех кофейнях.',
     ctaLabel: 'Посмотреть меню',
-    ctaUrl: '/restaurants/krasny-prospekt/menu',
+    ctaUrl: '/menu',
     durationSeconds: 8,
     isPublished: true,
     position: 10,
@@ -48,9 +48,9 @@ describe('homepage contracts', () => {
     const section = upsertHomepageDaySectionRequestSchema.parse({ title: 'Поводы зайти сегодня', description: 'Выбирайте свой ритм.', isPublished: true })
     const part = upsertHomepageDayPartRequestSchema.parse({
       sectionId: '019a2f17-453e-7c1a-9c04-4e468e7eb514', label: 'Утро', title: 'Завтраки до 12:00',
-      description: 'Медленные утра и кофе.', ctaUrl: '/restaurants/krasny-prospekt/menu', position: 10, isPublished: true,
+      description: 'Медленные утра и кофе.', ctaUrl: '/menu', position: 10, isPublished: true,
     })
     expect(section.title).toBe('Поводы зайти сегодня')
-    expect(part.ctaUrl).toBe('/restaurants/krasny-prospekt/menu')
+    expect(part.ctaUrl).toBe('/menu')
   })
 })
