@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { upsertRestaurantRequestSchema, type AdminRestaurant } from '@chashka-coffee/contracts'
 
 import { ApiRequestError } from '../src/platform/api/http-client'
-import { restaurantSaveErrorMessage, restaurantToDraft } from '../src/features/catalog-admin/RestaurantsPage'
+import { normalizeRestaurantGalleryUrls, restaurantSaveErrorMessage, restaurantToDraft } from '../src/features/catalog-admin/RestaurantsPage'
 
 const restaurant: AdminRestaurant = {
   id: '018f8d94-1f4f-7000-8000-000000000001',
@@ -15,7 +15,14 @@ const restaurant: AdminRestaurant = {
   address: 'Красный проспект, 25',
   phone: '+7 (383) 123-20-20',
   description: null,
+  aboutTitle: 'О ресторане',
+  aboutText: 'Большой светлый зал для завтраков, встреч и неспешных ужинов.',
+  visitAmenities: [
+    { iconUrl: '/images/wifi.svg', title: 'Wi-Fi', description: 'Для гостей доступен беспроводной интернет.' },
+  ],
   coverImageUrl: null,
+  galleryUrls: [],
+  menuPdfUrl: null,
   latitude: null,
   longitude: null,
   yandexMapsUrl: null,
@@ -34,6 +41,9 @@ describe('restaurant editor draft', () => {
     expect(() => upsertRestaurantRequestSchema.parse(draft)).not.toThrow()
     expect('menuId' in draft).toBe(false)
     expect('menuName' in draft).toBe(false)
+    expect(draft.aboutTitle).toBe('О ресторане')
+    expect(draft.aboutText).toContain('светлый зал')
+    expect(draft.visitAmenities[0]?.title).toBe('Wi-Fi')
   })
 
   test('names the field rejected by server validation', () => {
@@ -42,5 +52,16 @@ describe('restaurant editor draft', () => {
     ])
 
     expect(restaurantSaveErrorMessage(error)).toBe('Не удалось сохранить: проверьте поле «Адрес».')
+  })
+
+  test('keeps empty textarea rows while editing and removes them only before saving', () => {
+    expect(normalizeRestaurantGalleryUrls([
+      ' https://media.example.test/first.webp ',
+      '',
+      'https://media.example.test/second.webp',
+    ])).toEqual([
+      'https://media.example.test/first.webp',
+      'https://media.example.test/second.webp',
+    ])
   })
 })

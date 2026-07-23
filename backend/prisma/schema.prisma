@@ -343,7 +343,12 @@ model Restaurant {
   address            String                       @db.VarChar(300)
   phone              String                       @db.VarChar(40)
   description        String?
+  aboutTitle         String?                      @map("about_title") @db.VarChar(180)
+  aboutText          String?                      @map("about_text")
+  visitAmenities     Json                         @default("[]") @map("visit_amenities")
   coverImageUrl      String?                      @map("cover_image_url")
+  galleryUrls        Json                         @default("[]") @map("gallery_urls")
+  menuPdfUrl         String?                      @map("menu_pdf_url")
   latitude           Decimal?                     @db.Decimal(9, 6)
   longitude          Decimal?                     @db.Decimal(9, 6)
   yandexMapsUrl      String?                      @map("yandex_maps_url")

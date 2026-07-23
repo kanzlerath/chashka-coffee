@@ -25,7 +25,7 @@ const points = restaurants.flatMap((restaurant) => restaurant.latitude != null &
     const initialize=()=>window.ymaps?.ready(()=>{
       if(!window.ymaps)return
       const center=getMapCenter(points)
-      const map=new window.ymaps.Map(canvas,{center,zoom:11,controls:['zoomControl']},{suppressMapOpenBlock:true})
+      const map=new window.ymaps.Map(canvas,{center,zoom:points.length===1?15:11,controls:['zoomControl']},{suppressMapOpenBlock:true})
       points.forEach((point)=>map.geoObjects.add(new window.ymaps!.Placemark([point.latitude,point.longitude],{balloonContentHeader:point.name,balloonContentBody:`${point.address}<br><a href="/restaurants/${point.slug}">Подробнее</a>`},{preset:'islands#darkGreenCoffeeIcon'})))
       const bounds=getMapBounds(points)
       if(points.length>1&&bounds)map.setBounds(bounds,{checkZoomRange:true,zoomMargin:60,maxZoom:13})

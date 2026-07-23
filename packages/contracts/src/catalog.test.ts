@@ -158,10 +158,27 @@ describe('restaurant catalog contracts', () => {
         id: '018f8d94-1f4f-7000-8000-000000000001', slug: 'krasny-prospekt', name: 'Чашка кофе', format: 'CITY', area: 'CITY', isAtApartHotel: false,
         city: 'Новосибирск', address: 'Красный проспект, 25', phone: '+7 (383) 123-20-20', openingHoursLabel: 'Пн–Вс: 08:00–22:00', hasMenu: true, coverImageUrl: null,
         description: 'Кофейня в центре города.', latitude: 55.03, longitude: 82.92, yandexMapsUrl: null, twoGisUrl: null,
+        aboutTitle: 'Место для встреч в центре',
+        aboutText: 'Большой светлый зал, открытая кухня и спокойная музыка. Здесь удобно встречаться утром и оставаться до вечера.',
+        visitAmenities: [
+          { iconUrl: '/images/location-pin.svg', title: 'Парковка рядом', description: 'Бесплатная парковка во дворе ресторана.' },
+          { iconUrl: 'https://media.example.test/icons/pet-friendly.svg', title: 'Можно с собакой', description: 'Будем рады гостям с воспитанными питомцами.' },
+        ],
+        menuPdfUrl: 'https://media.example.test/restaurants/krasny-prospekt-menu.pdf',
+        galleryUrls: [
+          'https://media.example.test/restaurants/krasny-prospekt-1.webp',
+          'https://media.example.test/restaurants/krasny-prospekt-2.webp',
+        ],
         openingHours: [{ dayOfWeek: 1, opensAt: '08:00', closesAt: '22:00', isClosed: false }], scheduleExceptions: [],
       },
     })
 
     expect(detail.restaurant.description).toBe('Кофейня в центре города.')
+    expect(detail.restaurant.aboutTitle).toBe('Место для встреч в центре')
+    expect(detail.restaurant.aboutText).toContain('открытая кухня')
+    expect(detail.restaurant.visitAmenities[0]?.title).toBe('Парковка рядом')
+    expect(detail.restaurant.visitAmenities[1]?.iconUrl).toEndWith('pet-friendly.svg')
+    expect(detail.restaurant.menuPdfUrl).toEndWith('krasny-prospekt-menu.pdf')
+    expect(detail.restaurant.galleryUrls).toHaveLength(2)
   })
 })

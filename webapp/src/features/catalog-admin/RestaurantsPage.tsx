@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { AdminRestaurant, AdminRestaurantMenuDetailResponse, RestaurantOpeningHoursEntry, RestaurantScheduleException, UpsertRestaurantMenuItemOverrideRequest, UpsertRestaurantRequest, UpsertRestaurantScheduleExceptionRequest } from '@chashka-coffee/contracts'
+import type { AdminRestaurant, AdminRestaurantMenuDetailResponse, RestaurantOpeningHoursEntry, RestaurantScheduleException, RestaurantVisitAmenity, UpsertRestaurantMenuItemOverrideRequest, UpsertRestaurantRequest, UpsertRestaurantScheduleExceptionRequest } from '@chashka-coffee/contracts'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { ZodError } from 'zod'
@@ -28,6 +28,8 @@ const defaultHours: RestaurantOpeningHoursEntry[] = [
 const emptyRestaurant: UpsertRestaurantRequest = {
   slug: '', name: '', format: 'CITY', area: 'CITY', isAtApartHotel: false,
   city: 'Новосибирск', address: '', phone: '', description: null, coverImageUrl: null,
+  aboutTitle: 'О ресторане', aboutText: null, visitAmenities: [],
+  galleryUrls: [], menuPdfUrl: null,
   latitude: null, longitude: null, yandexMapsUrl: null, twoGisUrl: null,
   openingHours: defaultHours,
 }
@@ -44,7 +46,7 @@ export function RestaurantsPage({ mode = 'list', restaurantId }: { mode?: 'list'
   const [overrideItem, setOverrideItem] = useState<LocalMenuItem | null>(null)
   const [overrideDraft, setOverrideDraft] = useState<UpsertRestaurantMenuItemOverrideRequest>({ description: null, ingredients: null, weightGrams: null, priceKopecks: null })
   const [scheduleDraft, setScheduleDraft] = useState<UpsertRestaurantScheduleExceptionRequest>(emptyScheduleException)
-  const [editorTab, setEditorTab] = useState<'main' | 'map' | 'schedule' | 'menu'>('main')
+  const [editorTab, setEditorTab] = useState<'main' | 'about' | 'media' | 'map' | 'schedule' | 'menu'>('main')
   const restaurants = useQuery({ queryKey: ['admin', 'restaurants'], queryFn: () => api.listRestaurants() })
   const selected = mode === 'edit' ? restaurants.data?.restaurants.find((restaurant) => restaurant.id === restaurantId) ?? null : null
   const menus = useQuery({ queryKey: ['admin', 'menus'], queryFn: () => api.listMenus() })
@@ -61,7 +63,11 @@ export function RestaurantsPage({ mode = 'list', restaurantId }: { mode?: 'list'
 
   const save = useMutation({
     mutationFn: () => {
-      const payload = { ...draft, slug: draft.slug.trim() || toPublicSlug(draft.name) }
+      const payload = {
+        ...draft,
+        slug: draft.slug.trim() || toPublicSlug(draft.name),
+        galleryUrls: normalizeRestaurantGalleryUrls(draft.galleryUrls),
+      }
       return selected ? api.updateRestaurant(selected.id, payload) : api.createRestaurant(payload)
     },
     onSuccess: async (result) => {
@@ -96,6 +102,16 @@ export function RestaurantsPage({ mode = 'list', restaurantId }: { mode?: 'list'
   function changeHours(dayOfWeek: number, patch: Partial<RestaurantOpeningHoursEntry>) {
     change('openingHours', draft.openingHours.map((entry) => entry.dayOfWeek === dayOfWeek ? { ...entry, ...patch } : entry))
   }
+  function addVisitAmenity() {
+    if (draft.visitAmenities.length >= 6) return
+    change('visitAmenities', [...draft.visitAmenities, { iconUrl: '', title: '', description: '' }])
+  }
+  function changeVisitAmenity<K extends keyof RestaurantVisitAmenity>(index: number, key: K, value: RestaurantVisitAmenity[K]) {
+    change('visitAmenities', draft.visitAmenities.map((amenity, amenityIndex) => amenityIndex === index ? { ...amenity, [key]: value } : amenity))
+  }
+  function removeVisitAmenity(index: number) {
+    change('visitAmenities', draft.visitAmenities.filter((_, amenityIndex) => amenityIndex !== index))
+  }
 
   if (mode === 'list') {
     return <section className="admin-page">
@@ -123,7 +139,7 @@ export function RestaurantsPage({ mode = 'list', restaurantId }: { mode?: 'list'
     <AdminPageHeader eyebrow="Рестораны" title={selected ? selected.name : 'Новый ресторан'} description={selected ? 'Изменяйте данные конкретной точки. Сохранение не затронет другие рестораны.' : 'Сначала заполните основные данные. График-исключения и локальное меню появятся после создания.'} actions={<Button asChild variant="outline"><Link to="/restaurants">К списку ресторанов</Link></Button>} />
     <Card className="admin-editor-card admin-editor-card-wide"><CardHeader><CardTitle>{selected ? 'Настройки ресторана' : 'Основные данные'}</CardTitle><CardDescription>Поля с пометкой «обязательно» нужны для публикации точки на сайте.</CardDescription></CardHeader><CardContent>
       <form className="grid gap-4" onSubmit={(event) => { event.preventDefault(); save.mutate() }}>
-        <AdminTabs label="Разделы ресторана" value={editorTab} onChange={setEditorTab} tabs={[{ value: 'main', label: 'Основное' }, { value: 'map', label: 'Карта' }, { value: 'schedule', label: 'График' }, { value: 'menu', label: 'Меню' }]} />
+        <AdminTabs label="Разделы ресторана" value={editorTab} onChange={setEditorTab} tabs={[{ value: 'main', label: 'Основное' }, { value: 'about', label: 'О ресторане' }, { value: 'media', label: 'Фото и PDF' }, { value: 'map', label: 'Карта' }, { value: 'schedule', label: 'График' }, { value: 'menu', label: 'Меню' }]} />
         {editorTab === 'main' ? <>
         <AdminFormIntro>Название, контакты и фотография — то, что увидит гость на странице ресторана.</AdminFormIntro>
         <AdminField label="Название ресторана" required hint="Например: Чашка кофе на Красном проспекте"><Input required placeholder="Чашка кофе на…" value={draft.name} onChange={(event) => change('name', event.target.value)} /></AdminField>
@@ -133,6 +149,28 @@ export function RestaurantsPage({ mode = 'list', restaurantId }: { mode?: 'list'
         <AdminField label="Короткое описание" hint="Два-три предложения об атмосфере, кухне или особенностях точки."><Textarea placeholder="Светлый городской ресторан для завтраков, встреч и неспешных ужинов." value={draft.description ?? ''} onChange={(event) => change('description', nullableDraftText(event.target.value))} /></AdminField>
         <AdminField label="Фотография ресторана" hint="Вставьте прямую ссылку на загруженное изображение из медиатеки."><Input type="url" placeholder="https://…" value={draft.coverImageUrl ?? ''} onChange={(event) => change('coverImageUrl', nullableDraftText(event.target.value))} /></AdminField>
         <details className="admin-advanced-fields"><summary>Технические настройки</summary><div className="pt-4"><AdminField label="Адрес страницы" hint="Можно не заполнять — адрес создастся автоматически из названия."><Input value={draft.slug} placeholder="krasny-prospekt" onChange={(event) => change('slug', event.target.value)} /></AdminField></div></details>
+        </> : null}
+        {editorTab === 'about' ? <>
+        <AdminFormIntro>Этот текст расположен ниже контактов. Он не меняет короткое описание в первом экране, поэтому здесь можно подробнее рассказать именно об этой точке.</AdminFormIntro>
+        <AdminField label="Заголовок блока" hint="Например: О ресторане или Место для встреч в центре."><Input maxLength={180} placeholder="О ресторане" value={draft.aboutTitle ?? ''} onChange={(event) => change('aboutTitle', nullableDraftText(event.target.value))} /></AdminField>
+        <AdminField label="Текст о ресторане" hint="Можно использовать несколько абзацев — переносы строк сохранятся на сайте."><Textarea className="min-h-64" placeholder="Расскажите об интерьере, атмосфере и особенностях этой точки." value={draft.aboutText ?? ''} onChange={(event) => change('aboutText', nullableDraftText(event.target.value))} /></AdminField>
+        <fieldset className="grid gap-3 rounded-xl border p-4">
+          <legend className="px-1 text-sm font-medium">Особенности перед визитом</legend>
+          <p className="text-sm text-muted-foreground">Добавьте до шести особенностей. Для каждой нужна прямая ссылка на SVG, название и короткое пояснение. Порядок строк сохранится на сайте.</p>
+          {draft.visitAmenities.map((amenity, index) => <div className="grid gap-3 rounded-lg border p-3" key={index}>
+            <div className="flex items-center justify-between gap-3"><strong className="text-sm">Особенность {index + 1}</strong><Button type="button" size="sm" variant="ghost" onClick={() => removeVisitAmenity(index)}>Удалить</Button></div>
+            <AdminField label="Ссылка на SVG"><Input placeholder="https://…/parking.svg или /images/parking.svg" value={amenity.iconUrl} onChange={(event) => changeVisitAmenity(index, 'iconUrl', event.target.value)} /></AdminField>
+            <AdminField label="Название"><Input maxLength={100} placeholder="Парковка рядом" value={amenity.title} onChange={(event) => changeVisitAmenity(index, 'title', event.target.value)} /></AdminField>
+            <AdminField label="Описание"><Textarea placeholder="Бесплатная парковка находится во дворе ресторана." value={amenity.description} onChange={(event) => changeVisitAmenity(index, 'description', event.target.value)} /></AdminField>
+          </div>)}
+          {draft.visitAmenities.length === 0 ? <p className="text-sm text-muted-foreground">Особенностей пока нет — блок на сайте будет скрыт.</p> : null}
+          <Button className="w-fit" type="button" variant="outline" disabled={draft.visitAmenities.length >= 6} onClick={addVisitAmenity}>Добавить особенность</Button>
+        </fieldset>
+        </> : null}
+        {editorTab === 'media' ? <>
+        <AdminFormIntro>Обложка используется в первом экране, а галерея — в отдельном слайдере ниже. Добавляйте по одной прямой ссылке на фотографию в строке.</AdminFormIntro>
+        <AdminField label="Фотографии галереи" hint="До 12 ссылок из медиатеки, по одной в строке. Порядок строк станет порядком фотографий."><Textarea className="min-h-44" placeholder={'https://…/restaurant-1.webp\nhttps://…/restaurant-2.webp'} value={draft.galleryUrls.join('\n')} onChange={(event) => change('galleryUrls', event.target.value.split('\n'))} /></AdminField>
+        <AdminField label="PDF меню" hint="Прямая публичная ссылка на PDF-файл для кнопки скачивания."><Input type="url" placeholder="https://…/menu.pdf" value={draft.menuPdfUrl ?? ''} onChange={(event) => change('menuPdfUrl', nullableDraftText(event.target.value))} /></AdminField>
         </> : null}
         {editorTab === 'map' ? <>
         <AdminFormIntro>Добавьте ссылки на готовые карточки ресторана. Координаты нужны для собственной карты сайта.</AdminFormIntro>
@@ -161,6 +199,10 @@ export function RestaurantsPage({ mode = 'list', restaurantId }: { mode?: 'list'
 
 function freshRestaurant(): UpsertRestaurantRequest {
   return { ...emptyRestaurant, openingHours: defaultHours.map((entry) => ({ ...entry })) }
+}
+
+export function normalizeRestaurantGalleryUrls(urls: string[]) {
+  return urls.map((url) => url.trim()).filter(Boolean).slice(0, 12)
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="grid gap-1.5 text-sm font-medium">{label}{children}</label> }
@@ -192,7 +234,12 @@ const restaurantFieldLabels: Record<string, string> = {
   address: 'Адрес',
   phone: 'Телефон',
   description: 'Короткое описание',
+  aboutTitle: 'Заголовок блока «О ресторане»',
+  aboutText: 'Текст блока «О ресторане»',
+  visitAmenities: 'Особенности блока «Перед визитом»',
   coverImageUrl: 'Фотография ресторана',
+  galleryUrls: 'Фотографии галереи',
+  menuPdfUrl: 'PDF меню',
   latitude: 'Широта',
   longitude: 'Долгота',
   yandexMapsUrl: 'Яндекс Карты',

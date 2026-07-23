@@ -57,6 +57,7 @@ export type RestaurantListResponse = z.infer<typeof restaurantListResponseSchema
 
 const nullableText = (max: number) => z.string().trim().max(max).nullable()
 const nullableUrl = z.url().nullable()
+const publicUrl = z.string().trim().min(1).max(2_048).refine((value) => value.startsWith('/') || /^https?:\/\//.test(value), 'Expected an absolute URL or a site-relative path')
 const nullableTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable()
 
 export const restaurantOpeningHoursEntrySchema = z.object({
@@ -82,12 +83,24 @@ export type UpsertRestaurantScheduleExceptionRequest = z.infer<typeof upsertRest
 export const restaurantScheduleExceptionListResponseSchema = z.object({ exceptions: z.array(restaurantScheduleExceptionSchema) })
 export const restaurantScheduleExceptionResponseSchema = z.object({ exception: restaurantScheduleExceptionSchema })
 
+export const restaurantVisitAmenitySchema = z.object({
+  iconUrl: publicUrl,
+  title: z.string().trim().min(1).max(100),
+  description: z.string().trim().min(1).max(500),
+}).strict()
+export type RestaurantVisitAmenity = z.infer<typeof restaurantVisitAmenitySchema>
+
 export const restaurantDetailSchema = restaurantSummarySchema.extend({
   description: nullableText(4_000),
+  aboutTitle: nullableText(180),
+  aboutText: nullableText(8_000),
+  visitAmenities: z.array(restaurantVisitAmenitySchema).max(6),
   latitude: z.number().min(-90).max(90).nullable(),
   longitude: z.number().min(-180).max(180).nullable(),
   yandexMapsUrl: nullableUrl,
   twoGisUrl: nullableUrl,
+  menuPdfUrl: publicUrl.nullable(),
+  galleryUrls: z.array(publicUrl).max(12),
   openingHours: z.array(restaurantOpeningHoursEntrySchema).max(7),
   scheduleExceptions: z.array(restaurantScheduleExceptionSchema),
 })
@@ -105,11 +118,16 @@ export const adminRestaurantSchema = z.object({
   address: z.string().trim().min(1).max(300),
   phone: z.string().trim().min(1).max(40),
   description: nullableText(4_000),
+  aboutTitle: nullableText(180),
+  aboutText: nullableText(8_000),
+  visitAmenities: z.array(restaurantVisitAmenitySchema).max(6),
   coverImageUrl: nullableUrl,
   latitude: z.number().min(-90).max(90).nullable(),
   longitude: z.number().min(-180).max(180).nullable(),
   yandexMapsUrl: nullableUrl,
   twoGisUrl: nullableUrl,
+  menuPdfUrl: publicUrl.nullable(),
+  galleryUrls: z.array(publicUrl).max(12),
   openingHours: z.array(restaurantOpeningHoursEntrySchema).max(7),
   menuId: uuidSchema.nullable(),
   menuName: z.string().trim().min(1).max(180).nullable(),

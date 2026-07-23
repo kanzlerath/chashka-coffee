@@ -1,3 +1,4 @@
+import { restaurantVisitAmenitySchema } from '@chashka-coffee/contracts'
 import type {
   AdminRestaurant,
   AdminMenu,
@@ -8,6 +9,7 @@ import type {
   RestaurantListResponse,
   RestaurantMenuResponse,
   RestaurantSummary,
+  RestaurantVisitAmenity,
   UpsertRestaurantRequest,
   AssignRestaurantMenuRequest,
   UpsertMenuRequest,
@@ -26,8 +28,20 @@ function toOpeningHours(entries: { dayOfWeek: number; opensAt: string | null; cl
   return entries.map(({ dayOfWeek, opensAt, closesAt, isClosed }) => ({ dayOfWeek, opensAt, closesAt, isClosed }))
 }
 
+function toRestaurantVisitAmenities(value: Prisma.JsonValue): RestaurantVisitAmenity[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((item) => {
+    const parsed = restaurantVisitAmenitySchema.safeParse(item)
+    return parsed.success ? [parsed.data] : []
+  })
+}
+
 function toScheduleException({ id, date, label, opensAt, closesAt, isClosed }: { id: string; date: Date; label: string; opensAt: string | null; closesAt: string | null; isClosed: boolean }) {
   return { id, date: date.toISOString().slice(0, 10), label, opensAt, closesAt, isClosed }
+}
+
+function toUrlList(value: Prisma.JsonValue): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
 }
 
 function toRestaurantSummary(restaurant: {
@@ -62,7 +76,7 @@ function dietaryMarks(item: { isVegetarian: boolean; isSpicy: boolean; isLactose
 }
 
 function toAdminRestaurant(restaurant: {
-  id: string; slug: string; name: string; format: 'CITY' | 'PARK' | 'AIRPORT' | 'APART_HOTEL'; area: 'CITY' | 'PARK' | 'AIRPORT'; isAtApartHotel: boolean; city: string; address: string; phone: string; description: string | null; coverImageUrl: string | null; latitude: Prisma.Decimal | null; longitude: Prisma.Decimal | null; yandexMapsUrl: string | null; twoGisUrl: string | null; createdAt: Date; updatedAt: Date; openingHours?: { dayOfWeek: number; opensAt: string | null; closesAt: string | null; isClosed: boolean }[]; menuAssignments?: { menu: { id: string; name: string } }[]
+  id: string; slug: string; name: string; format: 'CITY' | 'PARK' | 'AIRPORT' | 'APART_HOTEL'; area: 'CITY' | 'PARK' | 'AIRPORT'; isAtApartHotel: boolean; city: string; address: string; phone: string; description: string | null; aboutTitle: string | null; aboutText: string | null; visitAmenities: Prisma.JsonValue; coverImageUrl: string | null; galleryUrls: Prisma.JsonValue; menuPdfUrl: string | null; latitude: Prisma.Decimal | null; longitude: Prisma.Decimal | null; yandexMapsUrl: string | null; twoGisUrl: string | null; createdAt: Date; updatedAt: Date; openingHours?: { dayOfWeek: number; opensAt: string | null; closesAt: string | null; isClosed: boolean }[]; menuAssignments?: { menu: { id: string; name: string } }[]
 }): AdminRestaurant {
   return {
     id: restaurant.id,
@@ -75,7 +89,12 @@ function toAdminRestaurant(restaurant: {
     address: restaurant.address,
     phone: restaurant.phone,
     description: restaurant.description,
+    aboutTitle: restaurant.aboutTitle,
+    aboutText: restaurant.aboutText,
+    visitAmenities: toRestaurantVisitAmenities(restaurant.visitAmenities),
     coverImageUrl: restaurant.coverImageUrl,
+    galleryUrls: toUrlList(restaurant.galleryUrls),
+    menuPdfUrl: restaurant.menuPdfUrl,
     latitude: restaurant.latitude === null ? null : Number(restaurant.latitude),
     longitude: restaurant.longitude === null ? null : Number(restaurant.longitude),
     yandexMapsUrl: restaurant.yandexMapsUrl,
@@ -181,10 +200,15 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
       return {
         ...toRestaurantSummary(restaurant),
         description: restaurant.description,
+        aboutTitle: restaurant.aboutTitle,
+        aboutText: restaurant.aboutText,
+        visitAmenities: toRestaurantVisitAmenities(restaurant.visitAmenities),
         latitude: restaurant.latitude === null ? null : Number(restaurant.latitude),
         longitude: restaurant.longitude === null ? null : Number(restaurant.longitude),
         yandexMapsUrl: restaurant.yandexMapsUrl,
         twoGisUrl: restaurant.twoGisUrl,
+        menuPdfUrl: restaurant.menuPdfUrl,
+        galleryUrls: toUrlList(restaurant.galleryUrls),
         openingHours: toOpeningHours(restaurant.openingHours),
         scheduleExceptions: restaurant.scheduleExceptions.map(toScheduleException),
       }

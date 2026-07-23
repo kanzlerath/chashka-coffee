@@ -545,7 +545,7 @@ maybeDescribe('auth API integration', () => {
     const restaurantPayload = {
       slug: 'krasny-prospekt', name: 'Чашка кофе на Красном проспекте', format: 'CITY', area: 'CITY',
       isAtApartHotel: false, city: 'Новосибирск', address: 'Красный проспект, 25', phone: '+7 383 000-00-00',
-      description: null, coverImageUrl: null, latitude: null, longitude: null, yandexMapsUrl: null, twoGisUrl: null,
+      description: null, aboutTitle: 'О ресторане', aboutText: 'Тестовое описание ресторана.', visitAmenities: [{ iconUrl: '/images/wifi.svg', title: 'Wi-Fi', description: 'Для гостей доступен беспроводной интернет.' }], coverImageUrl: null, galleryUrls: [], menuPdfUrl: null, latitude: null, longitude: null, yandexMapsUrl: null, twoGisUrl: null,
       openingHours: Array.from({ length: 7 }, (_, dayOfWeek) => ({ dayOfWeek, opensAt: '08:00', closesAt: '22:00', isClosed: false })),
     }
     const restaurant = await app.request('/api/admin/restaurants', { method: 'POST', headers, body: JSON.stringify(restaurantPayload) })

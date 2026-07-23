@@ -1,64 +1,432 @@
 ---
-import PageShell from '../../layouts/PageShell.astro';
-import type { RestaurantDetail } from '@chashka-coffee/contracts';
-import { getRestaurantSlugs } from '../../lib/public-api';
-type RestaurantPage = {
+import PageShell from '../../layouts/PageShell.astro'
+import RestaurantMap from '../../components/RestaurantMap.astro'
+import type { RestaurantDetail, RestaurantOpeningHoursEntry } from '@chashka-coffee/contracts'
+import { getRestaurantSlugs } from '../../lib/public-api'
+
+type RestaurantFallback = {
   slug: string
   title: string
   address: string
   phone: string
-  format: string
-  schedule: string
   description: string
   image: string
-  hasMenu?: boolean
+  format?: RestaurantDetail['format']
+  city?: string
+  latitude: number
+  longitude: number
 }
 
-const restaurants: RestaurantPage[] = [
-  { slug: 'krasny-prospekt', title: 'Красный проспект', address: 'Красный проспект, 25, Новосибирск', phone: '+7 (383) 123-20-20', format: 'Городской ресторан', schedule: 'Пн–Пт 07:30–22:00 · Сб–Вс 08:00–23:00', description: 'Светлый городской ресторан на главной улице. Здесь удобно встретиться утром, поработать днём и задержаться после прогулки по центру.', image: '/images/restaurants-hero.png' },
-  { slug: 'ulitsa-lenina', title: 'Улица Ленина', address: 'ул. Ленина, 12, Новосибирск', phone: '+7 (383) 123-20-21', format: 'Городской ресторан', schedule: 'Ежедневно 08:00–22:00', description: 'Место для завтрака перед делами и разговоров, которые не хочется торопить.', image: '/images/restaurants-hero.png' },
-  { slug: 'akademgorodok', title: 'Академгородок', address: 'проспект Академика Коптюга, 4, Новосибирск', phone: '+7 (383) 123-20-22', format: 'Городской ресторан', schedule: 'Ежедневно 08:00–22:00', description: 'Кофе, выпечка и спокойный ритм между встречами и прогулками по Академгородку.', image: '/images/restaurants-hero.png' },
-  { slug: 'galereya-novosibirsk', title: 'Галерея Новосибирск', address: 'ул. Гоголя, 13, Новосибирск', phone: '+7 (383) 123-20-23', format: 'Городской ресторан', schedule: 'Ежедневно 10:00–22:00', description: 'Удобная пауза во время прогулки по городу и шопинга.', image: '/images/restaurants-hero.png' },
-  { slug: 'rechnoy-vokzal', title: 'Речной вокзал', address: 'ул. Большевистская, 12, Новосибирск', phone: '+7 (383) 123-20-24', format: 'Городской ресторан', schedule: 'Ежедневно 08:00–22:00', description: 'Ресторан на пути к набережной — для кофе с собой или неспешного завтрака.', image: '/images/home-hero-v1.png' },
-  { slug: 'ploshchad-lenina', title: 'Площадь Ленина', address: 'Красный проспект, 29, Новосибирск', phone: '+7 (383) 123-20-25', format: 'Городской ресторан', schedule: 'Ежедневно 08:00–23:00', description: 'В самом центре города — для встреч перед театром и долгих разговоров за чашкой кофе.', image: '/images/restaurants-hero.png' },
-  { slug: 'vertical-apart-hotel', title: 'Vertical', address: 'ул. Советская, 8, Новосибирск', phone: '+7 (383) 123-20-26', format: 'Городской ресторан', schedule: 'Ежедневно 07:00–23:00', description: 'Утренний кофе для гостей города и привычное место для тех, кто живёт рядом.', image: '/images/restaurants-hero.png' },
-  { slug: 'central-park', title: 'Центральный парк', address: 'ул. Мичурина, 8, Новосибирск', phone: '+7 (383) 123-20-27', format: 'Городской ресторан', schedule: 'Ежедневно 09:00–21:00', description: 'Кофе и десерты для прогулки по парку — берите с собой или оставайтесь на веранде.', image: '/images/home-hero-v1.png' },
-  { slug: 'zaeltsovsky-park', title: 'Заельцовский парк', address: 'ул. Парковая, 88, Новосибирск', phone: '+7 (383) 123-20-28', format: 'Городской ресторан', schedule: 'Ежедневно 09:00–21:00', description: 'Точка притяжения среди сосен, тишины и длинных прогулок.', image: '/images/home-hero-v1.png' },
-  { slug: 'mikhaylovskaya-naberegnaya', title: 'Михайловская набережная', address: 'ул. Большевистская, 12Б, Новосибирск', phone: '+7 (383) 123-20-29', format: 'Городской ресторан', schedule: 'Ежедневно 09:00–21:00', description: 'Кофе с видом на реку и прогулка без маршрута.', image: '/images/home-hero-v1.png' },
-  { slug: 'tolmachevo-domestic', title: 'Толмачёво — вылеты по России', address: 'аэропорт Толмачёво, сектор A, Обь', phone: '+7 (383) 123-20-30', format: 'Ресторан в аэропорту', schedule: 'Ежедневно 06:00–23:00', description: 'Время на хороший кофе есть даже перед вылетом.', image: '/images/restaurants-hero.png' },
-  { slug: 'tolmachevo-international', title: 'Толмачёво — международные вылеты', address: 'аэропорт Толмачёво, сектор B, Обь', phone: '+7 (383) 123-20-31', format: 'Ресторан в аэропорту', schedule: 'Ежедневно 06:00–23:00', description: 'Пауза перед большим путешествием — с любимым вкусом рядом.', image: '/images/restaurants-hero.png' },
-  { slug: 'tolmachevo-arrivals', title: 'Толмачёво — зал прилёта', address: 'аэропорт Толмачёво, зал прилёта, Обь', phone: '+7 (383) 123-20-32', format: 'Ресторан в аэропорту', schedule: 'Ежедневно 06:00–23:00', description: 'Встречайте близких и начинайте дорогу домой с чашки хорошего кофе.', image: '/images/home-hero-v1.png' },
+const defaultHours: RestaurantOpeningHoursEntry[] = [
+  { dayOfWeek: 0, opensAt: '08:00', closesAt: '22:00', isClosed: false },
+  { dayOfWeek: 1, opensAt: '07:30', closesAt: '22:00', isClosed: false },
+  { dayOfWeek: 2, opensAt: '07:30', closesAt: '22:00', isClosed: false },
+  { dayOfWeek: 3, opensAt: '07:30', closesAt: '22:00', isClosed: false },
+  { dayOfWeek: 4, opensAt: '07:30', closesAt: '22:00', isClosed: false },
+  { dayOfWeek: 5, opensAt: '07:30', closesAt: '23:00', isClosed: false },
+  { dayOfWeek: 6, opensAt: '08:00', closesAt: '23:00', isClosed: false },
 ]
 
+const fallbacks: RestaurantFallback[] = [
+  { slug: 'krasny-prospekt', title: 'Красный проспект', address: 'Красный проспект, 25', phone: '+7 (383) 123-20-20', description: 'Светлый городской ресторан на главной улице. Здесь удобно встретиться утром, поработать днём и задержаться после прогулки по центру.', image: '/images/restaurants-hero.png', latitude: 55.0302, longitude: 82.9204 },
+  { slug: 'ulitsa-lenina', title: 'Улица Ленина', address: 'ул. Ленина, 12', phone: '+7 (383) 123-20-21', description: 'Место для завтрака перед делами и разговоров, которые не хочется торопить.', image: '/images/restaurants-hero.png', latitude: 55.0281, longitude: 82.9127 },
+  { slug: 'akademgorodok', title: 'Академгородок', address: 'проспект Академика Коптюга, 4', phone: '+7 (383) 123-20-22', description: 'Кофе, выпечка и спокойный ритм между встречами и прогулками по Академгородку.', image: '/images/restaurants-hero.png', latitude: 54.8499, longitude: 83.1052 },
+  { slug: 'galereya-novosibirsk', title: 'Галерея Новосибирск', address: 'ул. Гоголя, 13', phone: '+7 (383) 123-20-23', description: 'Удобная пауза во время прогулки по городу и шопинга.', image: '/images/restaurants-hero.png', latitude: 55.0412, longitude: 82.9208 },
+  { slug: 'rechnoy-vokzal', title: 'Речной вокзал', address: 'ул. Большевистская, 12', phone: '+7 (383) 123-20-24', description: 'Ресторан на пути к набережной — для кофе с собой или неспешного завтрака.', image: '/images/home-hero-v1.png', latitude: 55.0066, longitude: 82.9383 },
+  { slug: 'ploshchad-lenina', title: 'Площадь Ленина', address: 'Красный проспект, 29', phone: '+7 (383) 123-20-25', description: 'В самом центре города — для встреч перед театром и долгих разговоров за чашкой кофе.', image: '/images/restaurants-hero.png', latitude: 55.0298, longitude: 82.9196 },
+  { slug: 'vertical-apart-hotel', title: 'Vertical', address: 'ул. Советская, 8', phone: '+7 (383) 123-20-26', description: 'Утренний кофе для гостей города и привычное место для тех, кто живёт рядом.', image: '/images/restaurants-hero.png', format: 'APART_HOTEL', latitude: 55.0234, longitude: 82.9151 },
+  { slug: 'central-park', title: 'Центральный парк', address: 'ул. Мичурина, 8', phone: '+7 (383) 123-20-27', description: 'Кофе и десерты для прогулки по парку — берите с собой или оставайтесь на веранде.', image: '/images/home-hero-v1.png', format: 'PARK', latitude: 55.0418, longitude: 82.9277 },
+  { slug: 'zaeltsovsky-park', title: 'Заельцовский парк', address: 'ул. Парковая, 88', phone: '+7 (383) 123-20-28', description: 'Точка притяжения среди сосен, тишины и длинных прогулок.', image: '/images/home-hero-v1.png', format: 'PARK', latitude: 55.0585, longitude: 82.8398 },
+  { slug: 'mikhaylovskaya-naberegnaya', title: 'Михайловская набережная', address: 'ул. Большевистская, 12Б', phone: '+7 (383) 123-20-29', description: 'Кофе с видом на реку и прогулка без маршрута.', image: '/images/home-hero-v1.png', format: 'PARK', latitude: 55.0099, longitude: 82.9486 },
+  { slug: 'tolmachevo-domestic', title: 'Толмачёво, вылеты по России', address: 'аэропорт Толмачёво, сектор A', phone: '+7 (383) 123-20-30', description: 'Время на хороший кофе есть даже перед вылетом.', image: '/images/restaurants-hero.png', format: 'AIRPORT', city: 'Обь', latitude: 55.0126, longitude: 82.6507 },
+  { slug: 'tolmachevo-international', title: 'Толмачёво, международные вылеты', address: 'аэропорт Толмачёво, сектор B', phone: '+7 (383) 123-20-31', description: 'Пауза перед большим путешествием — с любимым вкусом рядом.', image: '/images/restaurants-hero.png', format: 'AIRPORT', city: 'Обь', latitude: 55.0122, longitude: 82.6502 },
+  { slug: 'tolmachevo-arrivals', title: 'Толмачёво, зал прилёта', address: 'аэропорт Толмачёво, зал прилёта', phone: '+7 (383) 123-20-32', description: 'Встречайте близких и начинайте дорогу домой с чашки хорошего кофе.', image: '/images/home-hero-v1.png', format: 'AIRPORT', city: 'Обь', latitude: 55.0119, longitude: 82.6495 },
+]
+
+function fallbackDetail(entry: RestaurantFallback): RestaurantDetail {
+  const format = entry.format ?? 'CITY'
+  return {
+    id: '018f8d94-1f4f-7000-8000-000000000001',
+    slug: entry.slug,
+    name: `Чашка кофе — ${entry.title}`,
+    format,
+    area: format === 'AIRPORT' ? 'AIRPORT' : format === 'PARK' ? 'PARK' : 'CITY',
+    isAtApartHotel: format === 'APART_HOTEL',
+    city: entry.city ?? 'Новосибирск',
+    address: entry.address,
+    phone: entry.phone,
+    openingHoursLabel: 'Пн–Чт: 07:30–22:00 · Пт: 07:30–23:00 · Сб: 08:00–23:00 · Вс: 08:00–22:00',
+    hasMenu: true,
+    coverImageUrl: entry.image,
+    description: entry.description,
+    aboutTitle: 'О ресторане',
+    aboutText: entry.description,
+    visitAmenities: [],
+    latitude: entry.latitude,
+    longitude: entry.longitude,
+    yandexMapsUrl: null,
+    twoGisUrl: null,
+    menuPdfUrl: null,
+    galleryUrls: [],
+    openingHours: defaultHours,
+    scheduleExceptions: [],
+  }
+}
+
 export async function getStaticPaths() {
-  const slugs = await getRestaurantSlugs(['krasny-prospekt', 'ulitsa-lenina', 'akademgorodok', 'galereya-novosibirsk', 'rechnoy-vokzal', 'ploshchad-lenina', 'vertical-apart-hotel', 'central-park', 'zaeltsovsky-park', 'mikhaylovskaya-naberegnaya', 'tolmachevo-domestic', 'tolmachevo-international', 'tolmachevo-arrivals'])
+  const slugs = await getRestaurantSlugs([
+    'krasny-prospekt',
+    'ulitsa-lenina',
+    'akademgorodok',
+    'galereya-novosibirsk',
+    'rechnoy-vokzal',
+    'ploshchad-lenina',
+    'vertical-apart-hotel',
+    'central-park',
+    'zaeltsovsky-park',
+    'mikhaylovskaya-naberegnaya',
+    'tolmachevo-domestic',
+    'tolmachevo-international',
+    'tolmachevo-arrivals',
+  ])
   return slugs.map((slug) => ({ params: { slug } }))
 }
 
-const slug = Astro.params.slug ?? restaurants[0].slug
-let restaurant = restaurants.find((restaurant) => restaurant.slug === slug) ?? { ...restaurants[0], slug }
+const slug = Astro.params.slug ?? fallbacks[0].slug
+const fallback = fallbacks.find((entry) => entry.slug === slug) ?? { ...fallbacks[0], slug }
+let restaurant = fallbackDetail(fallback)
 const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
+
 try {
   const response = await fetch(`${apiUrl}/api/restaurants/${slug}`)
-  if (response.ok) {
-    const { restaurant: detail } = await response.json() as { restaurant: RestaurantDetail }
-    const title = detail.name.replace('Чашка кофе — ', '')
-    restaurant = { slug: detail.slug, title, address: detail.address, phone: detail.phone, format: detail.format === 'AIRPORT' ? 'Ресторан в аэропорту' : 'Городской ресторан', schedule: detail.openingHoursLabel, description: detail.description ?? 'Подробности о ресторане скоро появятся на странице.', image: detail.coverImageUrl ?? restaurant.image, hasMenu: detail.hasMenu }
-  }
+  if (response.ok) restaurant = (await response.json() as { restaurant: RestaurantDetail }).restaurant
 } catch { /* static editorial fallback remains available */ }
-const mapsQuery = encodeURIComponent(restaurant.address)
+
+const title = restaurant.name.includes('—') ? restaurant.name.split('—').slice(1).join('—').trim() : restaurant.name
+const description = restaurant.description ?? 'Подробности о ресторане скоро появятся на странице.'
+const coverImage = restaurant.coverImageUrl ?? fallback.image
+const mapQuery = encodeURIComponent(`${restaurant.address}, ${restaurant.city}`)
+const yandexMapsUrl = restaurant.yandexMapsUrl ?? `https://yandex.ru/maps/?text=${mapQuery}`
+const twoGisUrl = restaurant.twoGisUrl ?? `https://2gis.ru/novosibirsk/search/${mapQuery}`
+const menuUrl = restaurant.hasMenu ? `/restaurants/${restaurant.slug}/menu` : '/menu'
+const phoneHref = `tel:${restaurant.phone.replace(/[^\d+]/g, '')}`
+const aboutTitle = restaurant.aboutTitle?.trim() || 'О ресторане'
+const aboutText = restaurant.aboutText?.trim() || description
+const visitAmenities = restaurant.visitAmenities
+const gallery = [...new Set(restaurant.galleryUrls.length ? restaurant.galleryUrls : [coverImage])]
+const dayLabels = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
+const scheduleByDay = new Map(restaurant.openingHours.map((entry) => [entry.dayOfWeek, entry]))
+const scheduleRows = [1, 2, 3, 4, 5, 6, 0].map((dayOfWeek) => {
+  const entry = scheduleByDay.get(dayOfWeek)
+  const value = !entry ? 'Уточняйте' : entry.isClosed ? 'Выходной' : entry.opensAt && entry.closesAt ? `${entry.opensAt} – ${entry.closesAt}` : 'Уточняйте'
+  return { day: dayLabels[dayOfWeek], value, isClosed: entry?.isClosed === true }
+})
+const yandexMapsApiKey = import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY ?? ''
 ---
 
-<PageShell title="Ресторан" active="restaurants">
-    <div class="crumbs"><a href="/">Главная</a><span>·</span><a href="/restaurants">Рестораны</a><span>·</span><b>{restaurant.title}</b></div>
-    <section class="intro"><div class="intro-copy"><p class="eyebrow">{restaurant.format}</p><h1>Чашка кофе —<br />{restaurant.title}</h1><p>{restaurant.description}</p><div class="actions">{restaurant.hasMenu !== false && <a class="button dark" href={`/restaurants/${restaurant.slug}/menu`}>Смотреть меню <span>→</span></a>}<a class="button light" href={`https://yandex.ru/maps/?text=${mapsQuery}`} target="_blank" rel="noreferrer">Построить маршрут <span>↗</span></a></div></div><div class="photo-grid"><img class="photo-large" src={restaurant.image} alt={`Интерьер ресторана «Чашка кофе — ${restaurant.title}»`} /><img src="/images/home-hero-v1.png" alt="Кофе и выпечка" /><div class="photo-note"><span>●</span> любимый вкус<br />всегда рядом</div></div></section>
-    <section class="facts" aria-label="Информация о ресторане"><div><span>⌖</span><p>Адрес</p><strong>{restaurant.address}</strong><a href={`https://yandex.ru/maps/?text=${mapsQuery}`} target="_blank" rel="noreferrer">Открыть карту ↗</a></div><div><span>◔</span><p>Режим работы</p><strong>{restaurant.schedule}</strong><a href="/contacts">Все контакты ↗</a></div><div><span>⌕</span><p>Телефон</p><strong>{restaurant.phone}</strong><a href={`tel:${restaurant.phone.replaceAll(/[\s()-]/g, '')}`}>Позвонить ↗</a></div></section>
-    <section class="about"><div><p class="eyebrow">о ресторане</p><h2>Встречи без повода<br />и кофе без спешки</h2></div><p>{restaurant.description} Здесь можно начать день с завтрака, забежать за кофе по пути или встретиться с друзьями вечером.</p></section>
-    <section class="map-section"><div class="map-copy"><p class="eyebrow">как найти</p><h2>Мы рядом</h2><p>{restaurant.address}</p><div><a class="map-link" href={`https://yandex.ru/maps/?text=${mapsQuery}`} target="_blank" rel="noreferrer">Яндекс Карты <span>→</span></a><a class="map-link" href={`https://2gis.ru/novosibirsk/search/${mapsQuery}`} target="_blank" rel="noreferrer">2ГИС <span>→</span></a></div></div><div class="map-plane" aria-hidden="true"><span>Чашка<br />кофе</span><i></i><b>Красный проспект</b><em>Новосибирск</em></div></section>
-    {restaurant.hasMenu !== false && <section class="menu-callout"><div><p class="eyebrow">меню ресторана</p><h2>У каждого места<br />свой вкус</h2><p>Посмотрите блюда, напитки и актуальные цены именно этой точки.</p><a class="button dark" href={`/restaurants/${restaurant.slug}/menu`}>Открыть меню <span>→</span></a></div><img src="/images/home-hero-v1.png" alt="Круассан и чашка кофе" /></section>}
-  </PageShell>
+<PageShell title={title} description={description} active="restaurants" image={coverImage}>
+  <div class="restaurant-detail">
+    <section class="restaurant-hero">
+      <div class="restaurant-hero-copy">
+        <h1>{title}</h1>
+        <p>{description}</p>
+        <div class="restaurant-actions">
+          <a class="detail-button detail-button-dark" href={menuUrl}>Смотреть меню</a>
+          <a class="detail-button detail-button-accent" href={yandexMapsUrl} target="_blank" rel="noreferrer">Построить маршрут</a>
+        </div>
+      </div>
+      <figure><img src={coverImage} alt={`Интерьер ресторана «${title}»`} /></figure>
+    </section>
+
+    <section class="restaurant-facts" aria-label="Информация о ресторане">
+      <a class="fact-card fact-contact fact-address" href={yandexMapsUrl} target="_blank" rel="noreferrer" aria-label={`Открыть адрес ${restaurant.address} на карте`}>
+        <strong>{restaurant.address}</strong>
+        <img src="/images/location-pin.svg" alt="" aria-hidden="true" />
+      </a>
+      <article class="fact-card fact-schedule">
+        <div>{scheduleRows.map(({ day, value, isClosed }) => <p class:list={{ 'is-closed': isClosed }}><span>{day}</span><b>{value}</b></p>)}</div>
+      </article>
+      <a class="fact-card fact-contact fact-phone" href={phoneHref} aria-label={`Позвонить в ресторан по номеру ${restaurant.phone}`}>
+        <strong>{restaurant.phone}</strong>
+        <img src="/images/phone.svg" alt="" aria-hidden="true" />
+      </a>
+    </section>
+
+    <section class="restaurant-story" aria-label={`${aboutTitle} — «${title}»`}>
+      <h2 class:list={{ 'is-single-line': aboutTitle.length <= 18 }}>{aboutTitle}</h2>
+      <p>{aboutText}</p>
+    </section>
+
+    <section class="restaurant-media" aria-label="Карта и фотографии ресторана">
+      <div class="restaurant-location" aria-label={`Карта ресторана «${title}»`}>
+        <RestaurantMap restaurants={[restaurant]} apiKey={yandexMapsApiKey} />
+      </div>
+      <div class="restaurant-gallery" data-restaurant-gallery data-gallery-duration="6000" aria-label={`Галерея ресторана «${title}»`}>
+        <div class="gallery-stage">
+          {gallery.map((image, index) => <figure class:list={['gallery-slide', { 'is-active': index === 0 }]} data-gallery-slide aria-hidden={index === 0 ? 'false' : 'true'}>
+            <img src={image} alt={`Ресторан «${title}», фотография ${index + 1}`} loading={index === 0 ? 'eager' : 'lazy'} />
+          </figure>)}
+          <button class="gallery-open" type="button" data-gallery-open aria-label="Открыть фотографию на весь экран">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg>
+          </button>
+        </div>
+        {gallery.length > 1 && <div class="gallery-thumbnails" aria-label="Выбор фотографии">
+          {gallery.map((image, index) => <button class:list={{ 'is-active': index === 0 }} type="button" data-gallery-control={index} aria-pressed={index === 0 ? 'true' : 'false'} aria-label={`Показать фотографию ${index + 1}`}>
+            <img src={image} alt="" loading="lazy" />
+          </button>)}
+        </div>}
+        <dialog class="gallery-lightbox" data-gallery-lightbox aria-label={`Полноэкранная галерея ресторана «${title}»`}>
+          <button class="lightbox-close" type="button" data-lightbox-close aria-label="Закрыть полноэкранный просмотр">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          </button>
+          <button class="lightbox-arrow lightbox-prev" type="button" data-lightbox-prev aria-label="Предыдущая фотография" hidden={gallery.length < 2}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg>
+          </button>
+          <figure><img src={gallery[0]} alt={`Ресторан «${title}», фотография 1`} data-lightbox-image /></figure>
+          <button class="lightbox-arrow lightbox-next" type="button" data-lightbox-next aria-label="Следующая фотография" hidden={gallery.length < 2}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg>
+          </button>
+          <span class="lightbox-counter" data-lightbox-counter>{`1 / ${gallery.length}`}</span>
+        </dialog>
+      </div>
+    </section>
+
+    {visitAmenities.length > 0 && <section class="restaurant-visit" aria-label="Что важно знать перед визитом">
+      <h2>Перед визитом</h2>
+      <div class="visit-list">
+        {visitAmenities.map(({ iconUrl, title, description }) => <article>
+          <span class="visit-icon" aria-hidden="true">
+            <img src={iconUrl} alt="" />
+          </span>
+          <strong>{title}</strong>
+          <p>{description}</p>
+        </article>)}
+      </div>
+    </section>}
+
+    <section class="restaurant-resources" aria-label="Меню и навигация">
+      <a class="resource-card resource-menu" href={menuUrl}>
+        <strong>Смотреть<br />меню</strong>
+        <img src="/images/menu-track.svg" alt="" aria-hidden="true" />
+      </a>
+      {restaurant.menuPdfUrl
+        ? <a class="resource-card resource-pdf" href={restaurant.menuPdfUrl} target="_blank" rel="noreferrer" download={`${restaurant.slug}-menu.pdf`}>
+            <span>Версия для скачивания</span><strong>Меню<br />в PDF</strong><b>Скачать ↓</b><i aria-hidden="true">PDF</i>
+          </a>
+        : <div class="resource-card resource-pdf is-disabled" aria-disabled="true">
+            <span>Версия для скачивания</span><strong>Меню<br />в PDF</strong><b>Файл появится после загрузки</b><i aria-hidden="true">PDF</i>
+          </div>}
+      <a class="resource-card resource-yandex" href={yandexMapsUrl} target="_blank" rel="noreferrer" aria-label="Открыть ресторан в Яндекс Картах">
+        <strong>Яндекс<br />Карты</strong>
+        <img src="/images/yandex-maps.svg" alt="" aria-hidden="true" />
+      </a>
+      <a class="resource-card resource-2gis" href={twoGisUrl} target="_blank" rel="noreferrer" aria-label="Открыть ресторан в 2ГИС">
+        <strong>2ГИС</strong>
+        <img src="/images/2gis-logo.svg" alt="" aria-hidden="true" />
+      </a>
+    </section>
+  </div>
+</PageShell>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-restaurant-gallery]').forEach((gallery) => {
+    const slides = [...gallery.querySelectorAll<HTMLElement>('[data-gallery-slide]')]
+    const controls = [...gallery.querySelectorAll<HTMLButtonElement>('[data-gallery-control]')]
+    const lightbox = gallery.querySelector<HTMLDialogElement>('[data-gallery-lightbox]')
+    const lightboxImage = gallery.querySelector<HTMLImageElement>('[data-lightbox-image]')
+    const lightboxCounter = gallery.querySelector<HTMLElement>('[data-lightbox-counter]')
+    const duration = Number(gallery.dataset.galleryDuration) || 6000
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    let activeIndex = 0
+    let timer: number | undefined
+
+    const syncLightbox = () => {
+      if (!lightboxImage) return
+      const source = slides[activeIndex]?.querySelector<HTMLImageElement>('img')
+      if (!source) return
+      lightboxImage.src = source.currentSrc || source.src
+      lightboxImage.alt = source.alt
+      if (lightboxCounter) lightboxCounter.textContent = `${activeIndex + 1} / ${slides.length}`
+    }
+
+    const show = (index: number) => {
+      activeIndex = (index + slides.length) % slides.length
+      slides.forEach((slide, slideIndex) => {
+        const active = slideIndex === activeIndex
+        slide.classList.toggle('is-active', active)
+        slide.setAttribute('aria-hidden', String(!active))
+      })
+      controls.forEach((control, controlIndex) => {
+        const active = controlIndex === activeIndex
+        control.classList.toggle('is-active', active)
+        control.setAttribute('aria-pressed', String(active))
+      })
+      if (lightbox?.open) syncLightbox()
+    }
+
+    const pause = () => {
+      if (timer !== undefined) window.clearInterval(timer)
+      timer = undefined
+    }
+    const play = () => {
+      pause()
+      if (slides.length < 2 || reducedMotion.matches || document.hidden || lightbox?.open) return
+      timer = window.setInterval(() => show(activeIndex + 1), duration)
+    }
+
+    controls.forEach((control, index) => control.addEventListener('click', () => {
+      show(index)
+      play()
+    }))
+    gallery.querySelector<HTMLButtonElement>('[data-gallery-open]')?.addEventListener('click', () => {
+      pause()
+      syncLightbox()
+      lightbox?.showModal()
+    })
+    gallery.querySelector<HTMLButtonElement>('[data-lightbox-close]')?.addEventListener('click', () => lightbox?.close())
+    gallery.querySelector<HTMLButtonElement>('[data-lightbox-prev]')?.addEventListener('click', () => show(activeIndex - 1))
+    gallery.querySelector<HTMLButtonElement>('[data-lightbox-next]')?.addEventListener('click', () => show(activeIndex + 1))
+    lightbox?.addEventListener('click', (event) => {
+      if (event.target === lightbox) lightbox.close()
+    })
+    lightbox?.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowLeft') show(activeIndex - 1)
+      if (event.key === 'ArrowRight') show(activeIndex + 1)
+    })
+    lightbox?.addEventListener('close', play)
+    gallery.addEventListener('pointerenter', pause)
+    gallery.addEventListener('pointerleave', play)
+    gallery.addEventListener('focusin', pause)
+    gallery.addEventListener('focusout', (event) => {
+      if (!gallery.contains(event.relatedTarget as Node | null)) play()
+    })
+    document.addEventListener('visibilitychange', play)
+    reducedMotion.addEventListener('change', play)
+    play()
+  })
+</script>
 
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');@font-face{font-family:'21Cent';src:url('/brand/21Cent-Italic.ttf') format('truetype');font-style:italic;font-display:swap}:root{font-family:Montserrat,Arial,sans-serif;color:#1b201b;background:#eaebe5}*{box-sizing:border-box}body{margin:0;padding:14px;background:#eaebe5}a{color:inherit;text-decoration:none}.page-shell{max-width:1680px;margin:auto;background:#fdfcf8;border-radius:30px;overflow:hidden;box-shadow:0 14px 55px rgba(34,40,29,.08)}.header{height:104px;padding:0 clamp(34px,4.2vw,72px);display:flex;align-items:center;gap:34px}.brand,.footer-brand{display:flex;align-items:center;gap:10px;font-weight:800;line-height:.86;letter-spacing:-.075em;font-size:22px}.brand img{object-fit:contain}.header nav{display:flex;gap:34px;margin:auto}.header nav a{font-size:14px;font-weight:600}.header nav .active{border-bottom:2px solid #9bbe2b;padding-bottom:7px}.header-cta{background:#202d24;color:#fff;border-radius:999px;padding:15px 21px;font-size:14px;font-weight:700}.header-cta span{color:#b8d83e;margin-left:7px}.crumbs{padding:14px clamp(34px,4.2vw,72px) 0;font-size:12px;color:#7b8078;display:flex;gap:9px}.crumbs b{color:#30352e}.intro{padding:42px clamp(34px,4.2vw,72px) 56px;display:grid;grid-template-columns:.92fr 1.08fr;gap:60px;align-items:center}.eyebrow{margin:0 0 15px;font-size:11px;text-transform:uppercase;letter-spacing:.14em;font-weight:700;color:#8bab25}.intro h1,.about h2,.map-copy h2,.menu-callout h2{font-size:clamp(53px,5.6vw,98px);line-height:.87;letter-spacing:-.09em;margin:0}.intro-copy>p:not(.eyebrow){max-width:475px;font-size:17px;line-height:1.55;color:#5b6259;margin:29px 0}.actions{display:flex;gap:11px;flex-wrap:wrap}.button{border-radius:999px;padding:18px 21px;display:inline-flex;gap:27px;align-items:center;font-size:14px;font-weight:700}.dark{background:#202d24;color:#fff}.light{border:1px solid #d3d8cf}.photo-grid{min-height:470px;display:grid;grid-template-columns:1.25fr .75fr;grid-template-rows:1fr 1fr;gap:11px;position:relative}.photo-grid img{width:100%;height:100%;object-fit:cover;border-radius:25px}.photo-large{grid-row:span 2}.photo-note{position:absolute;bottom:17px;right:17px;padding:13px 16px;border-radius:14px;background:#fdfcf8;font-size:12px;line-height:1.15;font-weight:700}.photo-note span{color:#a8cb31}.facts{margin:0 14px;padding:31px clamp(22px,3vw,52px);border-radius:25px;background:#eff0e9;display:grid;grid-template-columns:repeat(3,1fr) 1.05fr;gap:25px}.facts>div{padding-right:23px;border-right:1px solid #d8dcd2}.facts span{font-size:22px;color:#8baa27}.facts p,.facts aside p{font-size:12px;color:#70776e;margin:14px 0 8px}.facts strong{font-size:16px;line-height:1.45;display:block}.facts a{display:inline-block;margin-top:17px;font-size:12px;font-weight:700;border-bottom:1px solid #bdc4ba}.facts aside{border-radius:19px;background:#d9e9a6;padding:20px 23px}.facts aside p{margin-top:0;color:#60731a}.facts aside strong{font-size:23px;line-height:.92;letter-spacing:-.07em}.facts aside span{display:block;margin-top:13px;font-size:11px;color:#64701f}.about{padding:clamp(95px,11vw,165px) clamp(34px,9vw,150px);display:grid;grid-template-columns:1.1fr .9fr;gap:70px}.about h2{font-size:clamp(49px,5vw,85px)}.about>p{margin:64px 0 0;font-size:17px;line-height:1.65;color:#50584f}.map-section{margin:0 14px 110px;min-height:450px;border-radius:25px;overflow:hidden;background:#e5e8de;display:grid;grid-template-columns:.75fr 1.25fr}.map-copy{padding:55px}.map-copy h2{font-size:65px}.map-copy>p:not(.eyebrow){font-size:15px;line-height:1.5;color:#586058}.map-copy>div{display:flex;gap:8px;flex-wrap:wrap;margin-top:34px}.map-link{padding:13px 16px;border:1px solid #cbd1c6;border-radius:999px;font-size:13px;font-weight:700}.map-link span{margin-left:10px}.map-plane{position:relative;overflow:hidden;background:linear-gradient(125deg,#d1e1cf 0 15%,#edf0e8 15% 34%,#d7e4ec 34% 41%,#edf0e8 41% 72%,#d1e1cf 72%);isolation:isolate}.map-plane:before,.map-plane:after{content:'';position:absolute;inset:20% -10%;border-top:16px solid rgba(255,255,255,.78);transform:rotate(-14deg);box-shadow:0 90px 0 rgba(255,255,255,.75),0 180px 0 rgba(255,255,255,.6)}.map-plane:after{transform:rotate(43deg);inset:6% -30%;border-width:10px;box-shadow:0 120px 0 rgba(255,255,255,.65)}.map-plane span{position:absolute;z-index:1;left:55%;top:45%;width:95px;aspect-ratio:1;border-radius:48% 48% 48% 0;display:grid;place-items:center;background:#202d24;color:#fff;text-align:center;font-size:14px;font-weight:800;line-height:.85;transform:rotate(-45deg)}.map-plane span::first-line{transform:rotate(45deg)}.map-plane i{position:absolute;z-index:1;left:59%;top:54%;width:15px;height:15px;border-radius:50%;background:#b2d53c}.map-plane b,.map-plane em{position:absolute;z-index:1;font-size:14px;color:#73806b}.map-plane b{left:22%;top:23%}.map-plane em{right:14%;bottom:18%}.menu-callout{margin:0 14px 14px;min-height:470px;border-radius:25px;overflow:hidden;display:grid;grid-template-columns:.9fr 1.1fr;background:#d8e6cf}.menu-callout>div{padding:clamp(42px,6vw,95px)}.menu-callout h2{font-size:clamp(47px,5vw,83px)}.menu-callout p:not(.eyebrow){max-width:375px;font-size:16px;line-height:1.55;color:#4e5d4f;margin:27px 0}.menu-callout img{width:100%;height:100%;object-fit:cover}.menu-callout .button{margin-top:5px}footer{padding:75px clamp(34px,6.5vw,105px) 23px;background:#202d24;color:#f7f6ed;display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:35px;align-items:start}.footer-brand{font-size:25px}.footer-brand img{object-fit:contain}.footer-brand+ p{font-size:clamp(28px,3vw,43px);font-weight:700;line-height:.93;letter-spacing:-.07em;margin:0}.footer-links{display:flex;gap:14px;flex-wrap:wrap}.footer-links a,footer>span{font-size:12px;color:#d1d9d0}footer>span{grid-column:1/-1;border-top:1px solid rgba(255,255,255,.16);padding-top:20px}.mobile-nav{display:none}@media(max-width:840px){body{padding:0;background:#fdfcf8}.page-shell{border-radius:0;box-shadow:none}.header{height:72px;padding:0 20px}.brand{font-size:18px}.brand img{width:39px;height:39px}.header nav,.header-cta{display:none}.crumbs{padding:13px 20px 0;font-size:10px;white-space:nowrap;overflow:hidden}.intro{padding:35px 20px 62px;display:block}.intro h1{font-size:53px}.intro-copy>p:not(.eyebrow){font-size:15px;margin:22px 0}.photo-grid{min-height:430px;margin-top:43px;grid-template-columns:1.16fr .84fr;gap:8px}.photo-grid img{border-radius:19px}.photo-note{right:10px;bottom:10px;font-size:10px;padding:10px}.facts{margin:0 12px;padding:25px 20px;display:block;border-radius:22px}.facts>div{border:0;border-bottom:1px solid #d8dcd2;padding:0 0 21px;margin-bottom:21px}.facts aside{padding:19px}.about{padding:82px 20px;display:block}.about h2{font-size:51px}.about>p{margin-top:29px;font-size:15px}.map-section{margin:0 12px 70px;display:block;border-radius:22px}.map-copy{padding:38px 25px}.map-copy h2{font-size:54px}.map-plane{min-height:300px}.menu-callout{margin:0 12px 12px;display:block;border-radius:22px}.menu-callout>div{padding:48px 25px}.menu-callout h2{font-size:51px}.menu-callout img{height:300px;display:block}footer{margin-bottom:71px;padding:46px 20px 20px;display:block}.footer-brand+ p{margin:32px 0}.footer-links{margin:34px 0}footer>span{display:block}.mobile-nav{position:fixed;z-index:3;bottom:0;left:0;right:0;height:71px;display:flex;justify-content:space-around;align-items:center;background:rgba(253,252,248,.94);backdrop-filter:blur(14px);border-top:1px solid #dde0d8}.mobile-nav a{font-size:19px;display:flex;flex-direction:column;align-items:center;gap:2px;color:#747a72}.mobile-nav small{font-size:9px;font-weight:600}.mobile-nav .active{color:#202d24}.mobile-nav .active:first-letter{background:#b5d83e;border-radius:12px;padding:1px 8px}}
-  .page-shell .facts{grid-template-columns:repeat(3,minmax(0,1fr))}.facts>div:last-child{padding-right:0;border-right:0}
+  .restaurant-detail{display:grid;gap:14px;width:100%;padding:0}
+  .restaurant-hero{display:grid;grid-template-columns:minmax(0,.86fr) minmax(440px,1.14fr);min-height:min(47vw,690px);overflow:hidden;border-radius:var(--radius);background:#f0ece5;padding:clamp(16px,2vw,32px)}
+  .restaurant-hero-copy{display:flex;align-items:flex-start;justify-content:center;flex-direction:column;padding:clamp(30px,3vw,54px)}
+  .restaurant-hero h1{max-width:680px;margin:0;color:var(--ink);font-size:clamp(54px,4.7vw,82px);line-height:.86;letter-spacing:-.09em;text-wrap:balance}
+  .restaurant-hero-copy>p{max-width:500px;margin:27px 0 0;color:var(--muted);font-size:16px;line-height:1.62}
+  .restaurant-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:31px}
+  .detail-button{display:inline-flex;min-height:50px;align-items:center;justify-content:center;padding:0 23px;border:1px solid transparent;border-radius:var(--radius);font-size:12px;font-weight:800;text-decoration:none;transition:transform .22s ease,background-color .22s ease,border-color .22s ease,color .22s ease,box-shadow .22s ease}
+  .detail-button:hover{box-shadow:0 9px 18px rgba(31,59,46,.14);transform:translateY(-2px)}
+  .detail-button-dark{background:var(--moss);color:#fff}.detail-button-dark:hover{background:#315b45}
+  .detail-button-accent{background:var(--lime);color:var(--moss)}.detail-button-accent:hover{background:#cae65f}
+  .restaurant-hero figure{min-width:0;margin:0;overflow:hidden;border-radius:var(--radius);background:#ded8ce}
+  .restaurant-hero figure img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .65s cubic-bezier(.22,1,.36,1)}
+  .restaurant-hero:hover figure img{transform:scale(1.025)}
+  .restaurant-facts{--fact-primary-size:clamp(22px,1.8vw,30px);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:clamp(42px,5vw,78px)}
+  .fact-card{position:relative;display:flex;min-width:0;min-height:270px;align-items:flex-start;justify-content:flex-start;flex-direction:column;padding:clamp(22px,2.3vw,36px);overflow:hidden;border:1px solid var(--line);border-radius:var(--radius);text-decoration:none}
+  .fact-card small,.resource-card>span{color:#6f7b6e;font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
+  .fact-card strong{max-width:420px;margin-top:auto;padding-top:38px;color:var(--ink);font-size:var(--fact-primary-size);line-height:.94;letter-spacing:-.07em}
+  a.fact-card{transition:transform .25s ease,background-color .25s ease}
+  a.fact-card:hover{transform:translateY(-4px)}
+  .fact-address{background:#e4eadc}.fact-address:hover{background:#dce7d4}
+  .fact-phone{background:#eee4d8}.fact-phone:hover{background:#e8dccd}
+  .fact-contact strong{position:relative;z-index:1;max-width:78%;margin-top:0;padding-top:0}
+  .fact-contact img{--contact-icon-rotate:0deg;position:absolute;width:clamp(190px,18vw,300px);height:clamp(190px,18vw,300px);margin:0;filter:brightness(0) invert(1);opacity:.34;pointer-events:none;transform:rotate(var(--contact-icon-rotate));transition:transform .45s cubic-bezier(.22,1,.36,1)}
+  .fact-address img{--contact-icon-rotate:-8deg;right:-7%;bottom:-31%}
+  .fact-phone img{--contact-icon-rotate:7deg;right:5%;bottom:-35%}
+  .fact-phone strong{max-width:none;white-space:nowrap}
+  .fact-contact:hover img{transform:translateY(-8px) rotate(var(--contact-icon-rotate))}
+  .fact-schedule{background:#fffdf9}
+  .fact-schedule>div{width:100%;margin:auto 0}
+  .fact-schedule p{display:grid;grid-template-columns:42px 1fr;gap:12px;margin:0;padding:1px 0;font-size:var(--fact-primary-size);line-height:1;letter-spacing:-.055em}
+  .fact-schedule p span{color:#7a746c}.fact-schedule p b{color:var(--ink);font-weight:600;text-align:right}
+  .fact-schedule p.is-closed span,.fact-schedule p.is-closed b{color:#b64a42}
+  .restaurant-story{display:grid;grid-template-columns:minmax(240px,.72fr) minmax(0,1.28fr);gap:clamp(52px,9vw,156px);align-items:start;margin-top:clamp(48px,6vw,92px);padding:clamp(72px,8vw,126px) clamp(18px,4.6vw,78px)}
+  .restaurant-story h2{margin:0;color:var(--ink);font-size:clamp(42px,4vw,68px);line-height:.92;letter-spacing:-.08em}
+  .restaurant-story h2.is-single-line{white-space:nowrap}
+  .restaurant-story p{max-width:760px;margin:0;color:#514c46;font-size:clamp(17px,1.35vw,22px);line-height:1.78;white-space:pre-line}
+  .restaurant-media{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;height:min(47vw,700px);min-height:520px}
+  .restaurant-location{overflow:hidden;border-radius:var(--radius)}
+  .restaurant-location :global(.restaurant-map){height:100%;min-height:0;border-radius:var(--radius)}
+  .restaurant-gallery{position:relative;display:grid;grid-template-rows:minmax(0,1fr) auto;gap:12px;height:100%;min-height:0}
+  .gallery-stage{position:relative;min-height:0;overflow:hidden;border-radius:var(--radius);background:#d9d4cb}
+  .gallery-slide{position:absolute;inset:0;margin:0;opacity:0;pointer-events:none;transform:scale(1.025);transition:opacity .55s ease,transform 1.1s cubic-bezier(.22,1,.36,1)}
+  .gallery-slide.is-active{opacity:1;pointer-events:auto;transform:scale(1.001)}
+  .gallery-slide img{display:block;width:100%;height:100%;object-fit:cover}
+  .gallery-open{position:absolute;z-index:2;inset:0;padding:0;border:0;background:transparent;cursor:zoom-in}
+  .gallery-open svg{position:absolute;top:18px;right:18px;width:44px;height:44px;padding:12px;border:1px solid rgba(255,255,255,.6);border-radius:50%;background:rgba(252,251,248,.82);fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;box-shadow:0 7px 20px rgba(24,27,22,.12);transition:transform .22s ease,background-color .22s ease}
+  .gallery-open:hover svg{background:#fff;transform:scale(1.05)}
+  .gallery-thumbnails{position:relative;display:flex;gap:8px;overflow-x:auto;padding:0;scrollbar-width:none}
+  .gallery-thumbnails::-webkit-scrollbar{display:none}
+  .gallery-thumbnails button{flex:0 0 auto;width:88px;height:76px;padding:5px;border:0;border-radius:calc(var(--radius) - 7px);background:#ede9e1;cursor:pointer;opacity:.72;transition:opacity .2s ease,transform .2s ease,background-color .2s ease}
+  .gallery-thumbnails button:hover{opacity:1;transform:translateY(-2px)}
+  .gallery-thumbnails button.is-active{background:var(--lime);opacity:1}
+  .gallery-thumbnails img{display:block;width:100%;height:100%;border-radius:calc(var(--radius) - 13px);object-fit:cover}
+  .gallery-lightbox{width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:clamp(18px,3vw,42px);border:0;background:#171914;color:#fff;overflow:hidden}
+  .gallery-lightbox::backdrop{background:rgba(10,12,10,.92)}
+  .gallery-lightbox[open]{display:grid;place-items:center}
+  .gallery-lightbox figure{display:grid;width:100%;height:100%;margin:0;place-items:center}
+  .gallery-lightbox figure img{display:block;max-width:100%;max-height:100%;object-fit:contain}
+  .lightbox-close,.lightbox-arrow{position:fixed;z-index:2;display:grid;place-items:center;width:48px;height:48px;padding:0;border:1px solid rgba(255,255,255,.24);border-radius:50%;background:rgba(23,25,20,.7);color:#fff;cursor:pointer;backdrop-filter:blur(12px);transition:background-color .2s ease,transform .2s ease}
+  .lightbox-close:hover,.lightbox-arrow:hover{background:rgba(255,255,255,.16);transform:scale(1.04)}
+  .lightbox-close{top:22px;right:22px}.lightbox-prev{top:50%;left:22px;transform:translateY(-50%)}.lightbox-next{top:50%;right:22px;transform:translateY(-50%)}
+  .lightbox-prev:hover,.lightbox-next:hover{transform:translateY(-50%) scale(1.04)}
+  .lightbox-close svg,.lightbox-arrow svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .lightbox-arrow[hidden]{display:none}
+  .lightbox-counter{position:fixed;right:50%;bottom:22px;padding:9px 13px;border-radius:99px;background:rgba(23,25,20,.7);font-size:11px;font-weight:800;letter-spacing:.08em;transform:translateX(50%);backdrop-filter:blur(12px)}
+  .restaurant-resources{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:repeat(2,minmax(205px,1fr));gap:12px;margin-bottom:14px}
+  .resource-card{position:relative;isolation:isolate;display:flex;min-width:0;align-items:flex-start;flex-direction:column;overflow:hidden;padding:clamp(27px,3vw,46px);border-radius:var(--radius);color:var(--ink);text-decoration:none;transition:transform .25s ease,filter .25s ease}
+  a.resource-card:hover{transform:translateY(-4px);filter:brightness(.985)}
+  .resource-card strong{position:relative;z-index:1;max-width:420px;margin-top:18px;font-size:clamp(29px,3.1vw,52px);line-height:.89;letter-spacing:-.08em}
+  .resource-card>b{position:relative;z-index:1;margin-top:auto;padding-top:24px;font-size:11px}
+  .resource-menu{grid-column:span 7;grid-row:span 2;background:var(--moss);color:#fff}
+  .resource-menu strong{margin-top:0;color:#fff;font-size:clamp(46px,5vw,82px)}
+  .resource-menu img{position:absolute;z-index:0;right:-9%;bottom:-31%;width:min(72%,590px);pointer-events:none;transition:transform .4s cubic-bezier(.22,1,.36,1)}
+  .resource-menu:hover img{transform:translateY(-9px) scale(1.02)}
+  .resource-pdf{grid-column:span 5;background:#eee4d8}.resource-pdf i{position:absolute;right:8%;bottom:-.2em;color:#d9c5ad;font-size:clamp(94px,10vw,180px);font-style:normal;font-weight:800;letter-spacing:-.12em;line-height:1}
+  .resource-pdf.is-disabled{color:#716b63}.resource-pdf.is-disabled b{max-width:190px;line-height:1.4}
+  .resource-yandex{grid-column:span 3;background:#f4cd4d}
+  .resource-2gis{grid-column:span 2;background:#78c966}
+  .resource-yandex strong,.resource-2gis strong{margin-top:0;font-size:clamp(26px,2.5vw,40px)}
+  .resource-yandex img,.resource-2gis img{position:absolute;z-index:0;right:-16%;bottom:-20%;width:98%;pointer-events:none;opacity:.13;transition:transform .4s cubic-bezier(.22,1,.36,1)}
+  .resource-2gis img{right:-15%;bottom:-23%;width:100%;filter:brightness(0);opacity:.12}
+  .resource-yandex:hover img,.resource-2gis:hover img{transform:translateY(-7px) rotate(-2deg)}
+  .restaurant-visit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(52px,8vw,140px);align-items:start;padding:clamp(90px,10vw,156px) clamp(18px,4.6vw,78px)}
+  .restaurant-visit h2{margin:0;color:var(--ink);font-size:clamp(48px,4.4vw,72px);line-height:.91;letter-spacing:-.08em;white-space:nowrap}
+  .visit-list{display:grid;border-top:1px solid var(--line)}
+  .visit-list article{display:grid;grid-template-columns:52px minmax(150px,.8fr) minmax(0,1.2fr);gap:18px;align-items:center;padding:22px 0;border-bottom:1px solid var(--line)}
+  .visit-icon{display:grid;width:42px;height:42px;place-items:center;color:var(--moss)}
+  .visit-icon img{display:block;width:34px;height:34px;object-fit:contain}
+  .visit-list strong{color:var(--ink);font-size:clamp(17px,1.25vw,21px);line-height:1.15;letter-spacing:-.045em}
+  .visit-list p{margin:0;color:var(--muted);font-size:13px;line-height:1.55}
+  @media(max-width:1100px){
+    .restaurant-hero{grid-template-columns:minmax(0,.95fr) minmax(390px,1.05fr)}
+    .restaurant-hero-copy{padding:34px}.restaurant-hero h1{font-size:clamp(50px,6.2vw,74px)}
+    .resource-menu{grid-column:span 7}.resource-pdf{grid-column:span 5}.resource-yandex{grid-column:span 3}.resource-2gis{grid-column:span 2}
+  }
+  @media(max-width:980px){
+    .restaurant-detail{width:auto;margin:0 var(--mobile-gutter)}
+    .restaurant-hero{grid-template-columns:1fr;min-height:0;padding:12px}.restaurant-hero-copy{padding:44px 26px 50px}.restaurant-hero figure{height:min(78vw,560px)}
+    .restaurant-hero h1{font-size:clamp(50px,12vw,76px)}.restaurant-hero-copy>p{font-size:15px}
+    .restaurant-story,.restaurant-visit{grid-template-columns:1fr;gap:42px;padding:74px 20px}.restaurant-story p{max-width:720px}
+    .restaurant-media{grid-template-columns:1fr;height:auto;min-height:0}.restaurant-location,.restaurant-gallery{height:590px}
+    .restaurant-resources{grid-template-rows:340px 210px 180px}.resource-menu{grid-column:span 12;grid-row:auto}.resource-pdf{grid-column:span 12}.resource-yandex,.resource-2gis{grid-column:span 6}
+    .resource-menu img{right:-4%;bottom:-40%;width:min(65%,480px)}
+  }
+  @media(max-width:760px){
+    .restaurant-facts{grid-template-columns:1fr}.fact-card{min-height:250px}.fact-schedule{min-height:0}.fact-contact img{width:260px;height:260px}
+    .restaurant-location,.restaurant-gallery{height:72svh;min-height:520px}
+    .gallery-thumbnails{justify-content:flex-start}.gallery-thumbnails button{width:72px;height:62px}
+    .lightbox-close{top:14px;right:14px}.lightbox-prev{left:14px}.lightbox-next{right:14px}.lightbox-counter{bottom:14px}
+  }
+  @media(max-width:560px){
+    .restaurant-actions{display:grid;width:100%}.detail-button{width:100%}
+    .restaurant-hero-copy{padding:38px 18px 42px}.restaurant-hero figure{height:420px}
+    .restaurant-story,.restaurant-visit{padding:62px 10px}.restaurant-story h2,.restaurant-visit h2{font-size:clamp(38px,12vw,54px)}
+    .restaurant-visit h2{white-space:normal}.visit-list article{grid-template-columns:44px minmax(0,1fr);gap:12px 15px}.visit-list p{grid-column:2}
+    .restaurant-resources{grid-template-rows:390px 220px 180px 180px}.resource-yandex,.resource-2gis{grid-column:span 12}
+    .resource-menu img{right:-22%;bottom:-20%;width:105%}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .detail-button,.restaurant-hero figure img,a.fact-card,.fact-contact img,.gallery-slide,.gallery-thumbnails button,.resource-card,.resource-menu img,.resource-yandex img,.resource-2gis img{transition:none}
+    .restaurant-hero:hover figure img,.fact-contact:hover img,.resource-menu:hover img,.resource-yandex:hover img,.resource-2gis:hover img{transform:none}
+  }
 </style>
