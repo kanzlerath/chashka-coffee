@@ -1,25 +1,297 @@
 ---
 import PageShell from '../layouts/PageShell.astro'
 import ContentBlocks from '../components/ContentBlocks.astro'
-import StoreBadges from '../components/StoreBadges.astro'
 import { getManagedPage } from '../lib/public-api'
 
 const page = await getManagedPage('LOYALTY')
 const levels = [
-  ['01','3%','После регистрации'],
-  ['02','7%','От 20 000 ₽ оборота'],
-  ['03','10%','От 50 000 ₽ оборота'],
-  ['04','15%','От 100 000 ₽ оборота'],
-  ['05','20%','VIP от 200 000 ₽'],
+  { percent: '3%', condition: 'Сразу после регистрации', lift: 0 },
+  { percent: '7%', condition: 'От 20 000 ₽ оборота', lift: 34 },
+  { percent: '10%', condition: 'От 50 000 ₽ оборота', lift: 73 },
+  { percent: '15%', condition: 'От 100 000 ₽ оборота', lift: 119 },
+  { percent: '20%', condition: 'VIP от 200 000 ₽', lift: 172 },
 ]
 ---
-<PageShell title="Программа лояльности" description="DI Bonus в ресторанах «Чашка кофе»." active="loyalty">
-  <section class="loyalty-opening"><div><p>Denis Ivanov Bonus Card</p><h1>Любимое<br/>возвращается</h1><span>Электронная карта живёт в смартфоне: показывайте её в ресторане, копите бонусы и открывайте новые уровни.</span><StoreBadges/></div><div class="loyalty-phone" aria-hidden="true"><small>DI BONUS</small><strong>3%</strong><span>ваш уровень</span><i>500 приветственных бонусов</i></div></section>
-  <section class="welcome-bonus"><strong>500</strong><div><h2>Бонусов после первого использования</h2><p>Они действуют 10 дней, и ими можно оплатить до 20% чека.</p></div></section>
-  <section class="loyalty-levels"><header><p>Уровни программы</p><h2>Чаще встречаемся —<br/>больше возвращаем</h2></header><div>{levels.map(([number,percent,condition]) => <article><b>{number}</b><strong>{percent}</strong><span>{condition}</span></article>)}</div><small>Условия повышения и сохранения уровня зависят от оборота по карте и активности гостя. Актуальные правила доступны в личном кабинете программы.</small></section>
-  <section class="loyalty-how"><article><b>01</b><h3>Откройте карту</h3><p>Зарегистрируйтесь в приложении и заполните профиль.</p></article><article><b>02</b><h3>Показывайте в ресторане</h3><p>Бонусы начисляются после каждой покупки по правилам программы.</p></article><article><b>03</b><h3>Проверяйте баланс</h3><p>Уровень, срок действия подарочных бонусов и история — в электронной карте.</p></article></section>
-  {page && <ContentBlocks blocks={page.blocks}/>} 
+
+<PageShell
+  title="Программа лояльности"
+  description="DI Bonus в ресторанах «Чашка кофе»: бонусы за любимые встречи."
+  active="loyalty"
+  image="/images/home-morning-v2.png"
+>
+  <div class="loyalty-page">
+    <section class="loyalty-hero" aria-labelledby="loyalty-title">
+      <img src="/images/home-morning-v2.png" alt="Кофе и свежая выпечка в ресторане «Чашка кофе»" />
+      <div class="loyalty-hero-shade" aria-hidden="true"></div>
+      <div class="loyalty-hero-copy">
+        <h1 id="loyalty-title">Любимое<br />возвращается</h1>
+        <p>Показывайте электронную карту при каждом заказе — и часть стоимости вернётся бонусами на следующий визит.</p>
+        <div class="loyalty-actions">
+          <a class="loyalty-button loyalty-button-dark" href="/app">Получить карту</a>
+          <a class="loyalty-button loyalty-button-light" href="/loyalty-rules">Правила программы</a>
+        </div>
+      </div>
+
+      <div class="loyalty-pass" aria-hidden="true">
+        <div class="loyalty-pass-top">
+          <span>ЧК</span>
+          <small>DI Bonus</small>
+        </div>
+        <strong>3%</strong>
+        <div class="loyalty-pass-bottom">
+          <span>ваш уровень</span>
+          <i></i><i></i><i></i>
+        </div>
+      </div>
+    </section>
+
+    <section class="welcome-scene" aria-labelledby="welcome-title">
+      <div class="welcome-copy">
+        <h2 id="welcome-title">Начните<br />с подарка</h2>
+        <p>После первого использования карты начислим приветственные бонусы. Они действуют 10 дней — можно оплатить до 20% следующего чека.</p>
+      </div>
+      <div class="bonus-ticket" aria-label="500 приветственных бонусов">
+        <span>Приветственные</span>
+        <strong>500</strong>
+        <p>бонусов</p>
+        <div>
+          <small>действуют</small>
+          <b>10 дней</b>
+        </div>
+      </div>
+    </section>
+
+    <section class="level-scene" aria-labelledby="levels-title">
+      <header>
+        <h2 id="levels-title">Чаще встречаемся —<br />больше возвращаем</h2>
+        <p>Уровень растёт вместе с оборотом по карте. Чем он выше, тем больше бонусов начисляется после каждого визита.</p>
+      </header>
+
+      <div class="level-track">
+        <svg viewBox="0 0 1000 300" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M 42 252 C 185 252, 222 223, 292 213 S 440 178, 513 164 S 666 119, 734 102 S 882 48, 958 34"></path>
+        </svg>
+        {levels.map((level, index) => (
+          <article style={`--level-lift:${level.lift}px`}>
+            <b>0{index + 1}</b>
+            <strong>{level.percent}</strong>
+            <span>{level.condition}</span>
+          </article>
+        ))}
+      </div>
+
+      <div class="level-note">
+        <span>Ваш текущий уровень и прогресс всегда видны в электронной карте.</span>
+        <a href="/loyalty-rules">Все условия программы</a>
+      </div>
+    </section>
+
+    <section class="daily-scene" aria-labelledby="daily-title">
+      <div class="daily-intro">
+        <h2 id="daily-title">Одна карта.<br />Каждый день.</h2>
+        <div class="daily-card" aria-hidden="true">
+          <span>ЧК</span>
+          <strong>1 240</strong>
+          <small>бонусов на балансе</small>
+        </div>
+      </div>
+
+      <div class="daily-flow">
+        <article>
+          <b>01</b>
+          <div>
+            <h3>Откройте карту</h3>
+            <p>Зарегистрируйтесь в приложении — карта появится в смартфоне сразу.</p>
+          </div>
+          <span aria-hidden="true">↗</span>
+        </article>
+        <article>
+          <b>02</b>
+          <div>
+            <h3>Покажите в ресторане</h3>
+            <p>Откройте QR-код перед оплатой, чтобы начислить или списать бонусы.</p>
+          </div>
+          <span aria-hidden="true">↗</span>
+        </article>
+        <article>
+          <b>03</b>
+          <div>
+            <h3>Возвращайтесь за любимым</h3>
+            <p>Следите за балансом, уровнем и персональными предложениями в одном месте.</p>
+          </div>
+          <span aria-hidden="true">↗</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="app-scene" aria-labelledby="app-title">
+      <div class="app-copy">
+        <h2 id="app-title">Ваша карта<br />уже рядом</h2>
+        <p>Карта лояльности, баланс бонусов, история визитов и новые предложения — в приложении «Чашка кофе».</p>
+        <div class="loyalty-actions">
+          <a class="loyalty-button loyalty-button-accent" href="/app">Перейти к приложению</a>
+          <a class="loyalty-button loyalty-button-ghost" href="/restaurants">Выбрать ресторан</a>
+        </div>
+      </div>
+      <div class="app-visual" aria-hidden="true">
+        <div class="app-orbit"></div>
+        <img src="/images/loyalty-system.svg" alt="" />
+      </div>
+    </section>
+
+    {page && <ContentBlocks blocks={page.blocks} />}
+  </div>
 </PageShell>
+
 <style>
-  .loyalty-opening{display:grid;grid-template-columns:1fr 1fr;min-height:690px;align-items:center;overflow:hidden;border-radius:var(--radius);background:var(--moss);color:#fff}.loyalty-opening>div:first-child{padding:clamp(48px,7vw,110px)}.loyalty-opening p,.loyalty-levels header>p{margin:0;color:var(--lime);font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.loyalty-opening h1{margin:18px 0;font-size:clamp(56px,5.8vw,96px);line-height:.85}.loyalty-opening>div:first-child>span{display:block;max-width:480px;color:#d5dfd7;font-size:14px;line-height:1.65}.loyalty-opening :global(.store-badges){margin-top:28px}.loyalty-phone{justify-self:center;width:270px;height:500px;padding:68px 28px;border:10px solid #101a14;border-radius:42px;background:#fcfbf8;color:var(--ink);box-shadow:24px 25px 0 rgba(188,219,61,.18);transform:rotate(5deg)}.loyalty-phone small{color:#77912e;font-size:10px;font-weight:800}.loyalty-phone strong{display:block;margin-top:72px;font-size:100px;line-height:.8}.loyalty-phone span{display:block;margin-top:12px;color:var(--muted);font-size:12px}.loyalty-phone i{display:block;margin-top:120px;padding:14px;border-radius:var(--radius);background:var(--lime);font-size:11px;font-style:normal;font-weight:700;text-align:center}.welcome-bonus{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:clamp(35px,7vw,110px);padding:clamp(70px,9vw,140px) var(--content-gutter);border-bottom:1px solid var(--line)}.welcome-bonus>strong{color:#75922f;font-size:clamp(110px,17vw,290px);line-height:.75;letter-spacing:-.12em}.welcome-bonus h2{max-width:700px;margin:0;font-size:clamp(32px,4vw,65px)}.welcome-bonus p{max-width:570px;margin:20px 0 0;color:var(--muted);font-size:14px;line-height:1.65}.loyalty-levels{padding:clamp(90px,11vw,170px) var(--content-gutter)}.loyalty-levels h2{margin:16px 0 54px;font-size:clamp(43px,4.8vw,78px)}.loyalty-levels>div{border-top:1px solid var(--line)}.loyalty-levels article{display:grid;grid-template-columns:80px 150px 1fr;align-items:center;padding:22px 0;border-bottom:1px solid var(--line)}.loyalty-levels article b{color:#71902b;font-size:10px}.loyalty-levels article strong{font-size:36px}.loyalty-levels article span{color:var(--muted);font-size:13px}.loyalty-levels>small{display:block;max-width:760px;margin-top:24px;color:var(--muted);font-size:11px;line-height:1.6}.loyalty-how{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.loyalty-how article{min-height:320px;padding:30px;border-radius:var(--radius);background:#efebe4}.loyalty-how article:nth-child(2){background:#dfe8d2}.loyalty-how article:nth-child(3){background:var(--moss);color:#fff}.loyalty-how b{color:#71902b;font-size:10px}.loyalty-how h3{margin:110px 0 12px;font-size:26px}.loyalty-how p{max-width:360px;margin:0;color:var(--muted);font-size:12px;line-height:1.6}.loyalty-how article:nth-child(3) p{color:#d6dfd7}@media(max-width:820px){.loyalty-opening{grid-template-columns:1fr}.loyalty-opening>div:first-child{min-height:540px;padding:48px 25px}.loyalty-phone{margin:10px auto -70px;transform:rotate(4deg) scale(.82);transform-origin:bottom}.welcome-bonus{grid-template-columns:1fr;padding:82px 20px}.loyalty-levels{padding:82px 20px}.loyalty-levels article{grid-template-columns:42px 90px 1fr}.loyalty-how{grid-template-columns:1fr}.loyalty-how article{min-height:240px}.loyalty-how h3{margin-top:65px}}
+  @font-face{font-family:'21Cent';src:url('/brand/21Cent-Italic.ttf') format('truetype');font-style:italic;font-display:swap}
+  .loyalty-page{display:grid;gap:14px}
+  .loyalty-page a{text-decoration:none}
+  .loyalty-hero{position:relative;isolation:isolate;min-height:clamp(650px,52vw,790px);overflow:hidden;border-radius:var(--radius);background:#d9d0c2}
+  .loyalty-hero>img{position:absolute;z-index:-3;inset:0;width:100%;height:100%;object-fit:cover}
+  .loyalty-hero-shade{position:absolute;z-index:-2;inset:0;background:linear-gradient(90deg,rgba(247,243,236,.98) 0%,rgba(247,243,236,.9) 34%,rgba(247,243,236,.18) 61%,rgba(18,40,30,.12) 100%)}
+  .loyalty-hero-copy{display:flex;position:relative;z-index:2;min-height:inherit;padding:clamp(58px,7vw,116px);align-items:flex-start;justify-content:center;flex-direction:column}
+  .loyalty-hero h1{max-width:760px;margin:0;color:var(--ink);font-size:clamp(58px,6.7vw,112px);line-height:.82;letter-spacing:-.105em}
+  .loyalty-hero-copy>p{max-width:510px;margin:28px 0 0;color:#504a44;font-size:15px;line-height:1.65}
+  .loyalty-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:31px}
+  .loyalty-button{display:inline-flex;min-height:50px;padding:0 24px;border:1px solid transparent;border-radius:var(--radius);align-items:center;justify-content:center;color:var(--moss);font-size:12px;font-weight:800;transition:background-color .22s ease,color .22s ease,border-color .22s ease,box-shadow .22s ease,transform .22s ease}
+  .loyalty-button:hover{box-shadow:0 10px 22px rgba(31,59,46,.14);transform:translateY(-2px)}
+  .loyalty-button:focus-visible{outline:3px solid rgba(189,214,90,.9);outline-offset:3px}
+  .loyalty-button-dark{background:var(--moss);color:#fff}
+  .loyalty-button-dark:hover{background:#294b3a}
+  .loyalty-button-light{border-color:rgba(31,59,46,.35);background:rgba(252,251,248,.66);backdrop-filter:blur(10px)}
+  .loyalty-button-light:hover{border-color:var(--moss);background:#fff}
+  .loyalty-button-accent{background:var(--lime);color:var(--moss)}
+  .loyalty-button-accent:hover{background:#cbe56b}
+  .loyalty-button-ghost{border-color:rgba(255,255,255,.42);color:#fff}
+  .loyalty-button-ghost:hover{border-color:#fff;background:#fff;color:var(--moss)}
+  .loyalty-pass{position:absolute;right:clamp(34px,7vw,110px);bottom:clamp(38px,6vw,88px);width:clamp(290px,28vw,430px);aspect-ratio:1.62;padding:clamp(24px,2.4vw,39px);overflow:hidden;border:1px solid rgba(255,255,255,.17);border-radius:var(--radius);background:linear-gradient(145deg,#244936,#172d23);box-shadow:0 30px 65px rgba(24,40,31,.3);color:#fff;transform:rotate(5deg);animation:pass-in .85s cubic-bezier(.22,1,.36,1) both}
+  .loyalty-pass:before{position:absolute;top:-42%;right:-12%;width:65%;aspect-ratio:1;border:1px solid rgba(189,214,90,.28);border-radius:50%;box-shadow:0 0 0 35px rgba(189,214,90,.06),0 0 0 70px rgba(189,214,90,.035);content:''}
+  .loyalty-pass-top,.loyalty-pass-bottom{display:flex;position:relative;z-index:1;align-items:center}
+  .loyalty-pass-top{justify-content:space-between}
+  .loyalty-pass-top span{font-size:22px;font-weight:800;letter-spacing:-.15em}
+  .loyalty-pass-top small{color:#c9d8ce;font-size:9px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
+  .loyalty-pass>strong{display:block;position:relative;z-index:1;margin-top:clamp(38px,4.8vw,70px);color:var(--lime);font-size:clamp(68px,7vw,106px);line-height:.66;letter-spacing:-.1em}
+  .loyalty-pass-bottom{margin-top:21px;gap:7px}
+  .loyalty-pass-bottom span{margin-right:auto;color:#dbe5de;font-size:10px;font-weight:600}
+  .loyalty-pass-bottom i{width:9px;height:9px;border-radius:50%;background:var(--lime)}
+  @keyframes pass-in{from{opacity:0;transform:translateY(36px) rotate(9deg)}to{opacity:1;transform:translateY(0) rotate(5deg)}}
+
+  .welcome-scene{display:grid;grid-template-columns:minmax(0,.9fr) minmax(360px,1.1fr);min-height:650px;padding:clamp(65px,8vw,132px) var(--content-gutter);align-items:center;gap:clamp(45px,8vw,130px);overflow:hidden;border-radius:var(--radius);background:#eee6da}
+  .welcome-copy h2{max-width:690px;margin:0;font-size:clamp(51px,5.8vw,93px);line-height:.84}
+  .welcome-copy p{max-width:520px;margin:28px 0 0;color:var(--muted);font-size:14px;line-height:1.7}
+  .bonus-ticket{position:relative;justify-self:center;width:min(100%,560px);min-height:365px;padding:48px 54px 42px;border:1px solid rgba(43,57,46,.15);border-radius:var(--radius);background:var(--lime);box-shadow:19px 21px 0 rgba(63,73,44,.11);color:var(--moss);transform:rotate(-3deg);transition:transform .35s cubic-bezier(.22,1,.36,1)}
+  .bonus-ticket:hover{transform:rotate(-1deg) translateY(-8px)}
+  .bonus-ticket:before,.bonus-ticket:after{position:absolute;top:42%;width:44px;height:44px;border-radius:50%;background:#eee6da;content:''}
+  .bonus-ticket:before{left:-23px}
+  .bonus-ticket:after{right:-23px}
+  .bonus-ticket>span{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+  .bonus-ticket>strong{display:block;margin-top:21px;font-size:clamp(105px,12vw,180px);line-height:.68;letter-spacing:-.115em}
+  .bonus-ticket>p{margin:18px 0 0;font-family:'21Cent',Georgia,serif;font-size:42px;font-style:italic}
+  .bonus-ticket>div{display:flex;margin-top:35px;padding-top:18px;border-top:1px dashed rgba(31,59,46,.36);align-items:center;justify-content:space-between}
+  .bonus-ticket small{font-size:10px;font-weight:700}
+  .bonus-ticket b{font-size:12px}
+
+  .level-scene{min-height:760px;padding:clamp(72px,8vw,126px) var(--content-gutter) clamp(60px,7vw,104px);overflow:hidden;border-radius:var(--radius);background:var(--moss);color:#fff}
+  .level-scene>header{display:grid;grid-template-columns:1.25fr .55fr;gap:60px;align-items:end}
+  .level-scene h2{max-width:930px;margin:0;color:#fff;font-size:clamp(48px,5.7vw,91px);line-height:.85}
+  .level-scene header p{max-width:410px;margin:0 0 5px;color:#d4dfd7;font-size:13px;line-height:1.65}
+  .level-track{position:relative;display:grid;height:330px;margin-top:80px;grid-template-columns:repeat(5,1fr);align-items:end}
+  .level-track svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+  .level-track path{fill:none;stroke:rgba(189,214,90,.42);stroke-width:2;stroke-dasharray:5 8;vector-effect:non-scaling-stroke}
+  .level-track article{position:relative;z-index:1;display:flex;padding:0 15px calc(var(--level-lift) + 2px);align-items:flex-start;flex-direction:column}
+  .level-track article:after{position:absolute;bottom:calc(var(--level-lift) - 8px);left:15px;width:18px;height:18px;border:5px solid var(--moss);border-radius:50%;background:var(--lime);box-shadow:0 0 0 1px rgba(189,214,90,.65);content:''}
+  .level-track article b{color:#8da36f;font-size:9px;letter-spacing:.12em}
+  .level-track article strong{margin-top:9px;color:#fff;font-size:clamp(44px,4.6vw,73px);line-height:.82;letter-spacing:-.1em}
+  .level-track article span{max-width:135px;margin-top:13px;color:#cad8ce;font-size:10px;line-height:1.45}
+  .level-note{display:flex;margin-top:26px;padding-top:23px;border-top:1px solid rgba(255,255,255,.18);align-items:center;justify-content:space-between;gap:25px}
+  .level-note span{color:#cdd9d1;font-size:11px;line-height:1.55}
+  .level-note a{padding-bottom:4px;border-bottom:1px solid var(--lime);color:var(--lime);font-size:11px;font-weight:800;transition:color .2s ease,border-color .2s ease}
+  .level-note a:hover{border-color:#fff;color:#fff}
+
+  .daily-scene{display:grid;grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr);min-height:660px;padding:clamp(65px,8vw,128px) var(--content-gutter);gap:clamp(58px,8vw,130px);overflow:hidden;border-radius:var(--radius);background:#f6f3ed}
+  .daily-intro{display:flex;flex-direction:column}
+  .daily-intro h2{margin:0;font-size:clamp(48px,5.2vw,83px);line-height:.85}
+  .daily-card{position:relative;width:min(100%,395px);min-height:220px;margin-top:auto;padding:31px 34px;overflow:hidden;border-radius:var(--radius);background:#dfe8d2;color:var(--moss);transform:rotate(-4deg)}
+  .daily-card:after{position:absolute;right:-27px;bottom:-47px;width:165px;aspect-ratio:1;border:32px solid rgba(115,143,54,.18);border-radius:50%;content:''}
+  .daily-card>span{font-size:19px;font-weight:800;letter-spacing:-.15em}
+  .daily-card>strong{display:block;margin-top:52px;font-size:56px;line-height:.8;letter-spacing:-.09em}
+  .daily-card>small{display:block;margin-top:12px;color:#60705e;font-size:10px}
+  .daily-flow{align-self:center;border-top:1px solid var(--line)}
+  .daily-flow article{display:grid;grid-template-columns:56px 1fr 40px;gap:18px;min-height:155px;padding:30px 0;border-bottom:1px solid var(--line);align-items:start}
+  .daily-flow article>b{padding-top:6px;color:#72902e;font-size:10px}
+  .daily-flow h3{margin:0;font-size:clamp(25px,2.3vw,37px);line-height:.95;letter-spacing:-.065em}
+  .daily-flow p{max-width:530px;margin:15px 0 0;color:var(--muted);font-size:12px;line-height:1.6}
+  .daily-flow article>span{display:grid;width:39px;height:39px;border:1px solid var(--line);border-radius:50%;place-items:center;color:var(--moss);font-size:17px;transition:background-color .2s ease,color .2s ease,transform .2s ease}
+  .daily-flow article:hover>span{background:var(--moss);color:#fff;transform:rotate(45deg)}
+
+  .app-scene{display:grid;grid-template-columns:minmax(0,.8fr) minmax(380px,1.2fr);min-height:620px;padding:clamp(62px,7vw,110px) var(--content-gutter);align-items:center;gap:50px;overflow:hidden;border-radius:var(--radius);background:#182f24;color:#fff}
+  .app-copy{position:relative;z-index:2}
+  .app-copy h2{margin:0;color:#fff;font-size:clamp(50px,5.5vw,88px);line-height:.85}
+  .app-copy>p{max-width:510px;margin:27px 0 0;color:#d3dfd7;font-size:14px;line-height:1.7}
+  .app-visual{position:relative;align-self:stretch;min-height:400px}
+  .app-orbit{position:absolute;top:50%;left:50%;width:min(36vw,510px);aspect-ratio:1;border:1px solid rgba(189,214,90,.25);border-radius:50%;box-shadow:0 0 0 65px rgba(189,214,90,.045),0 0 0 130px rgba(189,214,90,.025);transform:translate(-50%,-50%)}
+  .app-visual img{position:absolute;z-index:1;top:50%;left:50%;width:min(41vw,560px);height:auto;filter:drop-shadow(0 28px 28px rgba(0,0,0,.2));transform:translate(-50%,-49%) rotate(5deg);transition:transform .45s cubic-bezier(.22,1,.36,1)}
+  .app-scene:hover .app-visual img{transform:translate(-50%,-53%) rotate(2deg)}
+
+  @media(max-width:1100px){
+    .loyalty-pass{right:35px;bottom:44px;width:340px}
+    .loyalty-hero-copy{padding:70px 48px}
+    .loyalty-hero h1{font-size:77px}
+    .loyalty-hero-copy>p{max-width:430px}
+    .level-scene>header{grid-template-columns:1fr .55fr}
+    .level-track article{padding-inline:8px}
+    .level-track article:after{left:8px}
+  }
+
+  @media(max-width:820px){
+    .loyalty-page{gap:10px;margin:0 var(--mobile-gutter)}
+    .loyalty-hero{min-height:760px}
+    .loyalty-hero>img{object-position:63% center}
+    .loyalty-hero-shade{background:linear-gradient(180deg,rgba(247,243,236,.98) 0%,rgba(247,243,236,.82) 52%,rgba(21,42,32,.18) 100%)}
+    .loyalty-hero-copy{min-height:auto;padding:54px 24px 0;justify-content:flex-start}
+    .loyalty-hero h1{font-size:clamp(53px,15vw,76px)}
+    .loyalty-hero-copy>p{font-size:13px}
+    .loyalty-pass{right:22px;bottom:45px;width:min(78vw,360px)}
+    .welcome-scene,.daily-scene,.app-scene{grid-template-columns:1fr}
+    .welcome-scene{padding:72px 24px;gap:65px}
+    .bonus-ticket{min-height:310px;padding:38px 39px}
+    .level-scene{padding:70px 24px}
+    .level-scene>header{grid-template-columns:1fr;gap:23px}
+    .level-scene h2{font-size:clamp(45px,12vw,66px)}
+    .level-track{display:flex;height:auto;margin-top:60px;padding-left:36px;flex-direction:column;gap:0}
+    .level-track svg{display:none}
+    .level-track:before{position:absolute;top:7px;bottom:12px;left:10px;border-left:1px dashed rgba(189,214,90,.55);content:''}
+    .level-track article{min-height:110px;padding:0 0 26px}
+    .level-track article:after{top:4px;bottom:auto;left:-34px}
+    .level-track article strong{font-size:52px}
+    .level-track article span{max-width:none;margin-top:8px}
+    .level-note{align-items:flex-start;flex-direction:column}
+    .daily-scene{padding:72px 24px;gap:66px}
+    .daily-card{margin-top:60px}
+    .daily-flow article{grid-template-columns:40px 1fr 36px;gap:9px}
+    .app-scene{padding:72px 24px 40px;gap:20px}
+    .app-visual{min-height:400px;order:2}
+    .app-visual img{width:min(108vw,510px)}
+    .app-orbit{width:330px}
+  }
+
+  @media(max-width:520px){
+    .loyalty-actions{align-items:stretch;flex-direction:column}
+    .loyalty-button{width:100%}
+    .loyalty-pass{right:18px;bottom:34px;width:calc(100% - 36px)}
+    .loyalty-pass>strong{margin-top:43px}
+    .bonus-ticket{width:calc(100% - 18px)}
+    .bonus-ticket>strong{font-size:114px}
+    .bonus-ticket>p{font-size:34px}
+    .daily-flow article{grid-template-columns:33px 1fr}
+    .daily-flow article>span{display:none}
+    .daily-intro h2,.welcome-copy h2,.app-copy h2{font-size:49px}
+    .app-visual{min-height:330px}
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    .loyalty-pass{animation:none}
+    .bonus-ticket,.app-visual img,.daily-flow article>span,.loyalty-button{transition:none}
+  }
 </style>
