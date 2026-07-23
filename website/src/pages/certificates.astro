@@ -4,14 +4,272 @@ import ContentBlocks from '../components/ContentBlocks.astro'
 import { getManagedPage } from '../lib/public-api'
 
 const page = await getManagedPage('CERTIFICATES')
-const values = ['1 000 ₽','3 000 ₽','5 000 ₽','10 000 ₽']
+const paperValues = ['1 000', '1 500', '2 000', '3 000', '5 000']
+const paperRules = [
+  ['01', 'Покажите сертификат', 'Передайте бумажный сертификат сотруднику ресторана до расчёта.'],
+  ['02', 'Выберите всё самое любимое', 'Если заказ дороже номинала, разницу можно доплатить.'],
+  ['03', 'Используйте за один визит', 'Сертификат одноразовый: остаток номинала не возвращается.'],
+  ['04', 'Не откладывайте подарок', 'Бумажный сертификат действует 3 месяца с даты выдачи.'],
+]
 ---
-<PageShell title="Сертификаты" active="certificates">
-  <section class="certificate-opening"><div><p>Подарок со вкусом</p><h1>Для тех,<br/>чей выбор<br/>важен</h1><span>Электронный сертификат оставляет главное — свободу выбрать любимый кофе, десерт или долгий ужин.</span><a class="button" href="/app">Выбрать в приложении</a></div><div class="gift-card" aria-hidden="true"><span>ЧК</span><strong>Подарочный<br/>сертификат</strong><i>Место для хорошего дня.</i></div></section>
-  <section class="certificate-values"><header><p>Номиналы</p><h2>От маленького повода<br/>до большого праздника</h2></header><div>{values.map((value,index) => <article><b>0{index+1}</b><strong>{value}</strong><span>Электронный сертификат</span></article>)}</div></section>
-  <section class="certificate-rules"><div><p>Как это работает</p><h2>Выберите.<br/>Подарите.<br/>Встретьтесь.</h2></div><ol><li>Сертификат оформляется в приложении.</li><li>Им можно оплатить покупки в «Чашке кофе» по правилам программы.</li><li>Срок действия и актуальные условия доступны при оформлении.</li></ol><a class="button button-outline" href="/certificate-rules">Полные правила</a></section>
-  {page && <ContentBlocks blocks={page.blocks}/>} 
+
+<PageShell
+  title="Подарочные сертификаты"
+  description="Бумажные и пластиковые подарочные сертификаты «Чашка кофе»."
+  active="certificates"
+  image="/images/certificate-paper-a6.png"
+>
+  <div class="certificates-page">
+    <section class="certificate-hero" aria-labelledby="certificate-title">
+      <div class="certificate-hero-copy">
+        <h1 id="certificate-title">Подарок,<br />который выбирают сами</h1>
+        <p>Кофе утром, любимый десерт или долгий ужин — подарите повод прийти в «Чашку кофе» за своим моментом.</p>
+        <div class="certificate-actions">
+          <a class="certificate-button certificate-button-dark" href="/restaurants">Где купить</a>
+          <a class="certificate-button certificate-button-light" href="/certificate-rules">Правила сертификатов</a>
+        </div>
+      </div>
+
+      <div class="paper-object">
+        <div class="paper-shadow" aria-hidden="true"></div>
+        <img src="/images/certificate-paper-a6.png" alt="Бумажный подарочный сертификат «Чашка кофе» номиналом 1500 рублей" />
+        <span aria-hidden="true">бумажный</span>
+      </div>
+    </section>
+
+    <section class="formats-scene" aria-labelledby="formats-title">
+      <header>
+        <h2 id="formats-title">Два способа<br />подарить любимое</h2>
+        <p>Выберите готовый бумажный номинал или определите сумму пластиковой карты самостоятельно.</p>
+      </header>
+
+      <div class="formats-body">
+        <article class="paper-format">
+          <div>
+            <b>Бумажный</b>
+            <h3>Красивый повод<br />встретиться</h3>
+            <p>Пять фиксированных номиналов. Можно подписать, вложить в подарок и вручить лично.</p>
+          </div>
+          <div class="paper-miniature" aria-hidden="true">
+            <span>подарочный</span>
+            <strong>сертификат</strong>
+            <small>на сумму</small>
+            <b>1 500 ₽</b>
+          </div>
+        </article>
+
+        <article class="plastic-format">
+          <div>
+            <b>Пластиковый</b>
+            <h3>Сумма —<br />на ваш выбор</h3>
+            <p>Задайте любую сумму при покупке — от небольшого знака внимания до подарка для большого праздника.</p>
+          </div>
+          <img src="/images/certificates-plastic.svg" alt="" aria-hidden="true" />
+        </article>
+      </div>
+    </section>
+
+    <section class="values-scene" aria-labelledby="values-title">
+      <div class="values-copy">
+        <h2 id="values-title">Пять готовых<br />номиналов</h2>
+        <p>Для бумажного сертификата.</p>
+      </div>
+
+      <div class="value-tape" aria-label="Номиналы бумажных сертификатов">
+        {paperValues.map((value, index) => (
+          <div>
+            <small>0{index + 1}</small>
+            <strong>{value}</strong>
+            <span>₽</span>
+          </div>
+        ))}
+      </div>
+
+      <div class="custom-value">
+        <span>Пластиковый сертификат</span>
+        <strong>Любая сумма</strong>
+        <p>Вы выбираете размер подарка сами.</p>
+      </div>
+    </section>
+
+    <section class="use-scene" aria-labelledby="use-title">
+      <header>
+        <h2 id="use-title">Подарили.<br />Пришли.<br />Выбрали.</h2>
+        <p>Главные условия бумажного сертификата — коротко и без мелкого шрифта.</p>
+      </header>
+
+      <div class="use-flow">
+        {paperRules.map(([number, title, text]) => (
+          <article>
+            <b>{number}</b>
+            <div>
+              <h3>{title}</h3>
+              <p>{text}</p>
+            </div>
+            <span aria-hidden="true">↗</span>
+          </article>
+        ))}
+      </div>
+
+      <div class="use-note">
+        <p>Один бумажный сертификат на один стол. Другие скидки при расчёте сертификатом не действуют.</p>
+        <a href="/certificate-rules">Открыть полные правила</a>
+      </div>
+    </section>
+
+    <section class="certificate-ending" aria-labelledby="ending-title">
+      <div>
+        <h2 id="ending-title">Подарок уже<br />почти готов</h2>
+        <p>Выберите удобный ресторан и уточните наличие нужного бумажного номинала или оформление пластиковой карты.</p>
+        <div class="certificate-actions">
+          <a class="certificate-button certificate-button-accent" href="/restaurants">Выбрать ресторан</a>
+          <a class="certificate-button certificate-button-ghost" href="/contacts">Уточнить детали</a>
+        </div>
+      </div>
+      <div class="ending-mark" aria-hidden="true">
+        <span>ЧК</span>
+        <i>для хорошего дня</i>
+      </div>
+    </section>
+
+    {page && <ContentBlocks blocks={page.blocks} />}
+  </div>
 </PageShell>
+
 <style>
-  .certificate-opening{display:grid;grid-template-columns:1fr 1fr;min-height:690px;align-items:center;overflow:hidden;border-radius:var(--radius);background:var(--lime);color:var(--moss)}.certificate-opening>div:first-child{padding:clamp(48px,7vw,110px)}.certificate-opening p,.certificate-values header>p,.certificate-rules>div>p{margin:0;font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.certificate-opening h1{margin:18px 0;font-size:clamp(56px,5.8vw,96px);line-height:.85}.certificate-opening>div:first-child>span{display:block;max-width:480px;font-size:14px;line-height:1.65}.certificate-opening .button{margin-top:28px;padding:0 22px;background:var(--moss);color:#fff}.gift-card{justify-self:center;display:flex;width:min(74%,470px);aspect-ratio:1.58;padding:34px;border-radius:var(--radius);background:var(--moss);color:#fff;box-shadow:22px 24px 0 rgba(31,59,46,.15);transform:rotate(-6deg);flex-direction:column}.gift-card>span{font-size:48px;font-weight:800}.gift-card strong{margin:auto 0;font-size:33px;line-height:.95}.gift-card i{font-size:11px;font-style:normal}.certificate-values{padding:clamp(90px,11vw,170px) var(--content-gutter)}.certificate-values h2,.certificate-rules h2{margin:16px 0;font-size:clamp(43px,4.8vw,78px)}.certificate-values>div{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:52px}.certificate-values article{display:flex;min-height:260px;padding:26px;border-radius:var(--radius);background:#efebe4;flex-direction:column}.certificate-values article:nth-child(2n){background:#dfe8d2}.certificate-values b{color:#71902b;font-size:10px}.certificate-values strong{margin:auto 0 8px;font-size:32px}.certificate-values span{color:var(--muted);font-size:10px}.certificate-rules{display:grid;grid-template-columns:.9fr 1.1fr;gap:clamp(40px,8vw,120px);padding:clamp(50px,7vw,105px);border-radius:var(--radius);background:var(--moss);color:#fff}.certificate-rules>div>p{color:var(--lime)}.certificate-rules ol{margin:0;padding:0;list-style:none;border-top:1px solid rgba(255,255,255,.2)}.certificate-rules li{padding:22px 0;border-bottom:1px solid rgba(255,255,255,.2);font-size:14px;line-height:1.6}.certificate-rules>a{grid-column:2;justify-self:start;padding:0 22px;border-color:#fff;color:#fff}@media(max-width:820px){.certificate-opening{grid-template-columns:1fr}.certificate-opening>div:first-child{min-height:530px;padding:48px 25px}.gift-card{margin:35px auto 80px}.certificate-values{padding:82px 20px}.certificate-values>div{grid-template-columns:1fr 1fr}.certificate-values article{min-height:210px;padding:20px}.certificate-rules{grid-template-columns:1fr;padding:55px 25px}.certificate-rules>a{grid-column:1}}
+  @font-face{font-family:'21Cent';src:url('/brand/21Cent-Italic.ttf') format('truetype');font-style:italic;font-display:swap}
+  .certificates-page{display:grid;gap:14px}
+  .certificates-page a{text-decoration:none}
+  .certificate-hero{position:relative;isolation:isolate;min-height:clamp(650px,52vw,790px);overflow:hidden;border-radius:var(--radius);background:#d8b9a7}
+  .certificate-hero:before{position:absolute;z-index:-1;inset:0;background:radial-gradient(circle at 74% 42%,rgba(255,249,239,.55),transparent 32%),linear-gradient(116deg,rgba(255,255,255,.2),transparent 43%);content:''}
+  .certificate-hero-copy{display:flex;position:relative;z-index:2;min-height:inherit;width:58%;padding:clamp(58px,7vw,116px);align-items:flex-start;justify-content:center;flex-direction:column}
+  .certificate-hero h1{max-width:810px;margin:0;color:var(--ink);font-size:clamp(58px,6.4vw,106px);line-height:.82;letter-spacing:-.105em}
+  .certificate-hero-copy>p{max-width:520px;margin:29px 0 0;color:#4e423b;font-size:15px;line-height:1.65}
+  .certificate-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:31px}
+  .certificate-button{display:inline-flex;min-height:50px;padding:0 24px;border:1px solid transparent;border-radius:var(--radius);align-items:center;justify-content:center;font-size:12px;font-weight:800;transition:background-color .22s ease,color .22s ease,border-color .22s ease,box-shadow .22s ease,transform .22s ease}
+  .certificate-button:hover{box-shadow:0 10px 22px rgba(31,59,46,.15);transform:translateY(-2px)}
+  .certificate-button:focus-visible{outline:3px solid rgba(189,214,90,.9);outline-offset:3px}
+  .certificate-button-dark{background:var(--moss);color:#fff}
+  .certificate-button-dark:hover{background:#294b3a}
+  .certificate-button-light{border-color:rgba(31,59,46,.38);background:rgba(252,251,248,.42);color:var(--moss);backdrop-filter:blur(9px)}
+  .certificate-button-light:hover{border-color:var(--moss);background:#fff}
+  .certificate-button-accent{background:var(--lime);color:var(--moss)}
+  .certificate-button-accent:hover{background:#cbe56b}
+  .certificate-button-ghost{border-color:rgba(255,255,255,.42);color:#fff}
+  .certificate-button-ghost:hover{border-color:#fff;background:#fff;color:var(--moss)}
+  .paper-object{position:absolute;z-index:1;right:clamp(34px,6.5vw,105px);bottom:-15%;width:clamp(320px,30vw,465px);transform:rotate(5deg);transform-origin:50% 85%;animation:paper-in .9s cubic-bezier(.22,1,.36,1) both}
+  .paper-object img{display:block;position:relative;z-index:1;width:100%;height:auto;border:8px solid rgba(255,250,244,.88);box-shadow:0 34px 70px rgba(60,37,28,.26)}
+  .paper-shadow{position:absolute;inset:7% -7% -2% 9%;background:rgba(74,47,36,.18);filter:blur(20px);transform:rotate(-2deg)}
+  .paper-object>span{position:absolute;z-index:2;top:18px;right:-22px;padding:13px 18px;border-radius:var(--radius);background:var(--lime);color:var(--moss);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;transform:rotate(8deg)}
+  @keyframes paper-in{from{opacity:0;transform:translate(42px,45px) rotate(11deg)}to{opacity:1;transform:translate(0,0) rotate(5deg)}}
+
+  .formats-scene{padding:clamp(76px,8vw,128px) var(--content-gutter);overflow:hidden;border-radius:var(--radius);background:#f5f1e9}
+  .formats-scene>header{display:grid;grid-template-columns:1.1fr .6fr;align-items:end;gap:60px}
+  .formats-scene h2{max-width:810px;margin:0;font-size:clamp(49px,5.5vw,88px);line-height:.85}
+  .formats-scene>header p{max-width:410px;margin:0 0 5px;color:var(--muted);font-size:13px;line-height:1.65}
+  .formats-body{display:grid;margin-top:75px;border-top:1px solid var(--line);grid-template-columns:1fr 1fr}
+  .formats-body>article{position:relative;display:grid;min-height:590px;padding:48px 42px;grid-template-rows:auto 1fr;overflow:hidden}
+  .formats-body>article+article{border-left:1px solid var(--line)}
+  .formats-body article>div:first-child{position:relative;z-index:2}
+  .formats-body article>div:first-child>b{color:#70902d;font-size:11px}
+  .formats-body h3{margin:17px 0 0;font-size:clamp(36px,3.8vw,61px);line-height:.87;letter-spacing:-.08em}
+  .formats-body article>div:first-child>p{max-width:430px;margin:22px 0 0;color:var(--muted);font-size:12px;line-height:1.65}
+  .paper-miniature{align-self:end;justify-self:center;display:flex;width:min(78%,350px);aspect-ratio:.73;padding:40px 29px;border:1px solid #caa995;background:#d5b6a4;box-shadow:16px 18px 0 rgba(91,64,49,.11);color:#201d1a;transform:rotate(-5deg);flex-direction:column;text-align:center;transition:transform .35s cubic-bezier(.22,1,.36,1)}
+  .paper-format:hover .paper-miniature{transform:rotate(-2deg) translateY(-8px)}
+  .paper-miniature>span{margin-top:auto;font-family:'21Cent',Georgia,serif;font-size:38px;font-style:italic}
+  .paper-miniature>strong{font-family:'21Cent',Georgia,serif;font-size:54px;font-style:italic;font-weight:400;line-height:.8}
+  .paper-miniature>small{margin-top:auto;font-size:10px}
+  .paper-miniature>b{margin-top:5px;font-size:25px}
+  .plastic-format>img{align-self:end;justify-self:center;width:min(112%,570px);height:auto;margin:20px -10% -14%;filter:drop-shadow(0 25px 24px rgba(50,45,37,.13));transform:rotate(2deg);transition:transform .45s cubic-bezier(.22,1,.36,1)}
+  .plastic-format:hover>img{transform:rotate(-1deg) translateY(-9px)}
+
+  .values-scene{display:grid;grid-template-columns:.7fr 1.3fr;min-height:650px;padding:clamp(72px,8vw,126px) var(--content-gutter);gap:clamp(55px,8vw,130px);overflow:hidden;border-radius:var(--radius);background:#e3ead8}
+  .values-copy h2{margin:0;font-size:clamp(48px,5.3vw,85px);line-height:.85}
+  .values-copy p{margin:24px 0 0;color:var(--muted);font-size:13px}
+  .value-tape{align-self:center;border-top:1px solid rgba(31,59,46,.22)}
+  .value-tape>div{display:grid;grid-template-columns:50px 1fr 34px;padding:21px 0;border-bottom:1px solid rgba(31,59,46,.22);align-items:baseline;transition:padding-left .22s ease,color .22s ease}
+  .value-tape>div:hover{padding-left:10px;color:#68862a}
+  .value-tape small{color:#728d3a;font-size:9px}
+  .value-tape strong{font-size:clamp(30px,3.2vw,50px);line-height:.8;letter-spacing:-.08em}
+  .value-tape span{font-size:14px;font-weight:800}
+  .custom-value{grid-column:1/-1;display:flex;margin-top:15px;padding:26px 0 0;border-top:1px solid rgba(31,59,46,.22);align-items:center;gap:32px}
+  .custom-value>span{color:#6e7a6b;font-size:10px;font-weight:800}
+  .custom-value>strong{font-family:'21Cent',Georgia,serif;font-size:clamp(43px,5vw,78px);font-style:italic;font-weight:400;line-height:.8}
+  .custom-value>p{margin:0 0 0 auto;color:var(--muted);font-size:11px}
+
+  .use-scene{padding:clamp(76px,8vw,126px) var(--content-gutter) clamp(58px,6vw,92px);overflow:hidden;border-radius:var(--radius);background:var(--moss);color:#fff}
+  .use-scene>header{display:grid;grid-template-columns:.85fr .55fr;align-items:end;gap:70px}
+  .use-scene h2{margin:0;color:#fff;font-size:clamp(50px,5.5vw,88px);line-height:.84}
+  .use-scene>header p{max-width:390px;margin:0 0 5px;color:#d4dfd7;font-size:13px;line-height:1.65}
+  .use-flow{margin-top:70px;border-top:1px solid rgba(255,255,255,.2)}
+  .use-flow article{display:grid;grid-template-columns:70px 1fr 45px;min-height:126px;padding:27px 0;border-bottom:1px solid rgba(255,255,255,.2);align-items:start;gap:20px}
+  .use-flow article>b{padding-top:7px;color:var(--lime);font-size:10px}
+  .use-flow h3{margin:0;color:#fff;font-size:clamp(25px,2.5vw,39px);line-height:.95;letter-spacing:-.065em}
+  .use-flow p{max-width:620px;margin:13px 0 0;color:#cdd9d1;font-size:11px;line-height:1.55}
+  .use-flow article>span{display:grid;width:41px;height:41px;border:1px solid rgba(255,255,255,.25);border-radius:50%;place-items:center;color:var(--lime);font-size:17px;transition:background-color .2s ease,color .2s ease,transform .2s ease}
+  .use-flow article:hover>span{background:var(--lime);color:var(--moss);transform:rotate(45deg)}
+  .use-note{display:flex;margin-top:29px;align-items:center;justify-content:space-between;gap:30px}
+  .use-note p{max-width:650px;margin:0;color:#c7d5cb;font-size:10px;line-height:1.6}
+  .use-note a{padding-bottom:4px;border-bottom:1px solid var(--lime);color:var(--lime);font-size:11px;font-weight:800;transition:color .2s ease,border-color .2s ease}
+  .use-note a:hover{border-color:#fff;color:#fff}
+
+  .certificate-ending{display:grid;grid-template-columns:1fr .65fr;min-height:570px;padding:clamp(68px,8vw,128px) var(--content-gutter);align-items:center;gap:60px;overflow:hidden;border-radius:var(--radius);background:#1a3026;color:#fff}
+  .certificate-ending h2{margin:0;color:#fff;font-size:clamp(51px,5.7vw,91px);line-height:.84}
+  .certificate-ending>div:first-child>p{max-width:550px;margin:27px 0 0;color:#d3dfd7;font-size:14px;line-height:1.7}
+  .ending-mark{position:relative;justify-self:center;display:flex;width:min(100%,380px);aspect-ratio:1;padding:50px;border:1px solid rgba(189,214,90,.32);border-radius:50%;box-shadow:0 0 0 50px rgba(189,214,90,.05),0 0 0 100px rgba(189,214,90,.025);align-items:center;justify-content:center;flex-direction:column}
+  .ending-mark span{color:var(--lime);font-size:108px;font-weight:800;line-height:.8;letter-spacing:-.17em}
+  .ending-mark i{margin-top:22px;color:#d8e2da;font-family:'21Cent',Georgia,serif;font-size:28px;font-style:italic}
+
+  @media(max-width:1100px){
+    .certificate-hero-copy{width:61%;padding:70px 48px}
+    .certificate-hero h1{font-size:76px}
+    .paper-object{right:35px;width:350px}
+    .formats-body>article{padding-inline:28px}
+    .certificate-ending{grid-template-columns:1fr .55fr}
+  }
+
+  @media(max-width:820px){
+    .certificates-page{gap:10px;margin:0 var(--mobile-gutter)}
+    .certificate-hero{min-height:800px}
+    .certificate-hero-copy{width:100%;min-height:auto;padding:53px 24px 0}
+    .certificate-hero h1{font-size:clamp(52px,14.5vw,73px)}
+    .certificate-hero-copy>p{max-width:440px;font-size:13px}
+    .paper-object{right:22px;bottom:-20%;width:min(70vw,340px)}
+    .formats-scene,.values-scene,.use-scene,.certificate-ending{padding:70px 24px}
+    .formats-scene>header,.use-scene>header{grid-template-columns:1fr;gap:24px}
+    .formats-scene h2,.use-scene h2{font-size:clamp(46px,12vw,64px)}
+    .formats-body{grid-template-columns:1fr;margin-top:55px}
+    .formats-body>article{min-height:560px;padding:38px 0}
+    .formats-body>article+article{border-top:1px solid var(--line);border-left:0}
+    .paper-miniature{width:min(72%,310px)}
+    .plastic-format>img{width:min(110%,520px);margin-bottom:-16%}
+    .values-scene{grid-template-columns:1fr;gap:55px}
+    .custom-value{align-items:flex-start;flex-direction:column;gap:13px}
+    .custom-value>p{margin:0}
+    .use-flow{margin-top:55px}
+    .use-note{align-items:flex-start;flex-direction:column}
+    .certificate-ending{grid-template-columns:1fr;gap:75px}
+    .ending-mark{width:min(80vw,330px)}
+  }
+
+  @media(max-width:520px){
+    .certificate-actions{align-items:stretch;flex-direction:column}
+    .certificate-button{width:100%}
+    .paper-object{right:17px;bottom:-13%;width:calc(100% - 82px)}
+    .formats-body>article{min-height:520px}
+    .paper-miniature{width:255px}
+    .paper-miniature>span{font-size:31px}
+    .paper-miniature>strong{font-size:45px}
+    .plastic-format>img{width:118%;margin-right:-14%;margin-bottom:-9%}
+    .value-tape>div{grid-template-columns:38px 1fr 28px}
+    .use-flow article{grid-template-columns:36px 1fr;gap:9px}
+    .use-flow article>span{display:none}
+    .values-copy h2,.certificate-ending h2{font-size:49px}
+    .ending-mark span{font-size:92px}
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    .paper-object{animation:none}
+    .paper-miniature,.plastic-format>img,.use-flow article>span,.certificate-button{transition:none}
+  }
 </style>
