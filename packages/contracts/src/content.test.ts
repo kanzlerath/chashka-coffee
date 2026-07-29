@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { contentBlockListSchema, upsertContentEntryRequestSchema } from './content'
+import { contentBlockListSchema, sanitizeRichText, upsertContentEntryRequestSchema } from './content'
 
 describe('managed content contracts', () => {
   test('accepts an ordered, reusable editorial document', () => {
@@ -64,6 +64,33 @@ describe('managed content contracts', () => {
       id: '018f8d94-1f4f-7000-8000-000000000016',
       type: 'TEXT', isVisible: true, layout: 'FULLSCREEN', title: null, text: 'Текст',
     }])).toThrow()
+  })
+
+  test('accepts rich editorial text settings and sanitizes unsafe markup', () => {
+    const [block] = contentBlockListSchema.parse([{
+      id: '018f8d94-1f4f-7000-8000-000000000017',
+      type: 'TEXT',
+      isVisible: true,
+      layout: 'STANDARD',
+      title: 'Программа вечера',
+      titleLevel: 'H3',
+      textSize: 'LARGE',
+      text: '<p><strong>Начало в 19:00</strong></p><table><tbody><tr><td>Кофе</td><td>Десерт</td></tr></tbody></table><img src=x onerror=alert(1)>',
+    }])
+
+    expect(block.type === 'TEXT' && block.titleLevel).toBe('H3')
+    expect(block.type === 'TEXT' && block.textSize).toBe('LARGE')
+    expect(block.type === 'TEXT' && block.text).toContain('<table>')
+    expect(block.type === 'TEXT' && block.text).not.toContain('<img')
+    expect(block.type === 'TEXT' && block.text).not.toContain('onerror')
+  })
+
+  test('keeps rich-text sanitization idempotent and limits link protocols', () => {
+    const source = '<p><a href="javascript:alert(1)">Опасная</a> и <a href="https://example.com/path?q=1&amp;x=2">безопасная</a></p>'
+    const sanitized = sanitizeRichText(source)
+
+    expect(sanitized).toBe('<p><a>Опасная</a> и <a href="https://example.com/path?q=1&amp;x=2" target="_blank" rel="noopener noreferrer">безопасная</a></p>')
+    expect(sanitizeRichText(sanitized)).toBe(sanitized)
   })
 
   test('keeps event price and registration behavior in the content contract', () => {
