@@ -51,6 +51,8 @@ VITE_API_URL=http://localhost:3000
 
 The sidebar links to concrete work areas instead of hiding them behind tabs. Coffee, cakes, promotions, events, and journal entries have direct routes. Lists, creation, and editing are separate screens (`/...`, `/.../new`, and `/.../:id`) so a content manager never has to scroll past a long list to find a form. Technical fields such as slug and manual ordering stay in collapsed advanced sections; ordinary forms use product language, examples, and field hints.
 
+The material builder stores sanitized rich HTML inside the existing JSON block fields, so old plain-text entries remain compatible and no database migration is required. Text-bearing blocks support inline formatting, links, heading levels, lists, tables, and per-block text sizes. Blocks use a single-open accordion with a sticky add-block footer, while the draft preview opens in a separate dialog instead of extending the editing form. The API contract strips unknown tags and unsafe link protocols before content reaches either the admin preview or the public Astro renderer.
+
 Only administrators can manage staff and view website statistics. Staff changes are enforced by the backend: the current account cannot delete itself, and the last administrator cannot be deleted or demoted. Anonymous statistics behavior is documented in [../docs/ANALYTICS.md](../docs/ANALYTICS.md).
 
 ## Deployment
