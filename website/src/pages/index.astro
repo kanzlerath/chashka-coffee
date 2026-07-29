@@ -1,6 +1,7 @@
 ---
 import PageShell from '../layouts/PageShell.astro';
 import DishDialog from '../components/DishDialog.astro';
+import JournalCard from '../components/JournalCard.astro';
 import type { ContentEntry, HomepagePublicResponse, RestaurantSummary } from '@chashka-coffee/contracts';
 
 const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
@@ -83,8 +84,8 @@ const bestsellerPayload = (item: (typeof bestsellers)[number]) => JSON.stringify
 const featuredPromotion = promotions.at(0) ?? null
 const featuredEvent = events.at(0) ?? null
 const journal = articles.slice(0, 2).length ? articles.slice(0, 2) : [
-  { slug: 'coffee-morning', title: 'Кофе для первого тёплого утра', excerpt: 'Как выбрать напиток, который не спорит с вашим настроением.', imageUrl: '/images/home-breakfast.png' },
-  { slug: 'croissant-now', title: 'Почему круассан лучше есть сразу', excerpt: 'Немного масла, много слоёв и один простой совет от кондитера.', imageUrl: '/images/home-hero-v1.png' },
+  { slug: 'coffee-morning', title: 'Кофе для первого тёплого утра', excerpt: 'Как выбрать напиток, который не спорит с вашим настроением.', imageUrl: '/images/home-breakfast.png', startsAt: null, createdAt: '2026-07-18T05:00:00.000Z' },
+  { slug: 'croissant-now', title: 'Почему круассан лучше есть сразу', excerpt: 'Немного масла, много слоёв и один простой совет от кондитера.', imageUrl: '/images/home-hero-v1.png', startsAt: null, createdAt: '2026-07-12T05:00:00.000Z' },
 ]
 const fallbackPlaces: RestaurantSummary[] = [
   { id: '019a2f17-453e-7c1a-9c04-4e468e7eb514', slug: 'krasny-prospekt', name: 'Чашка кофе — Красный проспект', format: 'CITY', area: 'CITY', isAtApartHotel: false, city: 'Новосибирск', address: 'Красный проспект, 25', phone: '+7 (383) 123-20-20', openingHoursLabel: 'Пн–Вс: 07:30–23:00', hasMenu: true, coverImageUrl: '/images/restaurants-hero.png' },
@@ -197,7 +198,13 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
       <section class="home-app-loyalty" aria-labelledby="loyalty-title"><div class="loyalty-copy"><h2 id="loyalty-title">Бонусы за<br />любимые встречи</h2><p>Показывайте карту при каждом заказе, копите бонусы и оплачивайте ими следующие визиты.</p><a class="ui-button ui-button--fill" href="/loyalty">О программе лояльности</a></div><img class="loyalty-visual" src="/images/loyalty-system.svg" alt="" aria-hidden="true" /></section>
     </div>
 
-    <section class="home-journal home-section" aria-labelledby="journal-title"><header class="home-section-head"><div><h2 id="journal-title">Читайте медленнее</h2></div></header><div class="journal-list">{journal.map((article, index) => <a href={`/journal/${article.slug}`} class="journal-card"><img src={article.imageUrl ?? productFallbacks[index]} alt="" loading="lazy" /><div><h3>{article.title}</h3><p>{article.excerpt}</p><span>Читать далее</span></div></a>)}</div><a class="ui-button ui-button--outline section-action" href="/journal">Посмотреть все</a></section>
+    <section class="home-journal home-section" aria-labelledby="journal-title">
+      <header class="home-section-head"><div><h2 id="journal-title">Читайте медленнее</h2></div></header>
+      <div class="journal-list">
+        {journal.map((article, index) => <JournalCard entry={article} fallbackImage={productFallbacks[index]} headingLevel={3} />)}
+      </div>
+      <a class="ui-button ui-button--outline section-action" href="/journal">Посмотреть все</a>
+    </section>
 
     <div class="home-marquee" aria-label="Чашка кофе: кофе, завтраки, десерты и встречи"><div>ЧАШКА КОФЕ <i>✦</i> КОФЕ <i>✦</i> ЗАВТРАКИ <i>✦</i> ДЕСЕРТЫ <i>✦</i> ВСТРЕЧИ <i>✦</i> ЧАШКА КОФЕ <i>✦</i> КОФЕ <i>✦</i> ЗАВТРАКИ <i>✦</i> ДЕСЕРТЫ <i>✦</i> ВСТРЕЧИ <i>✦</i></div></div>
     <DishDialog />
@@ -413,6 +420,7 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
     .story-counter{font-size:10px}.story-arrows button{width:27px;height:27px}
     .home-section{padding-right:var(--mobile-gutter);padding-left:var(--mobile-gutter)}
     .bestseller-list,.journal-list{margin-right:calc(var(--mobile-gutter) * -1);margin-left:calc(var(--mobile-gutter) * -1);padding-right:var(--mobile-gutter);padding-left:var(--mobile-gutter)}
+    .journal-list :global(.news-card){flex:0 0 95%;scroll-snap-align:start}
     .home-bento{grid-template-columns:repeat(2,minmax(0,1fr));margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter)}
     .bento-card{min-width:0;padding:18px}
     .bento-card h2{max-width:100%;font-size:clamp(22px,6.8vw,28px);line-height:.91;letter-spacing:-.07em}

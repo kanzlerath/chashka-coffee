@@ -1,11 +1,80 @@
 ---
 import PageShell from '../../layouts/PageShell.astro'
 import ContentBlocks from '../../components/ContentBlocks.astro'
+import { formatPublicationDate, getPublicationDate } from '../../lib/journal'
 import { getContentEntry, getContentSlugs } from '../../lib/public-api'
-export async function getStaticPaths(){return (await getContentSlugs('ARTICLE',['coffee-for-warm-morning','coffee-morning','croissant-now','novosibirsk-route','after-roasting'])).map((slug)=>({params:{slug}}))}
+
+export async function getStaticPaths() {
+  return (await getContentSlugs('ARTICLE', ['coffee-for-warm-morning', 'coffee-morning', 'croissant-now', 'novosibirsk-route', 'after-roasting']))
+    .map((slug) => ({ params: { slug } }))
+}
+
 const entry = await getContentEntry('ARTICLE',Astro.params.slug!)
+const publishedAt = entry ? getPublicationDate(entry) : null
+const hasVisibleBlocks = entry?.blocks.some((block) => block.isVisible) ?? false
 ---
-{entry ? <PageShell title={entry.title} active="journal" image={entry.imageUrl ?? '/images/home-morning-v2.png'}><article class="article-head"><div><p>Журнал</p><h1>{entry.title}</h1><span>{entry.excerpt}</span><small>5 минут на чтение</small></div><img src={entry.imageUrl ?? '/images/home-morning-v2.png'} alt=""/></article>{entry.blocks.length ? <ContentBlocks blocks={entry.blocks}/> : <article class="article-body"><p>{entry.body}</p></article>}<a class="back" href="/journal">Ко всем материалам</a></PageShell> : <meta http-equiv="refresh" content="0;url=/journal"/>}
+
+{entry
+  ? <PageShell title={entry.title} description={entry.excerpt ?? undefined} active="journal" image={entry.imageUrl ?? '/images/home-morning-v2.png'}>
+      <article class="article-detail">
+        <header class="article-head">
+          <div class="article-head__copy">
+            <time datetime={publishedAt!}>{formatPublicationDate(publishedAt!)}</time>
+            <h1>{entry.title}</h1>
+            {entry.excerpt && <p>{entry.excerpt}</p>}
+          </div>
+          <figure>
+            <img src={entry.imageUrl ?? '/images/home-morning-v2.png'} alt={`Обложка новости «${entry.title}»`} />
+          </figure>
+        </header>
+
+        {hasVisibleBlocks
+          ? <ContentBlocks blocks={entry.blocks} />
+          : <section class="article-body"><p>{entry.body}</p></section>}
+
+        <div class="article-back">
+          <a class="button" href="/journal">Ко всем новостям</a>
+        </div>
+      </article>
+    </PageShell>
+  : <meta http-equiv="refresh" content="0;url=/journal"/>}
+
 <style>
-  .article-head{display:grid;grid-template-columns:.96fr 1.04fr;min-height:680px;overflow:hidden;border-radius:var(--radius);background:#eee9e1}.article-head>div{display:flex;justify-content:flex-end;align-items:flex-start;padding:clamp(50px,6vw,95px);flex-direction:column}.article-head p{margin:0;color:#6f902b;font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.article-head h1{margin:20px 0;font-size:clamp(48px,5.5vw,90px)}.article-head span{max-width:550px;color:var(--muted);font-size:15px;line-height:1.65}.article-head small{margin-top:28px;font-weight:700}.article-head img{width:100%;height:100%;object-fit:cover}.article-body{max-width:780px;margin:auto;padding:100px 20px}.article-body p{font-size:18px;line-height:1.8}@media(max-width:800px){.article-head{grid-template-columns:1fr}.article-head>div{min-height:560px;padding:48px 25px}.article-head img{height:360px}}
+  .article-detail{display:grid;gap:var(--section-gap);width:100%}
+  .article-head{display:grid;grid-template-columns:minmax(0,.86fr) minmax(440px,1.14fr);min-height:min(47vw,690px);overflow:hidden;border-radius:var(--radius);background:#f0ece5;padding:clamp(16px,2vw,32px)}
+  .article-head__copy{display:flex;align-items:flex-start;justify-content:center;padding:clamp(30px,3vw,54px);flex-direction:column}
+  .article-head time{margin:0;color:#6f902b;font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
+  .article-head h1{max-width:690px;margin:20px 0;font-size:clamp(42px,4.1vw,68px);line-height:.9;letter-spacing:-.08em}
+  .article-head p{max-width:550px;margin:0;color:var(--muted);font-size:15px;line-height:1.65}
+  .article-head figure{min-width:0;margin:0;overflow:hidden;border-radius:var(--radius);background:#ded8ce}
+  .article-head img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .65s cubic-bezier(.22,1,.36,1)}
+  .article-head:hover img{transform:scale(1.025)}
+  .article-body{max-width:780px;margin:0 auto;padding:clamp(72px,8vw,116px) 20px}
+  .article-body p{margin:0;font-size:18px;line-height:1.8;white-space:pre-line}
+  .article-back{padding:clamp(34px,4vw,58px) var(--content-gutter) clamp(74px,8vw,118px)}
+  .article-back .button{padding:0 23px}
+  @media(max-width:1100px){
+    .article-head{grid-template-columns:minmax(0,.95fr) minmax(390px,1.05fr)}
+    .article-head__copy{padding:34px}
+    .article-head h1{font-size:clamp(40px,5.2vw,60px)}
+  }
+  @media(max-width:980px){
+    .article-detail{width:auto;margin:0 var(--mobile-gutter)}
+    .article-head{grid-template-columns:1fr;min-height:0;padding:12px}
+    .article-head__copy{min-height:460px;padding:44px 26px 50px}
+    .article-head figure{height:min(78vw,560px)}
+    .article-head h1{font-size:clamp(42px,10vw,62px)}
+    .article-back{padding-right:10px;padding-left:10px}
+  }
+  @media(max-width:560px){
+    .article-head__copy{min-height:410px;padding:38px 18px 42px}
+    .article-head figure{height:420px}
+    .article-head h1{font-size:clamp(38px,11vw,52px)}
+    .article-head p{font-size:14px}
+    .article-back .button{width:100%}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .article-head img{transition:none}
+    .article-head:hover img{transform:none}
+  }
 </style>

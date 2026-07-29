@@ -1,0 +1,39 @@
+---
+import type { ContentEntry } from '@chashka-coffee/contracts'
+
+import JournalIndex from '../../../components/JournalIndex.astro'
+import PageShell from '../../../layouts/PageShell.astro'
+import { JOURNAL_PAGE_SIZE } from '../../../lib/journal'
+import { getContent } from '../../../lib/public-api'
+
+interface Props {
+  entries: ContentEntry[]
+  currentPage: number
+  totalPages: number
+}
+
+export async function getStaticPaths() {
+  const entries = await getContent('ARTICLE')
+  const totalPages = Math.ceil(entries.length / JOURNAL_PAGE_SIZE)
+
+  return Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) => {
+    const currentPage = index + 2
+    const start = (currentPage - 1) * JOURNAL_PAGE_SIZE
+
+    return {
+      params: { page: String(currentPage) },
+      props: {
+        entries: entries.slice(start, start + JOURNAL_PAGE_SIZE),
+        currentPage,
+        totalPages,
+      },
+    }
+  })
+}
+
+const { entries, currentPage, totalPages } = Astro.props
+---
+
+<PageShell title={`Новости — страница ${currentPage}`} active="journal">
+  <JournalIndex entries={entries} currentPage={currentPage} totalPages={totalPages} />
+</PageShell>

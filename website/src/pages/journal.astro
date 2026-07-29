@@ -1,9 +1,13 @@
 ---
 import PageShell from '../layouts/PageShell.astro'
+import JournalIndex from '../components/JournalIndex.astro'
 import { getContent } from '../lib/public-api'
+import { JOURNAL_PAGE_SIZE } from '../lib/journal'
+
 const entries = await getContent('ARTICLE')
+const totalPages = Math.ceil(entries.length / JOURNAL_PAGE_SIZE)
 ---
-<PageShell title="Журнал" active="journal"><section class="journal-intro"><p>Журнал «Чашки кофе»</p><h1>О вкусе, городе и людях</h1><span>Истории, которые можно читать медленно. Кофе, еда, Новосибирск и те, кто делает их живыми.</span></section><section class="journal-list"><header><p>Все материалы</p><h2>Остановитесь на одной истории</h2></header>{entries.length ? <div>{entries.map((entry) => <a href={`/journal/${entry.slug}`}><img src={entry.imageUrl ?? '/images/home-morning-v2.png'} alt="" loading="lazy"/><div><small>Читать · 5 минут</small><h3>{entry.title}</h3><p>{entry.excerpt}</p><span>Читать далее</span></div></a>)}</div> : <p class="empty">Материалы появятся после запуска API.</p>}</section></PageShell>
-<style>
-  .journal-intro{padding:clamp(80px,10vw,155px) var(--content-gutter);border-radius:var(--radius);background:#dfe7d5}.journal-intro p,.journal-list header p{margin:0;color:#6f902b;font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.journal-intro h1{max-width:1300px;margin:20px 0 30px;font-size:clamp(58px,7vw,112px)!important}.journal-intro span{display:block;max-width:620px;color:var(--muted);font-size:15px;line-height:1.65}.journal-list{padding:clamp(90px,10vw,160px) var(--content-gutter)}.journal-list header{max-width:950px;margin-bottom:55px}.journal-list h2{margin:15px 0;font-size:clamp(44px,5vw,82px)}.journal-list>div{display:grid;grid-template-columns:1fr 1fr;gap:14px}.journal-list a{display:grid;grid-template-columns:1.02fr .98fr;min-height:340px;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius);background:#fffdf9;color:inherit;text-decoration:none;transition:transform .25s,box-shadow .25s}.journal-list a:hover{box-shadow:0 16px 30px rgba(31,38,32,.09);transform:translateY(-4px)}.journal-list img{width:100%;height:100%;object-fit:cover}.journal-list a>div{display:flex;padding:25px;flex-direction:column}.journal-list small{color:#6f902b;font-size:9px;font-weight:800;text-transform:uppercase}.journal-list h3{margin:15px 0 12px;font-size:clamp(24px,2.2vw,35px);line-height:1}.journal-list p{margin:0;color:var(--muted);font-size:12px;line-height:1.6}.journal-list a span{margin-top:auto;padding-top:25px;font-size:10px;font-weight:800;text-transform:uppercase}.empty{padding:30px;border-radius:var(--radius);background:var(--sand)}@media(max-width:900px){.journal-intro{margin:0 12px;padding:60px 25px 90px}.journal-intro h1{font-size:56px!important}.journal-list{padding:76px 20px}.journal-list>div{grid-template-columns:1fr}.journal-list a{grid-template-columns:1fr;min-height:0}.journal-list img{aspect-ratio:1/.66}.journal-list a>div{min-height:260px}}
-</style>
+
+<PageShell title="Новости" active="journal">
+  <JournalIndex entries={entries.slice(0, JOURNAL_PAGE_SIZE)} currentPage={1} totalPages={totalPages} />
+</PageShell>
