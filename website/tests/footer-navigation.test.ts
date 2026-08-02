@@ -12,7 +12,6 @@ const expectedSectionRoutes = [
   '/certificates',
   '/coffee',
   '/contacts',
-  '/corporate',
   '/delivery',
   '/events',
   '/franchise',

@@ -1,30 +1,83 @@
 ---
-import PageShell from '../layouts/PageShell.astro';
-import LeadForm from '../components/LeadForm.astro';
-import ContentBlocks from '../components/ContentBlocks.astro';
-import { getManagedPage } from '../lib/public-api';
-type JobRow = [string, string, string, string, string]
-let jobs: JobRow[] = [
-  ['barista', 'Бариста', 'Рестораны в центре', 'от 45 000 ₽', 'Готовить кофе, улыбаться гостям и знать любимый десерт постоянных гостей.'],
-  ['manager', 'Менеджер зала', 'Красный проспект', 'от 55 000 ₽', 'Собирать спокойную смену и делать так, чтобы гостям хотелось задержаться.'],
-  ['pastry-chef', 'Кондитер', 'Производство', 'по итогам встречи', 'Работать со свежей выпечкой и превращать простые ингредиенты в повод зайти.'],
-];
+import type { JobOpening } from '@chashka-coffee/contracts'
+import PageShell from '../layouts/PageShell.astro'
+import LeadForm from '../components/LeadForm.astro'
+import ContentBlocks from '../components/ContentBlocks.astro'
+import EditorialHero from '../components/EditorialHero.astro'
+import JobDialog from '../components/JobDialog.astro'
+import { fallbackJobOpenings, normalizeJobOpening, type JobOpeningCard } from '../lib/job-openings'
+import { getManagedPage } from '../lib/public-api'
+
+let jobs: JobOpeningCard[] = fallbackJobOpenings
 try {
   const response = await fetch(`${import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'}/api/jobs`)
   if (response.ok) {
-    const data = await response.json()
-    jobs = data.openings.map((opening: any): JobRow => [opening.slug, opening.title, [opening.department, opening.location].filter(Boolean).join(' · ') || 'Чашка кофе', opening.employmentType ?? 'Условия обсуждаются', opening.description ?? 'Подробности вакансии уточнит команда.'])
+    const data = await response.json() as { openings: JobOpening[] }
+    if (data.openings.length) jobs = data.openings.map(normalizeJobOpening)
   }
-} catch { /* static editorial fallback remains available */ }
-const page = await getManagedPage('JOBS');
+} catch { /* Static editorial vacancies keep the page useful without the API. */ }
+const page = await getManagedPage('JOBS')
 ---
-<PageShell title="Вакансии" active="jobs">
-<section class="hero"><img src="/images/home-hero-v1.png" alt="Кофе и свежая выпечка"/><div><p>команда чашка кофе</p><h1>Работа,<br/>в которой<br/>есть вкус</h1><span>Мы ищем внимательных людей: тех, кому важны команда, гости и хорошо приготовленный кофе.</span><a href="#vacancies">Смотреть вакансии</a></div></section>
-<section class="intro"><p>люди делают место</p><h2>Каждая смена —<br/>это чей-то хороший день.</h2><span>Учим с нуля, поддерживаем в начале и даём расти тем, кто хочет быть больше, чем просто должность.</span></section>
-<section class="values"><article><b>01</b><h3>Без лишней<br/>иерархии</h3><p>Мы разговариваем друг с другом прямо и уважительно.</p></article><article><b>02</b><h3>С заботой<br/>о госте</h3><p>Качество — в деталях: от первого «доброе утро» до последней крошки.</p></article><article><b>03</b><h3>Можно<br/>расти</h3><p>Бариста становится тренером, менеджер — управляющим, если ему это интересно.</p></article></section>
-<section id="vacancies" class="vacancies"><div class="heading"><p>открытые позиции</p><h2>Найдите<br/>свою чашку</h2><span>Нет подходящей роли? Всё равно напишите нам — хорошие люди нужны всегда.</span></div><div class="job-list">{jobs.map(([slug,title,place,pay,copy])=><article><div><p>{place}</p><h3>{title}</h3><strong>{pay}</strong><span>{copy}</span></div><a href={`/jobs/${slug}`}>Подробнее <b>→</b></a></article>)}</div></section>
-<section class="strip"><p>Чашка кофе</p><span>вместо слова «работа» — место, где тебя знают по имени</span><i>★</i></section>
-{page && <ContentBlocks blocks={page.blocks}/>} 
-<section id="form" class="form"><div><p>стать частью команды</p><h2>Расскажите<br/>о себе</h2><span>Мы прочитаем каждое сообщение и ответим, если найдём подходящее совпадение.</span></div><LeadForm type="JOB" submitLabel="Отправить отклик" subjectLabel="Какая вакансия интересна?" /></section>
+
+<PageShell title="Вакансии" description="Вакансии в ресторанах, кондитерской и команде Чашки кофе." active="jobs" image="/images/home-hero-v1.png">
+  <EditorialHero
+    title={'Работа\nсо вкусом к людям'}
+    image="/images/home-hero-v1.png"
+    alt="Кофе и свежая выпечка в Чашке кофе"
+    eyebrow="Команда Чашки кофе"
+    description="Ищем внимательных людей, которым важны гости, команда и хорошо сделанная работа."
+    actionLabel="Смотреть вакансии"
+    actionHref="#vacancies"
+  />
+
+  <section class="jobs-intro">
+    <h2>Люди делают<br />хороший день.</h2>
+    <div><p>Учим с нуля, поддерживаем в начале и даём расти тем, кто хочет больше, чем просто должность.</p><a href="#job-form">Рассказать о себе <span aria-hidden="true">↓</span></a></div>
+  </section>
+
+  <section class="jobs-principles">
+    <div class="principles-quote"><span>«</span><h2>Спокойная смена начинается с уважения друг к другу.</h2><p>Команда Чашки кофе</p></div>
+    <div class="principles-list">
+      <article><span>01</span><div><h3>Говорим прямо</h3><p>Без лишней иерархии и сложных маршрутов для простых вопросов.</p></div></article>
+      <article><span>02</span><div><h3>Замечаем гостя</h3><p>Качество живёт в деталях — от первого приветствия до последней крошки.</p></div></article>
+      <article><span>03</span><div><h3>Помогаем расти</h3><p>Бариста может стать тренером, менеджер — управляющим, если ему это интересно.</p></div></article>
+    </div>
+  </section>
+
+  {page && <div class="jobs-managed"><ContentBlocks blocks={page.blocks} /></div>}
+
+  <section id="vacancies" class="vacancies">
+    <header><h2>Открытые<br />позиции</h2><p>Нажмите на вакансию — внутри условия, задачи и форма быстрого отклика.</p></header>
+    <div class="job-list">
+      {jobs.map((job) => <button type="button" data-job-trigger data-job={JSON.stringify(job)} aria-haspopup="dialog">
+        <span class="job-place">{job.place}</span>
+        <strong>{job.title}</strong>
+        <span class="job-terms">{job.terms}</span>
+        <i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h13m-5-5 5 5-5 5" /></svg></i>
+      </button>)}
+    </div>
+  </section>
+
+  <section class="jobs-open-call">
+    <p>Не нашли подходящую роль?</p>
+    <h2>Хорошие люди<br />нужны всегда.</h2>
+    <a href="#job-form">Написать нам <span aria-hidden="true">→</span></a>
+  </section>
+
+  <section id="job-form" class="job-form">
+    <div><h2>Расскажите<br />о себе</h2><p>Мы прочитаем каждое сообщение и ответим, если найдём подходящее совпадение.</p></div>
+    <LeadForm type="JOB" submitLabel="Отправить отклик" subjectLabel="Какая вакансия интересна?" source="jobs-page" />
+  </section>
+  <JobDialog />
 </PageShell>
-<style>@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');:root{font-family:Montserrat,Arial,sans-serif;color:#20251f;background:#f7f6f0}*{box-sizing:border-box}body{margin:0}.brand{height:94px;padding:0 6vw;display:flex;align-items:center;gap:9px;color:inherit;text-decoration:none;font-size:20px;font-weight:800}.brand img{width:43px;height:43px;object-fit:contain}.hero{position:relative;overflow:hidden;min-height:670px;margin:0 2vw;border-radius:30px;color:#fff;background:#273d2d}.hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.hero:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#1c3b2d 0%,rgba(28,59,45,.86) 36%,transparent 70%)}.hero>div{position:relative;z-index:1;padding:clamp(58px,8vw,125px);max-width:760px}.hero p,.intro>p,.heading>p,.form p{margin:0;color:#b8dc3d;text-transform:uppercase;letter-spacing:.15em;font-size:11px;font-weight:800}.hero h1,.intro h2,.heading h2,.form h2{margin:20px 0;font-size:clamp(62px,7vw,118px);line-height:.83;letter-spacing:-.1em}.hero span{max-width:420px;display:block;font-size:16px;line-height:1.55}.hero a{display:inline-block;margin-top:31px;padding:18px 22px;border-radius:99px;background:#b8dc3d;color:#1d3326;text-decoration:none;font-size:13px;font-weight:800}.intro{padding:clamp(95px,12vw,180px) 7vw;display:grid;grid-template-columns:1.2fr .8fr;gap:70px}.intro h2{grid-column:1;font-size:clamp(50px,5.7vw,95px)}.intro>span{align-self:end;margin-bottom:24px;max-width:320px;line-height:1.6;font-size:14px}.values{margin:0 2vw;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.values article{min-height:330px;border-radius:26px;padding:28px;background:#dcebd2}.values article:nth-child(2){background:#e7e2d9}.values article:nth-child(3){background:#c7ddd0}.values b{font-size:12px;color:#759a24}.values h3{margin:100px 0 14px;font-size:31px;line-height:.92;letter-spacing:-.08em}.values p{max-width:250px;margin:0;font-size:12px;line-height:1.6}.vacancies{padding:clamp(100px,12vw,180px) 7vw;display:grid;grid-template-columns:.72fr 1.28fr;gap:80px}.heading h2{font-size:clamp(47px,5vw,84px)}.heading span{max-width:275px;display:block;font-size:13px;line-height:1.6}.job-list{display:grid;gap:11px}.job-list article{padding:27px 0;border-top:1px solid #c8cfc4;display:flex;justify-content:space-between;gap:25px}.job-list article:last-child{border-bottom:1px solid #c8cfc4}.job-list p{margin:0;color:#769623;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em}.job-list h3{margin:10px 0 8px;font-size:30px;letter-spacing:-.075em}.job-list strong{font-size:12px}.job-list span{display:block;max-width:465px;margin-top:16px;font-size:12px;line-height:1.6}.job-list a{align-self:center;white-space:nowrap;padding:15px 17px;border:1px solid #859183;border-radius:99px;color:inherit;text-decoration:none;font-size:12px;font-weight:700}.job-list a b{margin-left:20px}.strip{margin:0 2vw;padding:38px clamp(20px,5vw,80px);display:flex;align-items:center;gap:40px;border-radius:27px;background:#203c2e;color:#fff}.strip p{margin:0;font-family:'21Cent',cursive;font-size:49px;line-height:.8}.strip span{font-size:18px;font-weight:600}.strip i{margin-left:auto;color:#b7da3d;font-size:31px}.form{margin:clamp(70px,10vw,150px) 2vw 2vw;padding:clamp(52px,7vw,108px);display:grid;grid-template-columns:.9fr 1.1fr;gap:85px;border-radius:28px;background:#e8e4d9}.form h2{font-size:clamp(49px,5vw,82px)}.form>div>span{display:block;max-width:300px;font-size:13px;line-height:1.6}.form form{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:center}.form label{font-size:11px;font-weight:700}.form label.wide{grid-column:1/-1}.form input{width:100%;display:block;margin-top:7px;padding:16px;border:0;border-radius:10px;background:#fff;font:13px Montserrat}.form button{grid-column:1/-1;margin-top:12px;padding:18px 20px;border:0;border-radius:99px;background:#203c2e;color:#fff;text-align:left;font:700 13px Montserrat;display:flex;justify-content:space-between}.form small{font-size:10px;line-height:1.5;color:#62655f}@media(max-width:700px){.brand{height:72px;padding:0 20px}.hero{min-height:640px;margin:0;border-radius:0}.hero:after{background:linear-gradient(90deg,rgba(20,53,39,.93),rgba(20,53,39,.32))}.hero>div{padding:58px 20px}.hero h1{font-size:63px}.hero span{font-size:14px}.intro{padding:85px 20px;display:block}.intro h2{font-size:53px}.intro>span{margin-top:26px}.values{margin:0;grid-template-columns:1fr;gap:8px}.values article{border-radius:0;min-height:260px;padding:24px}.values h3{margin-top:74px;font-size:30px}.vacancies{padding:85px 20px;display:block}.heading h2{font-size:54px}.job-list{margin-top:52px}.job-list article{display:block;padding:25px 0}.job-list h3{font-size:27px}.job-list a{display:flex;justify-content:space-between;margin-top:21px}.strip{margin:0;border-radius:0;display:block;padding:42px 20px}.strip p{font-size:44px}.strip span{display:block;margin-top:20px;font-size:16px}.strip i{display:block;margin-top:22px}.form{margin:0;border-radius:0;padding:64px 20px;display:block}.form h2{font-size:57px}.form form{margin-top:42px;grid-template-columns:1fr}.form small{font-size:10px}}</style>
+
+<style>
+  .jobs-intro{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr);align-items:end;gap:clamp(45px,8vw,130px);padding:clamp(105px,12vw,185px) var(--content-gutter)}.jobs-intro h2{margin:0;font-size:clamp(51px,6vw,96px)}.jobs-intro>div{margin-bottom:8px}.jobs-intro p{max-width:470px;margin:0;color:var(--muted);font-size:15px;line-height:1.7}.jobs-intro a{display:inline-flex;align-items:center;gap:20px;margin-top:30px;padding-bottom:5px;border-bottom:1px solid var(--ink);font-size:12px;font-weight:800;text-decoration:none}.jobs-intro a span{font-size:16px;transition:transform .2s ease}.jobs-intro a:hover span{transform:translateY(3px)}
+  .jobs-principles{display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,.98fr);min-height:610px;overflow:hidden;border-radius:var(--radius);background:var(--moss);color:#fff}.principles-quote{display:flex;padding:clamp(45px,6.5vw,100px);background:#dfe9d3;color:var(--moss);flex-direction:column}.principles-quote>span{font-family:'21Cent',serif;font-size:92px;line-height:.5}.principles-quote h2{max-width:680px;margin:auto 0 0;font-size:clamp(39px,4.6vw,72px)}.principles-quote p{margin:28px 0 0;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.principles-list{display:grid;align-content:center;padding:clamp(35px,5vw,78px)}.principles-list article{display:grid;grid-template-columns:42px 1fr;gap:20px;padding:31px 0;border-bottom:1px solid rgba(255,255,255,.18);transition:padding-left .25s ease,color .25s ease}.principles-list article:first-child{border-top:1px solid rgba(255,255,255,.18)}.principles-list article:hover{padding-left:10px;color:var(--lime)}.principles-list article>span{color:var(--lime);font-size:10px;font-weight:800}.principles-list h3{margin:0;font-size:clamp(22px,2.2vw,31px);letter-spacing:-.05em}.principles-list p{max-width:440px;margin:10px 0 0;color:#d3ddd4;font-size:12px;line-height:1.65}.jobs-managed{margin-top:14px}
+  .vacancies{padding:clamp(105px,12vw,180px) var(--content-gutter)}.vacancies header{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,.55fr);align-items:end;gap:50px;margin-bottom:55px}.vacancies header h2{margin:0;font-size:clamp(51px,5.7vw,91px)}.vacancies header p{max-width:400px;margin:0 0 8px;color:var(--muted);font-size:13px;line-height:1.65}.job-list{display:grid;gap:9px}.job-list button{display:grid;width:100%;min-height:132px;grid-template-columns:minmax(190px,.7fr) minmax(220px,1.2fr) minmax(150px,.55fr) 58px;align-items:center;gap:25px;padding:22px 24px;border:0;border-radius:var(--radius);background:#e9e3da;color:var(--ink);cursor:pointer;text-align:left;transition:background .25s ease,transform .3s cubic-bezier(.22,1,.36,1),box-shadow .25s ease}.job-list button:nth-child(2n){background:#dfe9d3}.job-list button:nth-child(3n){background:#edd9a9}.job-list button:hover{z-index:1;background:#fff;box-shadow:0 17px 34px rgba(48,40,33,.1);transform:translateX(8px)}.job-list button:focus-visible{outline:3px solid var(--lime);outline-offset:4px}.job-list .job-place{color:#6f902b;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.job-list strong{font-size:clamp(24px,2.8vw,42px);line-height:.95;letter-spacing:-.06em}.job-terms{font-size:12px;font-weight:700}.job-list i{display:grid;place-items:center;width:54px;height:54px;border-radius:50%;background:var(--moss);color:#fff;transition:background .2s ease,transform .25s ease}.job-list button:hover i{background:#315b45;transform:translateX(3px)}.job-list svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
+  .jobs-open-call{position:relative;min-height:450px;padding:clamp(55px,7vw,108px);overflow:hidden;border-radius:var(--radius);background:var(--lime);color:var(--moss)}.jobs-open-call:after{position:absolute;right:-6%;bottom:-43%;width:43%;aspect-ratio:1;border:1px solid rgba(31,59,46,.28);border-radius:50%;box-shadow:0 0 0 55px rgba(31,59,46,.05),0 0 0 110px rgba(31,59,46,.04);content:''}.jobs-open-call>p{margin:0;font-size:13px;font-weight:700}.jobs-open-call h2{position:relative;z-index:1;max-width:900px;margin:26px 0 0;font-size:clamp(52px,6.2vw,100px)}.jobs-open-call a{position:absolute;z-index:2;right:clamp(34px,6vw,92px);bottom:clamp(34px,6vw,92px);display:flex;min-width:190px;min-height:58px;align-items:center;justify-content:space-between;padding:0 19px;border-radius:var(--radius);background:var(--moss);color:#fff;font-size:11px;font-weight:800;text-decoration:none}.jobs-open-call a span{font-size:17px;transition:transform .2s ease}.jobs-open-call a:hover span{transform:translateX(3px)}
+  .job-form{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:clamp(45px,7vw,105px);margin-top:14px!important;padding:clamp(54px,7vw,105px);border-radius:var(--radius);background:#ebe4d9}.job-form h2{margin:0;font-size:clamp(49px,5.4vw,86px)}.job-form>div>p{max-width:380px;margin:24px 0 0;color:var(--muted);font-size:13px;line-height:1.65}.job-form :global(.lead-form){align-self:center}.job-form :global(.lead-form button){justify-self:stretch!important;width:100%;min-height:58px!important;justify-content:space-between!important;padding:0 20px!important;background:var(--moss)!important}.job-form :global(.lead-form button b){font-size:17px}.job-form :global(.lead-form button:hover){background:#315b45!important}
+  @media(max-width:900px){.jobs-intro,.jobs-principles,.vacancies header,.job-form{grid-template-columns:1fr}.jobs-intro{padding:85px 20px}.jobs-principles,.jobs-open-call,.job-form{margin-right:var(--mobile-gutter)!important;margin-left:var(--mobile-gutter)!important}.principles-quote{min-height:450px}.vacancies{padding:85px var(--mobile-gutter)}.vacancies header{gap:20px}.job-list button{min-height:0;grid-template-columns:1fr 54px;gap:12px;padding:24px}.job-list .job-place,.job-list strong,.job-terms{grid-column:1}.job-list i{grid-row:1/4;grid-column:2}.job-list button:hover{transform:translateY(-3px)}.jobs-open-call{min-height:470px;padding:50px 25px}.jobs-open-call:after{width:75%}.jobs-open-call a{right:25px;bottom:25px;left:25px}.job-form{padding:58px 25px}.job-form :global(.lead-form){margin-top:15px}}
+  @media(max-width:540px){.principles-quote{min-height:400px;padding:42px 24px}.principles-list{padding:30px 24px}.principles-list article{grid-template-columns:31px 1fr}.job-list button{padding:21px}.job-list strong{font-size:28px}.jobs-open-call h2{font-size:52px}.job-form h2{font-size:52px}}
+  @media(prefers-reduced-motion:reduce){.jobs-intro a span,.principles-list article,.job-list button,.job-list i,.jobs-open-call a span{transition:none}}
+</style>

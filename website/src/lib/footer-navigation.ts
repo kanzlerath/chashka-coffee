@@ -29,7 +29,6 @@ export const footerGroups: FooterGroup[] = [
       { label: 'Кофе для дома', href: '/coffee' },
       { label: 'Кондитерская', href: '/bakery' },
       { label: 'Банкеты', href: '/banquets' },
-      { label: 'Корпоративным клиентам', href: '/corporate' },
       { label: 'Кейтеринг', href: CATERING_URL, external: true },
     ],
   },

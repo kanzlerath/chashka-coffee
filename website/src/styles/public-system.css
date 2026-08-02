@@ -157,21 +157,4 @@ body.public-site .page-shell .shell{max-width:none;margin:0;overflow:visible;bor
     padding-left:var(--mobile-gutter);
   }
 
-  body.public-site .public-main[data-path="/corporate"] .services>div{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-  }
-
-  body.public-site .public-main[data-path="/corporate"] .services article{
-    min-width:0;
-  }
-
-  body.public-site .public-main[data-path="/corporate"] .services h3{
-    overflow-wrap:anywhere;
-  }
-}
-
-@media(max-width:520px){
-  body.public-site .public-main[data-path="/corporate"] .services>div{
-    grid-template-columns:1fr;
-  }
 }

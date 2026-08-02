@@ -6,20 +6,108 @@ import { APP_DOWNLOAD_URL } from '../lib/app-links'
 import { getManagedPage } from '../lib/public-api'
 
 const page = await getManagedPage('APP')
-const benefits = [
-  ['Быстрый заказ','Повторяйте любимое или собирайте новый заказ без лишних шагов.'],
-  ['Доставка и самовывоз','Выбирайте удобный сценарий и следите за статусом.'],
-  ['DI Bonus','Баланс, уровень и персональные предложения всегда под рукой.'],
-  ['Всё в одном месте','Меню, рестораны, события и новости сети.'],
+const appScenes = [
+  { key: 'order', label: 'Заказ', title: 'Любимое — без лишних шагов', text: 'Выберите ресторан, доставку или самовывоз, добавьте блюда и оплатите заказ онлайн.', status: 'Заказ принят', detail: 'Доставим примерно за 35 минут', action: 'Повторить заказ' },
+  { key: 'bonus', label: 'DI Bonus', title: 'Карта всегда с вами', text: 'Показывайте QR-код, следите за балансом и уровнем программы, оплачивайте часть заказа бонусами.', status: 'Ваш баланс', detail: '2 480 бонусов', action: 'Открыть QR-карту' },
+  { key: 'history', label: 'История', title: 'Вернуться к удачному выбору', text: 'Все прошлые заказы остаются в истории — любимый завтрак можно собрать снова за несколько касаний.', status: 'Последний заказ', detail: 'Капучино · Сырники', action: 'Заказать снова' },
+  { key: 'offers', label: 'Предложения', title: 'Новое приходит вовремя', text: 'Пуш-уведомления расскажут об акциях, событиях и персональных промокодах — без необходимости искать их вручную.', status: 'Для вас', detail: 'Промокод на десерт', action: 'Активировать' },
 ]
 ---
-<PageShell title="Приложение" description="Приложение «Чашка кофе»: заказ, доставка и DI Bonus." active="app">
-  <section class="app-opening"><div><p>Чашка кофе — всегда рядом</p><h1>Любимое<br/>под рукой</h1><span>Заказывайте быстрее, копите бонусы и узнавайте о новинках раньше всех.</span><StoreBadges/></div><div class="phone-demo" aria-hidden="true"><small>Доброе утро</small><strong>Что будем<br/>сегодня?</strong><i>☕</i><span>Ваш любимый латте уже ждёт</span></div></section>
-  <section class="app-benefits"><header><p>В приложении</p><h2>Один спокойный<br/>сценарий на весь день</h2></header><div>{benefits.map(([title,text],index) => <article><b>0{index+1}</b><h3>{title}</h3><p>{text}</p></article>)}</div></section>
-  <section class="app-flow"><div class="flow-screen"><span>01 / 03</span><h3>Выберите ресторан</h3><p>Покажем доступное меню и актуальное время работы.</p></div><div class="flow-copy"><p>Без лишнего шума</p><h2>Сначала место.<br/>Потом любимое.</h2><span>Небольшие переходы и мягкая анимация помогают не потеряться между меню, бонусами и заказом.</span><a class="button" href="/delivery">Как работает доставка</a></div></section>
-  <section id="download" class="app-download"><div><p>Установить приложение</p><h2>Ваш следующий<br/>заказ уже ближе</h2><span>Откройте магазин приложений на телефоне.</span><StoreBadges/></div><a class="qr" href={APP_DOWNLOAD_URL} aria-label="Открыть ссылку для установки приложения"><img src="/brand/app-download-qr.png" alt="QR-код для установки приложения «Чашка кофе»" width="688" height="688" /></a></section>
-  {page && <ContentBlocks blocks={page.blocks}/>} 
+
+<PageShell title="Приложение" description="Приложение «Чашка кофе»: заказ и онлайн-оплата, доставка, DI Bonus, история, промокоды и новости." active="app">
+  <section class="app-opening">
+    <div class="app-opening-copy">
+      <h1>Вся «Чашка»<br />в вашем телефоне</h1>
+      <p>Заказывайте и оплачивайте онлайн, копите бонусы, возвращайтесь к любимым блюдам и узнавайте о новом раньше всех.</p>
+      <StoreBadges />
+    </div>
+    <div class="app-opening-art" aria-hidden="true">
+      <span class="app-orbit app-orbit-one">Промокоды</span>
+      <span class="app-orbit app-orbit-two">DI Bonus</span>
+      <img src="/brand/bento/App.svg" alt="" />
+    </div>
+  </section>
+
+  <section class="app-intro">
+    <h2>Не отдельный сервис.<br />Один привычный маршрут.</h2>
+    <p>От выбора ближайшего ресторана до оплаты и повторного заказа — приложение помнит контекст и помогает двигаться дальше без лишнего шума.</p>
+  </section>
+
+  <section class="app-workspace" data-app-workspace aria-labelledby="app-workspace-title">
+    <div class="app-workspace-copy">
+      <h2 id="app-workspace-title">Что сегодня<br />важнее?</h2>
+      <div class="app-tabs" role="tablist" aria-label="Возможности приложения">
+        {appScenes.map((scene, index) => <button class:list={{ 'is-active': index === 0 }} type="button" role="tab" id={`app-tab-${scene.key}`} aria-controls={`app-panel-${scene.key}`} aria-selected={index === 0 ? 'true' : 'false'} tabindex={index === 0 ? 0 : -1} data-app-tab={scene.key}>{scene.label}<span aria-hidden="true">→</span></button>)}
+      </div>
+    </div>
+    <div class="app-device">
+      <div class="app-device-top"><span>9:41</span><b>Чашка кофе</b><i></i></div>
+      {appScenes.map((scene, index) => <article class:list={{ 'is-active': index === 0 }} role="tabpanel" id={`app-panel-${scene.key}`} aria-labelledby={`app-tab-${scene.key}`} hidden={index !== 0} data-app-panel={scene.key}>
+        <small>{scene.status}</small>
+        <strong>{scene.detail}</strong>
+        <div class="app-device-visual" aria-hidden="true"><span></span><i></i></div>
+        <button type="button" tabindex="-1">{scene.action}</button>
+      </article>)}
+    </div>
+    <div class="app-scene-copy">
+      {appScenes.map((scene, index) => <article class:list={{ 'is-active': index === 0 }} hidden={index !== 0} data-app-copy={scene.key}><h3>{scene.title}</h3><p>{scene.text}</p></article>)}
+    </div>
+  </section>
+
+  <section class="app-capabilities" aria-label="Другие возможности приложения">
+    <article class="capability-map"><h2>Меню зависит<br />от ресторана</h2><p>Покажем ближайшую точку, актуальное время работы и блюда, которые доступны прямо сейчас.</p><div aria-hidden="true"><span></span><span></span><span></span><i>Вы здесь</i></div></article>
+    <article class="capability-status"><div><strong>35</strong><span>минут</span></div><h2>Статус заказа<br />в реальном времени</h2><p>Видно, когда ресторан принял заказ, начал готовить и передал его курьеру.</p></article>
+    <article class="capability-feed"><h2>Новости, события<br />и персональные акции</h2><p>Пуши напомнят только о том, что действительно может пригодиться: новом меню, бонусах и промокодах.</p><div aria-hidden="true"><span>Новый десерт</span><span>+200 бонусов</span><span>Вечер в Чашке</span></div></article>
+  </section>
+
+  {page && <div class="app-managed"><ContentBlocks blocks={page.blocks} /></div>}
+
+  <section id="download" class="app-download">
+    <div><h2>Скачайте.<br />Остальное уже внутри.</h2><p>Один QR-код для iPhone и Android.</p><StoreBadges /></div>
+    <a class="app-qr" href={APP_DOWNLOAD_URL} aria-label="Открыть ссылку для установки приложения"><img src="/brand/app-download-qr.png" alt="QR-код для установки приложения Чашка кофе" width="688" height="688" /></a>
+  </section>
 </PageShell>
+
+<script>
+  const workspace = document.querySelector<HTMLElement>('[data-app-workspace]')
+  const tabs = [...workspace?.querySelectorAll<HTMLButtonElement>('[data-app-tab]') ?? []]
+  const showScene = (key: string, moveFocus = false) => {
+    tabs.forEach((tab) => {
+      const active = tab.dataset.appTab === key
+      tab.classList.toggle('is-active', active)
+      tab.setAttribute('aria-selected', String(active))
+      tab.tabIndex = active ? 0 : -1
+      if (active && moveFocus) tab.focus()
+    })
+    workspace?.querySelectorAll<HTMLElement>('[data-app-panel],[data-app-copy]').forEach((panel) => {
+      const active = (panel.dataset.appPanel ?? panel.dataset.appCopy) === key
+      panel.hidden = !active
+      requestAnimationFrame(() => panel.classList.toggle('is-active', active))
+    })
+  }
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => showScene(tab.dataset.appTab ?? ''))
+    tab.addEventListener('keydown', (event) => {
+      if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return
+      event.preventDefault()
+      const direction = ['ArrowRight', 'ArrowDown'].includes(event.key) ? 1 : -1
+      const target = tabs[(index + direction + tabs.length) % tabs.length]
+      showScene(target?.dataset.appTab ?? '', true)
+    })
+  })
+</script>
+
 <style>
-  .app-opening{display:grid;grid-template-columns:1fr 1fr;min-height:690px;align-items:center;overflow:hidden;border-radius:var(--radius);background:#e2e9d2}.app-opening>div:first-child{padding:clamp(48px,7vw,110px)}.app-opening p,.app-benefits header>p,.flow-copy>p,.app-download>div>p{margin:0;color:#6f902b;font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.app-opening h1{margin:18px 0;font-size:clamp(56px,5.8vw,96px);line-height:.85}.app-opening span,.flow-copy>span,.app-download>div>span{display:block;max-width:460px;color:var(--muted);font-size:14px;line-height:1.65}.app-opening :global(.store-badges),.app-download :global(.store-badges){margin-top:28px}.phone-demo{justify-self:center;width:260px;height:500px;padding:74px 28px;border:10px solid var(--moss);border-radius:42px;background:#fcfbf8;box-shadow:25px 27px 0 rgba(70,92,57,.13);transform:rotate(6deg);transition:transform .5s cubic-bezier(.22,1,.36,1)}.app-opening:hover .phone-demo{transform:rotate(2deg) translateY(-8px)}.phone-demo small{color:var(--muted);font-size:11px}.phone-demo strong{display:block;margin-top:10px;font-size:32px;line-height:.9}.phone-demo i{display:grid;width:140px;aspect-ratio:1;margin:54px auto 24px;place-items:center;border-radius:50%;background:var(--lime);font-size:62px;font-style:normal}.phone-demo span{text-align:center;font-size:10px}.app-benefits{padding:clamp(90px,11vw,170px) var(--content-gutter)}.app-benefits h2,.flow-copy h2,.app-download h2{margin:16px 0;font-size:clamp(43px,4.8vw,78px)}.app-benefits>div{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:54px}.app-benefits article{min-height:280px;padding:26px;border-radius:var(--radius);background:#efebe4;transition:transform .3s,background .3s}.app-benefits article:nth-child(2){background:#dfe8d2}.app-benefits article:nth-child(3){background:var(--moss);color:#fff}.app-benefits article:hover{transform:translateY(-5px)}.app-benefits b{color:#72902b;font-size:10px}.app-benefits h3{margin:94px 0 10px;font-size:23px}.app-benefits article p{margin:0;color:var(--muted);font-size:12px;line-height:1.6}.app-benefits article:nth-child(3) p{color:#d8e1d8}.app-flow{display:grid;grid-template-columns:1fr 1fr;min-height:530px;overflow:hidden;border-radius:var(--radius);background:var(--moss);color:#fff}.flow-screen{display:flex;justify-content:flex-end;padding:clamp(34px,5vw,74px);background:linear-gradient(150deg,#d7e6c7,#f0e6da);color:var(--ink);flex-direction:column}.flow-screen>span{font-size:10px}.flow-screen h3{margin:18px 0 8px;font-size:clamp(34px,4vw,62px)}.flow-screen p{max-width:470px;margin:0;color:var(--muted);font-size:13px;line-height:1.6}.flow-copy{display:flex;justify-content:center;align-items:flex-start;padding:clamp(34px,5vw,74px);flex-direction:column}.flow-copy>p{color:var(--lime)}.flow-copy>span{color:#d8e1d8}.flow-copy .button{margin-top:28px;padding:0 22px;background:var(--lime);color:var(--moss)}.app-download{display:grid;grid-template-columns:1fr 1fr;min-height:490px;align-items:center;padding:clamp(42px,7vw,105px);border-radius:var(--radius);background:#eee4d8}.qr{justify-self:center;display:block;width:220px;border-radius:18px;background:#fff;box-shadow:0 16px 32px rgba(31,59,46,.13);transition:transform .2s ease}.qr:hover{transform:translateY(-4px)}.qr:focus-visible{outline:4px solid var(--moss);outline-offset:5px}.qr img{display:block;width:100%;height:auto;border-radius:inherit}@media(max-width:820px){.app-opening,.app-flow,.app-download{grid-template-columns:1fr}.app-opening>div:first-child{min-height:540px;padding:48px 25px}.phone-demo{margin:20px auto -70px;transform:rotate(4deg) scale(.82);transform-origin:bottom}.app-benefits{padding:82px 20px}.app-benefits>div{grid-template-columns:1fr 1fr}.app-benefits article{min-height:230px;padding:19px}.app-benefits h3{margin-top:67px}.flow-screen,.flow-copy{min-height:380px}.app-download{padding:58px 25px}.qr{width:180px;margin-top:44px}}
+  .app-opening{display:grid;grid-template-columns:minmax(0,.95fr) minmax(360px,1.05fr);min-height:calc(100svh - 126px);align-items:center;overflow:hidden;border-radius:var(--radius);background:var(--moss);color:#fff}.app-opening-copy{position:relative;z-index:2;padding:clamp(52px,7vw,112px)}.app-opening h1{max-width:760px;margin:0;color:#fff!important;font-size:clamp(58px,6.5vw,108px)!important}.app-opening-copy>p{max-width:530px;margin:24px 0 0;color:#d9e1da;font-size:15px;line-height:1.65}.app-opening :global(.store-badges){margin-top:30px}.app-opening-art{position:relative;align-self:stretch;min-height:650px;background:radial-gradient(circle at 54% 42%,rgba(189,214,90,.23),transparent 38%)}.app-opening-art>img{position:absolute;right:14%;bottom:-13%;width:min(67%,390px);height:auto;filter:drop-shadow(26px 28px 26px rgba(4,15,9,.25));transform:rotate(5deg);transition:transform .55s cubic-bezier(.22,1,.36,1)}.app-opening:hover .app-opening-art>img{transform:rotate(2deg) translateY(-10px)}.app-orbit{position:absolute;z-index:2;padding:13px 17px;border:1px solid rgba(255,255,255,.35);border-radius:var(--radius);background:rgba(252,251,248,.12);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;backdrop-filter:blur(10px)}.app-orbit-one{top:20%;right:8%;transform:rotate(7deg)}.app-orbit-two{top:38%;left:3%;color:var(--moss);background:var(--lime);transform:rotate(-7deg)}
+  .app-intro{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);align-items:end;gap:clamp(40px,8vw,130px);padding:clamp(100px,12vw,180px) var(--content-gutter)}.app-intro h2{margin:0;font-size:clamp(50px,5.6vw,91px)}.app-intro p{max-width:480px;margin:0 0 9px;color:var(--muted);font-size:15px;line-height:1.7}
+  .app-workspace{display:grid;grid-template-columns:minmax(250px,.75fr) minmax(260px,.75fr) minmax(260px,.7fr);align-items:center;gap:clamp(32px,5vw,78px);min-height:650px;padding:clamp(48px,6.5vw,100px);border-radius:var(--radius);background:#ebe4d9}.app-workspace-copy h2{margin:0 0 38px;font-size:clamp(42px,4.6vw,72px)}.app-tabs{display:grid}.app-tabs button{display:flex;min-height:58px;align-items:center;justify-content:space-between;padding:0;border:0;border-top:1px solid #cfc6ba;background:transparent;color:#756f68;cursor:pointer;font-size:13px;font-weight:700;text-align:left;transition:padding .22s ease,color .22s ease}.app-tabs button:last-child{border-bottom:1px solid #cfc6ba}.app-tabs button span{font-size:17px;opacity:0;transform:translateX(-8px);transition:opacity .22s ease,transform .22s ease}.app-tabs button:hover,.app-tabs button.is-active{padding-left:9px;color:var(--moss)}.app-tabs button.is-active span{opacity:1;transform:none}.app-tabs button:focus-visible{outline:3px solid var(--lime);outline-offset:3px}
+  .app-workspace>*{min-width:0}
+  .app-device{position:relative;justify-self:center;width:min(100%,300px);height:550px;padding:26px 20px 20px;border:9px solid var(--moss);border-radius:42px;background:#fcfbf8;color:var(--ink);box-shadow:20px 22px 0 rgba(58,49,40,.12);transform:rotate(-3deg)}.app-device-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 3px}.app-device-top span{font-size:8px;font-weight:800}.app-device-top b{font-size:9px}.app-device-top i{justify-self:end;width:7px;height:7px;border-radius:50%;background:var(--lime)}.app-device article{display:flex;height:calc(100% - 22px);padding-top:66px;align-items:center;text-align:center;flex-direction:column;animation:app-scene-in .32s cubic-bezier(.22,1,.36,1)}.app-device article small{color:var(--muted);font-size:10px}.app-device article>strong{max-width:230px;margin-top:8px;font-size:29px;line-height:.95;letter-spacing:-.06em}.app-device-visual{position:relative;width:150px;height:150px;margin-top:45px;border-radius:50%;background:var(--lime)}.app-device-visual:before,.app-device-visual:after,.app-device-visual span,.app-device-visual i{position:absolute;border-radius:50%;content:''}.app-device-visual:before{inset:22px;border:2px solid var(--moss)}.app-device-visual:after{inset:48px;background:var(--moss)}.app-device-visual span{top:-8px;right:8px;width:32px;height:32px;background:#e56f52}.app-device-visual i{bottom:4px;left:1px;width:23px;height:23px;background:#efc86f}.app-device article button{width:100%;min-height:48px;margin-top:auto;border:0;border-radius:var(--radius);background:var(--moss);color:#fff;font-size:10px;font-weight:800}.app-scene-copy article{animation:app-scene-in .36s cubic-bezier(.22,1,.36,1)}.app-scene-copy h3{margin:0;font-size:clamp(29px,3vw,47px);line-height:.95;letter-spacing:-.065em}.app-scene-copy p{max-width:400px;margin:20px 0 0;color:var(--muted);font-size:13px;line-height:1.7}@keyframes app-scene-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  .app-device article[hidden],.app-scene-copy article[hidden]{display:none}
+  .app-capabilities{display:grid;grid-template-columns:1.08fr .92fr;grid-template-rows:auto auto;gap:12px;padding:clamp(90px,11vw,170px) 0}.app-capabilities article{position:relative;min-height:430px;padding:clamp(36px,5vw,75px);overflow:hidden;border-radius:var(--radius)}.app-capabilities h2{max-width:700px;margin:0;font-size:clamp(38px,4vw,65px)}.app-capabilities p{max-width:480px;margin:20px 0 0;font-size:13px;line-height:1.65}.capability-map{background:#dfe9d3}.capability-map>div{position:absolute;right:-5%;bottom:-21%;width:55%;aspect-ratio:1;border:1px solid #afc19e;border-radius:50%;transform:rotate(-8deg)}.capability-map>div:before,.capability-map>div:after{position:absolute;border:1px solid #afc19e;border-radius:50%;content:''}.capability-map>div:before{inset:18%}.capability-map>div:after{inset:36%}.capability-map>div span{position:absolute;z-index:1;width:13px;height:13px;border-radius:50%;background:var(--moss)}.capability-map>div span:nth-child(1){top:14%;left:28%}.capability-map>div span:nth-child(2){top:46%;right:11%;background:#e56f52}.capability-map>div span:nth-child(3){bottom:11%;left:34%;background:#efc86f}.capability-map>div i{position:absolute;z-index:2;top:47%;left:47%;padding:9px 11px;border-radius:var(--radius);background:var(--lime);font-size:9px;font-style:normal;font-weight:800;white-space:nowrap}.capability-status{background:var(--moss);color:#fff}.capability-status>div{display:flex;align-items:end;gap:9px;margin-bottom:100px;color:var(--lime)}.capability-status strong{font-size:clamp(80px,8vw,135px);line-height:.65;letter-spacing:-.1em}.capability-status span{font-size:14px}.capability-status h2{color:#fff}.capability-status p{color:#d6dfd7}.capability-feed{grid-column:1/-1;min-height:360px!important;background:#eee4d8}.capability-feed>div{display:flex;flex-wrap:wrap;gap:8px;margin-top:55px}.capability-feed>div span{padding:14px 17px;border-radius:var(--radius);background:#fff;font-size:11px;font-weight:700;box-shadow:0 12px 26px rgba(59,48,37,.08);transition:transform .25s ease}.capability-feed>div span:nth-child(2){background:var(--lime);transform:rotate(3deg)}.capability-feed>div span:nth-child(3){background:var(--moss);color:#fff;transform:rotate(-2deg)}.capability-feed:hover>div span{transform:translateY(-5px) rotate(0)}
+  .app-managed{margin-bottom:14px}.app-download{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,.55fr);min-height:500px;align-items:center;padding:clamp(48px,7vw,105px);border-radius:var(--radius);background:var(--lime);color:var(--moss)}.app-download h2{margin:0;font-size:clamp(49px,5.6vw,91px)}.app-download p{margin:22px 0 0;font-size:14px}.app-download :global(.store-badges){margin-top:28px}.app-qr{justify-self:center;display:block;width:min(100%,230px);padding:9px;border-radius:var(--radius);background:#fff;box-shadow:0 20px 38px rgba(31,59,46,.16);transition:transform .25s ease}.app-qr:hover{transform:translateY(-5px) rotate(2deg)}.app-qr:focus-visible{outline:4px solid var(--moss);outline-offset:5px}.app-qr img{display:block;width:100%;height:auto;border-radius:calc(var(--radius) - 7px)}
+  @media(max-width:950px){.app-opening{grid-template-columns:1fr;min-height:auto;margin:0 var(--mobile-gutter)}.app-opening-copy{padding:58px 25px 20px}.app-opening-art{min-height:520px}.app-opening-art>img{right:50%;width:min(58%,330px);transform:translateX(50%) rotate(4deg)}.app-opening:hover .app-opening-art>img{transform:translateX(50%) rotate(4deg)}.app-intro,.app-workspace,.app-download{grid-template-columns:1fr}.app-intro{padding:85px 20px}.app-workspace,.app-download{margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter);padding:55px 24px}.app-tabs{grid-template-columns:repeat(4,minmax(118px,1fr));margin:0 -24px 42px;padding:0 24px;overflow:auto}.app-tabs button{min-height:50px;border-top:0;border-bottom:1px solid #cfc6ba}.app-tabs button span{display:none}.app-device{margin-bottom:55px}.app-scene-copy{min-height:170px}.app-capabilities{grid-template-columns:1fr;padding:85px var(--mobile-gutter)}.capability-feed{grid-column:auto}.app-download{gap:55px}.app-qr{justify-self:start}}
+  @media(max-width:950px){.app-tabs{grid-template-columns:repeat(4,118px);width:calc(100% + 48px);max-width:calc(100% + 48px)}}
+  @media(max-width:540px){.app-opening-art{min-height:440px}.app-opening-art>img{width:62%}.app-orbit-one{right:4%}.app-orbit-two{left:5%}.app-device{width:270px;height:510px}.app-capabilities article{min-height:390px;padding:40px 24px}.capability-status>div{margin-bottom:80px}.capability-map>div{width:75%}.app-qr{width:185px}}
+  @media(prefers-reduced-motion:reduce){.app-opening-art>img,.capability-feed>div span,.app-qr{transition:none}.app-device article,.app-scene-copy article{animation:none}}
 </style>
