@@ -27,6 +27,12 @@ enum MarketingBadge {
   SPECIAL
 }
 
+enum MenuItemMeasurementUnit {
+  GRAM
+  MILLILITER
+  PIECE
+}
+
 enum UserRole {
   ADMIN
   EDITOR
@@ -125,6 +131,49 @@ model AuthSession {
   @@index([userId], map: "auth_sessions_user_id_idx")
   @@index([expiresAt], map: "auth_sessions_expires_at_idx")
   @@map("auth_sessions")
+}
+
+model CustomerAccount {
+  id                   String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  premiumBonusClientId String            @unique @map("premium_bonus_client_id") @db.VarChar(100)
+  phone                String            @unique @db.VarChar(20)
+  createdAt            DateTime          @default(now()) @map("created_at")
+  updatedAt            DateTime          @updatedAt @map("updated_at")
+  sessions             CustomerSession[]
+
+  @@map("customer_accounts")
+}
+
+model CustomerSession {
+  id               String          @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  customerId       String          @db.Uuid @map("customer_id")
+  sessionTokenHash String          @unique(map: "customer_sessions_token_hash_key") @map("session_token_hash")
+  expiresAt        DateTime        @map("expires_at")
+  revokedAt        DateTime?       @map("revoked_at")
+  userAgent        String?         @map("user_agent")
+  ipAddress        String?         @map("ip_address")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+  customer         CustomerAccount @relation(fields: [customerId], references: [id], onDelete: Cascade, map: "customer_sessions_customer_id_fkey")
+
+  @@index([customerId], map: "customer_sessions_customer_id_idx")
+  @@index([expiresAt], map: "customer_sessions_expires_at_idx")
+  @@map("customer_sessions")
+}
+
+model CustomerLoginChallenge {
+  id           String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  phone        String    @db.VarChar(20)
+  attemptCount Int       @default(0) @map("attempt_count")
+  sentAt       DateTime? @map("sent_at")
+  expiresAt    DateTime  @map("expires_at")
+  consumedAt   DateTime? @map("consumed_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@index([phone, sentAt], map: "customer_login_challenges_phone_sent_at_idx")
+  @@index([expiresAt], map: "customer_login_challenges_expires_at_idx")
+  @@map("customer_login_challenges")
 }
 
 model PageView {
@@ -440,6 +489,7 @@ model MenuItem {
   description     String?
   ingredients     String?
   weightGrams     Int?               @map("weight_grams")
+  measurementUnit MenuItemMeasurementUnit @default(GRAM) @map("measurement_unit")
   priceKopecks    Int                @map("price_kopecks")
   calories        Int?
   proteins        Decimal?           @db.Decimal(6, 2)
@@ -490,6 +540,7 @@ model MenuItemOverride {
   description   String?
   ingredients   String?
   weightGrams   Int?       @map("weight_grams")
+  measurementUnit MenuItemMeasurementUnit? @map("measurement_unit")
   priceKopecks  Int?       @map("price_kopecks")
   restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade, map: "menu_item_overrides_restaurant_id_fkey")
   menuItem      MenuItem   @relation(fields: [menuItemId], references: [id], onDelete: Cascade, map: "menu_item_overrides_menu_item_id_fkey")

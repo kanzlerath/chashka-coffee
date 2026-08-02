@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { menuItemMeasurementUnitSchema } from './catalog'
+
 const uuid = z.uuid()
 const nullableText = (max: number) => z.string().trim().max(max).nullable()
 const publicUrl = z.string().trim().min(1).max(2_048).refine((value) => value.startsWith('/') || /^https?:\/\//.test(value), 'Expected an absolute URL or a site-relative path')
@@ -34,6 +36,7 @@ export const homepageBestsellerMenuItemSchema = z.object({
   name: z.string().trim().min(1).max(180),
   description: nullableText(1_000),
   weightGrams: z.number().int().positive().nullable(),
+  measurementUnit: menuItemMeasurementUnitSchema,
   priceKopecks: z.number().int().nonnegative(),
   imageUrl: nullablePublicUrl,
   marketingBadge: z.enum(['NEW', 'HIT', 'SEASONAL', 'SPECIAL']).nullable(),

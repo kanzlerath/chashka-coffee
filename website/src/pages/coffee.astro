@@ -69,7 +69,7 @@ const tasteGallery = [
     </section>
 
     <section id="catalog" class="coffee-catalog" aria-label="Каталог кофе">
-      {productGroups.length ? <div class="coffee-catalog-layout"><aside class="coffee-catalog-nav"><nav aria-label="Категории кофе">{productGroups.map((group) => <a href={`#${group.id}`}>{group.name}</a>)}</nav></aside><div class="coffee-catalog-groups">{productGroups.map((group) => <section id={group.id} class="coffee-catalog-group"><h2>{group.name}</h2><div class="coffee-catalog-items">{group.products.map((product) => <ProductCard product={product} presentation="menu"/>)}</div></section>)}</div></div> : <p class="catalog-empty">Каталог появится после запуска локального API.</p>}
+      {productGroups.length ? <div class="coffee-catalog-layout"><aside class="coffee-catalog-nav"><nav aria-label="Категории кофе">{productGroups.map((group) => <a href={`#${group.id}`}>{group.name}</a>)}</nav></aside><div class="coffee-catalog-groups">{productGroups.map((group) => <section id={group.id} class="coffee-catalog-group"><h2>{group.name}</h2><div class="coffee-catalog-items">{group.products.map((product) => <ProductCard product={product} presentation="menu"/>)}</div></section>)}</div></div> : <p class="catalog-empty">Каталог временно недоступен. Попробуйте обновить страницу немного позже.</p>}
     </section>
 
     <section class="coffee-ending" data-coffee-reveal aria-labelledby="coffee-ending-title">

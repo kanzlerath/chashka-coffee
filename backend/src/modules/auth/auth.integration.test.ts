@@ -571,7 +571,7 @@ maybeDescribe('auth API integration', () => {
 
     const itemPayload = {
       slug: 'avocado-toast', name: 'Тост с авокадо', description: null, ingredients: null,
-      weightGrams: 220, priceKopecks: 59000, calories: null, proteins: null, fats: null, carbohydrates: null,
+      weightGrams: 220, measurementUnit: 'GRAM', priceKopecks: 59000, calories: null, proteins: null, fats: null, carbohydrates: null,
       isVegetarian: true, isSpicy: false, isLactoseFree: false, isGlutenFree: false, isLight: false,
       marketingBadge: 'NEW', imageUrl: null, position: 10,
     }

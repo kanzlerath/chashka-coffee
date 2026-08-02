@@ -1,0 +1,257 @@
+<dialog class="account-dialog" data-account-dialog aria-labelledby="account-dialog-title">
+  <div class="account-dialog-shell">
+    <header class="account-dialog-header">
+      <a href="/account" class="account-dialog-brand" aria-label="Перейти в личный кабинет">
+        <span>ЧК</span>
+        <small>карта гостя</small>
+      </a>
+      <button class="account-dialog-close" type="button" data-account-close aria-label="Закрыть окно">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 5 14 14M19 5 5 19" /></svg>
+      </button>
+    </header>
+
+    <section class="account-dialog-view account-dialog-loading" data-account-view="loading" aria-live="polite">
+      <span class="account-dialog-loader" aria-hidden="true"></span>
+      <p>Проверяем карту…</p>
+    </section>
+
+    <section class="account-dialog-view" data-account-view="phone" hidden>
+      <p class="account-dialog-kicker">Личный кабинет</p>
+      <h2 id="account-dialog-title">Ваша карта<br />всегда рядом</h2>
+      <p class="account-dialog-intro">Введите номер, привязанный к бонусной карте. Пришлём короткий код в SMS.</p>
+      <form class="account-dialog-form" data-account-phone-form novalidate>
+        <label for="account-phone">Номер телефона</label>
+        <input id="account-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+7 999 000-00-00" required />
+        <p class="account-dialog-error" data-account-phone-error role="alert" hidden></p>
+        <button class="account-dialog-primary" type="submit">Получить код</button>
+      </form>
+      <p class="account-dialog-legal">Продолжая, вы соглашаетесь с <a href="/privacy">политикой конфиденциальности</a>.</p>
+    </section>
+
+    <section class="account-dialog-view" data-account-view="code" hidden>
+      <p class="account-dialog-kicker">Код отправлен</p>
+      <h2>Проверьте<br />сообщения</h2>
+      <p class="account-dialog-intro">Отправили SMS на <strong data-account-phone-copy></strong>. Введите код из сообщения.</p>
+      <form class="account-dialog-form" data-account-code-form novalidate>
+        <label for="account-code">Код из SMS</label>
+        <input id="account-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="0000" minlength="3" maxlength="8" required />
+        <p class="account-dialog-error" data-account-code-error role="alert" hidden></p>
+        <button class="account-dialog-primary" type="submit">Войти</button>
+        <button class="account-dialog-secondary" type="button" data-account-change-phone>Изменить номер</button>
+      </form>
+    </section>
+
+    <section class="account-dialog-view account-dialog-qr-view" data-account-view="qr" hidden>
+      <div class="account-dialog-profile-line">
+        <div>
+          <p class="account-dialog-kicker">Ваша карта</p>
+          <h2 data-account-greeting>Здравствуйте</h2>
+        </div>
+        <div class="account-dialog-balance"><strong data-account-balance>—</strong><span>бонусов</span></div>
+      </div>
+      <div class="account-dialog-qr-frame" data-account-qr-frame>
+        <span class="account-dialog-loader" aria-hidden="true"></span>
+        <canvas data-account-qr aria-label="QR-код бонусной карты" hidden></canvas>
+      </div>
+      <p class="account-dialog-qr-note">Покажите QR-код официанту перед оплатой, чтобы начислить или списать бонусы.</p>
+      <p class="account-dialog-error" data-account-qr-error role="alert" hidden></p>
+      <div class="account-dialog-actions">
+        <button class="account-dialog-secondary" type="button" data-account-refresh-qr>Обновить QR</button>
+        <a class="account-dialog-primary" href="/account">Открыть кабинет</a>
+      </div>
+    </section>
+
+    <section class="account-dialog-view account-dialog-denied" data-account-view="denied" hidden>
+      <p class="account-dialog-kicker">Карта недоступна</p>
+      <h2>Давайте<br />разберёмся</h2>
+      <p class="account-dialog-intro" data-account-denied-message>Сейчас открыть карту не получается. Обратитесь в поддержку — мы поможем.</p>
+      <a class="account-dialog-primary" href="/contacts">Обратиться в поддержку</a>
+      <button class="account-dialog-secondary" type="button" data-account-try-again>Попробовать снова</button>
+    </section>
+  </div>
+</dialog>
+
+<script>
+  import QRCode from 'qrcode'
+  import type { CustomerProfile } from '@chashka-coffee/contracts'
+  import { CustomerAccountApiError, customerAccountApi } from '../lib/customer-account-api'
+
+  const dialog = document.querySelector<HTMLDialogElement>('[data-account-dialog]')
+  const views = [...dialog?.querySelectorAll<HTMLElement>('[data-account-view]') ?? []]
+  const phoneForm = dialog?.querySelector<HTMLFormElement>('[data-account-phone-form]')
+  const codeForm = dialog?.querySelector<HTMLFormElement>('[data-account-code-form]')
+  const phoneInput = dialog?.querySelector<HTMLInputElement>('#account-phone')
+  const codeInput = dialog?.querySelector<HTMLInputElement>('#account-code')
+  const phoneError = dialog?.querySelector<HTMLElement>('[data-account-phone-error]')
+  const codeError = dialog?.querySelector<HTMLElement>('[data-account-code-error]')
+  const qrError = dialog?.querySelector<HTMLElement>('[data-account-qr-error]')
+  const qrCanvas = dialog?.querySelector<HTMLCanvasElement>('[data-account-qr]')
+  const qrFrame = dialog?.querySelector<HTMLElement>('[data-account-qr-frame]')
+  const deniedMessage = dialog?.querySelector<HTMLElement>('[data-account-denied-message]')
+  let challengeId: string | null = null
+  let submittedPhone = ''
+  let currentCustomer: CustomerProfile | null = null
+
+  function showView(name: 'loading' | 'phone' | 'code' | 'qr' | 'denied') {
+    views.forEach((view) => { view.hidden = view.dataset.accountView !== name })
+  }
+
+  function setFormBusy(form: HTMLFormElement | null | undefined, busy: boolean) {
+    form?.querySelectorAll<HTMLInputElement | HTMLButtonElement>('input, button').forEach((control) => { control.disabled = busy })
+  }
+
+  function showError(target: HTMLElement | null | undefined, message = '') {
+    if (!target) return
+    target.textContent = message
+    target.hidden = message.length === 0
+  }
+
+  function formatPhone(phone: string) {
+    const digits = phone.replace(/\D/g, '').replace(/^8/, '7')
+    if (!/^7\d{10}$/.test(digits)) return phone
+    return `+7 ${digits.slice(1, 4)} ${digits.slice(4, 7)}-${digits.slice(7, 9)}-${digits.slice(9)}`
+  }
+
+  function customerName(customer: CustomerProfile) {
+    return [customer.name, customer.surname].filter(Boolean).join(' ') || 'Здравствуйте'
+  }
+
+  function updateCustomerUi(customer: CustomerProfile | null) {
+    currentCustomer = customer
+    dialog?.querySelectorAll<HTMLElement>('[data-account-greeting]').forEach((node) => { node.textContent = customer ? customerName(customer) : 'Здравствуйте' })
+    dialog?.querySelectorAll<HTMLElement>('[data-account-balance]').forEach((node) => { node.textContent = customer ? new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(customer.balance) : '—' })
+    document.querySelectorAll<HTMLElement>('[data-account-trigger-label]').forEach((node) => { node.textContent = customer ? 'Показать QR' : 'Моя карта' })
+    document.dispatchEvent(new CustomEvent('customer-account:changed', { detail: { customer } }))
+  }
+
+  function readableError(error: unknown) {
+    if (!(error instanceof CustomerAccountApiError)) return 'Не удалось связаться с сервисом. Попробуйте ещё раз.'
+    switch (error.code) {
+      case 'CUSTOMER_NOT_REGISTERED': return 'Бонусная карта с таким номером не найдена. Проверьте номер или обратитесь в поддержку.'
+      case 'CUSTOMER_BLOCKED': return 'Доступ к карте ограничен. Обратитесь в поддержку — мы поможем разобраться.'
+      case 'CODE_INVALID': return 'Код не подошёл. Проверьте цифры и попробуйте ещё раз.'
+      case 'CODE_EXPIRED': return 'Срок действия кода истёк. Запросите новый код.'
+      case 'TOO_MANY_ATTEMPTS': return 'Попыток слишком много. Запросите новый код.'
+      case 'TOO_MANY_REQUESTS': return 'Новый код уже отправлен. Подождите минуту и попробуйте снова.'
+      case 'LOYALTY_UNAVAILABLE': return 'Бонусная система временно недоступна. Попробуйте ещё раз немного позже.'
+      default: return error.message || 'Не удалось выполнить запрос. Попробуйте ещё раз.'
+    }
+  }
+
+  function showDenied(error: unknown) {
+    if (deniedMessage) deniedMessage.textContent = readableError(error)
+    showView('denied')
+  }
+
+  async function renderQr() {
+    if (!currentCustomer || !qrCanvas) return
+    showError(qrError)
+    qrCanvas.hidden = true
+    qrFrame?.classList.add('is-loading')
+    try {
+      const qr = await customerAccountApi.generateQr()
+      await QRCode.toCanvas(qrCanvas, qr.value, {
+        width: 276,
+        margin: 2,
+        errorCorrectionLevel: 'M',
+        color: { dark: '#182e24', light: '#ffffff' },
+      })
+      qrCanvas.hidden = false
+    } catch (error) {
+      if (error instanceof CustomerAccountApiError && ['UNAUTHORIZED', 'CUSTOMER_BLOCKED'].includes(error.code)) {
+        updateCustomerUi(null)
+        showDenied(error)
+        return
+      }
+      showError(qrError, readableError(error))
+    } finally {
+      qrFrame?.classList.remove('is-loading')
+    }
+  }
+
+  async function openAccount() {
+    document.dispatchEvent(new CustomEvent('customer-account:opening'))
+    if (!dialog?.open) dialog?.showModal()
+    showView('loading')
+    try {
+      const customer = await customerAccountApi.getProfile()
+      updateCustomerUi(customer)
+      if (!customer) {
+        showView('phone')
+        requestAnimationFrame(() => phoneInput?.focus())
+        return
+      }
+      showView('qr')
+      await renderQr()
+    } catch (error) {
+      showDenied(error)
+    }
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-account-trigger]').forEach((trigger) => trigger.addEventListener('click', (event) => {
+    event.preventDefault()
+    void openAccount()
+  }))
+
+  dialog?.querySelector('[data-account-close]')?.addEventListener('click', () => dialog.close())
+  dialog?.addEventListener('click', (event) => { if (event.target === dialog) dialog.close() })
+
+  phoneForm?.addEventListener('submit', async (event) => {
+    event.preventDefault()
+    showError(phoneError)
+    setFormBusy(phoneForm, true)
+    try {
+      submittedPhone = customerAccountApi.normalizePhone(phoneInput?.value ?? '')
+      const response = await customerAccountApi.sendCode(submittedPhone)
+      challengeId = response.challengeId
+      const phoneCopy = dialog?.querySelector<HTMLElement>('[data-account-phone-copy]')
+      if (phoneCopy) phoneCopy.textContent = formatPhone(submittedPhone)
+      showView('code')
+      requestAnimationFrame(() => codeInput?.focus())
+    } catch (error) {
+      showError(phoneError, readableError(error))
+    } finally {
+      setFormBusy(phoneForm, false)
+    }
+  })
+
+  codeForm?.addEventListener('submit', async (event) => {
+    event.preventDefault()
+    showError(codeError)
+    if (!challengeId) { showView('phone'); return }
+    setFormBusy(codeForm, true)
+    try {
+      const customer = await customerAccountApi.verifyCode(challengeId, codeInput?.value ?? '')
+      updateCustomerUi(customer)
+      showView('qr')
+      await renderQr()
+    } catch (error) {
+      showError(codeError, readableError(error))
+    } finally {
+      setFormBusy(codeForm, false)
+    }
+  })
+
+  dialog?.querySelector('[data-account-change-phone]')?.addEventListener('click', () => {
+    challengeId = null
+    submittedPhone = ''
+    if (codeInput) codeInput.value = ''
+    showError(codeError)
+    showView('phone')
+    phoneInput?.focus()
+  })
+  dialog?.querySelector('[data-account-refresh-qr]')?.addEventListener('click', () => void renderQr())
+  dialog?.querySelector('[data-account-try-again]')?.addEventListener('click', () => void openAccount())
+
+  void customerAccountApi.getProfile().then(updateCustomerUi).catch(() => {})
+</script>
+
+<style>
+  .account-dialog{width:min(520px,calc(100vw - 28px));max-height:calc(100svh - 28px);padding:0;border:0;border-radius:var(--radius);background:#fcfbf8;color:#231e1b;box-shadow:0 28px 90px rgba(18,46,36,.3);overflow:auto}.account-dialog::backdrop{background:rgba(16,34,26,.56);backdrop-filter:blur(7px)}.account-dialog[open]{animation:account-dialog-in .25s cubic-bezier(.22,1,.36,1)}
+  .account-dialog-shell{min-height:560px;padding:25px clamp(24px,5vw,42px) 36px}.account-dialog-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:46px}.account-dialog-brand{display:flex;align-items:center;gap:10px;color:#1f3b2e;text-decoration:none}.account-dialog-brand span{display:grid;width:38px;height:38px;border-radius:50%;place-items:center;background:#1f3b2e;color:#bdd65a;font-size:12px;font-weight:800;letter-spacing:-.04em}.account-dialog-brand small{font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.account-dialog-close{display:grid;width:42px;height:42px;padding:0;border:1px solid #ded9d1;border-radius:50%;place-items:center;background:transparent;color:#1f3b2e;cursor:pointer}.account-dialog-close svg{width:19px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-width:1.7}.account-dialog-close:hover{background:#eef2e9}.account-dialog-close:focus-visible{outline:3px solid rgba(189,214,90,.8);outline-offset:3px}
+  .account-dialog-view[hidden]{display:none}.account-dialog-view h2{margin:10px 0 20px;color:#1f3b2e;font-size:clamp(43px,10vw,64px);line-height:.85;letter-spacing:-.09em}.account-dialog-kicker{margin:0;color:#769229;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.account-dialog-intro{max-width:410px;margin:0 0 30px;color:#68615a;font-size:13px;line-height:1.65}.account-dialog-intro strong{color:#1f3b2e}.account-dialog-form{display:grid;gap:10px}.account-dialog-form label{margin-bottom:1px;color:#5e5851;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.account-dialog-form input{width:100%;height:58px;padding:0 18px;border:1px solid #dcd7ce;border-radius:15px;background:#fff;color:#1f3b2e;font-size:16px;outline:0;transition:border-color .2s ease,box-shadow .2s ease}.account-dialog-form input:focus{border-color:#78922e;box-shadow:0 0 0 4px rgba(189,214,90,.2)}.account-dialog-form input:disabled{opacity:.6}.account-dialog-primary,.account-dialog-secondary{display:inline-flex;min-height:52px;padding:0 21px;border-radius:15px;align-items:center;justify-content:center;cursor:pointer;font-size:11px;font-weight:800;letter-spacing:.04em;text-decoration:none}.account-dialog-primary{border:1px solid #1f3b2e;background:#1f3b2e;color:#fff}.account-dialog-primary:hover{background:#294d3b}.account-dialog-primary:disabled{cursor:wait;opacity:.6}.account-dialog-secondary{border:1px solid #dcd7ce;background:transparent;color:#1f3b2e}.account-dialog-secondary:hover{border-color:#b8c49d;background:#f0f3ea}.account-dialog-primary:focus-visible,.account-dialog-secondary:focus-visible{outline:3px solid rgba(189,214,90,.8);outline-offset:3px}.account-dialog-error{margin:1px 0 2px;color:#a4382f;font-size:11px;line-height:1.45}.account-dialog-legal{margin:17px 0 0;color:#8a837b;font-size:9px;line-height:1.5}.account-dialog-legal a{text-underline-offset:2px}
+  .account-dialog-loading{display:grid;min-height:390px;place-content:center;justify-items:center;gap:16px;color:#716a62;font-size:11px}.account-dialog-loader{display:block;width:29px;height:29px;border:2px solid #d8dfcf;border-top-color:#67862a;border-radius:50%;animation:account-dialog-spin .8s linear infinite}.account-dialog-profile-line{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}.account-dialog-profile-line h2{max-width:270px;margin-bottom:0;font-size:clamp(34px,7vw,48px)}.account-dialog-balance{display:flex;min-width:105px;padding-top:4px;align-items:flex-end;flex-direction:column}.account-dialog-balance strong{color:#1f3b2e;font-size:30px;line-height:1;letter-spacing:-.06em}.account-dialog-balance span{margin-top:5px;color:#768f2c;font-size:8px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.account-dialog-qr-frame{display:grid;position:relative;width:min(100%,316px);aspect-ratio:1;margin:31px auto 20px;padding:20px;border:1px solid #e2ded7;border-radius:28px;place-items:center;background:#fff}.account-dialog-qr-frame:not(.is-loading)>.account-dialog-loader{display:none}.account-dialog-qr-frame canvas{display:block;width:100%!important;height:auto!important}.account-dialog-qr-frame canvas[hidden]{display:none}.account-dialog-qr-note{max-width:370px;margin:0 auto;color:#69635c;font-size:11px;line-height:1.55;text-align:center}.account-dialog-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:23px}.account-dialog-denied .account-dialog-primary,.account-dialog-denied .account-dialog-secondary{width:100%;margin-top:9px}.account-dialog-denied .account-dialog-primary{margin-top:0}
+  @keyframes account-dialog-in{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}@keyframes account-dialog-spin{to{transform:rotate(360deg)}}
+  @media(max-width:560px){.account-dialog{width:100vw;max-width:none;height:auto;max-height:calc(100svh - 12px);margin:auto 0 0;border-radius:24px 24px 0 0}.account-dialog-shell{min-height:610px;padding:20px 20px calc(28px + env(safe-area-inset-bottom))}.account-dialog-header{margin-bottom:34px}.account-dialog-actions{grid-template-columns:1fr}.account-dialog-profile-line{align-items:flex-end}.account-dialog-profile-line h2{font-size:37px}.account-dialog-qr-frame{width:min(100%,300px);margin-top:25px}.account-dialog[open]{animation-name:account-dialog-mobile-in}@keyframes account-dialog-mobile-in{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}}
+  @media(prefers-reduced-motion:reduce){.account-dialog[open],.account-dialog-loader{animation-duration:.01ms}}
+</style>

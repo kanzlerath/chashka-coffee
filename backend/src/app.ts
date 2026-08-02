@@ -15,13 +15,15 @@ import { createHomepageModule } from './modules/homepage'
 import { createProductsModule } from './modules/products'
 import { createManagedPagesModule } from './modules/managed-pages'
 import { createAnalyticsModule } from './modules/analytics'
+import { createCustomerAccountModule, type PremiumBonusGateway } from './modules/customer-account'
 
 type CreateAppOptions = {
   env: AppEnv
   prisma: DbClient
+  premiumBonusGateway?: PremiumBonusGateway
 }
 
-export function createApp({ env, prisma }: CreateAppOptions) {
+export function createApp({ env, prisma, premiumBonusGateway }: CreateAppOptions) {
   const auth = createAuthModule({ db: prisma, env })
   const catalog = createCatalogModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
   const content = createContentModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
@@ -32,6 +34,7 @@ export function createApp({ env, prisma }: CreateAppOptions) {
   const products = createProductsModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
   const managedPages = createManagedPagesModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
   const analytics = createAnalyticsModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
+  const customerAccount = createCustomerAccountModule({ db: prisma, env, gateway: premiumBonusGateway })
   const app = new OpenAPIHono<AuthHttpEnv>({
     defaultHook: validationErrorHook,
   })
@@ -64,6 +67,7 @@ export function createApp({ env, prisma }: CreateAppOptions) {
   })
 
   app.route('/api/auth', auth.routes)
+  app.route('/api/customer', customerAccount.routes)
   app.route('/api/admin', auth.adminRoutes)
   app.route('/api/restaurants', catalog.routes)
   app.route('/api/content', content.routes)

@@ -37,11 +37,12 @@ describe('homepage contracts', () => {
       name: 'Капучино',
       description: 'Кофе с молоком',
       weightGrams: 320,
+      measurementUnit: 'MILLILITER',
       priceKopecks: 29000,
       imageUrl: '/images/cappuccino.png',
       marketingBadge: 'HIT',
       categoryName: 'Кофе',
-    })).toMatchObject({ weightGrams: 320 })
+    })).toMatchObject({ weightGrams: 320, measurementUnit: 'MILLILITER' })
   })
 
   test('accepts an editable day section with a linked day part', () => {

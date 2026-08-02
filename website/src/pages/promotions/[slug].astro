@@ -9,4 +9,4 @@ export async function getStaticPaths(){return (await getContentSlugs('PROMOTION'
 let story: Story = Astro.props.story ?? promotions[Astro.params.slug as keyof typeof promotions] ?? fallbackStory;
 try { const response = await fetch(`${import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'}/api/content/${Astro.params.slug}`); if (response.ok) { const { entry } = await response.json(); story = { title: entry.title, intro: entry.excerpt ?? entry.body ?? story.intro, meta: entry.endsAt ? `До ${new Date(entry.endsAt).toLocaleDateString('ru-RU')}` : story.meta, image: entry.imageUrl ?? undefined } } } catch { /* static editorial fallback remains available */ }
 ---
-<StoryDetail eyebrow="акция чашка кофе" action="Ко всем акциям" actionHref="/promotions" {...story}/>
+<StoryDetail action="Ко всем акциям" actionHref="/promotions" {...story}/>

@@ -1,0 +1,175 @@
+---
+import PageShell from '../layouts/PageShell.astro'
+---
+
+<PageShell
+  title="Личный кабинет"
+  description="Бонусная карта, баланс и будущие онлайн-заказы «Чашки кофе»."
+  noindex
+>
+  <div class="account-page">
+    <section class="account-loading" data-account-page-loading aria-live="polite">
+      <span aria-hidden="true"></span>
+      Проверяем вашу сессию…
+    </section>
+
+    <section class="account-welcome" data-account-page-signed-out hidden aria-labelledby="account-welcome-title">
+      <div>
+        <p>Личный кабинет</p>
+        <h1 id="account-welcome-title">Кофе,<br />бонусы,<br />вы</h1>
+      </div>
+      <div class="account-welcome-copy">
+        <span class="account-qr-glyph" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM15 14h2v2h-2zM19 14h2v2h-2zM14 18h2v3h-2zM18 18h3v3h-3z" /></svg>
+        </span>
+        <h2>Карта уже существует — осталось её открыть</h2>
+        <p>Войдите по номеру, который привязан к бонусной программе. Регистрация новой карты пока остаётся в приложении.</p>
+        <button type="button" data-account-trigger>Войти по номеру телефона</button>
+      </div>
+    </section>
+
+    <div class="account-dashboard" data-account-page-dashboard hidden>
+      <section class="account-overview" aria-labelledby="account-title">
+        <div class="account-overview-copy">
+          <p>Личный кабинет</p>
+          <h1 id="account-title">Добрый день,<br /><span data-account-page-name>гость</span></h1>
+          <button class="account-show-qr" type="button" data-account-trigger>
+            <img src="/icons/qr-code.svg" width="20" height="20" alt="" aria-hidden="true" />
+            Показать QR-код
+          </button>
+        </div>
+        <div class="account-balance" aria-label="Баланс бонусов">
+          <span>Доступно сейчас</span>
+          <strong data-account-page-balance>—</strong>
+          <small>бонусов</small>
+          <p>Баланс обновляется напрямую из бонусной системы.</p>
+        </div>
+      </section>
+
+      <section class="account-details" aria-labelledby="account-details-title">
+        <header>
+          <p>Ваши данные</p>
+          <h2 id="account-details-title">Всё на месте</h2>
+          <span>Данные доступны только для просмотра. Если что-то изменилось, обратитесь в поддержку.</span>
+        </header>
+        <dl>
+          <div><dt>Имя</dt><dd data-account-page-full-name>—</dd></div>
+          <div><dt>Телефон</dt><dd data-account-page-phone>—</dd></div>
+          <div><dt>E-mail</dt><dd data-account-page-email>Не указан</dd></div>
+          <div><dt>Номер карты</dt><dd data-account-page-card>Не указан</dd></div>
+        </dl>
+      </section>
+
+      <section class="account-orders" aria-labelledby="account-orders-title">
+        <header>
+          <p>Онлайн-заказы</p>
+          <h2 id="account-orders-title">История покупок</h2>
+        </header>
+        <div class="account-orders-empty">
+          <span>01</span>
+          <div>
+            <strong>Здесь появятся заказы кофе с сайта</strong>
+            <p>Покупки в ресторанах сюда не попадут. История начнёт заполняться, когда мы запустим онлайн-заказ.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="account-service" aria-label="Управление аккаунтом">
+        <div><p>Нужно изменить данные или удалить аккаунт?</p><a href="/contacts">Обратитесь в поддержку</a></div>
+        <button type="button" data-account-page-logout>Выйти из аккаунта</button>
+      </section>
+    </div>
+
+    <section class="account-page-error" data-account-page-error hidden role="alert">
+      <p>Личный кабинет</p>
+      <h1>Сейчас не<br />получается</h1>
+      <span data-account-page-error-copy>Попробуйте обновить страницу немного позже.</span>
+      <button type="button" data-account-page-retry>Попробовать снова</button>
+      <a href="/contacts">Обратиться в поддержку</a>
+    </section>
+  </div>
+</PageShell>
+
+<script>
+  import type { CustomerProfile } from '@chashka-coffee/contracts'
+  import { CustomerAccountApiError, customerAccountApi } from '../lib/customer-account-api'
+
+  const loading = document.querySelector<HTMLElement>('[data-account-page-loading]')
+  const signedOut = document.querySelector<HTMLElement>('[data-account-page-signed-out]')
+  const dashboard = document.querySelector<HTMLElement>('[data-account-page-dashboard]')
+  const errorView = document.querySelector<HTMLElement>('[data-account-page-error]')
+  const errorCopy = document.querySelector<HTMLElement>('[data-account-page-error-copy]')
+
+  function showOnly(target: HTMLElement | null) {
+    ;[loading, signedOut, dashboard, errorView].forEach((view) => { if (view) view.hidden = view !== target })
+  }
+
+  function formatPhone(phone: string) {
+    const digits = phone.replace(/\D/g, '').replace(/^8/, '7')
+    if (!/^7\d{10}$/.test(digits)) return phone
+    return `+7 ${digits.slice(1, 4)} ${digits.slice(4, 7)}-${digits.slice(7, 9)}-${digits.slice(9)}`
+  }
+
+  function setText(selector: string, value: string) {
+    document.querySelectorAll<HTMLElement>(selector).forEach((node) => { node.textContent = value })
+  }
+
+  function renderCustomer(customer: CustomerProfile | null) {
+    if (!customer) { showOnly(signedOut); return }
+    const fullName = [customer.surname, customer.name, customer.middleName].filter(Boolean).join(' ') || 'Не указано'
+    setText('[data-account-page-name]', customer.name || 'гость')
+    setText('[data-account-page-full-name]', fullName)
+    setText('[data-account-page-phone]', formatPhone(customer.phone))
+    setText('[data-account-page-email]', customer.email || 'Не указан')
+    setText('[data-account-page-card]', customer.cardNumber || 'Не указан')
+    setText('[data-account-page-balance]', new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(customer.balance))
+    showOnly(dashboard)
+  }
+
+  function showError(error: unknown) {
+    if (errorCopy) {
+      errorCopy.textContent = error instanceof CustomerAccountApiError && error.code === 'CUSTOMER_BLOCKED'
+        ? 'Доступ к карте ограничен. Обратитесь в поддержку — мы поможем разобраться.'
+        : 'Бонусная система временно недоступна. Попробуйте обновить страницу немного позже.'
+    }
+    showOnly(errorView)
+  }
+
+  async function loadAccount() {
+    showOnly(loading)
+    try { renderCustomer(await customerAccountApi.getProfile()) }
+    catch (error) { showError(error) }
+  }
+
+  document.addEventListener('customer-account:changed', (event) => {
+    renderCustomer((event as CustomEvent<{ customer: CustomerProfile | null }>).detail.customer)
+  })
+  document.querySelector('[data-account-page-retry]')?.addEventListener('click', () => void loadAccount())
+  document.querySelector('[data-account-page-logout]')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget as HTMLButtonElement
+    button.disabled = true
+    try {
+      await customerAccountApi.logout()
+      renderCustomer(null)
+      document.dispatchEvent(new CustomEvent('customer-account:changed', { detail: { customer: null } }))
+    } catch (error) {
+      showError(error)
+    } finally {
+      button.disabled = false
+    }
+  })
+  void loadAccount()
+</script>
+
+<style>
+  .account-page{display:grid;gap:14px}.account-page [hidden]{display:none}.account-loading{display:flex;min-height:620px;align-items:center;justify-content:center;gap:14px;background:#f3eee7;color:#6c665f;font-size:11px}.account-loading span{width:25px;height:25px;border:2px solid #d6ddcd;border-top-color:#6f902b;border-radius:50%;animation:account-spin .8s linear infinite}
+  .account-welcome{display:grid;min-height:680px;padding:clamp(52px,7vw,110px);grid-template-columns:minmax(0,1fr) minmax(300px,.62fr);gap:70px;align-items:end;border-radius:var(--radius);background:#e5eadc}.account-welcome>div:first-child>p,.account-overview-copy>p,.account-details header>p,.account-orders header>p,.account-page-error>p{margin:0 0 18px;color:#6f902b;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.account-welcome h1,.account-overview h1,.account-page-error h1{margin:0;color:#1f3b2e;font-size:clamp(62px,7.4vw,120px);line-height:.81;letter-spacing:-.1em}.account-welcome-copy{max-width:470px;padding-bottom:7px}.account-qr-glyph{display:grid;width:72px;height:72px;margin-bottom:34px;border-radius:21px;place-items:center;background:#1f3b2e;color:#bdd65a}.account-qr-glyph svg{width:37px;fill:currentColor}.account-welcome h2{margin:0 0 18px;color:#1f3b2e;font-size:clamp(30px,3vw,47px);line-height:.94;letter-spacing:-.065em}.account-welcome-copy>p{margin:0;color:#5f5b54;font-size:13px;line-height:1.65}.account-welcome button,.account-page-error button{min-height:52px;margin-top:29px;padding:0 23px;border:0;border-radius:var(--radius);background:#1f3b2e;color:#fff;cursor:pointer;font-size:11px;font-weight:800}.account-welcome button:hover,.account-page-error button:hover{background:#294d3b}
+  .account-dashboard{display:grid;gap:14px}.account-overview{display:grid;min-height:650px;padding:clamp(50px,7vw,110px);grid-template-columns:1.05fr .95fr;gap:60px;align-items:stretch;border-radius:var(--radius);background:#1f3b2e;color:#fff}.account-overview-copy{display:flex;align-items:flex-start;justify-content:flex-end;flex-direction:column}.account-overview-copy>p{color:#bdd65a}.account-overview h1{color:#fff}.account-overview h1 span{color:#bdd65a}.account-show-qr{display:inline-flex;min-height:54px;margin-top:35px;padding:0 22px;border:1px solid rgba(255,255,255,.35);border-radius:var(--radius);align-items:center;gap:10px;background:transparent;color:#fff;cursor:pointer;font-size:11px;font-weight:800}.account-show-qr img{width:20px;height:20px;filter:invert(1)}.account-show-qr:hover{border-color:#bdd65a;background:#bdd65a;color:#1f3b2e}.account-show-qr:hover img{filter:none}.account-balance{display:flex;min-height:100%;padding:clamp(32px,4.5vw,64px);border-radius:var(--radius);align-items:flex-start;justify-content:flex-end;background:#bdd65a;color:#1f3b2e;flex-direction:column}.account-balance>span{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.account-balance strong{margin-top:auto;font-size:clamp(80px,10vw,156px);line-height:.75;letter-spacing:-.1em}.account-balance small{margin-top:22px;font-size:12px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}.account-balance p{max-width:270px;margin:30px 0 0;padding-top:20px;border-top:1px solid rgba(31,59,46,.28);font-size:11px;line-height:1.5}
+  .account-details{display:grid;padding:clamp(70px,8vw,125px) clamp(38px,7vw,110px);grid-template-columns:.7fr 1.3fr;gap:80px;border-radius:var(--radius);background:#f3eee7}.account-details h2,.account-orders h2{margin:0;color:#1f3b2e;font-size:clamp(48px,5vw,78px);line-height:.88;letter-spacing:-.08em}.account-details header>span{display:block;max-width:340px;margin-top:24px;color:#6c665f;font-size:12px;line-height:1.65}.account-details dl{margin:0}.account-details dl>div{display:grid;min-height:75px;padding:18px 0;grid-template-columns:155px 1fr;align-items:center;border-top:1px solid #d8d2c9}.account-details dl>div:last-child{border-bottom:1px solid #d8d2c9}.account-details dt{color:#79736c;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.account-details dd{margin:0;color:#1f3b2e;font-size:14px;font-weight:650;overflow-wrap:anywhere}
+  .account-orders{padding:clamp(70px,8vw,120px) clamp(38px,7vw,110px);border-radius:var(--radius);background:#fcfbf8}.account-orders header{display:flex;align-items:end;justify-content:space-between;gap:40px}.account-orders-empty{display:grid;margin-top:60px;padding:27px 0;border-top:1px solid #ded9d1;border-bottom:1px solid #ded9d1;grid-template-columns:90px 1fr;gap:28px;align-items:center}.account-orders-empty>span{color:#78922e;font-size:11px;font-weight:800}.account-orders-empty strong{display:block;color:#1f3b2e;font-size:18px}.account-orders-empty p{max-width:650px;margin:8px 0 0;color:#716b64;font-size:11px;line-height:1.6}.account-service{display:flex;padding:30px clamp(30px,5vw,70px);border-radius:var(--radius);align-items:center;justify-content:space-between;gap:30px;background:#e1e8d8}.account-service p{margin:0 0 7px;color:#61675d;font-size:10px}.account-service a{color:#1f3b2e;font-size:12px;font-weight:800;text-underline-offset:3px}.account-service button{padding:10px 0;border:0;background:transparent;color:#1f3b2e;cursor:pointer;font-size:11px;font-weight:800;text-decoration:underline;text-underline-offset:3px}.account-service button:disabled{opacity:.5}
+  .account-page-error{min-height:620px;padding:clamp(60px,8vw,120px);border-radius:var(--radius);background:#f3eee7}.account-page-error h1{margin-bottom:27px}.account-page-error>span{display:block;max-width:480px;color:#675f58;font-size:13px;line-height:1.6}.account-page-error>a{display:inline-block;margin-left:20px;color:#1f3b2e;font-size:11px;font-weight:800;text-underline-offset:3px}
+  @keyframes account-spin{to{transform:rotate(360deg)}}
+  @media(max-width:860px){.account-welcome,.account-overview,.account-details{grid-template-columns:1fr}.account-welcome{min-height:700px;padding:70px 28px;gap:70px}.account-welcome h1{font-size:70px}.account-overview{padding:60px 20px 20px}.account-overview h1{font-size:66px}.account-balance{min-height:390px}.account-details{padding:70px 24px;gap:50px}.account-orders{padding:70px 24px}.account-orders-empty{grid-template-columns:42px 1fr}.account-service{margin:0 16px;padding:27px 22px}.account-page-error{border-radius:0;padding:80px 24px}}
+  @media(max-width:520px){.account-welcome,.account-overview,.account-details,.account-orders{border-radius:0}.account-overview h1{font-size:58px}.account-balance strong{font-size:94px}.account-details dl>div{grid-template-columns:110px 1fr}.account-orders-empty{grid-template-columns:1fr}.account-orders-empty>span{display:none}.account-service{align-items:flex-start;flex-direction:column}.account-page-error>a{display:block;margin:20px 0 0}}
+  @media(prefers-reduced-motion:reduce){.account-loading span{animation-duration:.01ms}}
+</style>

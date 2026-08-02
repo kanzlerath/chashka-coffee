@@ -4,6 +4,10 @@ const apiOrigin = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
 
 const uniqueSlugs = (slugs: string[]) => [...new Set(slugs.filter(Boolean))]
 
+export function selectStaticSlugs(fallback: string[], remote: string[] | null) {
+  return uniqueSlugs(remote === null ? fallback : remote)
+}
+
 async function getJson<T>(path: string): Promise<T | null> {
   try {
     const response = await fetch(`${apiOrigin}${path}`)
@@ -15,7 +19,7 @@ async function getJson<T>(path: string): Promise<T | null> {
 
 export async function getContentSlugs(type: ContentEntry['type'], fallback: string[]) {
   const response = await getJson<{ entries: Pick<ContentEntry, 'slug'>[] }>(`/api/content?type=${type}`)
-  return uniqueSlugs([...fallback, ...(response?.entries.map(({ slug }) => slug) ?? [])])
+  return selectStaticSlugs(fallback, response?.entries.map(({ slug }) => slug) ?? null)
 }
 
 export async function getJobSlugs(fallback: string[]) {
@@ -48,8 +52,8 @@ export async function getProduct(slug: string) {
 }
 
 export async function getProductSlugs(type: ProductType, fallback: string[]) {
-  const products = await getProducts(type)
-  return uniqueSlugs([...fallback, ...products.map(({ slug }) => slug)])
+  const response = await getJson<{ products: Pick<Product, 'slug'>[] }>(`/api/products?type=${type}`)
+  return selectStaticSlugs(fallback, response?.products.map(({ slug }) => slug) ?? null)
 }
 
 export async function getManagedPage(key: ManagedPageKey) {

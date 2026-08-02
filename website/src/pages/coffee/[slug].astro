@@ -1,8 +1,10 @@
 ---
 import ProductDetail from '../../components/ProductDetail.astro'
+import NotFoundPage from '../../components/NotFoundPage.astro'
 import { getProduct, getProducts, getProductSlugs } from '../../lib/public-api'
 export async function getStaticPaths(){return (await getProductSlugs('COFFEE',['ethiopia-guji','brazil-cerrado','colombia-huila'])).map((slug)=>({params:{slug}}))}
 const product = await getProduct(Astro.params.slug!)
 const related = product ? (await getProducts('COFFEE')).filter((item)=>item.slug!==product.slug) : []
+if (!product) { Astro.response.status = 404; Astro.response.statusText = 'Not Found' }
 ---
-{product ? <ProductDetail product={product} related={related}/> : <meta http-equiv="refresh" content="0;url=/coffee#catalog"/>}
+{product ? <ProductDetail product={product} related={related}/> : <NotFoundPage/>}

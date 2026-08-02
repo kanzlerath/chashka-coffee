@@ -42,6 +42,7 @@ type MenuItemSeed = {
   description: string
   ingredients: string
   weightGrams: number
+  measurementUnit?: 'GRAM' | 'MILLILITER' | 'PIECE'
   priceKopecks: number
   calories: number
   proteins: number
@@ -97,9 +98,9 @@ const itemTemplates: MenuCategorySeed[] = [
   {
     category: { slug: 'coffee', name: 'Кофе', position: 30 },
     items: [
-      { slug: 'cappuccino', name: 'Капучино', description: 'Эспрессо и воздушное молоко.', ingredients: 'Кофе, молоко.', weightGrams: 300, priceKopecks: 29000, calories: 140, proteins: 7, fats: 7, carbohydrates: 11, vegetarian: true, allergens: ['milk'] },
-      { slug: 'filter-coffee', name: 'Фильтр-кофе', description: 'Сезонное зерно собственной обжарки.', ingredients: 'Кофе, вода.', weightGrams: 300, priceKopecks: 24000, calories: 4, proteins: 0, fats: 0, carbohydrates: 0, vegetarian: true, lactoseFree: true, glutenFree: true, light: true, allergens: [] },
-      { slug: 'cocoa', name: 'Какао', description: 'Насыщенный какао-напиток на молоке.', ingredients: 'Какао, молоко, шоколад.', weightGrams: 300, priceKopecks: 33000, calories: 260, proteins: 10, fats: 12, carbohydrates: 28, vegetarian: true, allergens: ['milk'] },
+      { slug: 'cappuccino', name: 'Капучино', description: 'Эспрессо и воздушное молоко.', ingredients: 'Кофе, молоко.', weightGrams: 300, measurementUnit: 'MILLILITER', priceKopecks: 29000, calories: 140, proteins: 7, fats: 7, carbohydrates: 11, vegetarian: true, allergens: ['milk'] },
+      { slug: 'filter-coffee', name: 'Фильтр-кофе', description: 'Сезонное зерно собственной обжарки.', ingredients: 'Кофе, вода.', weightGrams: 300, measurementUnit: 'MILLILITER', priceKopecks: 24000, calories: 4, proteins: 0, fats: 0, carbohydrates: 0, vegetarian: true, lactoseFree: true, glutenFree: true, light: true, allergens: [] },
+      { slug: 'cocoa', name: 'Какао', description: 'Насыщенный какао-напиток на молоке.', ingredients: 'Какао, молоко, шоколад.', weightGrams: 300, measurementUnit: 'MILLILITER', priceKopecks: 33000, calories: 260, proteins: 10, fats: 12, carbohydrates: 28, vegetarian: true, allergens: ['milk'] },
     ],
   },
 ]
@@ -160,6 +161,7 @@ async function seed() {
                 description: item.description,
                 ingredients: item.ingredients,
                 weightGrams: item.weightGrams,
+                measurementUnit: item.measurementUnit ?? 'GRAM',
                 priceKopecks: item.priceKopecks + menuIndex * 1000,
                 calories: item.calories,
                 proteins: item.proteins,

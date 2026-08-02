@@ -252,6 +252,15 @@
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
     --radius: 0.875rem;
+    --admin-page-max: 1480px;
+    --admin-editor-max: 1080px;
+    --admin-page-gutter: 1.25rem;
+    --admin-topbar-gutter: clamp(1.25rem, 3vw, 3rem);
+    --admin-page-top: clamp(1.8rem, 4vw, 3.2rem);
+    --admin-page-bottom: 3.5rem;
+    --admin-section-gap: 1.5rem;
+    --admin-surface-radius: var(--radius-2xl);
+    --admin-row-radius: var(--radius);
     --sidebar: oklch(0.25 0.052 151);
     --sidebar-foreground: oklch(0.95 0.012 95);
     --sidebar-primary: oklch(0.83 0.17 112);
@@ -424,12 +433,12 @@
   .admin-logout:hover { color: var(--sidebar-foreground); }
 
   .admin-main { min-width: 0; }
-  .admin-topbar { display: flex; min-height: 4.5rem; align-items: center; justify-content: space-between; border-bottom: 1px solid color-mix(in oklab, var(--border) 82%, transparent); padding: 0 clamp(1.25rem, 3vw, 3rem); color: var(--muted-foreground); font-size: .78rem; font-weight: 600; }
+  .admin-topbar { display: flex; min-height: 4.5rem; align-items: center; justify-content: space-between; border-bottom: 1px solid color-mix(in oklab, var(--border) 82%, transparent); padding: 0 var(--admin-topbar-gutter); color: var(--muted-foreground); font-size: .78rem; font-weight: 600; }
   .admin-topbar > p { color: var(--foreground); font-size: .86rem; font-weight: 700; }
   .admin-topbar > div { display: flex; align-items: center; gap: .45rem; }
   .admin-topbar-status { width: .45rem; height: .45rem; border-radius: 99px; background: oklch(.7 .17 142); box-shadow: 0 0 0 .22rem oklch(.7 .17 142 / .14); }
 
-  .admin-page { width: min(100% - 2.5rem, 1480px); display: grid; gap: 1.5rem; margin: 0 auto; padding: clamp(1.8rem, 4vw, 3.2rem) 0 3.5rem; }
+  .admin-page { width: min(calc(100% - var(--admin-page-gutter) - var(--admin-page-gutter)), var(--admin-page-max)); display: grid; align-content: start; gap: var(--admin-section-gap); margin: 0 auto; padding: var(--admin-page-top) 0 var(--admin-page-bottom); }
   .admin-page-narrow { max-width: 860px; }
 
   .admin-page-header { display: flex; align-items: end; justify-content: space-between; gap: 1.25rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
@@ -446,14 +455,14 @@
   .admin-tab span { display: grid; min-width: 1.1rem; height: 1.1rem; place-items: center; border-radius: 99px; background: var(--muted); font-size: .65rem; }
   .admin-tab[aria-pressed="true"] span { background: var(--accent); }
 
-  .admin-page [data-slot="card"] { border: 1px solid color-mix(in oklab, var(--border) 88%, transparent); box-shadow: 0 12px 28px oklch(.22 .03 150 / .035); }
+  .admin-page [data-slot="card"] { border: 1px solid color-mix(in oklab, var(--border) 88%, transparent); border-radius: var(--admin-surface-radius); box-shadow: 0 12px 28px oklch(.22 .03 150 / .035); }
   .admin-page [data-slot="card"] [data-slot="card-title"] { letter-spacing: -.035em; }
   .admin-page select { min-height: 2.5rem; width: 100%; border: 1px solid var(--input); border-radius: var(--radius); background: var(--card); color: var(--foreground); padding: .35rem .7rem; font-size: .9rem; outline: none; }
   .admin-page select:focus { border-color: var(--ring); box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 18%, transparent); }
   .admin-page .admin-add-block select { width: min(22rem, 42vw); min-width: 15rem; }
   .admin-page .admin-rich-toolbar select { min-height: 2rem; width: auto; min-width: 7.5rem; border-color: transparent; border-radius: .42rem; background: transparent; padding: .35rem .5rem; font-size: .68rem; }
 
-  .admin-page-editor { max-width: 1080px; }
+  .admin-page-editor { max-width: var(--admin-editor-max); }
   .admin-editor-surface [data-slot="card-content"] { padding-top: 0; }
   .admin-form-stack { display: grid; gap: 1.25rem; }
   .admin-form-grid-2,
@@ -483,7 +492,7 @@
     align-items: center;
     gap: .75rem;
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--admin-row-radius);
     background: var(--card);
     padding: .75rem .9rem;
   }
@@ -493,6 +502,7 @@
   .admin-check-row small { display: block; }
   .admin-check-row strong { font-size: .82rem; }
   .admin-check-row small { margin-top: .15rem; color: var(--muted-foreground); font-size: .72rem; line-height: 1.35; }
+  .admin-check-row-compact { min-height: 3rem; font-size: .82rem; font-weight: 650; }
   .admin-compact-check { display: flex; align-items: center; gap: .45rem; font-size: .78rem; white-space: nowrap; }
   .admin-state-message,
   .admin-empty-copy { margin: 0; color: var(--muted-foreground); padding: 1rem 0; font-size: .82rem; line-height: 1.5; }
@@ -507,7 +517,7 @@
     align-items: center;
     gap: .85rem;
     border: 1px solid transparent;
-    border-radius: var(--radius);
+    border-radius: var(--admin-row-radius);
     color: var(--foreground);
     padding: .7rem;
     transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
@@ -649,6 +659,10 @@
   .admin-homepage-panel { min-width: 0; }
   .admin-homepage-panel [data-slot="card"] { min-height: 32rem; }
   .admin-homepage-panel [data-slot="card-content"] { max-width: 70rem; }
+  .admin-homepage-panel .admin-list-row { border-color: var(--border); }
+  .admin-homepage-panel .admin-list-row:hover { transform: translateX(2px); }
+  .admin-homepage-panel .admin-form-subsection { border-top: 1px solid var(--border); padding-top: 1.25rem; }
+  .admin-homepage-panel .admin-form-actions { justify-content: flex-start; }
 
   .admin-leads-list [data-slot="card-content"] { padding-top: 0; padding-bottom: 0; }
   .admin-lead-row { display: grid; grid-template-columns: 10rem minmax(0, 1fr) 9rem; gap: 1.25rem; border-bottom: 1px solid var(--border); padding: 1.25rem 0; }
@@ -656,13 +670,12 @@
   .admin-lead-row select { min-height: 2.25rem; }
 
   .admin-media-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .8rem; }
-  .admin-media-tile { overflow: hidden; border: 1px solid var(--border); border-radius: .9rem; background: var(--card); box-shadow: 0 6px 16px oklch(.22 .03 150 / .025); }
+  .admin-media-tile { overflow: hidden; border: 1px solid var(--border); border-radius: var(--admin-surface-radius); background: var(--card); box-shadow: 0 6px 16px oklch(.22 .03 150 / .025); }
   .admin-media-tile img { transition: transform 220ms ease; }
   .admin-media-tile:hover img { transform: scale(1.035); }
   .admin-media-tile figcaption { display: grid; gap: .35rem; padding: .72rem; }
   .admin-media-tile figcaption p { overflow: hidden; margin: 0; font-size: .78rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
-  .admin-media-tile button { width: fit-content; color: var(--muted-foreground); font-size: .7rem; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: color 150ms ease, text-decoration-color 150ms ease; }
-  .admin-media-tile button:hover { color: var(--foreground); text-decoration-color: currentColor; }
+  .admin-media-tile [data-slot="button"] { width: fit-content; }
 
   .admin-auth-shell { min-height: 100svh; background: radial-gradient(circle at 18% 85%, oklch(.83 .17 112 / .16), transparent 23rem), var(--background); }
   .admin-login-page { display: grid; width: min(100% - 2.5rem, 1040px); min-height: 100svh; grid-template-columns: minmax(0, 1fr) minmax(20rem, 25rem); align-items: center; gap: clamp(2.5rem, 8vw, 8rem); margin: 0 auto; padding: 3rem 0; }
@@ -694,7 +707,6 @@
   }
 
   @media (max-width: 620px) {
-    .admin-page { width: min(100% - 1.5rem, 1480px); padding-top: 1.45rem; }
     .admin-topbar { padding: 0 .75rem; }
     .admin-topbar > div { display: none; }
     .admin-page-header { align-items: start; flex-direction: column; }
@@ -724,6 +736,15 @@
     .admin-dashboard-summary-heading [data-slot="button"] { width: 100%; }
     .admin-period-switch { width: 100%; overflow-x: auto; }
     .admin-menu-category > header { align-items: stretch; flex-direction: column; }
+  }
+}
+
+@media (max-width: 620px) {
+  :root {
+    --admin-page-gutter: .75rem;
+    --admin-page-top: 1.45rem;
+    --admin-page-bottom: 2.25rem;
+    --admin-section-gap: 1.15rem;
   }
 }
 

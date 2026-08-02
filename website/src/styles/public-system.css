@@ -56,7 +56,7 @@ body.public-site .page-shell :is(.hero>div>p:not(.eyebrow),.hero>div>span,.hero>
 
 /* One shape language: surfaces and controls deliberately share the same radius. */
 body.public-site .page-shell :is(.hero,.story,.ending,.custom,.download,.app,.delivery,.delivery-panel,.form,.contact-form,.note,.lead,.support,.strip,.rules,.alternatives,.facts,.map-section,.menu-callout,.menu-banner,.formats-heading,.archive,.levels,.app-banner,.map-panel,.unavailable){border-radius:var(--radius)}
-body.public-site .page-shell :is(.service-card,.ecosystem-card,.grid>article,.benefits article,.steps article,.how-grid article,.restaurant,.item,.format-list article,.values article,.articles article,.offer-list article,.nominals article,.job-list article,.event-list article,.restaurant-grid article){border-radius:var(--radius)}
+body.public-site .page-shell :is(.service-card,.services article,.ecosystem-card,.grid>article,.benefits article,.steps article,.how-grid article,.restaurant,.item,.format-list article,.values article,.articles article,.offer-list article,.nominals article,.job-list article,.event-list article,.restaurant-grid article){border-radius:var(--radius)}
 body.public-site .page-shell :is(.button,.hero a:not(.site-logo),.stores a,.delivery a,.card-actions a,.point-picker,.category-nav a,.filters button,.note a,.lead a,.back,.job-list a,.event-list a,.alternatives a,.rules a,.map-link,.site-menu-button,.footer-cta a,.lead-form :is(input,textarea,button),.form :is(input,textarea,button),.contact-form :is(input,textarea,button)){min-height:46px;border-radius:var(--radius)!important}
 body.public-site .page-shell :is(.button,.hero a:not(.site-logo),.stores a,.delivery a,.card-actions a,.note a,.lead a,.rules a,.map-link,.job-list a,.event-list a,.alternatives a,.lead-form button,.form button,.contact-form button){display:inline-flex;align-items:center;justify-content:center;gap:0;border:1px solid transparent;background:var(--moss);color:#fff;font-size:12px;font-weight:800;line-height:1.1;text-decoration:none;transition:transform .2s ease,background-color .2s ease,color .2s ease,border-color .2s ease,box-shadow .2s ease}
 body.public-site .page-shell :is(.button,.hero a:not(.site-logo),.stores a,.delivery a,.card-actions a,.note a,.lead a,.rules a,.map-link,.job-list a,.event-list a,.alternatives a,.lead-form button,.form button,.contact-form button):hover{box-shadow:0 9px 18px rgba(31,59,46,.14);transform:translateY(-2px);background:#294b3a}
@@ -83,8 +83,8 @@ body.public-site .page-shell :is(.story,.ending,.custom,.download,.app,.lead,.ru
 body.public-site .page-shell :is(.delivery,.delivery-panel,.form,.contact-form,.note,.support,.strip,.levels){background:var(--moss);color:#fff}
 body.public-site .page-shell :is(.delivery,.delivery-panel,.form,.contact-form,.note,.support,.strip,.levels) :is(h1,h2,h3,p,span){color:inherit}
 body.public-site .page-shell :is(.delivery,.delivery-panel,.form,.contact-form,.note,.support,.strip,.levels) .eyebrow{color:var(--lime)}
-body.public-site .page-shell :is(.service-card,.ecosystem-card,.grid>article,.benefits article,.steps article,.how-grid article,.restaurant,.item,.format-list article,.values article,.articles article,.offer-list article,.nominals article,.job-list article,.event-list article){border:1px solid var(--line);box-shadow:none;overflow:hidden}
-body.public-site .page-shell :is(.service-card,.ecosystem-card,.grid>article,.benefits article,.steps article,.how-grid article,.restaurant,.item,.format-list article,.values article,.articles article,.offer-list article,.nominals article,.job-list article,.event-list article):hover{border-color:#c8d5b9;box-shadow:0 14px 24px rgba(35,30,27,.055)}
+body.public-site .page-shell :is(.service-card,.services article,.ecosystem-card,.grid>article,.benefits article,.steps article,.how-grid article,.restaurant,.item,.format-list article,.values article,.articles article,.offer-list article,.nominals article,.job-list article,.event-list article){border:1px solid var(--line);box-shadow:none;overflow:hidden}
+body.public-site .page-shell :is(.service-card,.services article,.ecosystem-card,.grid>article,.benefits article,.steps article,.how-grid article,.restaurant,.item,.format-list article,.values article,.articles article,.offer-list article,.nominals article,.job-list article,.event-list article):hover{border-color:#c8d5b9;box-shadow:0 14px 24px rgba(35,30,27,.055)}
 body.public-site .page-shell .restaurant{background:#fffdf9}
 body.public-site .page-shell .item{background:#fffdf9}
 body.public-site .page-shell .item-image{overflow:hidden;border-radius:var(--radius)}
@@ -114,7 +114,6 @@ body.public-site .home-page .product-card{border-color:var(--line)}
 body.public-site .home-page .product-card-image{border-radius:calc(var(--radius) - 7px)!important}
 body.public-site .home-page .product-card-image span{border-radius:var(--radius)!important}
 body.public-site .home-page .place-filters button{border-radius:var(--radius)!important}
-body.public-site .home-page .menu-all b{border-radius:var(--radius)!important}
 body.public-site .home-page .bento-card:focus-visible,body.public-site .home-page .menu-tile:focus-visible,body.public-site .home-page .journal-card:focus-visible{outline:3px solid var(--lime);outline-offset:3px}
 
 /* Template-specific leakage safeguards: these pages used to style raw header/footer/body selectors. */
@@ -129,7 +128,7 @@ body.public-site .page-shell .shell{max-width:none;margin:0;overflow:visible;bor
   body.public-site .page-shell .hero{min-height:590px;margin:0 var(--mobile-gutter);border-radius:var(--radius)}
   body.public-site .page-shell :is(.story,.ending,.custom,.download,.app,.delivery,.delivery-panel,.form,.contact-form,.note,.lead,.support,.strip,.rules,.alternatives,.facts,.map-section,.menu-callout,.menu-banner,.archive,.levels,.app-banner,.unavailable){margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter);border-radius:var(--radius)}
   body.public-site .page-shell :is(.directory,.catalog,.services,.ready,.benefits,.how,.events,.offers,.proof,.vacancies,.articles,.nominals,.road){padding:72px var(--mobile-gutter)}
-  body.public-site .page-shell :is(.service-card,.ecosystem-card,.grid>article,.benefits article,.steps article,.how-grid article,.restaurant,.item,.format-list article,.values article,.articles article,.offer-list article,.nominals article,.job-list article,.event-list article){border-radius:var(--radius)}
+  body.public-site .page-shell :is(.service-card,.services article,.ecosystem-card,.grid>article,.benefits article,.steps article,.how-grid article,.restaurant,.item,.format-list article,.values article,.articles article,.offer-list article,.nominals article,.job-list article,.event-list article){border-radius:var(--radius)}
   body.public-site .page-shell .site-footer{margin-top:12px}
 }
 @media(max-width:700px){
@@ -138,4 +137,41 @@ body.public-site .page-shell .shell{max-width:none;margin:0;overflow:visible;bor
   body.public-site .page-shell .hero>div{padding:46px 25px}
   body.public-site .page-shell :is(.directory,.catalog,.services,.ready,.benefits,.how,.events,.offers,.proof,.vacancies,.articles,.nominals,.road){padding:68px var(--mobile-gutter)}
   body.public-site .page-shell :is(.story,.ending,.custom,.download,.app,.delivery,.delivery-panel,.form,.contact-form,.note,.lead,.support,.strip,.rules,.alternatives,.facts,.map-section,.menu-callout,.menu-banner,.archive,.levels,.app-banner,.unavailable){margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter)}
+}
+
+/* Non-reference routes consume the same mobile edge and card rhythm as menu,
+   coffee and restaurants. Route scoping keeps the reference templates intact. */
+@media(max-width:980px){
+  body.public-site .public-main[data-path="/about"]> :is(.about-opening,.about-craft,.about-links),
+  body.public-site .public-main[data-path="/app"]> :is(.app-opening,.app-flow,.app-download),
+  body.public-site .public-main[data-path="/bakery"]> :is(.bakery-opening,.cake-order),
+  body.public-site .public-main[data-path="/events"]>.events-intro{
+    width:auto;
+    margin-right:var(--mobile-gutter);
+    margin-left:var(--mobile-gutter);
+  }
+
+  body.public-site .public-main[data-path="/contacts"] .contact-grid{
+    gap:10px;
+    padding-right:var(--mobile-gutter);
+    padding-left:var(--mobile-gutter);
+  }
+
+  body.public-site .public-main[data-path="/corporate"] .services>div{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  body.public-site .public-main[data-path="/corporate"] .services article{
+    min-width:0;
+  }
+
+  body.public-site .public-main[data-path="/corporate"] .services h3{
+    overflow-wrap:anywhere;
+  }
+}
+
+@media(max-width:520px){
+  body.public-site .public-main[data-path="/corporate"] .services>div{
+    grid-template-columns:1fr;
+  }
 }

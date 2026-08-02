@@ -3,10 +3,11 @@ interface Props {
   type: 'CONTACT' | 'RESERVATION' | 'FRANCHISE' | 'BANQUET' | 'JOB'
   submitLabel?: string
   subjectLabel?: string
+  source?: string
 }
-const { type, submitLabel = 'Отправить заявку', subjectLabel } = Astro.props
+const { type, submitLabel = 'Отправить заявку', subjectLabel, source } = Astro.props
 ---
-<form class="lead-form" data-lead-form data-lead-type={type} novalidate>
+<form class="lead-form" data-lead-form data-lead-type={type} data-lead-source={source} novalidate>
   <label>Ваше имя<input name="name" autocomplete="name" required placeholder="Как к вам обращаться" /></label>
   <label>Телефон<input name="phone" autocomplete="tel" inputmode="tel" required placeholder="+7" /></label>
   <label>E-mail<input name="email" autocomplete="email" type="email" placeholder="name@mail.ru" /></label>
@@ -14,7 +15,7 @@ const { type, submitLabel = 'Отправить заявку', subjectLabel } = 
   <label class="lead-form-message">Комментарий<textarea name="message" placeholder="Расскажите, чем помочь"></textarea></label>
   <button type="submit">{submitLabel} <b>→</b></button>
   <p class="lead-form-status" aria-live="polite"></p>
-  <small>Нажимая кнопку, вы соглашаетесь с обработкой персональных данных.</small>
+  <small>Нажимая кнопку, вы соглашаетесь с <a href="/consent">обработкой персональных данных</a>.</small>
 </form>
 <script>
   const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
@@ -26,13 +27,15 @@ const { type, submitLabel = 'Отправить заявку', subjectLabel } = 
       if (!form.reportValidity()) return
       const values = new FormData(form)
       const subject = String(values.get('subject') ?? '').trim()
+      const source = form.dataset.leadSource?.trim()
+      const metadata = { ...(source ? { source } : {}), ...(subject ? { subject } : {}) }
       const payload = {
         type: form.dataset.leadType,
         name: String(values.get('name') ?? '').trim(),
         phone: String(values.get('phone') ?? '').trim() || null,
         email: String(values.get('email') ?? '').trim() || null,
         message: String(values.get('message') ?? '').trim() || null,
-        metadata: subject ? { subject } : null,
+        metadata: Object.keys(metadata).length ? metadata : null,
       }
       if (button) button.disabled = true
       if (status) status.textContent = 'Отправляем…'
@@ -50,5 +53,5 @@ const { type, submitLabel = 'Отправить заявку', subjectLabel } = 
   })
 </script>
 <style>
-  .lead-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}.lead-form label{display:grid;gap:6px;font:600 11px Montserrat,Arial,sans-serif}.lead-form input,.lead-form textarea{width:100%;border:1px solid rgba(32,56,43,.22);border-radius:10px;padding:14px;background:#fff;color:#20251f;font:14px Montserrat,Arial,sans-serif}.lead-form textarea{min-height:104px;resize:vertical}.lead-form-message,.lead-form button,.lead-form-status,.lead-form small{grid-column:1/-1}.lead-form button{justify-self:start;border:0;border-radius:99px;padding:16px 20px;background:#b9dc3d;color:#20382b;font:800 12px Montserrat,Arial,sans-serif;cursor:pointer}.lead-form button:disabled{opacity:.55;cursor:wait}.lead-form-status{min-height:18px;margin:0;font:600 12px Montserrat,Arial,sans-serif}.lead-form small{color:rgba(32,56,43,.7);font-size:10px;line-height:1.4}@media(max-width:600px){.lead-form{grid-template-columns:1fr}.lead-form-message,.lead-form button,.lead-form-status,.lead-form small{grid-column:auto}}
+  .lead-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}.lead-form label{display:grid;gap:6px;font:600 11px Montserrat,Arial,sans-serif}.lead-form input,.lead-form textarea{width:100%;border:1px solid rgba(32,56,43,.22);border-radius:10px;padding:14px;background:#fff;color:#20251f;font:14px Montserrat,Arial,sans-serif}.lead-form textarea{min-height:104px;resize:vertical}.lead-form-message,.lead-form button,.lead-form-status,.lead-form small{grid-column:1/-1}.lead-form button{justify-self:start;border:0;border-radius:99px;padding:16px 20px;background:#b9dc3d;color:#20382b;font:800 12px Montserrat,Arial,sans-serif;cursor:pointer}.lead-form button:disabled{opacity:.55;cursor:wait}.lead-form-status{min-height:18px;margin:0;font:600 12px Montserrat,Arial,sans-serif}.lead-form small{color:rgba(32,56,43,.7);font-size:10px;line-height:1.4}.lead-form small a{color:inherit;text-decoration-thickness:1px;text-underline-offset:2px}@media(max-width:600px){.lead-form{grid-template-columns:1fr}.lead-form-message,.lead-form button,.lead-form-status,.lead-form small{grid-column:auto}}
 </style>

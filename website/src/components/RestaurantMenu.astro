@@ -1,6 +1,7 @@
 ---
 import DishDialog from './DishDialog.astro'
 import type { RestaurantMenuResponse, RestaurantSummary } from '@chashka-coffee/contracts'
+import { formatMenuPortion } from '../lib/menu-portion'
 
 interface Props {
   data: RestaurantMenuResponse | null
@@ -19,7 +20,7 @@ const allergenLabel = (allergen:string) => ({egg:'Яйцо',gluten:'Глютен
 const fallbackImages = ['/images/home-breakfast.png','/images/home-hero-v1.png','/images/home-morning-v2.png','/images/restaurants-hero.png']
 const dishPayload = (item:RestaurantMenuResponse['categories'][number]['items'][number], categoryName:string, imageUrl:string) => JSON.stringify({
   name:item.name, categoryName, description:item.description ?? '', ingredients:item.ingredients ?? '', allergens:item.allergens.map(allergenLabel), dietaryMarks:item.dietaryMarks.map(dietaryLabel),
-  weight:item.weightGrams ? `${item.weightGrams} г` : '1 порция', price:money(item.priceKopecks), calories:item.calories === null ? null : String(item.calories), proteins:item.proteins === null ? null : `${item.proteins} г`, fats:item.fats === null ? null : `${item.fats} г`, carbohydrates:item.carbohydrates === null ? null : `${item.carbohydrates} г`, imageUrl, badge:badgeLabel(item.marketingBadge), badgeTone:badgeTone(item.marketingBadge),
+  weight:formatMenuPortion(item.weightGrams, item.measurementUnit), price:money(item.priceKopecks), calories:item.calories === null ? null : String(item.calories), proteins:item.proteins === null ? null : `${item.proteins} г`, fats:item.fats === null ? null : `${item.fats} г`, carbohydrates:item.carbohydrates === null ? null : `${item.carbohydrates} г`, imageUrl, badge:badgeLabel(item.marketingBadge), badgeTone:badgeTone(item.marketingBadge),
 })
 ---
 
@@ -49,12 +50,12 @@ const dishPayload = (item:RestaurantMenuResponse['categories'][number]['items'][
       const searchValue = [category.name, item.name, item.description, item.ingredients].filter(Boolean).join(' ')
       return <button class="menu-item" type="button" data-menu-item data-menu-search-value={searchValue} data-dish-trigger data-dish={dishPayload(item,category.name,imageUrl)} aria-haspopup="dialog">
         <div class="menu-item-image"><img src={imageUrl} alt="" loading="lazy" />{badge && <span class={`menu-badge menu-badge--${badgeTone(item.marketingBadge)}`}>{badge}</span>}</div>
-        <div class="menu-item-copy"><small>{category.name}</small><h3>{item.name}</h3><div><span>{item.weightGrams ? `${item.weightGrams} г` : '1 порция'}</span><strong>{money(item.priceKopecks)}</strong></div></div>
+        <div class="menu-item-copy"><small>{category.name}</small><h3>{item.name}</h3><div><span>{formatMenuPortion(item.weightGrams, item.measurementUnit)}</span><strong>{money(item.priceKopecks)}</strong></div></div>
       </button>
     })}</div></section>)}<div class="menu-empty" data-menu-empty hidden><h2>Ничего не нашли</h2><p>Попробуйте другое название или выберите категорию.</p></div></div>
   </div>
   <DishDialog />
-</div> : <section class="menu-unavailable"><p>Меню</p><h1>Не удалось загрузить данные.</h1><span>Запустите локальный API и обновите страницу.</span><a href="/restaurants">К ресторанам</a></section>}
+</div> : <section class="menu-unavailable"><p>Меню</p><h1>Меню временно недоступно.</h1><span>Попробуйте обновить страницу немного позже или выберите другой ресторан.</span><a href="/restaurants">К ресторанам</a></section>}
 
 <style>
   :global(html:has([data-restaurant-menu])){scroll-behavior:smooth}

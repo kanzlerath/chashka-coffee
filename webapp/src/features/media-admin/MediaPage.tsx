@@ -29,11 +29,11 @@ export function MediaPage() {
 
   return <section className="admin-page">
     <AdminPageHeader eyebrow="Публикация" title="Медиатека" description="Загружайте изображения один раз и используйте их в ресторанах, блюдах и материалах." actions={<><Input ref={inputRef} accept="image/jpeg,image/png,image/webp,image/avif" className="sr-only" disabled={upload.isPending} type="file" onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file) }} /><Button type="button" onClick={() => inputRef.current?.click()} disabled={upload.isPending}>{upload.isPending ? 'Загружаем…' : 'Загрузить файл'}</Button></>} />
-    <p className="text-xs text-muted-foreground">JPEG, PNG, WebP или AVIF. Файл появляется здесь только после подтверждения хранилищем.</p>
-    {upload.isError && <p className="text-sm text-destructive">{upload.error instanceof Error ? upload.error.message : 'Не удалось загрузить изображение.'}</p>}
-    {assets.isPending && <p className="text-sm text-muted-foreground">Загружаем медиатеку…</p>}
-    {assets.isError && <p className="text-sm text-destructive">Не удалось загрузить медиатеку.</p>}
+    <p className="admin-form-intro">JPEG, PNG, WebP или AVIF. Файл появляется здесь только после подтверждения хранилищем.</p>
+    {upload.isError && <p className="admin-state-message admin-state-error">{upload.error instanceof Error ? upload.error.message : 'Не удалось загрузить изображение.'}</p>}
+    {assets.isPending && <p className="admin-state-message">Загружаем медиатеку…</p>}
+    {assets.isError && <p className="admin-state-message admin-state-error">Не удалось загрузить медиатеку.</p>}
     {!assets.isPending && !assets.isError && assets.data?.assets.length === 0 && <Card><CardContent className="py-12 text-center text-sm text-muted-foreground">Здесь появятся подтверждённые изображения.</CardContent></Card>}
-    <div className="admin-media-grid">{assets.data?.assets.map((asset) => <figure key={asset.id} className="admin-media-tile"><img src={asset.publicUrl} alt="" className="aspect-square w-full object-cover" loading="lazy" /><figcaption><p title={asset.filename}>{asset.filename}</p><button type="button" onClick={() => void navigator.clipboard.writeText(asset.publicUrl)}>Скопировать ссылку</button></figcaption></figure>)}</div>
+    <div className="admin-media-grid">{assets.data?.assets.map((asset) => <figure key={asset.id} className="admin-media-tile"><img src={asset.publicUrl} alt="" className="aspect-square w-full object-cover" loading="lazy" /><figcaption><p title={asset.filename}>{asset.filename}</p><Button size="xs" type="button" variant="outline" onClick={() => void navigator.clipboard.writeText(asset.publicUrl)}>Скопировать ссылку</Button></figcaption></figure>)}</div>
   </section>
 }

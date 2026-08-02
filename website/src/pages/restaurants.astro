@@ -16,7 +16,7 @@ const fallbackImages=['/images/restaurants-hero.png','/images/home-hero-v1.png',
     <header class="restaurants-heading"><h1>Рестораны</h1></header>
     <RestaurantMap restaurants={restaurants} apiKey={yandexMapsApiKey} />
     <section class="restaurants-catalog" aria-label="Список ресторанов">
-      {apiUnavailable ? <div class="restaurants-error"><h3>Список пока недоступен</h3><p>Запустите локальный API командой <code>bun run dev:backend</code> и обновите страницу.</p></div> : <div class="restaurant-grid">{restaurants.map((restaurant,index)=><article class="restaurant-card">
+      {apiUnavailable ? <div class="restaurants-error"><h3>Список пока недоступен</h3><p>Не удалось загрузить рестораны. Попробуйте обновить страницу немного позже.</p></div> : <div class="restaurant-grid">{restaurants.map((restaurant,index)=><article class="restaurant-card">
         <a class="restaurant-card-image" href={`/restaurants/${restaurant.slug}`}><img src={restaurant.coverImageUrl ?? fallbackImages[index % fallbackImages.length]} alt="" loading="lazy" /></a>
         <div><h3>{restaurant.name.replace('Чашка кофе — ', '')}</h3><p>{restaurant.address}</p><span class="restaurant-hours">{restaurant.openingHoursLabel}</span><nav class:list={{ 'is-single': !restaurant.hasMenu }}><a href={`/restaurants/${restaurant.slug}`}>Подробнее</a>{restaurant.hasMenu && <a class="restaurant-menu-link" href={`/restaurants/${restaurant.slug}/menu`}>Меню</a>}</nav></div>
       </article>)}</div>}

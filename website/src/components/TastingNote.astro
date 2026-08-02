@@ -1,0 +1,89 @@
+---
+const { note } = Astro.props as { note: string }
+
+const normalizedNote = note.trim().toLocaleLowerCase('ru-RU')
+
+type NoteIcon =
+  | 'apricot'
+  | 'peach'
+  | 'apple'
+  | 'plum'
+  | 'berry'
+  | 'citrus'
+  | 'chocolate'
+  | 'hazelnut'
+  | 'caramel'
+  | 'tea'
+  | 'floral'
+  | 'coffee'
+  | 'soft'
+  | 'spark'
+
+type NoteProfile = {
+  icon: NoteIcon
+  accent: string
+  tint: string
+}
+
+const noteProfiles: Array<{ pattern: RegExp; profile: NoteProfile }> = [
+  { pattern: /абрикос/, profile: { icon: 'apricot', accent: '#d87524', tint: '#f8e4cf' } },
+  { pattern: /персик/, profile: { icon: 'peach', accent: '#d96757', tint: '#f9dfd8' } },
+  { pattern: /яблок/, profile: { icon: 'apple', accent: '#6f8f2b', tint: '#e7edd5' } },
+  { pattern: /слив/, profile: { icon: 'plum', accent: '#79528d', tint: '#ebe0ef' } },
+  { pattern: /ягод|вишн|клубник|малин|смородин|черник|ежевик/, profile: { icon: 'berry', accent: '#a93f57', tint: '#f2dce1' } },
+  { pattern: /бергамот|цитрус|лимон|апельсин|мандарин|грейпфрут/, profile: { icon: 'citrus', accent: '#b68b13', tint: '#f5ebc8' } },
+  { pattern: /шоколад|какао/, profile: { icon: 'chocolate', accent: '#74462f', tint: '#eaded7' } },
+  { pattern: /фундук|орех|миндал/, profile: { icon: 'hazelnut', accent: '#8a6236', tint: '#eee2d1' } },
+  { pattern: /карамел|ирис/, profile: { icon: 'caramel', accent: '#b66c22', tint: '#f4e0c6' } },
+  { pattern: /чай/, profile: { icon: 'tea', accent: '#657d35', tint: '#e3e9d6' } },
+  { pattern: /цвет|жасмин|роза/, profile: { icon: 'floral', accent: '#9a617e', tint: '#efe0e8' } },
+  { pattern: /кофе/, profile: { icon: 'coffee', accent: '#6e4937', tint: '#e8ddd7' } },
+  { pattern: /сливоч|нежн|ванил/, profile: { icon: 'soft', accent: '#a77b45', tint: '#f2e8d9' } },
+]
+
+const fallbackProfile: NoteProfile = { icon: 'spark', accent: '#61794f', tint: '#e4eadf' }
+const profile = noteProfiles.find(({ pattern }) => pattern.test(normalizedNote))?.profile ?? fallbackProfile
+---
+
+<li
+  class="tasting-note"
+  style={`--note-accent:${profile.accent};--note-tint:${profile.tint}`}
+>
+  <span class="tasting-note-icon" aria-hidden="true">
+    {profile.icon === 'apricot' && <svg viewBox="0 0 48 48"><path d="M24 12c-9.3 0-16 7.1-16 16.1C8 37.3 15 43 24 43s16-5.7 16-14.9C40 19.1 33.3 12 24 12Z"/><path d="M24 13c2.4-5.3 6.7-7.9 12.8-7.7-2 5.2-6.1 8.2-12.8 7.7Z"/><path d="M24 15c-1.7 7.5-1.7 17.3 0 25"/></svg>}
+    {profile.icon === 'peach' && <svg viewBox="0 0 48 48"><path d="M24 13.3c-8.7-4.1-17 3.1-16.4 13.5C8.1 36.2 15.3 43 24 43s15.9-6.8 16.4-16.2C41 16.4 32.7 9.2 24 13.3Z"/><path d="M24 14c2.5-5.9 7.1-8.6 13.4-8-2.4 5.4-6.8 8.1-13.4 8Z"/><path d="M24 15c4.1 7.5 4.1 16.6 0 25"/></svg>}
+    {profile.icon === 'apple' && <svg viewBox="0 0 48 48"><path d="M24 15c-5.9-4.5-15-1.3-16 8.6C7 33.1 13.9 42 20.5 42c1.5 0 2.3-.7 3.5-.7s2 .7 3.5.7C34.1 42 41 33.1 40 23.6 39 13.7 29.9 10.5 24 15Z"/><path d="M24 14c.2-5.2 3-8.6 8.4-10"/><path d="M24 13c-3.6-3.6-7.6-4.4-12.1-2.4 3.3 3.4 7.3 4.2 12.1 2.4Z"/></svg>}
+    {profile.icon === 'plum' && <svg viewBox="0 0 48 48"><ellipse cx="24" cy="28" rx="14.5" ry="15"/><path d="M24 13c.5-5.3 3.7-8.4 9.5-9.2"/><path d="M24.5 12.5c-4.8-3.6-9.4-3.8-13.8-.5 4.3 3.2 8.9 3.3 13.8.5Z"/></svg>}
+    {profile.icon === 'berry' && <svg viewBox="0 0 48 48"><circle cx="17" cy="23" r="8"/><circle cx="31" cy="23" r="8"/><circle cx="24" cy="34" r="8"/><path d="M24 14c-1.6-5.3-5.2-8-10.8-8.1 1.5 5.1 5.1 7.8 10.8 8.1Zm0 0c1.8-5.3 5.5-7.9 11.1-7.7-1.7 5-5.4 7.6-11.1 7.7Z"/></svg>}
+    {profile.icon === 'citrus' && <svg viewBox="0 0 48 48"><circle cx="24" cy="26" r="16"/><circle cx="24" cy="26" r="12"/><path d="m24 26 8.5-8.5M24 26l-8.5-8.5M24 26l8.5 8.5M24 26l-8.5 8.5M24 26V14m0 12v12"/></svg>}
+    {profile.icon === 'chocolate' && <svg viewBox="0 0 48 48"><path d="M9 10h30v28H9z"/><path d="M19 10v28m10-28v28M9 24h30"/><path d="m31 10 8 8"/></svg>}
+    {profile.icon === 'hazelnut' && <svg viewBox="0 0 48 48"><path d="M13 22c0 11 4.6 19 11 19s11-8 11-19c-5.3-4.1-16.7-4.1-22 0Z"/><path d="M15 19c2-7.4 5-11.1 9-11.1S31 11.6 33 19M24 8V4"/></svg>}
+    {profile.icon === 'caramel' && <svg viewBox="0 0 48 48"><path d="m15 16-9-6 3 11-3 11 9-6m18-10 9-6-3 11 3 11-9-6"/><rect x="14" y="13" width="20" height="16" rx="5"/></svg>}
+    {profile.icon === 'tea' && <svg viewBox="0 0 48 48"><path d="M9 17h27v11c0 7-5.7 12-13.5 12S9 35 9 28V17Z"/><path d="M36 21h3.5a5.5 5.5 0 0 1 0 11H35M17 13c-2.6-3-2.6-6 0-9m10 9c-2.6-3-2.6-6 0-9"/></svg>}
+    {profile.icon === 'floral' && <svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="5"/><circle cx="24" cy="12" r="7"/><circle cx="36" cy="24" r="7"/><circle cx="24" cy="36" r="7"/><circle cx="12" cy="24" r="7"/></svg>}
+    {profile.icon === 'coffee' && <svg viewBox="0 0 48 48"><path d="M33.5 6.5c8.5 8.5 6.2 22.9-3.8 32.9S3.9 42 6.6 29.7c2.3-10.6 16.3-33.8 26.9-23.2Z"/><path d="M34 7C26 15 16.7 21.7 7 27"/></svg>}
+    {profile.icon === 'soft' && <svg viewBox="0 0 48 48"><path d="M11 31c0-6 5-9 10.4-9.8C18.5 16.9 20.9 9 27 9c5.4 0 8 5.3 6.4 10 4.8.9 7.6 4.5 7.6 9.3C41 35 35.9 39 29 39H18c-4.2 0-7-3.1-7-8Z"/><path d="M20 22c3.6 1.7 7.8 1.1 12.7-1.8"/></svg>}
+    {profile.icon === 'spark' && <svg viewBox="0 0 48 48"><path d="M24 6c1.6 9.7 6.3 15.7 16 18-9.7 2.3-14.4 8.3-16 18-1.6-9.7-6.3-15.7-16-18 9.7-2.3 14.4-8.3 16-18Z"/><path d="M38 5c.6 3.7 2.3 6 6 7-3.7 1-5.4 3.3-6 7-.6-3.7-2.3-6-6-7 3.7-1 5.4-3.3 6-7Z"/></svg>}
+  </span>
+  <span class="tasting-note-label">{note}</span>
+</li>
+
+<style>
+  .tasting-note{display:flex;min-width:0;align-items:center;gap:5px;color:#706a62;white-space:nowrap;transition:color .2s ease}
+  .tasting-note-icon{display:grid;width:27px;height:27px;flex:0 0 27px;place-items:center;border-radius:50%;background:#ebe7df;color:#736d65;transition:background-color .2s ease,color .2s ease,transform .25s cubic-bezier(.22,1,.36,1)}
+  .tasting-note-icon svg{width:18px;height:18px;overflow:visible;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .tasting-note-label{min-width:0;font-size:10px;line-height:1.2;transition:color .2s ease}
+  :global(.product-card:hover) .tasting-note,
+  :global(.product-card:focus-visible) .tasting-note{color:var(--note-accent)}
+  :global(.product-card:hover) .tasting-note-icon,
+  :global(.product-card:focus-visible) .tasting-note-icon{background:var(--note-tint);color:var(--note-accent);transform:rotate(-4deg) scale(1.06)}
+  @media(max-width:720px){
+    .tasting-note{gap:4px}
+    .tasting-note-icon{width:25px;height:25px;flex-basis:25px}
+    .tasting-note-icon svg{width:16px;height:16px}
+    .tasting-note-label{font-size:9px}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .tasting-note,.tasting-note-icon,.tasting-note-label{transition:none}
+  }
+</style>

@@ -3,6 +3,7 @@ import PageShell from '../layouts/PageShell.astro';
 import DishDialog from '../components/DishDialog.astro';
 import JournalCard from '../components/JournalCard.astro';
 import type { ContentEntry, HomepagePublicResponse, RestaurantSummary } from '@chashka-coffee/contracts';
+import { formatMenuPortion } from '../lib/menu-portion';
 
 const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
 let homepage: HomepagePublicResponse | null = null
@@ -40,7 +41,6 @@ const safeMenuHref = (href: string | null | undefined) => {
 const slides = (homepage?.slides.length ? homepage.slides : defaultSlides).map((slide) => ({ ...slide, ctaUrl: safeMenuHref(slide.ctaUrl) }))
 const productFallbacks = ['/images/home-breakfast.png', '/images/home-hero-v1.png', '/images/home-morning-v2.png', '/images/restaurants-hero.png']
 const badgeLabel = (value: string | null | undefined) => ({ NEW: 'Новинка', HIT: 'Хит', SEASONAL: 'Сезонное', SPECIAL: 'Специальное' }[value ?? ''] ?? value ?? null)
-const outputLabel = (weightGrams: number | null) => weightGrams ? `${weightGrams} г` : '1 порция'
 const defaultBestsellers = [
   { slug: 'avocado-toast', name: 'Тост с авокадо', price: '590 ₽', output: '260 г', badge: 'Хит', imageUrl: productFallbacks[0], categoryName: 'Завтраки', description: 'Хрустящий хлеб, авокадо и яйцо пашот.', ingredients: 'Хлеб на закваске, авокадо, яйцо, лимонный сок.', allergens: ['Глютен', 'Яйцо'], dietaryMarks: ['Вегетарианское'], calories: '520', proteins: '18 г', fats: '27 г', carbohydrates: '46 г' },
   { slug: 'cappuccino', name: 'Капучино', price: '290 ₽', output: '300 мл', badge: 'Классика', imageUrl: productFallbacks[1], categoryName: 'Кофе', description: 'Эспрессо и нежная молочная текстура.', ingredients: 'Кофе, молоко.', allergens: ['Молочный продукт'], dietaryMarks: [], calories: null, proteins: null, fats: null, carbohydrates: null },
@@ -60,7 +60,7 @@ const bestsellers = homepage?.bestsellers.length
       slug: entry.item.slug,
       name: entry.item.name,
       price: `${Math.round(entry.item.priceKopecks / 100)} ₽`,
-      output: outputLabel(entry.item.weightGrams),
+      output: formatMenuPortion(entry.item.weightGrams, entry.item.measurementUnit),
       badge: badgeLabel(entry.badge ?? entry.item.marketingBadge),
       badgeTone: badgeTone(badgeLabel(entry.badge ?? entry.item.marketingBadge)),
       imageUrl: entry.item.imageUrl ?? productFallbacks[index % productFallbacks.length],
@@ -174,7 +174,7 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
         <a class="menu-tile menu-tile-hot" href="/menu"><span>Горячие<br />блюда</span><img class="menu-tile-art menu-art-hot" src="/images/hot-dish.svg" alt="" aria-hidden="true" /></a>
         <a class="menu-tile menu-tile-salad" href="/menu"><span>Закуски<br />и салаты</span><img class="menu-tile-art menu-art-salad" src="/images/appetit.svg" alt="" aria-hidden="true" /></a>
         <a class="menu-tile menu-tile-dessert" href="/bakery"><span>Десерты<br />и выпечка</span><img class="menu-tile-art menu-art-dessert" src="/images/desserts.svg" alt="" aria-hidden="true" /></a>
-        <a class="menu-all" href="/menu"><span>Посмотреть все блюда</span><b aria-hidden="true">›</b></a>
+        <a class="menu-all" href="/menu"><span>Посмотреть все блюда</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-5-5 5 5-5 5" /></svg></a>
       </div>
     </section>
 
@@ -377,7 +377,8 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
   .day-stops{align-self:stretch;display:grid;grid-template-rows:repeat(3,1fr)}
   .day-stops a{align-items:center;min-height:0}
   .menu-tile,.menu-all{border-radius:var(--home-radius)}
-  .menu-all b{width:auto;height:auto;border-radius:0;background:transparent;color:#6f902b;font-size:42px;line-height:1;transform:translateY(-2px)}
+  .menu-all svg{display:block;flex:0 0 auto;width:46px;height:46px;padding:11px;border-radius:50%;background:#1f3b2e;color:#fff;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8;transition:background-color .22s ease,transform .22s ease}
+  .menu-all:hover svg{background:#315b45;transform:translateX(3px)}
   .menu-tile-art{position:absolute;z-index:0;display:block;height:auto;pointer-events:none;transition:transform .35s cubic-bezier(.22,1,.36,1)}
   .menu-art-coffee{right:-12%;bottom:-15%;width:82%;transform:rotate(-8deg)}
   .menu-art-seasonal{right:-12%;bottom:-17%;width:86%;transform:rotate(7deg)}
@@ -419,6 +420,7 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
     .story-progress{gap:5px}.story-progress button{width:24px}.story-progress button.is-active{width:42px}
     .story-counter{font-size:10px}.story-arrows button{width:27px;height:27px}
     .home-section{padding-right:var(--mobile-gutter);padding-left:var(--mobile-gutter)}
+    .menu-all svg{width:43px;height:43px;padding:10px}
     .bestseller-list,.journal-list{margin-right:calc(var(--mobile-gutter) * -1);margin-left:calc(var(--mobile-gutter) * -1);padding-right:var(--mobile-gutter);padding-left:var(--mobile-gutter)}
     .journal-list :global(.news-card){flex:0 0 95%;scroll-snap-align:start}
     .home-bento{grid-template-columns:repeat(2,minmax(0,1fr));margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter)}

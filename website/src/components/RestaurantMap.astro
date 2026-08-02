@@ -7,7 +7,7 @@ const points = restaurants.flatMap((restaurant) => restaurant.latitude != null &
 <section class="restaurant-map" data-restaurant-map data-api-key={apiKey} data-points={JSON.stringify(points)} aria-label="Карта ресторанов">
   <div class="restaurant-map-canvas" data-map-canvas></div>
   <div class="restaurant-map-fallback" data-map-fallback>
-    <div><p>Рестораны на карте</p><h2>{points.length ? `${points.length} точек с координатами` : 'Координаты появятся из админки'}</h2><span>{apiKey ? 'Карта загружается…' : 'Добавьте PUBLIC_YANDEX_MAPS_API_KEY в website/.env для интерактивной карты.'}</span></div>
+    <div><p>Рестораны на карте</p><h2>{points.length ? `${points.length} точек с координатами` : 'Адреса доступны в списке ниже'}</h2><span data-map-status>{apiKey && points.length ? 'Карта загружается…' : 'Интерактивная карта временно недоступна. Выберите ресторан в списке ниже.'}</span></div>
   </div>
 </section>
 
@@ -19,19 +19,22 @@ const points = restaurants.flatMap((restaurant) => restaurant.latitude != null &
   type MapPoint = { slug:string; name:string; address:string; latitude:number; longitude:number }
   declare global { interface Window { ymaps?: { ready(callback:()=>void):void; Map:new(element:HTMLElement,state:unknown,options?:unknown)=>{geoObjects:{add(object:unknown):void};setBounds(bounds:number[][],options?:unknown):void;destroy():void}; Placemark:new(coordinates:number[],properties:unknown,options?:unknown)=>unknown } } }
   document.querySelectorAll<HTMLElement>('[data-restaurant-map]').forEach((root) => {
-    const apiKey=root.dataset.apiKey;const canvas=root.querySelector<HTMLElement>('[data-map-canvas]');const fallback=root.querySelector<HTMLElement>('[data-map-fallback]')
+    const apiKey=root.dataset.apiKey;const canvas=root.querySelector<HTMLElement>('[data-map-canvas]');const fallback=root.querySelector<HTMLElement>('[data-map-fallback]');const status=root.querySelector<HTMLElement>('[data-map-status]')
     let points:MapPoint[]=[];try{points=JSON.parse(root.dataset.points??'[]') as MapPoint[]}catch{}
     if(!apiKey||!canvas||!points.length)return
+    const showUnavailable=()=>{if(status)status.textContent='Интерактивная карта временно недоступна. Выберите ресторан в списке ниже.'}
     const initialize=()=>window.ymaps?.ready(()=>{
-      if(!window.ymaps)return
-      const center=getMapCenter(points)
-      const map=new window.ymaps.Map(canvas,{center,zoom:points.length===1?15:11,controls:['zoomControl']},{suppressMapOpenBlock:true})
-      points.forEach((point)=>map.geoObjects.add(new window.ymaps!.Placemark([point.latitude,point.longitude],{balloonContentHeader:point.name,balloonContentBody:`${point.address}<br><a href="/restaurants/${point.slug}">Подробнее</a>`},{preset:'islands#darkGreenCoffeeIcon'})))
-      const bounds=getMapBounds(points)
-      if(points.length>1&&bounds)map.setBounds(bounds,{checkZoomRange:true,zoomMargin:60,maxZoom:13})
-      if(fallback)fallback.hidden=true
+      if(!window.ymaps){showUnavailable();return}
+      try {
+        const center=getMapCenter(points)
+        const map=new window.ymaps.Map(canvas,{center,zoom:points.length===1?15:11,controls:['zoomControl']},{suppressMapOpenBlock:true})
+        points.forEach((point)=>map.geoObjects.add(new window.ymaps!.Placemark([point.latitude,point.longitude],{balloonContentHeader:point.name,balloonContentBody:`${point.address}<br><a href="/restaurants/${point.slug}">Подробнее</a>`},{preset:'islands#darkGreenCoffeeIcon'})))
+        const bounds=getMapBounds(points)
+        if(points.length>1&&bounds)map.setBounds(bounds,{checkZoomRange:true,zoomMargin:60,maxZoom:13})
+        if(fallback)fallback.hidden=true
+      } catch { showUnavailable() }
     })
     if(window.ymaps){initialize();return}
-    const script=document.createElement('script');script.src=`https://api-maps.yandex.ru/2.1/?apikey=${encodeURIComponent(apiKey)}&lang=ru_RU`;script.async=true;script.onload=initialize;document.head.append(script)
+    const script=document.createElement('script');script.src=`https://api-maps.yandex.ru/2.1/?apikey=${encodeURIComponent(apiKey)}&lang=ru_RU`;script.async=true;script.onload=initialize;script.onerror=showUnavailable;document.head.append(script)
   })
 </script>

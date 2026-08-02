@@ -172,6 +172,7 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
               description: override?.description ?? item.description,
               ingredients: override?.ingredients ?? item.ingredients,
               weightGrams: override?.weightGrams ?? item.weightGrams,
+              measurementUnit: override?.measurementUnit ?? item.measurementUnit,
               priceKopecks: override?.priceKopecks ?? item.priceKopecks,
               calories: item.calories,
               proteins: item.proteins === null ? null : Number(item.proteins),
@@ -293,6 +294,7 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
               description: override?.description ?? item.description,
               ingredients: override?.ingredients ?? item.ingredients,
               weightGrams: override?.weightGrams ?? item.weightGrams,
+              measurementUnit: override?.measurementUnit ?? item.measurementUnit,
               priceKopecks: override?.priceKopecks ?? item.priceKopecks,
               overridden: Boolean(override),
             }
@@ -397,6 +399,7 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
             description: item.description,
             ingredients: item.ingredients,
             weightGrams: item.weightGrams,
+            measurementUnit: item.measurementUnit,
             priceKopecks: item.priceKopecks,
             calories: item.calories,
             proteins: item.proteins === null ? null : Number(item.proteins),

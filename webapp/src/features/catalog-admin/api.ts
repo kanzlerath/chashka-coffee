@@ -10,6 +10,7 @@ import {
   upsertRestaurantRequestSchema,
   restaurantScheduleExceptionListResponseSchema, restaurantScheduleExceptionResponseSchema, upsertRestaurantScheduleExceptionRequestSchema,
   type UpsertRestaurantRequest,
+  type UpsertRestaurantMenuItemOverrideRequest,
   type UpsertRestaurantScheduleExceptionRequest,
 } from '@chashka-coffee/contracts'
 import type { AuthApi } from '@/features/auth'
@@ -47,7 +48,7 @@ export class CatalogAdminApi {
     })
   }
   getRestaurantMenuDetail(id: string) { return this.auth.request(`/api/admin/restaurants/${id}/menu-detail`, adminRestaurantMenuDetailResponseSchema) }
-  saveRestaurantMenuItemOverride(restaurantId: string, itemId: string, input: { description: string | null; ingredients: string | null; weightGrams: number | null; priceKopecks: number | null }) {
+  saveRestaurantMenuItemOverride(restaurantId: string, itemId: string, input: UpsertRestaurantMenuItemOverrideRequest) {
     return this.auth.request(`/api/admin/restaurants/${restaurantId}/menu-items/${itemId}/override`, operationSuccessResponseSchema, { method: 'PUT', body: upsertRestaurantMenuItemOverrideRequestSchema.parse(input) })
   }
   deleteRestaurantMenuItemOverride(restaurantId: string, itemId: string) { return this.auth.request(`/api/admin/restaurants/${restaurantId}/menu-items/${itemId}/override`, operationSuccessResponseSchema, { method: 'DELETE' }) }

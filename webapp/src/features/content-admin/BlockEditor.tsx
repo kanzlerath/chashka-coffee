@@ -44,13 +44,16 @@ function duplicateBlock(block: ContentBlock): ContentBlock {
 
 type BlockEditorProps = {
   blocks: ContentBlock[]
+  invalidBlockIds?: string[]
   onChange: (blocks: ContentBlock[]) => void
   preview?: { title?: string; excerpt?: string | null; imageUrl?: string | null }
 }
 
-export function BlockEditor({ blocks, onChange, preview }: BlockEditorProps) {
+export function BlockEditor({ blocks, invalidBlockIds = [], onChange, preview }: BlockEditorProps) {
   const [expandedBlockId, setExpandedBlockId] = useState<string | null>(() => blocks[0]?.id ?? null)
   const [previewOpen, setPreviewOpen] = useState(false)
+  const invalidBlockId = invalidBlockIds.find((id) => blocks.some((block) => block.id === id))
+  const visibleExpandedBlockId = invalidBlockId ?? expandedBlockId
 
   useEffect(() => {
     if (!previewOpen) return
@@ -85,8 +88,9 @@ export function BlockEditor({ blocks, onChange, preview }: BlockEditorProps) {
     {blocks.length === 0 ? <Typography as="div" className="admin-block-empty" variant="bodySm">Здесь появится структура материала. Начните с текстового блока или связки текста с фотографией.</Typography> : null}
     <div className="admin-block-list">
       {blocks.map((block, index) => {
-        const isExpanded = expandedBlockId === block.id
-        return <article className="admin-block-card" data-collapsed={!isExpanded} key={block.id}>
+        const isExpanded = visibleExpandedBlockId === block.id
+        const isInvalid = invalidBlockIds.includes(block.id)
+        return <article aria-invalid={isInvalid || undefined} className="admin-block-card" data-collapsed={!isExpanded} key={block.id}>
         <header>
           <button
             aria-controls={`content-block-${block.id}`}
@@ -97,7 +101,7 @@ export function BlockEditor({ blocks, onChange, preview }: BlockEditorProps) {
             onClick={() => setExpandedBlockId((current) => current === block.id ? null : block.id)}
           >
             <Typography as="span" className="admin-block-index" variant="caption">{String(index + 1).padStart(2, '0')}</Typography>
-            <span className="admin-block-summary-copy"><Typography as="strong" variant="bodySmMedium">{labels[block.type]}</Typography><Typography as="small" variant="caption">{blockSummary(block)}</Typography></span>
+            <span className="admin-block-summary-copy"><Typography as="strong" variant="bodySmMedium">{labels[block.type]}</Typography><Typography as="small" className={isInvalid ? 'admin-state-error' : undefined} variant="caption">{isInvalid ? 'Проверьте обязательные поля блока' : blockSummary(block)}</Typography></span>
             <Typography aria-hidden="true" as="span" className="admin-block-chevron" variant="caption">⌄</Typography>
           </button>
           <div className="admin-block-actions">
@@ -115,7 +119,7 @@ export function BlockEditor({ blocks, onChange, preview }: BlockEditorProps) {
             }}>Удалить</Button>
           </div>
         </header>
-        {isExpanded ? <div className="admin-block-body" id={`content-block-${block.id}`}><BlockFields block={block} onChange={(next) => update(index, next)} /></div> : null}
+        {isExpanded ? <div className="admin-block-body" id={`content-block-${block.id}`}><BlockFields block={block} onChange={(next) => { setExpandedBlockId(block.id); update(index, next) }} /></div> : null}
       </article>})}
     </div>
     <div className="admin-add-block">

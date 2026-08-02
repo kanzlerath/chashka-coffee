@@ -26,6 +26,9 @@ export type DietaryMark = z.infer<typeof dietaryMarkSchema>
 export const marketingBadgeSchema = z.enum(['NEW', 'HIT', 'SEASONAL', 'SPECIAL'])
 export type MarketingBadge = z.infer<typeof marketingBadgeSchema>
 
+export const menuItemMeasurementUnitSchema = z.enum(['GRAM', 'MILLILITER', 'PIECE'])
+export type MenuItemMeasurementUnit = z.infer<typeof menuItemMeasurementUnitSchema>
+
 export const restaurantSummarySchema = z.object({
   id: uuidSchema,
   slug: slugSchema,
@@ -154,7 +157,7 @@ export type AssignRestaurantMenuRequest = z.infer<typeof assignRestaurantMenuReq
 export const restaurantMenuAssignmentResponseSchema = z.object({ menuId: uuidSchema.nullable() })
 export const upsertRestaurantMenuItemOverrideRequestSchema = z.object({
   description: nullableText(1_000), ingredients: nullableText(2_000),
-  weightGrams: z.number().int().positive().nullable(), priceKopecks: z.number().int().nonnegative().nullable(),
+  weightGrams: z.number().int().positive().nullable(), measurementUnit: menuItemMeasurementUnitSchema.nullable(), priceKopecks: z.number().int().nonnegative().nullable(),
 }).strict()
 export type UpsertRestaurantMenuItemOverrideRequest = z.infer<typeof upsertRestaurantMenuItemOverrideRequestSchema>
 export const adminRestaurantMenuDetailResponseSchema = z.object({
@@ -163,7 +166,7 @@ export const adminRestaurantMenuDetailResponseSchema = z.object({
     id: uuidSchema, name: z.string().trim().min(1).max(100),
     items: z.array(z.object({
       id: uuidSchema, name: z.string().trim().min(1).max(180),
-      description: nullableText(1_000), ingredients: nullableText(2_000), weightGrams: z.number().int().positive().nullable(), priceKopecks: z.number().int().nonnegative(),
+      description: nullableText(1_000), ingredients: nullableText(2_000), weightGrams: z.number().int().positive().nullable(), measurementUnit: menuItemMeasurementUnitSchema, priceKopecks: z.number().int().nonnegative(),
       overridden: z.boolean(),
     })),
   })),
@@ -201,6 +204,7 @@ export const upsertMenuItemRequestSchema = z.object({
   description: nullableText(1_000),
   ingredients: nullableText(2_000),
   weightGrams: z.number().int().positive().nullable(),
+  measurementUnit: menuItemMeasurementUnitSchema,
   priceKopecks: z.number().int().nonnegative(),
   calories: z.number().int().nonnegative().nullable(),
   proteins: z.number().nonnegative().nullable(),
@@ -222,6 +226,7 @@ export const adminMenuDetailResponseSchema = z.object({
       description: nullableText(1_000),
       ingredients: nullableText(2_000),
       weightGrams: z.number().int().positive().nullable(),
+      measurementUnit: menuItemMeasurementUnitSchema,
       priceKopecks: z.number().int().nonnegative(),
       calories: z.number().int().nonnegative().nullable(),
       proteins: z.number().nonnegative().nullable(),
@@ -247,6 +252,7 @@ export const menuItemSchema = z.object({
   description: z.string().trim().min(1).max(1000).nullable(),
   ingredients: z.string().trim().min(1).max(2000).nullable(),
   weightGrams: z.number().int().positive().nullable(),
+  measurementUnit: menuItemMeasurementUnitSchema,
   priceKopecks: z.number().int().nonnegative(),
   calories: z.number().int().nonnegative().nullable(),
   proteins: z.number().nonnegative().nullable(),

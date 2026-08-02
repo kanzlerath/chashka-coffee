@@ -1,6 +1,7 @@
 ---
 import PageShell from '../../layouts/PageShell.astro'
 import ContentBlocks from '../../components/ContentBlocks.astro'
+import NotFoundPage from '../../components/NotFoundPage.astro'
 import { formatPublicationDate, getPublicationDate } from '../../lib/journal'
 import { getContentEntry, getContentSlugs } from '../../lib/public-api'
 
@@ -12,6 +13,7 @@ export async function getStaticPaths() {
 const entry = await getContentEntry('ARTICLE',Astro.params.slug!)
 const publishedAt = entry ? getPublicationDate(entry) : null
 const hasVisibleBlocks = entry?.blocks.some((block) => block.isVisible) ?? false
+if (!entry) { Astro.response.status = 404; Astro.response.statusText = 'Not Found' }
 ---
 
 {entry
@@ -37,7 +39,7 @@ const hasVisibleBlocks = entry?.blocks.some((block) => block.isVisible) ?? false
         </div>
       </article>
     </PageShell>
-  : <meta http-equiv="refresh" content="0;url=/journal"/>}
+  : <NotFoundPage/>}
 
 <style>
   .article-detail{display:grid;gap:var(--section-gap);width:100%}
