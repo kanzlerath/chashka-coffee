@@ -1,0 +1,55 @@
+---
+import LeadForm from './LeadForm.astro'
+---
+
+<dialog class="job-application-dialog" data-job-application-dialog aria-labelledby="job-application-title">
+  <div class="job-application-inner">
+    <button class="job-application-close" type="button" data-job-application-close aria-label="Закрыть форму">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 5 14 14M19 5 5 19" /></svg>
+    </button>
+    <div class="job-application-copy">
+      <span aria-hidden="true">ЧК</span>
+      <div>
+        <h2 id="job-application-title">Расскажите<br />о себе</h2>
+        <p>Можно без формального резюме. Напишите, чем вам интересна работа с нами и какой опыт хочется принести в команду.</p>
+      </div>
+    </div>
+    <div class="job-application-form">
+      <LeadForm type="JOB" submitLabel="Отправить отклик" subjectLabel="Какая вакансия интересна?" source="jobs-dialog" />
+    </div>
+  </div>
+</dialog>
+
+<script>
+  type JobApplicationDetail = { title?: string }
+
+  const applicationDialog = document.querySelector<HTMLDialogElement>('[data-job-application-dialog]')
+  const applicationSubject = applicationDialog?.querySelector<HTMLInputElement>('input[name="subject"]')
+
+  const openApplicationDialog = (title = '') => {
+    if (!applicationDialog) return
+    if (applicationSubject) applicationSubject.value = title
+    if (!applicationDialog.open) applicationDialog.showModal()
+    applicationDialog.querySelector<HTMLButtonElement>('[data-job-application-close]')?.focus()
+  }
+
+  document.querySelectorAll<HTMLButtonElement>('[data-job-application-trigger]').forEach((trigger) => {
+    trigger.addEventListener('click', () => openApplicationDialog(trigger.dataset.jobTitle ?? ''))
+  })
+
+  window.addEventListener('jobs:apply', (event) => {
+    const detail = (event as CustomEvent<JobApplicationDetail>).detail
+    openApplicationDialog(detail?.title ?? '')
+  })
+
+  applicationDialog?.querySelector('[data-job-application-close]')?.addEventListener('click', () => applicationDialog.close())
+  applicationDialog?.addEventListener('click', (event) => { if (event.target === applicationDialog) applicationDialog.close() })
+</script>
+
+<style>
+  .job-application-dialog{width:min(1100px,calc(100vw - 48px));max-width:none;max-height:calc(100svh - 48px);margin:auto;padding:0;border:0;border-radius:var(--radius);background:#fcfbf8;color:var(--ink);box-shadow:0 28px 90px rgba(22,28,22,.32);overflow:hidden}.job-application-dialog::backdrop{background:rgba(25,31,25,.64);backdrop-filter:blur(8px)}.job-application-dialog[open]{animation:job-application-in .3s cubic-bezier(.22,1,.36,1)}.job-application-inner{display:grid;min-height:650px;grid-template-columns:minmax(310px,.85fr) minmax(0,1.15fr)}.job-application-close{position:absolute;z-index:3;top:19px;right:19px;display:grid;place-items:center;width:46px;height:46px;padding:0;border:1px solid rgba(35,30,27,.11);border-radius:var(--radius);background:rgba(252,251,248,.94);color:var(--ink);cursor:pointer;transition:background-color .2s ease,transform .2s ease}.job-application-close:hover{background:var(--lime);transform:rotate(4deg)}.job-application-close:focus-visible{outline:3px solid var(--lime);outline-offset:3px}.job-application-close svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-width:1.8}
+  .job-application-copy{display:flex;padding:clamp(38px,5vw,76px);background:var(--moss);color:#fff;flex-direction:column}.job-application-copy>span{font-family:'21Cent',serif;color:var(--lime);font-size:clamp(54px,6vw,90px);font-style:italic;line-height:.7}.job-application-copy>div{margin-top:auto}.job-application-copy h2{margin:0;color:#fff;font-size:clamp(52px,5.3vw,83px);line-height:.86}.job-application-copy p{max-width:390px;margin:26px 0 0;color:#d3ddd4;font-size:13px;line-height:1.68}.job-application-form{display:flex;align-items:center;padding:clamp(56px,6vw,92px)}.job-application-form :global(.lead-form){width:100%}.job-application-form :global(.lead-form button){display:flex!important;width:100%;min-height:58px!important;justify-self:stretch!important;justify-content:space-between!important;padding:0 10px 0 21px!important;background:var(--moss)!important}.job-application-form :global(.lead-form button b){display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:var(--lime);color:var(--moss)}
+  @keyframes job-application-in{from{opacity:0;transform:translateY(18px) scale(.985)}to{opacity:1;transform:none}}
+  @media(max-width:760px){.job-application-dialog{position:fixed;inset:auto 12px 12px;width:auto;max-height:calc(100svh - 24px);margin:0}.job-application-inner{display:block;min-height:0;max-height:calc(100svh - 24px);overflow:auto}.job-application-copy{min-height:310px;padding:34px 24px}.job-application-copy>span{font-size:54px}.job-application-copy h2{font-size:52px}.job-application-copy p{margin-top:20px;font-size:12px}.job-application-form{padding:34px 22px 28px}.job-application-close{top:14px;right:14px;width:42px;height:42px}}
+  @media(prefers-reduced-motion:reduce){.job-application-dialog[open]{animation:none}.job-application-close{transition:none}}
+</style>

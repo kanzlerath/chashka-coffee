@@ -1,13 +1,92 @@
 ---
-import PageShell from '../layouts/PageShell.astro';
-import LeadForm from '../components/LeadForm.astro';
-import ContentBlocks from '../components/ContentBlocks.astro';
-import { getManagedPage } from '../lib/public-api';
-const points=['Выберите ресторан','Расскажите о дате и гостях','Мы свяжемся и всё подготовим'];
-const page = await getManagedPage('BANQUETS');
-const heroTitle = page?.heroTitle ?? 'Соберём\nваш повод';
-const heroDescription = page?.heroDescription ?? 'Семейный праздник, важный ужин или встреча команды — выберите место, а мы поможем с деталями.';
-const heroImage = page?.heroImageUrl ?? '/images/restaurants-hero.png';
+import PageShell from '../layouts/PageShell.astro'
+import LeadPanel from '../components/LeadPanel.astro'
+import ContentBlocks from '../components/ContentBlocks.astro'
+import { getManagedPage } from '../lib/public-api'
+
+const page = await getManagedPage('BANQUETS')
+const heroTitle = page?.heroTitle ?? 'Соберём\nваш повод'
+const heroDescription = page?.heroDescription ?? 'Семейный праздник, важный ужин или встреча команды — выберите настроение, а детали мы соберём вместе.'
+const heroImage = page?.heroImageUrl ?? '/images/restaurants-hero.png'
+const occasions = [
+  ['01', 'Семейные даты', 'Дни рождения, юбилеи и тёплые встречи за одним столом.'],
+  ['02', 'Деловые события', 'Завтраки, камерные презентации и ужины с партнёрами.'],
+  ['03', 'Свой сценарий', 'Если повод не помещается в название — тем интереснее его придумать.'],
+]
+const preparation = [
+  ['Подберём пространство', 'Учтём количество гостей, настроение вечера и удобную локацию.'],
+  ['Соберём меню', 'Поможем выбрать блюда, напитки и подачу под формат события.'],
+  ['Продумаем ритм', 'Зафиксируем тайминг, рассадку и важные детали до дня встречи.'],
+]
 ---
-<PageShell title="Банкеты" image={heroImage}><section class="hero"><img src={heroImage} alt="Интерьер ресторана"/><div><p>Банкеты и встречи</p><h1>{heroTitle.split(/\r?\n/).map((line, index, lines) => <>{line}{index < lines.length - 1 && <br/>}</>)}</h1><span>{heroDescription}</span><a href="#form">Оставить заявку</a></div></section><section class="steps"><p>Как организовать</p><h2>Спокойно<br/>и по делу</h2><div>{points.map((point,index)=><article><b>0{index+1}</b><h3>{point}</h3><i>→</i></article>)}</div></section>{page && <ContentBlocks blocks={page.blocks}/>}<section id="form" class="form"><div><p>Единая заявка</p><h2>Расскажите<br/>о событии</h2></div><LeadForm type="BANQUET" subjectLabel="Дата или количество гостей" /></section></PageShell>
-<style>.hero{position:relative;min-height:610px;margin:0 2vw;overflow:hidden;border-radius:27px}.hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.hero:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#f8f7f2 0%,rgba(248,247,242,.88) 35%,transparent 70%)}.hero div{position:relative;z-index:1;max-width:670px;padding:clamp(50px,7vw,115px)}.hero p,.steps>p,.form p{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:#8dab27}.hero h1,.steps h2,.form h2{margin:18px 0;font-size:clamp(58px,6vw,107px);line-height:.84;letter-spacing:-.1em}.hero span{display:block;max-width:390px;font-size:16px;line-height:1.55}.hero a,.form button{display:inline-block;margin-top:27px;padding:17px 21px;border-radius:999px;background:#20382b;color:#fff;text-decoration:none;border:0;font:700 14px Montserrat}.steps{padding:clamp(90px,11vw,160px) 7vw}.steps h2{font-size:clamp(51px,5vw,88px)}.steps>div{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-top:60px}.steps article{min-height:260px;padding:27px;border-radius:23px;background:#e8ece2;position:relative}.steps b{font-size:13px;color:#8bab25}.steps h3{margin:75px 0 0;font-size:27px;line-height:.92;letter-spacing:-.07em}.steps i{position:absolute;right:25px;bottom:23px;font-size:24px}.form{margin:0 2vw;padding:clamp(48px,7vw,100px);border-radius:27px;background:#20382b;color:#fff;display:grid;grid-template-columns:.8fr 1.2fr;gap:70px}.form p{color:#b7d93d}.form h2{font-size:clamp(47px,5vw,80px)}form{display:grid;grid-template-columns:1fr 1fr;gap:10px}input,textarea{width:100%;border:0;border-radius:10px;padding:15px;font:14px Montserrat}textarea{grid-column:1/-1;min-height:100px}button{grid-column:1/-1;justify-self:start;background:#b7d93d!important;color:#20382b!important}@media(max-width:700px){.hero{margin:0;min-height:600px;border-radius:0}.hero div{padding:50px 20px}.hero h1{font-size:62px}.hero span{font-size:15px}.steps{padding:82px 20px}.steps h2{font-size:52px}.steps>div{grid-template-columns:1fr;gap:8px;margin-top:33px}.steps article{min-height:180px;padding:20px}.steps h3{margin-top:40px;font-size:24px}.form{margin:0;border-radius:0;display:block;padding:58px 20px}.form h2{font-size:52px}form{margin-top:35px;grid-template-columns:1fr}}</style>
+
+<PageShell title="Банкеты" description="Банкеты, семейные праздники и деловые события в ресторанах Чашка кофе." active="banquets" image={heroImage}>
+  <section class="banquet-hero">
+    <img src={heroImage} alt="Интерьер ресторана Чашка кофе" fetchpriority="high" />
+    <div class="banquet-hero-shade" aria-hidden="true"></div>
+    <div class="banquet-hero-copy">
+      <h1>{heroTitle.split(/\r?\n/).map((line, index, lines) => <>{line}{index < lines.length - 1 && <br />}</>)}</h1>
+      <p>{heroDescription}</p>
+      <a href="#banquet-form">Обсудить событие</a>
+    </div>
+  </section>
+
+  <section class="banquet-intro">
+    <h2>Вечер, который<br />не хочется торопить.</h2>
+    <div>
+      <p>Банкет начинается не с количества приборов. Он начинается с ощущения: всем удобно, вкусно и есть время друг для друга.</p>
+      <p>Команда ресторана поможет превратить эту интонацию в понятный план — от первого разговора до последней подачи.</p>
+    </div>
+  </section>
+
+  <section class="banquet-occasions" aria-label="Форматы событий">
+    {occasions.map(([number, title, description]) => <article>
+      <span>{number}</span>
+      <h3>{title}</h3>
+      <p>{description}</p>
+    </article>)}
+  </section>
+
+  <section class="banquet-story">
+    <figure><img src="/images/stock/banquets-gathering.jpg" alt="Гости за праздничным столом" loading="lazy" /></figure>
+    <div>
+      <blockquote>Повод ваш.<br />Забота — наша.</blockquote>
+      <p>Можно прийти с точным сценарием или только с датой. Мы зададим нужные вопросы, предложим несколько вариантов и оставим вам главное — быть рядом с гостями.</p>
+    </div>
+  </section>
+
+  <section class="banquet-preparation">
+    <header><h2>Всё важное<br />держим вместе.</h2><p>Один контакт с командой и понятный маршрут подготовки без лишней суеты.</p></header>
+    <div class="preparation-list">
+      {preparation.map(([title, description], index) => <article>
+        <span>0{index + 1}</span>
+        <h3>{title}</h3>
+        <p>{description}</p>
+      </article>)}
+    </div>
+  </section>
+
+  {page && <div class="banquet-managed"><ContentBlocks blocks={page.blocks} /></div>}
+
+  <LeadPanel
+    id="banquet-form"
+    title="Расскажите\nо событии"
+    description="Оставьте контакты, дату и примерное количество гостей. Команда свяжется с вами и предложит подходящий сценарий."
+    type="BANQUET"
+    submitLabel="Отправить заявку"
+    subjectLabel="Дата или количество гостей"
+    source="banquets-page"
+  />
+</PageShell>
+
+<style>
+  .banquet-hero{position:relative;isolation:isolate;min-height:calc(100svh - 126px);overflow:hidden;border-radius:var(--radius);background:var(--moss);color:#fff}.banquet-hero>img,.banquet-hero-shade{position:absolute;inset:0;width:100%;height:100%}.banquet-hero>img{z-index:-2;object-fit:cover;animation:banquet-image-in 1.1s cubic-bezier(.22,1,.36,1) both}.banquet-hero-shade{z-index:-1;background:linear-gradient(90deg,rgba(20,29,24,.72),rgba(20,29,24,.25) 55%,rgba(20,29,24,.05)),linear-gradient(0deg,rgba(20,29,24,.56),transparent 58%)}.banquet-hero-copy{position:absolute;right:var(--content-gutter);bottom:clamp(38px,5vw,78px);left:var(--content-gutter);max-width:800px;animation:banquet-copy-in .72s .12s cubic-bezier(.22,1,.36,1) both}.banquet-hero h1{max-width:790px!important;margin:0;color:#fff!important;font-size:clamp(64px,7vw,118px)!important;line-height:.8!important;text-shadow:0 2px 20px rgba(0,0,0,.14)}.banquet-hero p{max-width:520px;margin:25px 0 0;color:rgba(255,255,255,.9);font-size:15px;line-height:1.6}.banquet-hero a{display:inline-flex;min-height:50px;align-items:center;margin-top:28px;padding:0 22px;border-radius:var(--radius);background:#fff;color:var(--moss);font-size:12px;font-weight:800;text-decoration:none;transition:background-color .2s ease,transform .2s ease}.banquet-hero a:hover{background:var(--lime);transform:translateY(-2px)}.banquet-hero a:focus-visible{outline:3px solid var(--lime);outline-offset:3px}
+  .banquet-intro{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(280px,.82fr);align-items:end;gap:clamp(48px,9vw,150px);padding:clamp(105px,12vw,185px) var(--content-gutter)}.banquet-intro h2{margin:0;font-size:clamp(53px,6vw,96px)}.banquet-intro>div{display:grid;gap:22px;padding-bottom:6px}.banquet-intro p{max-width:510px;margin:0;color:var(--muted);font-size:14px;line-height:1.72}
+  .banquet-occasions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.banquet-occasions article{display:flex;min-height:360px;padding:clamp(25px,3vw,44px);border-radius:var(--radius);background:#e7e1d8;flex-direction:column;transition:transform .3s cubic-bezier(.22,1,.36,1),background-color .25s ease}.banquet-occasions article:nth-child(2){background:#dfe9d3}.banquet-occasions article:nth-child(3){background:#efdba9}.banquet-occasions article:hover{z-index:1;background:#fff;transform:translateY(-6px)}.banquet-occasions span{font-size:11px;font-weight:800}.banquet-occasions h3{max-width:300px;margin:auto 0 18px;font-size:clamp(29px,3vw,46px);line-height:.92;letter-spacing:-.07em}.banquet-occasions p{max-width:330px;margin:0;color:var(--muted);font-size:12px;line-height:1.65}
+  .banquet-story{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(300px,.92fr);min-height:740px;margin-top:14px;overflow:hidden;border-radius:var(--radius);background:var(--moss);color:#fff}.banquet-story figure{min-height:620px;margin:0;overflow:hidden}.banquet-story img{width:100%;height:100%;object-fit:cover;transition:transform .7s cubic-bezier(.22,1,.36,1)}.banquet-story:hover img{transform:scale(1.025)}.banquet-story>div{display:flex;padding:clamp(42px,6vw,94px);flex-direction:column}.banquet-story blockquote{max-width:590px;margin:auto 0 0;font-family:'21Cent',serif;font-size:clamp(57px,6vw,98px);font-style:italic;line-height:.82;letter-spacing:-.055em}.banquet-story p{max-width:430px;margin:40px 0 0;color:#d7e0d8;font-size:13px;line-height:1.72}
+  .banquet-preparation{padding:clamp(105px,12vw,180px) var(--content-gutter)}.banquet-preparation header{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,.55fr);align-items:end;gap:55px}.banquet-preparation h2{margin:0;font-size:clamp(52px,5.7vw,92px)}.banquet-preparation header p{max-width:380px;margin:0 0 7px;color:var(--muted);font-size:13px;line-height:1.7}.preparation-list{margin-top:60px;border-top:1px solid var(--line)}.preparation-list article{display:grid;grid-template-columns:80px minmax(220px,.85fr) minmax(260px,1.15fr);gap:25px;padding:31px 0;border-bottom:1px solid var(--line);transition:padding-left .25s ease}.preparation-list article:hover{padding-left:12px}.preparation-list span{font-size:11px;font-weight:800}.preparation-list h3{margin:0;font-size:clamp(24px,2.5vw,37px);letter-spacing:-.055em}.preparation-list p{max-width:540px;margin:3px 0 0;color:var(--muted);font-size:13px;line-height:1.65}.banquet-managed{margin-bottom:14px}
+  @keyframes banquet-image-in{from{opacity:.7;transform:scale(1.035)}to{opacity:1;transform:none}}@keyframes banquet-copy-in{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+  @media(max-width:900px){.banquet-hero{min-height:calc(100svh - 116px);margin:0 var(--mobile-gutter);border-radius:var(--radius)}.banquet-hero-copy{right:25px;bottom:28px;left:25px}.banquet-hero h1{font-size:clamp(58px,15vw,78px)!important}.banquet-hero p{max-width:360px;font-size:13px}.banquet-intro,.banquet-preparation{padding:85px var(--mobile-gutter)}.banquet-intro,.banquet-preparation header{grid-template-columns:1fr;gap:26px}.banquet-occasions{grid-template-columns:1fr;margin:0 var(--mobile-gutter);gap:8px}.banquet-occasions article{min-height:250px;padding:25px}.banquet-story{grid-template-columns:1fr;margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter)}.banquet-story figure{min-height:520px}.banquet-story>div{min-height:460px;padding:45px 25px}.preparation-list{margin-top:38px}.preparation-list article{grid-template-columns:46px 1fr;gap:14px;padding:27px 0}.preparation-list p{grid-column:2}}
+  @media(max-width:540px){.banquet-story figure{min-height:430px}.banquet-story blockquote{font-size:58px}.banquet-story>div{min-height:400px}.preparation-list h3{font-size:26px}}
+  @media(prefers-reduced-motion:reduce){.banquet-hero>img,.banquet-hero-copy{animation:none}.banquet-occasions article,.banquet-story img,.preparation-list article{transition:none}}
+</style>

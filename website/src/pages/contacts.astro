@@ -1,6 +1,6 @@
 ---
 import PageShell from '../layouts/PageShell.astro'
-import LeadForm from '../components/LeadForm.astro'
+import LeadPanel from '../components/LeadPanel.astro'
 import ContentBlocks from '../components/ContentBlocks.astro'
 import { getManagedPage } from '../lib/public-api'
 
@@ -30,10 +30,13 @@ const contacts = [
     </article>
   </section>
 
-  <section class="contact-form">
-    <div><h2>Напишите нам</h2><span>Оставьте контакты и коротко опишите задачу. Команда ответит по указанному адресу.</span></div>
-    <LeadForm type="CONTACT" submitLabel="Отправить сообщение" subjectLabel="Тема обращения" />
-  </section>
+  <LeadPanel
+    title="Напишите нам"
+    description="Оставьте контакты и коротко опишите задачу. Команда ответит по указанному адресу."
+    type="CONTACT"
+    submitLabel="Отправить сообщение"
+    subjectLabel="Тема обращения"
+  />
 
   {page && <div class="contacts-managed"><ContentBlocks blocks={page.blocks} /></div>}
 </PageShell>
@@ -41,8 +44,8 @@ const contacts = [
 <style>
   .contacts-intro{padding:clamp(88px,11vw,170px) var(--content-gutter) clamp(62px,8vw,115px)}.contacts-intro h1{margin:0;font-size:clamp(70px,9vw,150px)!important;line-height:.75!important}
   .contact-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:0}.contact-grid article{display:flex;min-width:0;min-height:320px;align-items:flex-start;padding:clamp(25px,3vw,44px);border-radius:var(--radius);background:#dfe9d3;flex-direction:column;transition:transform .3s cubic-bezier(.22,1,.36,1),box-shadow .3s ease}.contact-grid article:nth-child(2){background:#ebe4d9}.contact-grid article:nth-child(3){background:#efdba9}.contact-grid article:nth-child(4){background:#d9e7e0}.contact-grid article:nth-child(5){background:#e8ddd2}.contact-grid article:hover{z-index:1;box-shadow:0 18px 32px rgba(48,40,33,.1);transform:translateY(-6px)}.contact-grid h2{max-width:310px;margin:0 0 auto;font-size:clamp(24px,2.4vw,38px);line-height:.95}.contact-grid article>div{margin-top:70px}.contact-grid article>div a{display:block;color:inherit;font-size:12px;font-weight:700;line-height:1.9;text-decoration:none}.contact-grid article>div a:hover{text-decoration:underline;text-underline-offset:4px}.contact-grid small{margin-top:18px;color:var(--muted);font-size:10px}.contact-grid .catering-card{background:var(--moss);color:#fff}.catering-card p{max-width:310px;margin:auto 0 0;color:#d7e0d7;font-size:12px;line-height:1.65}.catering-link{display:flex;width:100%;min-height:52px;align-items:center;justify-content:space-between;margin-top:24px;padding:0 18px;border-radius:var(--radius);background:var(--lime);color:var(--moss);font-size:11px;font-weight:800;text-decoration:none;transition:background .2s ease,transform .2s ease}.catering-link:hover{background:#d0e578;transform:translateY(-2px)}.catering-link span{font-size:17px}
-  .contact-form{display:grid;grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr);gap:clamp(45px,7vw,105px);margin-top:14px!important;padding:clamp(52px,7vw,105px);border-radius:var(--radius);background:var(--moss);color:#fff}.contact-form>div{align-self:start}.contact-form h2{margin:0;font-size:clamp(48px,5.3vw,85px);color:#fff}.contact-form>div>span{display:block;max-width:400px;margin-top:22px;color:#d5dfd6;font-size:13px;line-height:1.7}.contact-form :global(.lead-form){align-self:center}.contact-form :global(.lead-form label){color:#fff}.contact-form :global(.lead-form input),.contact-form :global(.lead-form textarea){border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.98)}.contact-form :global(.lead-form button){justify-self:stretch!important;display:flex!important;width:100%;min-height:60px!important;justify-content:space-between!important;padding:0 10px 0 21px!important;border:0!important;background:var(--lime)!important;color:var(--moss)!important;font-size:12px!important;text-align:left;box-shadow:none!important}.contact-form :global(.lead-form button b){display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--moss);color:#fff;font-size:17px;transition:transform .22s ease}.contact-form :global(.lead-form button:hover){background:#cee576!important;transform:none!important}.contact-form :global(.lead-form button:hover b){transform:translateX(3px)}.contact-form :global(.lead-form small){color:#c9d5ca}.contacts-managed{margin-top:14px}
-  @media(max-width:900px){.contacts-intro{padding:80px 20px 60px}.contact-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0 var(--mobile-gutter)}.contact-grid article{min-height:280px;padding:25px}.contact-grid article>div{margin-top:55px}.contact-form{grid-template-columns:1fr;margin-right:var(--mobile-gutter)!important;margin-left:var(--mobile-gutter)!important;padding:58px 25px}.contact-form :global(.lead-form){margin-top:15px}}
-  @media(max-width:540px){.contacts-intro h1{font-size:66px!important}.contact-grid{grid-template-columns:1fr}.contact-grid article{min-height:250px}.contact-grid article>div{margin-top:45px}.contact-form h2{font-size:50px}}
-  @media(prefers-reduced-motion:reduce){.contact-grid article,.catering-link,.contact-form :global(.lead-form button b){transition:none}}
+  .contacts-managed{margin-top:14px}
+  @media(max-width:900px){.contacts-intro{padding:80px var(--mobile-gutter) 60px}.contact-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0 var(--mobile-gutter)}.contact-grid article{min-height:280px;padding:25px}.contact-grid article>div{margin-top:55px}}
+  @media(max-width:540px){.contacts-intro h1{font-size:66px!important}.contact-grid{grid-template-columns:1fr}.contact-grid article{min-height:250px}.contact-grid article>div{margin-top:45px}}
+  @media(prefers-reduced-motion:reduce){.contact-grid article,.catering-link{transition:none}}
 </style>

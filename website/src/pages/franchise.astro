@@ -1,56 +1,127 @@
 ---
-import PageShell from '../layouts/PageShell.astro';
-import LeadForm from '../components/LeadForm.astro';
-import ContentBlocks from '../components/ContentBlocks.astro';
-import { getManagedPage } from '../lib/public-api';
+import PageShell from '../layouts/PageShell.astro'
+import LeadPanel from '../components/LeadPanel.astro'
+import ContentBlocks from '../components/ContentBlocks.astro'
+import { getManagedPage } from '../lib/public-api'
+
+const page = await getManagedPage('FRANCHISE')
+const heroTitle = page?.heroTitle ?? 'Бизнес,\nв который\nвозвращаются'
+const heroDescription = page?.heroDescription ?? 'Открывайте Чашку кофе в своём городе — с узнаваемым продуктом, готовой системой и командой, которая остаётся рядом после запуска.'
+const heroImage = page?.heroImageUrl ?? '/images/restaurants-hero.png'
 const formats = [
-  ['01', 'Городской ресторан', 'От 80 м²', 'Полноценное место для завтраков, встреч и длинных разговоров.'],
-  ['02', 'Ресторан в аэропорту', 'От 45 м²', 'Понятный сервис для гостей в пути: кофе, еда и короткая пауза перед вылетом.'],
-];
-const stages = ['Знакомимся', 'Оцениваем локацию', 'Проектируем', 'Открываемся'];
-const page = await getManagedPage('FRANCHISE');
-const heroTitle = page?.heroTitle ?? 'Открывайте\nместо, куда\nхочется вернуться';
-const heroDescription = page?.heroDescription ?? 'Не просто точку с кофе — живой ресторан с характером, понятной моделью и поддержкой на каждом шаге.';
-const heroImage = page?.heroImageUrl ?? '/images/restaurants-hero.png';
+  ['01', 'Кофе-пойнт', 'от 5 м²', 'Компактный формат для деловых центров, транспортных узлов и пространств с быстрым трафиком.'],
+  ['02', 'Кофейня с посадкой', 'городской ритм', 'Кофе, выпечка и понятное меню в месте, куда заходят по пути и остаются на разговор.'],
+  ['03', 'Кофейня с кухней', 'полный формат', 'Ресторанный опыт Чашки кофе: завтраки, горячая кухня, десерты и длинный день гостя.'],
+]
+const support = [
+  'Оценка города, трафика и будущей локации',
+  'Проектирование пространства в стиле сети',
+  'Готовое меню, рецептуры и стандарты сервиса',
+  'Обучение партнёра, управляющего и команды',
+  'Проверенные поставщики и организация закупок',
+  'Маркетинговые материалы и сопровождение после открытия',
+]
+const history = [
+  ['2003', 'Первая Чашка кофе открывается в аэропорту Толмачёво.'],
+  ['2008', 'Запускаем собственное кондитерское производство.'],
+  ['2017', 'Начинаем самостоятельно обжаривать всё привезённое зерно.'],
+  ['2019', 'Открывается новая Чашка кофе в ТРЦ «Аура».'],
+  ['2023', 'Новые ресторан и буфеты начинают работать в «Сибирь-Арене».'],
+  ['2025', 'Развиваем сеть, аэропортовые форматы и партнёрское направление.'],
+]
+const stages = [
+  ['01', 'Знакомимся', 'Обсуждаем город, опыт, ожидания и подходящий формат.'],
+  ['02', 'Считаем', 'Проверяем локацию и собираем финансовую модель под неё.'],
+  ['03', 'Готовим', 'Проектируем, комплектуем, обучаем и выстраиваем процессы.'],
+  ['04', 'Открываем', 'Запускаем точку вместе и сопровождаем дальнейшую работу.'],
+]
 ---
-<PageShell title="Франшиза" active="franchise" image={heroImage}>
-      <section class="hero">
-        <img src={heroImage} alt="Интерьер ресторана" />
-        <div class="hero-copy">
-          <p>франшиза чашка кофе</p>
-          <h1>{heroTitle.split(/\r?\n/).map((line, index, lines) => <>{line}{index < lines.length - 1 && <br />}</>)}</h1>
-          <span>{heroDescription}</span>
-          <a href="#form">Получить презентацию</a>
-        </div>
-        <div class="mark">ЧК<br /><em>coffee<br />people</em></div>
-      </section>
 
-      <section class="proof">
-        <p>вместе с 2003 года</p>
-        <h2>Строим не сеть.<br />Строим привычку заходить.</h2>
-        <div class="numbers"><article><b>23</b><span>года рядом<br />с гостями</span></article><article><b>13</b><span>ресторанов<br />в Новосибирске</span></article><article><b>2</b><span>формата для<br />разных локаций</span></article></div>
-      </section>
+<PageShell title="Франшиза" description="Франшиза Чашка кофе: форматы от 5 м², паушальный взнос от 360 000 рублей и поддержка на каждом этапе." active="franchise" image={heroImage}>
+  <section class="franchise-hero">
+    <img src={heroImage} alt="Интерьер Чашки кофе" fetchpriority="high" />
+    <div class="franchise-hero-shade" aria-hidden="true"></div>
+    <div class="franchise-hero-copy">
+      <h1>{heroTitle.split(/\r?\n/).map((line, index, lines) => <>{line}{index < lines.length - 1 && <br />}</>)}</h1>
+      <p>{heroDescription}</p>
+      <a href="#franchise-form">Получить презентацию</a>
+    </div>
+    <div class="franchise-hero-sign" aria-hidden="true"><span>ЧК</span><em>coffee<br />people</em></div>
+  </section>
 
-      <section class="formats">
-        <div class="formats-heading"><p>форматы</p><h2>Найдём форму<br />для вашей точки</h2></div>
-        <div class="format-list">{formats.map(([number,title,metric,description]) => <article><b>{number}</b><h3>{title}</h3><strong>{metric}</strong><p>{description}</p><a href="#form" aria-label={`Узнать о формате ${title}`}>↗</a></article>)}</div>
-      </section>
+  <section class="franchise-ledger" aria-label="Основные условия франшизы">
+    <article class="ledger-main"><strong>17</strong><span>точек<br />сети</span></article>
+    <article><strong>от 5 м²</strong><span>площадь<br />помещения</span></article>
+    <article><strong>4%</strong><span>роялти</span></article>
+    <article><strong>от 360 тыс. ₽</strong><span>паушальный<br />взнос</span></article>
+  </section>
 
-      <section class="support">
-        <div><p>с вами до открытия и дальше</p><h2>Делимся<br />всем, что<br />работает</h2></div>
-        <ul><li>Поможем выбрать и оценить локацию</li><li>Создадим проект и подготовим команду</li><li>Передадим стандарты, рецептуры и закупки</li><li>Останемся на связи после запуска</li></ul>
-      </section>
+  <section class="franchise-intro">
+    <h2>Не просто кофе.<br /><em>Городская привычка.</em></h2>
+    <div><p>Чашка кофе работает с 2003 года. За это время мы научились открываться в центре города, торговых комплексах, аэропортах и спортивных пространствах — не теряя узнаваемого характера.</p><p>Партнёру передаём не логотип и папку инструкций, а собранную систему: продукт, пространство, обучение, закупки и поддержку команды.</p></div>
+  </section>
 
-      <section class="road"><p>путь к открытию</p><div>{stages.map((stage,index)=><article><b>0{index+1}</b><span>{stage}</span></article>)}</div></section>
+  <section class="franchise-formats">
+    <header><h2>Три масштаба.<br />Один характер.</h2><p>Формат выбирается не по картинке, а по потенциалу места, сценарию гостя и экономике конкретной локации.</p></header>
+    <div>
+      {formats.map(([number, title, metric, description]) => <article>
+        <span>{number}</span>
+        <h3>{title}</h3>
+        <strong>{metric}</strong>
+        <p>{description}</p>
+        <a href="#franchise-form">Обсудить формат</a>
+      </article>)}
+    </div>
+  </section>
 
-      {page && <ContentBlocks blocks={page.blocks}/>} 
+  <section class="franchise-roastery">
+    <div class="roastery-copy">
+      <h2><em>Собственное</em><br />обжарочное<br />производство</h2>
+      <p>С 2017 года всё привезённое зерно мы обжариваем самостоятельно. Работаем со specialty-сортами и лучшими лотами из Колумбии, Эфиопии, Бразилии и других кофейных регионов.</p>
+      <p>Для каждого сорта подбираем время, температуру и профиль, которые раскрывают его вкус и аромат.</p>
+    </div>
+    <figure><img src="/images/stock/franchise-roastery.jpg" alt="Работа с зерном у кофейного ростера" loading="lazy" /></figure>
+  </section>
 
-      <section class="form" id="form">
-        <div><p>узнать условия</p><h2>Давайте<br />обсудим<br />вашу идею</h2><span>Оставьте контакты — пришлём презентацию и договоримся о первом разговоре.</span></div>
-        <LeadForm type="FRANCHISE" submitLabel="Получить презентацию" subjectLabel="Город для открытия" />
-      </section>
-    </PageShell>
+  <section class="franchise-support">
+    <header><h2>До открытия.<br />И каждый день после.</h2><p>Партнёр получает маршрут запуска и доступ к опыту команды, которая сама управляет ресторанами разных форматов.</p></header>
+    <ol>{support.map((item, index) => <li><span>{String(index + 1).padStart(2, '0')}</span><p>{item}</p></li>)}</ol>
+  </section>
+
+  <section class="franchise-history">
+    <header><h2>История,<br />которая продолжается.</h2><strong>2003—2025</strong></header>
+    <div>{history.map(([year, event]) => <article><span>{year}</span><p>{event}</p></article>)}</div>
+  </section>
+
+  <section class="franchise-stages">
+    <header><h2>От первого разговора<br />до первого гостя.</h2><p>Срок и бюджет зависят от формата и готовности помещения. Начинаем с проверки города и локации.</p></header>
+    <div>{stages.map(([number, title, description]) => <article><span>{number}</span><h3>{title}</h3><p>{description}</p></article>)}</div>
+  </section>
+
+  {page && <div class="franchise-managed"><ContentBlocks blocks={page.blocks} /></div>}
+
+  <LeadPanel
+    id="franchise-form"
+    title="Давайте\nпосчитаем\nвашу точку"
+    description="Оставьте контакты и город. Пришлём презентацию, уточним формат и договоримся о первом разговоре. Финальные условия зависят от выбранной модели и локации."
+    type="FRANCHISE"
+    submitLabel="Получить презентацию"
+    subjectLabel="Город для открытия"
+    source="franchise-page"
+  />
+</PageShell>
+
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
-  :root{font-family:Montserrat,Arial,sans-serif;color:#20251f;background:#f7f6f0}*{box-sizing:border-box}body{margin:0}.brand{height:94px;display:flex;align-items:center;gap:9px;padding:0 6vw;color:inherit;font-weight:800;font-size:20px;text-decoration:none}.brand img{width:43px;height:43px;object-fit:contain}.hero{min-height:700px;margin:0 2vw;position:relative;overflow:hidden;border-radius:30px;background:#183a2c;color:#fff}.hero>img{width:100%;height:100%;position:absolute;inset:0;object-fit:cover}.hero:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#16372a 0%,rgba(22,55,42,.9) 34%,rgba(22,55,42,.13) 68%)}.hero-copy{position:relative;z-index:1;padding:clamp(58px,8vw,130px);max-width:765px}.hero p,.proof>p,.formats p,.support p,.road>p,.form>div p{margin:0;text-transform:uppercase;letter-spacing:.15em;font-size:11px;font-weight:800;color:#b5db39}.hero h1,.proof h2,.formats h2,.support h2,.form h2{margin:20px 0;font-size:clamp(60px,6.8vw,116px);line-height:.84;letter-spacing:-.095em}.hero-copy>span{max-width:435px;display:block;font-size:16px;line-height:1.55}.hero a{margin-top:32px;display:inline-flex;gap:31px;padding:18px 21px;border-radius:100px;background:#b6dc3a;color:#1b301f;text-decoration:none;font-size:13px;font-weight:800}.hero .mark{position:absolute;z-index:2;right:6vw;bottom:52px;font-size:clamp(45px,7vw,100px);line-height:.72;text-align:right;font-weight:800;letter-spacing:-.12em}.mark em{font-family:'21Cent',cursive;font-size:.42em;font-weight:400;letter-spacing:0}.proof{padding:clamp(100px,13vw,200px) 7vw}.proof h2{font-size:clamp(49px,5.8vw,94px);max-width:900px}.numbers{margin-top:65px;display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid #cbd1c7}.numbers article{padding:23px 20px 0 0;display:flex;gap:19px;border-right:1px solid #cbd1c7}.numbers article+article{padding-left:25px}.numbers b{font-size:clamp(46px,5vw,76px);line-height:.8;color:#779b24;letter-spacing:-.1em}.numbers span{font-size:13px;line-height:1.45}.formats{padding:0 2vw 2vw;display:grid;grid-template-columns:.78fr 1.22fr;gap:18px}.formats-heading{border-radius:28px;background:#e2ead8;padding:clamp(38px,5vw,75px)}.formats h2{font-size:clamp(43px,4.5vw,74px)}.format-list{display:grid;grid-template-columns:1fr 1fr;gap:12px}.format-list article{min-height:275px;padding:24px;position:relative;border-radius:24px;background:#e8e5dc}.format-list article:nth-child(2){background:#dbe8ca}.format-list article:nth-child(3){background:#c9ddd1}.format-list article:nth-child(4){background:#dfd8ca}.format-list b{font-size:12px;color:#729723}.format-list h3{margin:67px 0 8px;font-size:28px;line-height:.96;letter-spacing:-.075em}.format-list strong{font-size:12px}.format-list article p{margin-top:17px;max-width:260px;text-transform:none;letter-spacing:0;font-size:12px;line-height:1.55;color:#4a5149}.format-list a{position:absolute;right:20px;bottom:18px;color:#25392b;font-size:25px;text-decoration:none}.support{margin:0 2vw;padding:clamp(55px,7vw,105px);border-radius:28px;background:#213c30;color:#fff;display:grid;grid-template-columns:1fr 1fr;gap:80px}.support h2{font-size:clamp(50px,5vw,86px)}.support ul{align-self:end;margin:0;padding:0;list-style:none}.support li{padding:17px 0;border-top:1px solid rgba(255,255,255,.28);font-size:18px;font-weight:600}.support li:before{content:'↗';color:#bbdf3a;margin-right:16px}.road{padding:clamp(90px,11vw,160px) 7vw}.road>div{display:grid;grid-template-columns:repeat(4,1fr);margin-top:38px}.road article{min-height:130px;border-top:1px solid #bdc5b9;padding:17px 16px 0 0}.road article+article{padding-left:18px}.road b{font-size:12px;color:#719626;display:block}.road span{display:block;margin-top:50px;font-size:19px;font-weight:700;letter-spacing:-.04em}.form{margin:0 2vw 2vw;padding:clamp(50px,7vw,110px);border-radius:28px;background:#d8e6ce;display:grid;grid-template-columns:.9fr 1.1fr;gap:85px}.form h2{font-size:clamp(48px,5vw,82px)}.form>div span{display:block;max-width:310px;font-size:13px;line-height:1.6}.form form{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:center}.form label{font-size:11px;font-weight:700}.form input{display:block;width:100%;margin-top:7px;border:0;border-radius:10px;padding:16px;background:#fff;font:13px Montserrat}.form button{grid-column:1/-1;margin-top:14px;padding:18px 20px;display:flex;justify-content:space-between;border:0;border-radius:100px;background:#1d392c;color:#fff;font:700 13px Montserrat;text-align:left}.form small{grid-column:1/-1;font-size:10px;line-height:1.45;color:#566155}@media(max-width:700px){.brand{height:72px;padding:0 20px}.hero{min-height:640px;margin:0;border-radius:0}.hero:after{background:linear-gradient(90deg,rgba(18,51,38,.94),rgba(18,51,38,.32))}.hero-copy{padding:58px 20px}.hero h1{font-size:62px}.hero-copy>span{font-size:14px}.hero .mark{right:20px;bottom:39px;font-size:65px}.proof{padding:88px 20px}.proof h2{font-size:52px}.numbers{gap:0;margin-top:43px}.numbers article{display:block;padding-right:8px}.numbers article+article{padding-left:10px}.numbers b{font-size:47px}.numbers span{margin-top:8px;display:block;font-size:10px}.formats{padding:0;display:block}.formats-heading{border-radius:0;padding:66px 20px}.formats h2{font-size:52px}.format-list{padding:8px;gap:8px}.format-list article{min-height:245px;padding:18px;border-radius:19px}.format-list h3{margin-top:55px;font-size:22px}.format-list article p{font-size:10px}.support{margin:50px 0 0;padding:64px 20px;border-radius:0;display:block}.support h2{font-size:57px}.support ul{margin-top:46px}.support li{font-size:15px}.road{padding:83px 20px}.road>div{grid-template-columns:1fr 1fr}.road article{min-height:120px}.road article+article{padding-left:10px}.road span{font-size:15px;margin-top:39px}.form{margin:0;border-radius:0;padding:64px 20px;display:block}.form h2{font-size:57px}.form form{margin-top:42px;grid-template-columns:1fr}.form small{font-size:10px}}
+  .franchise-hero{position:relative;isolation:isolate;min-height:calc(100svh - 126px);overflow:hidden;border-radius:var(--radius);background:#172d24;color:#fff}.franchise-hero>img,.franchise-hero-shade{position:absolute;inset:0;width:100%;height:100%}.franchise-hero>img{z-index:-2;object-fit:cover;animation:franchise-image-in 1.15s cubic-bezier(.22,1,.36,1) both}.franchise-hero-shade{z-index:-1;background:linear-gradient(90deg,rgba(15,35,26,.96) 0%,rgba(15,35,26,.84) 35%,rgba(15,35,26,.2) 72%),linear-gradient(0deg,rgba(15,35,26,.42),transparent 55%)}.franchise-hero-copy{position:absolute;right:var(--content-gutter);bottom:clamp(40px,6vw,90px);left:var(--content-gutter);max-width:870px;animation:franchise-copy-in .75s .14s cubic-bezier(.22,1,.36,1) both}.franchise-hero h1{max-width:860px!important;margin:0;color:#fff!important;font-size:clamp(63px,7vw,118px)!important;line-height:.78!important}.franchise-hero-copy>p{max-width:570px;margin:27px 0 0;color:#e0e7e1;font-size:15px;line-height:1.62}.franchise-hero a{display:inline-flex;min-height:50px;align-items:center;margin-top:30px;padding:0 22px;border-radius:var(--radius);background:var(--lime);color:var(--moss);font-size:12px;font-weight:800;text-decoration:none;transition:background-color .2s ease,transform .2s ease}.franchise-hero a:hover{background:#d0e577;transform:translateY(-2px)}.franchise-hero a:focus-visible{outline:3px solid #fff;outline-offset:3px}.franchise-hero-sign{position:absolute;right:var(--content-gutter);bottom:clamp(38px,5vw,75px);display:flex;align-items:flex-end;gap:15px;text-align:right}.franchise-hero-sign span{font-size:clamp(56px,7vw,106px);font-weight:800;line-height:.7;letter-spacing:-.12em}.franchise-hero-sign em{font-family:'21Cent',serif;color:var(--lime);font-size:clamp(18px,2vw,30px);line-height:.72}
+  .franchise-ledger{display:grid;grid-template-columns:1.15fr repeat(3,1fr);margin-top:14px;border-radius:var(--radius);background:#ede9e2;overflow:hidden}.franchise-ledger article{display:flex;min-height:240px;padding:clamp(25px,3vw,44px);border-left:1px solid rgba(35,30,27,.12);flex-direction:column}.franchise-ledger article:first-child{border-left:0;background:var(--lime);color:var(--moss)}.franchise-ledger strong{font-size:clamp(35px,4vw,62px);font-weight:800;line-height:.9;letter-spacing:-.075em}.franchise-ledger .ledger-main strong{font-size:clamp(83px,9vw,145px)}.franchise-ledger span{margin-top:auto;font-size:12px;font-weight:700;line-height:1.45}
+  .franchise-intro{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(290px,.85fr);align-items:end;gap:clamp(45px,8vw,135px);padding:clamp(110px,13vw,200px) var(--content-gutter)}.franchise-intro h2{margin:0;font-size:clamp(51px,6vw,98px)}.franchise-intro h2 em{font-family:'21Cent',serif;font-weight:400}.franchise-intro>div{display:grid;gap:22px;padding-bottom:6px}.franchise-intro p{max-width:520px;margin:0;color:var(--muted);font-size:14px;line-height:1.72}
+  .franchise-formats{padding:0 0 14px}.franchise-formats header{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.55fr);align-items:end;gap:50px;padding:0 var(--content-gutter) 55px}.franchise-formats header h2{margin:0;font-size:clamp(50px,5.5vw,88px)}.franchise-formats header p{max-width:410px;margin:0 0 7px;color:var(--muted);font-size:13px;line-height:1.7}.franchise-formats>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.franchise-formats article{display:flex;min-height:470px;padding:clamp(25px,3vw,42px);border-radius:var(--radius);background:#e8e2d9;flex-direction:column;transition:transform .3s cubic-bezier(.22,1,.36,1),background-color .25s ease}.franchise-formats article:nth-child(2){background:#dfe9d3}.franchise-formats article:nth-child(3){background:#d8e5df}.franchise-formats article:hover{z-index:1;background:#fff;transform:translateY(-7px)}.franchise-formats article>span{font-size:11px;font-weight:800}.franchise-formats h3{max-width:350px;margin:auto 0 15px;font-size:clamp(31px,3.2vw,50px);line-height:.9;letter-spacing:-.075em}.franchise-formats strong{font-size:12px}.franchise-formats article p{max-width:370px;margin:20px 0 0;color:var(--muted);font-size:12px;line-height:1.65}.franchise-formats article a{display:inline-flex;align-self:flex-start;margin-top:28px;padding-bottom:4px;border-bottom:1px solid currentColor;color:inherit;font-size:11px;font-weight:800;text-decoration:none}
+  .franchise-roastery{display:grid;grid-template-columns:minmax(0,.94fr) minmax(0,1.06fr);min-height:820px;overflow:hidden;border-radius:var(--radius);background:#24201d;color:#fff}.roastery-copy{display:flex;min-width:0;padding:clamp(48px,6.5vw,102px);flex-direction:column}.roastery-copy h2{margin:0;color:#fff;font-size:clamp(47px,5.2vw,84px);line-height:.84}.roastery-copy h2 em{font-family:'21Cent',serif;color:var(--lime);font-weight:400}.roastery-copy p{max-width:500px;margin:35px 0 0;color:#d9d2ca;font-size:13px;line-height:1.74}.roastery-copy p+p{margin-top:20px}.franchise-roastery figure{min-width:0;min-height:720px;margin:0;overflow:hidden}.franchise-roastery img{width:100%;height:100%;object-fit:cover;transition:transform .75s cubic-bezier(.22,1,.36,1)}.franchise-roastery:hover img{transform:scale(1.025)}
+  .franchise-support{display:grid;grid-template-columns:minmax(0,.85fr) minmax(360px,1.15fr);gap:clamp(60px,9vw,150px);padding:clamp(110px,13vw,195px) var(--content-gutter)}.franchise-support header{align-self:start;position:sticky;top:140px}.franchise-support h2{margin:0;font-size:clamp(51px,5.6vw,90px)}.franchise-support header p{max-width:470px;margin:28px 0 0;color:var(--muted);font-size:13px;line-height:1.72}.franchise-support ol{margin:0;padding:0;border-top:1px solid var(--line);list-style:none}.franchise-support li{display:grid;grid-template-columns:54px 1fr;gap:18px;padding:27px 0;border-bottom:1px solid var(--line);transition:padding-left .25s ease}.franchise-support li:hover{padding-left:10px}.franchise-support li span{font-size:10px;font-weight:800}.franchise-support li p{max-width:590px;margin:0;font-size:clamp(18px,2vw,28px);font-weight:700;line-height:1.25;letter-spacing:-.035em}
+  .franchise-history{padding:clamp(70px,8vw,125px) var(--content-gutter);border-radius:var(--radius);background:var(--moss);color:#fff}.franchise-history header{display:flex;align-items:flex-end;justify-content:space-between;gap:30px}.franchise-history h2{max-width:800px;margin:0;color:#fff;font-size:clamp(50px,5.7vw,91px)}.franchise-history header strong{padding-bottom:8px;color:var(--lime);font-family:'21Cent',serif;font-size:clamp(28px,3vw,46px);font-weight:400}.franchise-history>div{display:grid;grid-template-columns:repeat(3,1fr);margin-top:70px}.franchise-history article{min-height:235px;padding:22px 25px 22px 0;border-top:1px solid rgba(255,255,255,.23)}.franchise-history article:nth-child(n+4){border-bottom:1px solid rgba(255,255,255,.23)}.franchise-history article:nth-child(3n+2),.franchise-history article:nth-child(3n+3){padding-left:25px;border-left:1px solid rgba(255,255,255,.23)}.franchise-history article span{color:var(--lime);font-family:'21Cent',serif;font-size:clamp(47px,5vw,78px);font-style:italic}.franchise-history article p{max-width:310px;margin:65px 0 0;color:#d6dfd7;font-size:12px;line-height:1.62}
+  .franchise-stages{padding:clamp(110px,13vw,190px) var(--content-gutter)}.franchise-stages header{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.55fr);align-items:end;gap:50px}.franchise-stages header h2{margin:0;font-size:clamp(50px,5.6vw,90px)}.franchise-stages header p{max-width:420px;margin:0 0 7px;color:var(--muted);font-size:13px;line-height:1.7}.franchise-stages>div{display:grid;grid-template-columns:repeat(4,1fr);margin-top:62px;border-top:1px solid var(--line)}.franchise-stages article{min-height:280px;padding:24px 24px 0 0;border-right:1px solid var(--line)}.franchise-stages article+article{padding-left:24px}.franchise-stages article:last-child{border-right:0}.franchise-stages article>span{font-size:11px;font-weight:800}.franchise-stages h3{margin:80px 0 0;font-size:clamp(23px,2.4vw,35px);letter-spacing:-.05em}.franchise-stages article p{max-width:300px;margin:17px 0 0;color:var(--muted);font-size:12px;line-height:1.65}.franchise-managed{margin-bottom:14px}
+  @keyframes franchise-image-in{from{opacity:.7;transform:scale(1.04)}to{opacity:1;transform:none}}@keyframes franchise-copy-in{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+  @media(max-width:1000px){.franchise-hero{min-height:calc(100svh - 116px);margin:0 var(--mobile-gutter);border-radius:var(--radius)}.franchise-hero-copy{right:25px;bottom:32px;left:25px}.franchise-hero h1{max-width:620px!important;font-size:clamp(48px,12.5vw,64px)!important}.franchise-hero-copy>p{max-width:380px;font-size:13px}.franchise-hero-sign{display:none}.franchise-ledger{grid-template-columns:1fr 1fr;margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter)}.franchise-ledger article{min-height:210px}.franchise-ledger article:nth-child(3){border-left:0;border-top:1px solid rgba(35,30,27,.12)}.franchise-ledger article:nth-child(4){border-top:1px solid rgba(35,30,27,.12)}.franchise-intro,.franchise-support,.franchise-formats header,.franchise-stages,.franchise-stages header{grid-template-columns:1fr}.franchise-intro,.franchise-support,.franchise-stages{padding:90px var(--mobile-gutter)}.franchise-formats header{gap:25px;padding:0 var(--mobile-gutter) 40px}.franchise-formats>div{grid-template-columns:1fr;margin:0 var(--mobile-gutter);gap:8px}.franchise-formats article{min-height:390px;padding:25px}.franchise-roastery{grid-template-columns:1fr;margin:0 var(--mobile-gutter)}.roastery-copy{min-height:620px;padding:58px 25px}.franchise-roastery figure{min-height:610px}.franchise-support{gap:50px}.franchise-support header{position:static}.franchise-history{margin:0 var(--mobile-gutter);padding:70px 25px}.franchise-history header{display:block}.franchise-history header strong{display:block;margin-top:25px}.franchise-history>div{grid-template-columns:1fr 1fr;margin-top:50px}.franchise-history article:nth-child(n){padding:22px 18px 22px 0;border-top:1px solid rgba(255,255,255,.23);border-right:0;border-bottom:0;border-left:0}.franchise-history article:nth-child(2n){padding-left:18px;border-left:1px solid rgba(255,255,255,.23)}.franchise-history article:nth-last-child(-n+2){border-bottom:1px solid rgba(255,255,255,.23)}.franchise-history article p{margin-top:45px}.franchise-stages header{gap:25px}.franchise-stages>div{grid-template-columns:1fr 1fr}.franchise-stages article{border-bottom:1px solid var(--line)}}
+  @media(max-width:560px){.franchise-ledger strong{font-size:31px}.franchise-ledger .ledger-main strong{font-size:78px}.franchise-ledger article{min-height:190px;padding:22px}.franchise-intro h2{font-size:52px}.roastery-copy{min-height:570px}.roastery-copy h2{font-size:44px}.franchise-roastery figure{min-height:470px}.franchise-history h2{font-size:49px}.franchise-history article{min-height:235px}.franchise-history article span{font-size:45px}.franchise-history article p{font-size:11px}.franchise-stages>div{grid-template-columns:1fr}.franchise-stages article{min-height:240px;padding-left:0!important;border-right:0}.franchise-stages h3{margin-top:62px}}
+  @media(prefers-reduced-motion:reduce){.franchise-hero>img,.franchise-hero-copy{animation:none}.franchise-formats article,.franchise-roastery img,.franchise-support li{transition:none}}
 </style>

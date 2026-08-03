@@ -1,0 +1,31 @@
+---
+import LeadForm from './LeadForm.astro'
+
+interface Props {
+  id?: string
+  title: string
+  description: string
+  type: 'CONTACT' | 'RESERVATION' | 'FRANCHISE' | 'BANQUET' | 'JOB'
+  submitLabel?: string
+  subjectLabel?: string
+  source?: string
+}
+
+const { id, title, description, type, submitLabel, subjectLabel, source } = Astro.props
+const titleLines = title.split(/\r?\n/).filter(Boolean)
+---
+
+<section class="lead-panel" id={id}>
+  <div class="lead-panel-copy">
+    <h2>{titleLines.map((line, index) => <>{line}{index < titleLines.length - 1 && <br />}</>)}</h2>
+    <p>{description}</p>
+  </div>
+  <LeadForm {type} {submitLabel} {subjectLabel} {source} />
+</section>
+
+<style>
+  .lead-panel{display:grid;grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr);gap:clamp(45px,7vw,105px);margin:14px 0 0;padding:clamp(52px,7vw,105px);scroll-margin-top:114px;border-radius:var(--radius);background:var(--moss);color:#fff}.lead-panel-copy{align-self:start}.lead-panel h2{margin:0;color:#fff;font-size:clamp(48px,5.3vw,85px)}.lead-panel-copy p{max-width:400px;margin:22px 0 0;color:#d5dfd6;font-size:13px;line-height:1.7}.lead-panel :global(.lead-form){align-self:center}.lead-panel :global(.lead-form label){color:#fff}.lead-panel :global(.lead-form input),.lead-panel :global(.lead-form textarea){border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.98)}.lead-panel :global(.lead-form button){display:flex!important;width:100%;min-height:60px!important;justify-self:stretch!important;justify-content:space-between!important;padding:0 10px 0 21px!important;border:0!important;background:var(--lime)!important;color:var(--moss)!important;font-size:12px!important;text-align:left;box-shadow:none!important}.lead-panel :global(.lead-form button b){display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--moss);color:#fff;transition:transform .22s ease}.lead-panel :global(.lead-form button:hover){background:#cee576!important;transform:none!important}.lead-panel :global(.lead-form button:hover b){transform:translateX(3px)}.lead-panel :global(.lead-form small){color:#c9d5ca}
+  @media(max-width:900px){.lead-panel{grid-template-columns:1fr;margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter);padding:58px 25px}.lead-panel :global(.lead-form){margin-top:15px}}
+  @media(max-width:540px){.lead-panel h2{font-size:50px}}
+  @media(prefers-reduced-motion:reduce){.lead-panel :global(.lead-form button b){transition:none}}
+</style>
