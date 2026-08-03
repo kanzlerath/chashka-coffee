@@ -328,7 +328,7 @@ async function seed() {
       variants: [{ label: '250 г', weightGrams: 250, priceKopecks: 82000, position: 10, isAvailable: true }],
     },
     {
-      type: 'CAKE' as const, slug: 'lyubimiy', name: 'Любимый', subtitle: 'Торт на каждый семейный праздник',
+      type: 'CAKE' as const, slug: 'lyubimiy', name: 'Любимый', category: 'Торты', subtitle: 'Торт на каждый семейный праздник',
       description: 'Слоёный торт с нежным кремом и выразительным домашним характером.', ingredients: 'Бисквит, сливочный крем, орехи',
       origin: null, roastLevel: null, tastingNotes: ['нежный', 'сливочный'], imageUrl: '/images/home-breakfast.png',
       galleryUrls: ['/images/home-breakfast.png'], details: [{ label: 'Срок изготовления', value: 'от 48 часов' }],
@@ -336,7 +336,7 @@ async function seed() {
       variants: [{ label: '1,1 кг', weightGrams: 1100, priceKopecks: 450000, position: 10, isAvailable: true }],
     },
     {
-      type: 'CAKE' as const, slug: 'kofeiniy', name: 'Кофейный', subtitle: 'Торт с кофейным кремом',
+      type: 'CAKE' as const, slug: 'kofeiniy', name: 'Кофейный', category: 'Торты', subtitle: 'Торт с кофейным кремом',
       description: 'Выразительный кофейный десерт, собранный вокруг вкуса свежей обжарки.', ingredients: 'Бисквит, кофе, сливочный крем, шоколад',
       origin: null, roastLevel: null, tastingNotes: ['кофе', 'шоколад'], imageUrl: '/images/home-morning-v2.png',
       galleryUrls: ['/images/home-morning-v2.png'], details: [{ label: 'Срок изготовления', value: 'от 48 часов' }],

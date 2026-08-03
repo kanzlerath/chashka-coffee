@@ -9,6 +9,7 @@ describe('product catalog contracts', () => {
       status: 'PUBLISHED',
       slug: 'ethiopia-guji',
       name: 'Эфиопия Гуджи',
+      category: null,
       subtitle: 'Светлая обжарка',
       description: 'Яркий и сочный кофе.',
       ingredients: null,
@@ -32,9 +33,20 @@ describe('product catalog contracts', () => {
 
   test('rejects products without a purchasable presentation', () => {
     expect(() => upsertProductRequestSchema.parse({
-      type: 'CAKE', status: 'DRAFT', slug: 'cake', name: 'Торт', subtitle: null, description: null,
+      type: 'CAKE', status: 'DRAFT', slug: 'cake', name: 'Торт', category: 'Торты', subtitle: null, description: null,
       ingredients: null, origin: null, roastLevel: null, tastingNotes: [], imageUrl: null, galleryUrls: [],
       details: [], isFeatured: false, position: 10, variants: [],
     })).toThrow()
+  })
+
+  test('keeps category optional for existing product writers', () => {
+    const parsed = upsertProductRequestSchema.parse({
+      type: 'COFFEE', status: 'DRAFT', slug: 'legacy-coffee', name: 'Старый клиент',
+      subtitle: null, description: null, ingredients: null, origin: null, roastLevel: null,
+      tastingNotes: [], imageUrl: null, galleryUrls: [], details: [], isFeatured: false, position: 10,
+      variants: [{ label: '250 г', weightGrams: 250, priceKopecks: 79000, position: 10, isAvailable: true }],
+    })
+
+    expect(parsed.category).toBeUndefined()
   })
 })

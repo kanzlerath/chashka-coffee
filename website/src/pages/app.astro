@@ -6,6 +6,9 @@ import { APP_DOWNLOAD_URL } from '../lib/app-links'
 import { getManagedPage } from '../lib/public-api'
 
 const page = await getManagedPage('APP')
+const heroTitle = page?.heroTitle ?? 'Вся «Чашка»\nв вашем телефоне'
+const heroDescription = page?.heroDescription ?? 'Заказывайте и оплачивайте онлайн, копите бонусы, возвращайтесь к любимым блюдам и узнавайте о новом раньше всех.'
+const heroImage = page?.heroImageUrl ?? '/brand/bento/App.svg'
 const appScenes = [
   { key: 'order', label: 'Заказ', title: 'Любимое — без лишних шагов', text: 'Выберите ресторан, доставку или самовывоз, добавьте блюда и оплатите заказ онлайн.', status: 'Заказ принят', detail: 'Доставим примерно за 35 минут', action: 'Повторить заказ' },
   { key: 'bonus', label: 'DI Bonus', title: 'Карта всегда с вами', text: 'Показывайте QR-код, следите за балансом и уровнем программы, оплачивайте часть заказа бонусами.', status: 'Ваш баланс', detail: '2 480 бонусов', action: 'Открыть QR-карту' },
@@ -14,17 +17,17 @@ const appScenes = [
 ]
 ---
 
-<PageShell title="Приложение" description="Приложение «Чашка кофе»: заказ и онлайн-оплата, доставка, DI Bonus, история, промокоды и новости." active="app">
+<PageShell title="Приложение" description="Приложение «Чашка кофе»: заказ и онлайн-оплата, доставка, DI Bonus, история, промокоды и новости." active="app" image={heroImage}>
   <section class="app-opening">
     <div class="app-opening-copy">
-      <h1>Вся «Чашка»<br />в вашем телефоне</h1>
-      <p>Заказывайте и оплачивайте онлайн, копите бонусы, возвращайтесь к любимым блюдам и узнавайте о новом раньше всех.</p>
+      <h1>{heroTitle.split(/\r?\n/).map((line) => <span>{line}</span>)}</h1>
+      <p>{heroDescription}</p>
       <StoreBadges />
     </div>
     <div class="app-opening-art" aria-hidden="true">
       <span class="app-orbit app-orbit-one">Промокоды</span>
       <span class="app-orbit app-orbit-two">DI Bonus</span>
-      <img src="/brand/bento/App.svg" alt="" />
+      <img src={heroImage} alt="" />
     </div>
   </section>
 
@@ -63,7 +66,7 @@ const appScenes = [
   {page && <div class="app-managed"><ContentBlocks blocks={page.blocks} /></div>}
 
   <section id="download" class="app-download">
-    <div><h2>Скачайте.<br />Остальное уже внутри.</h2><p>Один QR-код для iPhone и Android.</p><StoreBadges /></div>
+    <div><h2>Скачайте.<br />Остальное уже внутри.</h2><StoreBadges /></div>
     <a class="app-qr" href={APP_DOWNLOAD_URL} aria-label="Открыть ссылку для установки приложения"><img src="/brand/app-download-qr.png" alt="QR-код для установки приложения Чашка кофе" width="688" height="688" /></a>
   </section>
 </PageShell>
@@ -98,6 +101,7 @@ const appScenes = [
 </script>
 
 <style>
+  .app-opening .app-opening-copy h1{font-size:clamp(52px,5.6vw,90px)!important}.app-opening .app-opening-copy h1 span{display:block}
   .app-opening{display:grid;grid-template-columns:minmax(0,.95fr) minmax(360px,1.05fr);min-height:calc(100svh - 126px);align-items:center;overflow:hidden;border-radius:var(--radius);background:var(--moss);color:#fff}.app-opening-copy{position:relative;z-index:2;padding:clamp(52px,7vw,112px)}.app-opening h1{max-width:760px;margin:0;color:#fff!important;font-size:clamp(58px,6.5vw,108px)!important}.app-opening-copy>p{max-width:530px;margin:24px 0 0;color:#d9e1da;font-size:15px;line-height:1.65}.app-opening :global(.store-badges){margin-top:30px}.app-opening-art{position:relative;align-self:stretch;min-height:650px;background:radial-gradient(circle at 54% 42%,rgba(189,214,90,.23),transparent 38%)}.app-opening-art>img{position:absolute;right:14%;bottom:-13%;width:min(67%,390px);height:auto;filter:drop-shadow(26px 28px 26px rgba(4,15,9,.25));transform:rotate(5deg);transition:transform .55s cubic-bezier(.22,1,.36,1)}.app-opening:hover .app-opening-art>img{transform:rotate(2deg) translateY(-10px)}.app-orbit{position:absolute;z-index:2;padding:13px 17px;border:1px solid rgba(255,255,255,.35);border-radius:var(--radius);background:rgba(252,251,248,.12);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;backdrop-filter:blur(10px)}.app-orbit-one{top:20%;right:8%;transform:rotate(7deg)}.app-orbit-two{top:38%;left:3%;color:var(--moss);background:var(--lime);transform:rotate(-7deg)}
   .app-intro{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);align-items:end;gap:clamp(40px,8vw,130px);padding:clamp(100px,12vw,180px) var(--content-gutter)}.app-intro h2{margin:0;font-size:clamp(50px,5.6vw,91px)}.app-intro p{max-width:480px;margin:0 0 9px;color:var(--muted);font-size:15px;line-height:1.7}
   .app-workspace{display:grid;grid-template-columns:minmax(250px,.75fr) minmax(260px,.75fr) minmax(260px,.7fr);align-items:center;gap:clamp(32px,5vw,78px);min-height:650px;padding:clamp(48px,6.5vw,100px);border-radius:var(--radius);background:#ebe4d9}.app-workspace-copy h2{margin:0 0 38px;font-size:clamp(42px,4.6vw,72px)}.app-tabs{display:grid}.app-tabs button{display:flex;min-height:58px;align-items:center;justify-content:space-between;padding:0;border:0;border-top:1px solid #cfc6ba;background:transparent;color:#756f68;cursor:pointer;font-size:13px;font-weight:700;text-align:left;transition:padding .22s ease,color .22s ease}.app-tabs button:last-child{border-bottom:1px solid #cfc6ba}.app-tabs button span{font-size:17px;opacity:0;transform:translateX(-8px);transition:opacity .22s ease,transform .22s ease}.app-tabs button:hover,.app-tabs button.is-active{padding-left:9px;color:var(--moss)}.app-tabs button.is-active span{opacity:1;transform:none}.app-tabs button:focus-visible{outline:3px solid var(--lime);outline-offset:3px}

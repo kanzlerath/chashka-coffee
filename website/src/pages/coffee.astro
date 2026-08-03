@@ -1,9 +1,9 @@
 ---
 import PageShell from '../layouts/PageShell.astro'
 import ProductCard from '../components/ProductCard.astro'
-import { getProducts } from '../lib/public-api'
+import { getManagedPage, getProducts } from '../lib/public-api'
 
-const products = await getProducts('COFFEE')
+const [products, page] = await Promise.all([getProducts('COFFEE'), getManagedPage('COFFEE')])
 const productGroups = products.reduce((groups, product) => {
   const name = product.subtitle || 'Кофе'
   const group = groups.find((item) => item.name === name)
@@ -12,15 +12,18 @@ const productGroups = products.reduce((groups, product) => {
   return groups
 }, [] as Array<{ id: string; name: string; products: typeof products }>)
 
-const heroImage = '/images/coffee-editorial-v1.webp'
-const tasteGallery = [
-  { name: 'Абрикос', detail: 'сочная сладость и мягкая кислотность', image: '/images/coffee-taste-apricot-v1.webp' },
-  { name: 'Шоколад', detail: 'плотность, какао и долгий тёплый шлейф', image: '/images/coffee-taste-chocolate-v1.webp' },
-  { name: 'Персик', detail: 'бархатистый аромат и лёгкая свежесть', image: '/images/coffee-taste-peach-v1.webp' },
-  { name: 'Вишня', detail: 'ягодная сочность и винная кислинка', image: '/images/coffee-taste-cherry-v1.webp' },
-  { name: 'Апельсин', detail: 'яркий цитрус, цедра и чистая свежесть', image: '/images/coffee-taste-orange-v1.webp' },
-  { name: 'Карамель', detail: 'тягучая сладость и округлый тёплый вкус', image: '/images/coffee-taste-caramel-v1.webp' },
-  { name: 'Фундук', detail: 'жареный орех и мягкое сливочное послевкусие', image: '/images/coffee-taste-hazelnut-v1.webp' },
+const heroImage = page?.heroImageUrl ?? '/images/coffee-editorial-v1.webp'
+const heroTitle = page?.heroTitle ?? 'Кофе —\nнаша работа.'
+const heroDescription = page?.heroDescription ?? 'Выбираем зерно, строим профиль обжарки и каждый день настраиваем вкус в чашке.'
+const heroLines = heroTitle.split(/\r?\n/).filter(Boolean)
+const tasteGallery = page?.coffeeTastes ?? [
+  { title: 'Абрикос', description: 'сочная сладость и мягкая кислотность', imageUrl: '/images/coffee-taste-apricot-v1.webp' },
+  { title: 'Шоколад', description: 'плотность, какао и долгий тёплый шлейф', imageUrl: '/images/coffee-taste-chocolate-v1.webp' },
+  { title: 'Персик', description: 'бархатистый аромат и лёгкая свежесть', imageUrl: '/images/coffee-taste-peach-v1.webp' },
+  { title: 'Вишня', description: 'ягодная сочность и винная кислинка', imageUrl: '/images/coffee-taste-cherry-v1.webp' },
+  { title: 'Апельсин', description: 'яркий цитрус, цедра и чистая свежесть', imageUrl: '/images/coffee-taste-orange-v1.webp' },
+  { title: 'Карамель', description: 'тягучая сладость и округлый тёплый вкус', imageUrl: '/images/coffee-taste-caramel-v1.webp' },
+  { title: 'Фундук', description: 'жареный орех и мягкое сливочное послевкусие', imageUrl: '/images/coffee-taste-hazelnut-v1.webp' },
 ]
 ---
 
@@ -29,8 +32,8 @@ const tasteGallery = [
     <section class="coffee-cover" aria-labelledby="coffee-title">
       <figure class="coffee-cover-visual"><img src={heroImage} alt="Кофе собственной обжарки" /></figure>
       <div class="coffee-cover-copy">
-        <h1 id="coffee-title"><span>Кофе —</span><em>наша работа.</em></h1>
-        <p>Выбираем зерно, строим профиль обжарки и каждый день настраиваем вкус в чашке.</p>
+        <h1 id="coffee-title"><span>{heroLines[0]}</span>{heroLines.length > 1 && <em>{heroLines.slice(1).join(' ')}</em>}</h1>
+        <p>{heroDescription}</p>
       </div>
       <div class="coffee-cover-dock" aria-label="Навигация по странице">
         <div class="coffee-cover-well coffee-cover-well--catalog">
@@ -65,7 +68,7 @@ const tasteGallery = [
 
     <section class="coffee-senses" aria-labelledby="coffee-senses-title">
       <header><h2 id="coffee-senses-title">Вкус можно<br/><em>увидеть.</em></h2></header>
-      <div class="coffee-sense-gallery">{tasteGallery.map((taste) => <article class="coffee-sense-card" tabindex="0"><img src={taste.image} alt={taste.name} loading="lazy"/><div><h3>{taste.name}</h3><p>{taste.detail}</p></div></article>)}</div>
+      <div class="coffee-sense-gallery">{tasteGallery.map((taste) => <article class="coffee-sense-card" tabindex="0"><img src={taste.imageUrl} alt={taste.title} loading="lazy"/><div><h3>{taste.title}</h3><p>{taste.description}</p></div></article>)}</div>
     </section>
 
     <section id="catalog" class="coffee-catalog" aria-label="Каталог кофе">

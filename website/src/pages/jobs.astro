@@ -17,15 +17,18 @@ try {
   }
 } catch { /* Static editorial vacancies keep the page useful without the API. */ }
 const page = await getManagedPage('JOBS')
+const heroTitle = page?.heroTitle ?? 'Работа\nсо вкусом к людям'
+const heroDescription = page?.heroDescription ?? 'Ищем внимательных людей, которым важны гости, команда и хорошо сделанная работа.'
+const heroImage = page?.heroImageUrl ?? '/images/home-hero-v1.png'
 ---
 
-<PageShell title="Вакансии" description="Вакансии в ресторанах, кондитерской и команде Чашки кофе." active="jobs" image="/images/home-hero-v1.png">
+<PageShell title="Вакансии" description="Вакансии в ресторанах, кондитерской и команде Чашки кофе." active="jobs" image={heroImage}>
   <EditorialHero
-    title={'Работа\nсо вкусом к людям'}
-    image="/images/home-hero-v1.png"
+    title={heroTitle}
+    image={heroImage}
     alt="Кофе и свежая выпечка в Чашке кофе"
     eyebrow="Команда Чашки кофе"
-    description="Ищем внимательных людей, которым важны гости, команда и хорошо сделанная работа."
+    description={heroDescription}
     actionLabel="Смотреть вакансии"
     actionHref="#vacancies"
   />

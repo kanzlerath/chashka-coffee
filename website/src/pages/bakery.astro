@@ -6,6 +6,16 @@ import ProductCard from '../components/ProductCard.astro'
 import { getManagedPage, getProducts } from '../lib/public-api'
 
 const [products, page] = await Promise.all([getProducts('CAKE'), getManagedPage('BAKERY')])
+const heroTitle = page?.heroTitle ?? 'Десерты\nс честным составом'
+const heroDescription = page?.heroDescription ?? 'Собираем торты и десерты вручную — из натуральных ингредиентов и заготовок собственного производства.'
+const heroImage = page?.heroImageUrl ?? '/images/bakery-hero-v1.png'
+const productGroups = products.reduce((groups, product) => {
+  const name = product.category || 'Торты'
+  const group = groups.find((item) => item.name === name)
+  if (group) group.products.push(product)
+  else groups.push({ id: `cake-group-${groups.length + 1}`, name, products: [product] })
+  return groups
+}, [] as Array<{ id: string; name: string; products: typeof products }>)
 const ingredientStories = [
   {
     title: 'Сливки, масло и яйца',
@@ -28,13 +38,13 @@ const ownKitchen = ['Карамель', 'Варенье из свежих яго
 const excluded = ['маргарин', 'спреды', 'покупные джемы', 'яичный порошок', 'консерванты', 'искусственные ароматизаторы', 'продлители хранения']
 ---
 
-<PageShell title="Кондитерская" description="Торты и десерты собственной кондитерской «Чашка кофе» из натуральных ингредиентов." active="bakery" image="/images/bakery-hero-v1.png">
+<PageShell title="Кондитерская" description="Торты и десерты собственной кондитерской «Чашка кофе» из натуральных ингредиентов." active="bakery" image={heroImage}>
   <EditorialHero
-    title={'Десерты\nс честным составом'}
-    image="/images/bakery-hero-v1.png"
+    title={heroTitle}
+    image={heroImage}
     alt="Торт из собственной кондитерской Чашки кофе"
     eyebrow="Собственная кондитерская"
-    description="Собираем торты и десерты вручную — из натуральных ингредиентов и заготовок собственного производства."
+    description={heroDescription}
     actionLabel="Смотреть каталог"
     actionHref="#catalog"
   />
@@ -46,21 +56,19 @@ const excluded = ['маргарин', 'спреды', 'покупные джем
 
   <section class="ingredient-story" aria-labelledby="ingredient-title">
     <div class="ingredient-heading reveal-on-scroll">
-      <p>01 — ингредиенты</p>
       <h2 id="ingredient-title">У каждого вкуса<br />есть источник</h2>
       <span>Нажмите на строку, чтобы узнать, что именно мы выбираем для рецептур.</span>
     </div>
     <div class="ingredient-list">
-      {ingredientStories.map((item, index) => <details open={index === 0} class="reveal-on-scroll">
-        <summary><span>{String(index + 1).padStart(2, '0')}</span><strong>{item.title}</strong><i aria-hidden="true"></i></summary>
-        <p>{item.text}</p>
-      </details>)}
+      {ingredientStories.map((item, index) => <article class:list={['ingredient-item', 'reveal-on-scroll', { 'is-open': index === 0 }]}>
+        <button type="button" aria-expanded={index === 0 ? 'true' : 'false'}><span>{String(index + 1).padStart(2, '0')}</span><strong>{item.title}</strong><i aria-hidden="true"></i></button>
+        <div class="ingredient-panel"><div><p>{item.text}</p></div></div>
+      </article>)}
     </div>
   </section>
 
   <section class="bakery-kitchen reveal-on-scroll">
     <div class="kitchen-copy">
-      <p>02 — свой цех</p>
       <h2>Сделано здесь,<br />а не куплено.</h2>
       <span>Так мы контролируем свежесть, сладость и текстуру каждой детали — от первой варки карамели до финального слоя крема.</span>
     </div>
@@ -70,17 +78,16 @@ const excluded = ['маргарин', 'спреды', 'покупные джем
   </section>
 
   <section class="bakery-no" aria-labelledby="bakery-no-title">
-    <div class="bakery-no-heading reveal-on-scroll"><p>03 — принцип</p><h2 id="bakery-no-title">Лишнему здесь<br />не место.</h2></div>
+    <div class="bakery-no-heading reveal-on-scroll"><p>Не используем</p><h2 id="bakery-no-title">Лишнему здесь<br />не место.</h2></div>
     <div class="bakery-no-list">{excluded.map((item) => <span>{item}</span>)}</div>
     <p class="bakery-no-note reveal-on-scroll">Без искусственных добавок и веществ, продлевающих срок хранения. Именно поэтому наши десерты остаются такими по-домашнему вкусными.</p>
   </section>
 
   {page && <div class="bakery-managed"><ContentBlocks blocks={page.blocks} /></div>}
 
-  <section id="catalog" class="cake-catalog">
-    <header class="reveal-on-scroll"><div><p>Каталог</p><h2>Торты для<br />вашего дня</h2></div><span>Состав, вес и стоимость — в карточке торта. Каждый десерт ведёт на отдельную страницу с подробностями.</span></header>
-    {products.length
-      ? <div class="cake-grid">{products.map((product) => <ProductCard product={product} presentation="menu" />)}</div>
+  <section id="catalog" class="cake-catalog" aria-label="Каталог кондитерской">
+    {productGroups.length
+      ? <div class="cake-catalog-layout"><aside class="cake-catalog-nav"><nav aria-label="Категории кондитерской">{productGroups.map((group) => <a href={`#${group.id}`}>{group.name}</a>)}</nav></aside><div class="cake-catalog-groups">{productGroups.map((group) => <section id={group.id} class="cake-catalog-group"><h2>{group.name}</h2><div class="cake-grid">{group.products.map((product) => <ProductCard product={product} presentation="menu" />)}</div></section>)}</div></div>
       : <p class="catalog-empty">Каталог временно недоступен. Позвоните в кондитерскую — команда подскажет актуальные вкусы и стоимость.</p>}
   </section>
 
@@ -91,11 +98,14 @@ const excluded = ['маргарин', 'спреды', 'покупные джем
 </PageShell>
 
 <script>
-  document.querySelectorAll<HTMLDetailsElement>('.ingredient-list details').forEach((detail) => {
-    detail.addEventListener('toggle', () => {
-      if (!detail.open) return
-      document.querySelectorAll<HTMLDetailsElement>('.ingredient-list details').forEach((item) => {
-        if (item !== detail) item.open = false
+  const ingredientItems = document.querySelectorAll<HTMLElement>('.ingredient-item')
+  ingredientItems.forEach((item) => {
+    item.querySelector<HTMLButtonElement>('button')?.addEventListener('click', () => {
+      const willOpen = !item.classList.contains('is-open')
+      ingredientItems.forEach((current) => {
+        const open = current === item && willOpen
+        current.classList.toggle('is-open', open)
+        current.querySelector<HTMLButtonElement>('button')?.setAttribute('aria-expanded', String(open))
       })
     })
   })
@@ -116,13 +126,13 @@ const excluded = ['маргарин', 'спреды', 'покупные джем
   .bakery-belief{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);align-items:end;gap:clamp(40px,8vw,130px);padding:clamp(100px,12vw,185px) var(--content-gutter)}
   .bakery-belief h2{margin:0;font-size:clamp(50px,6vw,96px)}.bakery-belief p{max-width:480px;margin:0 0 10px;color:var(--muted);font-size:15px;line-height:1.7}
   .ingredient-story{display:grid;grid-template-columns:minmax(280px,.78fr) minmax(0,1.22fr);gap:clamp(42px,7vw,110px);padding:clamp(58px,7vw,105px);border-radius:var(--radius);background:#ece5db}
-  .ingredient-heading p,.kitchen-copy>p,.bakery-no-heading>p,.cake-catalog header p{margin:0;color:#6f902b;font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.ingredient-heading h2,.kitchen-copy h2,.bakery-no-heading h2,.cake-catalog h2{margin:18px 0;font-size:clamp(44px,5vw,78px)}.ingredient-heading>span{display:block;max-width:380px;color:var(--muted);font-size:13px;line-height:1.6}
-  .ingredient-list{align-self:center}.ingredient-list details{border-top:1px solid #ccc3b6}.ingredient-list details:last-child{border-bottom:1px solid #ccc3b6}.ingredient-list summary{display:grid;grid-template-columns:36px 1fr 28px;align-items:center;gap:12px;padding:23px 0;cursor:pointer;list-style:none}.ingredient-list summary::-webkit-details-marker{display:none}.ingredient-list summary>span{color:#768f35;font-size:10px;font-weight:800}.ingredient-list summary strong{font-size:clamp(19px,2vw,28px);letter-spacing:-.045em}.ingredient-list summary i{position:relative;width:22px;height:22px}.ingredient-list summary i:before,.ingredient-list summary i:after{position:absolute;top:50%;left:50%;width:16px;height:1.5px;background:var(--moss);content:'';transform:translate(-50%,-50%);transition:transform .25s ease}.ingredient-list summary i:after{transform:translate(-50%,-50%) rotate(90deg)}.ingredient-list details[open] summary i:after{transform:translate(-50%,-50%)}.ingredient-list details p{max-width:680px;margin:0;padding:0 40px 24px 48px;color:var(--muted);font-size:13px;line-height:1.65}
+  .bakery-no-heading>p{margin:0;color:#766f67;font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.ingredient-heading h2,.kitchen-copy h2,.bakery-no-heading h2,.cake-catalog-group h2{margin:18px 0;font-size:clamp(44px,5vw,78px)}.ingredient-heading>span{display:block;max-width:380px;color:var(--muted);font-size:13px;line-height:1.6}
+  .ingredient-list{align-self:center}.ingredient-item{border-top:1px solid #ccc3b6}.ingredient-item:last-child{border-bottom:1px solid #ccc3b6}.ingredient-item>button{display:grid;width:100%;grid-template-columns:36px 1fr 28px;align-items:center;gap:12px;padding:23px 0;border:0;background:transparent;color:inherit;cursor:pointer;text-align:left}.ingredient-item button>span{color:#768f35;font-size:10px;font-weight:800}.ingredient-item button strong{font-size:clamp(19px,2vw,28px);letter-spacing:-.045em}.ingredient-item button i{position:relative;width:22px;height:22px}.ingredient-item button i:before,.ingredient-item button i:after{position:absolute;top:50%;left:50%;width:16px;height:1.5px;background:var(--moss);content:'';transform:translate(-50%,-50%);transition:transform .25s ease}.ingredient-item button i:after{transform:translate(-50%,-50%) rotate(90deg)}.ingredient-item.is-open button i:after{transform:translate(-50%,-50%)}.ingredient-panel{display:grid;grid-template-rows:0fr;transition:grid-template-rows .38s cubic-bezier(.22,1,.36,1)}.ingredient-panel>div{overflow:hidden}.ingredient-item.is-open .ingredient-panel{grid-template-rows:1fr}.ingredient-panel p{max-width:680px;margin:0;padding:0 40px 24px 48px;color:var(--muted);font-size:13px;line-height:1.65}
   .bakery-kitchen{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,.8fr);min-height:560px;gap:clamp(50px,8vw,135px);margin-top:14px;padding:clamp(56px,7vw,108px);border-radius:var(--radius);background:var(--moss);color:#fff}.kitchen-copy{align-self:end}.kitchen-copy>p{color:var(--lime)}.kitchen-copy h2{color:#fff}.kitchen-copy>span{display:block;max-width:560px;color:#d7e1d8;font-size:14px;line-height:1.65}.kitchen-list{display:grid;align-content:center}.kitchen-list>div{display:flex;align-items:center;gap:24px;padding:26px 0;border-bottom:1px solid rgba(255,255,255,.18);transition:padding-left .25s ease,color .25s ease}.kitchen-list>div:hover{padding-left:12px;color:var(--lime)}.kitchen-list span{width:24px;color:var(--lime);font-size:9px}.kitchen-list strong{font-size:clamp(18px,2vw,27px);letter-spacing:-.04em}
-  .bakery-no{padding:clamp(105px,12vw,185px) var(--content-gutter)}.bakery-no-heading{display:grid;grid-template-columns:.42fr 1fr;align-items:start;gap:35px}.bakery-no-heading h2{margin-top:0}.bakery-no-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:52px}.bakery-no-list span{position:relative;padding:15px 18px;border:1px solid #d8d1c8;border-radius:var(--radius);color:#706a63;font-size:12px;overflow:hidden;transition:color .22s ease,border-color .22s ease}.bakery-no-list span:after{position:absolute;top:50%;right:12px;left:12px;height:1px;background:#d85e47;content:'';transform:scaleX(0);transform-origin:left;transition:transform .28s ease}.bakery-no-list span:hover{border-color:#d8a89d;color:#453f3a}.bakery-no-list span:hover:after{transform:scaleX(1)}.bakery-no-note{max-width:790px;margin:42px 0 0 auto;color:var(--muted);font-size:clamp(18px,2vw,28px);line-height:1.5}
-  .bakery-managed{margin-bottom:14px}.cake-catalog{padding:clamp(92px,10vw,160px) var(--content-gutter)}.cake-catalog header{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,.55fr);align-items:end;gap:50px;margin-bottom:52px}.cake-catalog header>span{max-width:420px;margin-bottom:9px;color:var(--muted);font-size:13px;line-height:1.65}.cake-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.catalog-empty{padding:30px;border-radius:var(--radius);background:var(--sand);color:var(--muted);line-height:1.6}
+  .bakery-no{padding:clamp(105px,12vw,185px) var(--content-gutter)}.bakery-no-heading{display:grid;grid-template-columns:.42fr 1fr;align-items:start;gap:35px}.bakery-no-heading h2{margin-top:0}.bakery-no-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:52px}.bakery-no-list span{position:relative;padding:15px 18px;border:1px solid #d8a89d;border-radius:var(--radius);color:#706a63;font-size:12px;overflow:hidden}.bakery-no-list span:after{position:absolute;top:50%;right:12px;left:12px;height:1px;background:#d85e47;content:''}.bakery-no-note{max-width:790px;margin:42px 0 0 auto;color:var(--muted);font-size:clamp(18px,2vw,28px);line-height:1.5}
+  .bakery-managed{margin-bottom:14px}.cake-catalog{padding:clamp(92px,10vw,160px) 0}.cake-catalog-layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:clamp(24px,3vw,42px)}.cake-catalog-nav{position:sticky;top:118px;align-self:start;min-height:420px;padding:9px;border:1px solid var(--line);border-radius:18px;background:rgba(252,251,248,.58)}.cake-catalog-nav nav{display:grid;gap:2px}.cake-catalog-nav a{padding:13px 12px;border-radius:12px;color:#3f3a35;font-size:16px;font-weight:600;text-decoration:none;transition:color .2s,background-color .2s}.cake-catalog-nav a:hover{background:#e8eddc;color:#27432f}.cake-catalog-groups{display:grid;gap:56px}.cake-catalog-group{scroll-margin-top:140px}.cake-catalog-group h2{margin:0 0 24px}.cake-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.catalog-empty{padding:30px;border-radius:var(--radius);background:var(--sand);color:var(--muted);line-height:1.6}
   .cake-order{display:flex;min-height:400px;align-items:end;justify-content:space-between;gap:50px;padding:clamp(55px,7vw,108px);border-radius:var(--radius);background:var(--lime);color:var(--moss)}.cake-order h2{max-width:830px;margin:0;font-size:clamp(49px,5.6vw,92px)}.cake-order p{max-width:600px;margin:24px 0 0;font-size:14px;line-height:1.65}.cake-order a{display:inline-flex;min-width:190px;min-height:58px;align-items:center;justify-content:space-between;gap:30px;padding:0 21px;border-radius:var(--radius);background:var(--moss);color:#fff;font-size:12px;font-weight:800;text-decoration:none;transition:transform .2s ease,background .2s ease}.cake-order a:hover{background:#315b45;transform:translateY(-3px)}.cake-order a span{font-size:18px}
-  @media(max-width:900px){.bakery-belief,.ingredient-story,.bakery-kitchen,.cake-catalog header{grid-template-columns:1fr}.bakery-belief{padding:85px 20px}.ingredient-story,.bakery-kitchen,.cake-order{margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter);padding:55px 24px}.bakery-kitchen{min-height:0}.kitchen-copy{align-self:auto}.kitchen-list{margin-top:35px}.bakery-no{padding:90px 20px}.bakery-no-heading{grid-template-columns:1fr}.bakery-no-list{margin-top:34px}.cake-catalog{padding:85px var(--mobile-gutter)}.cake-catalog header{gap:10px}.cake-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cake-order{align-items:flex-start;flex-direction:column}.cake-order a{width:100%}}
-  @media(max-width:540px){.ingredient-list summary{grid-template-columns:28px 1fr 22px}.ingredient-list details p{padding-left:40px}.cake-grid{gap:8px}.cake-order h2{font-size:49px}}
-  @media(prefers-reduced-motion:reduce){.reveal-on-scroll{opacity:1;transform:none;transition:none}.kitchen-list>div,.bakery-no-list span:after{transition:none}}
+  @media(max-width:900px){.bakery-belief,.ingredient-story,.bakery-kitchen{grid-template-columns:1fr}.bakery-belief{padding:85px 20px}.ingredient-story,.bakery-kitchen,.cake-order{margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter);padding:55px 24px}.bakery-kitchen{min-height:0}.kitchen-copy{align-self:auto}.kitchen-list{margin-top:35px}.bakery-no{padding:90px 20px}.bakery-no-heading{grid-template-columns:1fr}.bakery-no-list{margin-top:34px}.cake-catalog{padding:85px var(--mobile-gutter)}.cake-catalog-layout{display:block}.cake-catalog-nav{position:static;min-height:0;margin-bottom:34px;overflow:auto;scrollbar-width:none}.cake-catalog-nav nav{display:flex;gap:4px;width:max-content}.cake-catalog-nav a{padding:11px 12px;background:var(--paper);font-size:14px;white-space:nowrap}.cake-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cake-order{align-items:flex-start;flex-direction:column}.cake-order a{width:100%}}
+  @media(max-width:540px){.ingredient-item>button{grid-template-columns:28px 1fr 22px}.ingredient-panel p{padding-left:40px}.cake-grid{gap:8px}.cake-order h2{font-size:49px}}
+  @media(prefers-reduced-motion:reduce){.reveal-on-scroll{opacity:1;transform:none;transition:none}.kitchen-list>div,.ingredient-panel{transition:none}}
 </style>

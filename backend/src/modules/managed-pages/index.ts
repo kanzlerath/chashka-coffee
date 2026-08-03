@@ -1,4 +1,5 @@
 import {
+  coffeeTasteSchema,
   contentBlockListSchema,
   managedPageKeySchema,
   managedPageListResponseSchema,
@@ -11,12 +12,30 @@ import type { MiddlewareHandler } from 'hono'
 import { z } from 'zod'
 
 import type { DbClient } from '../../db'
+import { Prisma } from '../../generated/prisma/client'
 import { AppError, validationErrorHook } from '../../http/errors'
 import type { AuthHttpEnv } from '../auth'
 
-type PageRecord = { id: string; key: ManagedPage['key']; title: string; blocks: unknown; createdAt: Date; updatedAt: Date }
+type PageRecord = {
+  id: string
+  key: ManagedPage['key']
+  title: string
+  heroTitle: string | null
+  heroDescription: string | null
+  heroImageUrl: string | null
+  coffeeTastes: unknown | null
+  blocks: unknown
+  createdAt: Date
+  updatedAt: Date
+}
 function dto(page: PageRecord): ManagedPage {
-  return { ...page, blocks: contentBlockListSchema.parse(page.blocks), createdAt: page.createdAt.toISOString(), updatedAt: page.updatedAt.toISOString() }
+  return {
+    ...page,
+    coffeeTastes: page.coffeeTastes === null ? null : coffeeTasteSchema.array().parse(page.coffeeTastes),
+    blocks: contentBlockListSchema.parse(page.blocks),
+    createdAt: page.createdAt.toISOString(),
+    updatedAt: page.updatedAt.toISOString(),
+  }
 }
 
 export function createManagedPagesModule({ db, requireAuth, requireAdmin }: { db: DbClient; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireAdmin: MiddlewareHandler<AuthHttpEnv> }) {
@@ -42,7 +61,19 @@ export function createManagedPagesModule({ db, requireAuth, requireAdmin }: { db
     const key = c.req.valid('param').key
     const input = c.req.valid('json')
     if (input.key !== key) throw new AppError(400, 'VALIDATION_ERROR', 'Page key must match route key')
-    const page = await db.managedPage.upsert({ where: { key }, create: input, update: { title: input.title, blocks: input.blocks } })
+    const coffeeTastes = input.coffeeTastes === undefined ? undefined : input.coffeeTastes ?? Prisma.DbNull
+    const page = await db.managedPage.upsert({
+      where: { key },
+      create: { ...input, coffeeTastes },
+      update: {
+        title: input.title,
+        heroTitle: input.heroTitle,
+        heroDescription: input.heroDescription,
+        heroImageUrl: input.heroImageUrl,
+        coffeeTastes,
+        blocks: input.blocks,
+      },
+    })
     return c.json({ page: dto(page as PageRecord) }, 200)
   })
 

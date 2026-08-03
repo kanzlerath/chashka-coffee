@@ -4,6 +4,9 @@ import ContentBlocks from '../components/ContentBlocks.astro'
 import { getManagedPage } from '../lib/public-api'
 
 const page = await getManagedPage('LOYALTY')
+const heroTitle = page?.heroTitle ?? 'Любимое\nвозвращается'
+const heroDescription = page?.heroDescription ?? 'Показывайте электронную карту при каждом заказе — и часть стоимости вернётся бонусами на следующий визит.'
+const heroImage = page?.heroImageUrl ?? '/images/home-morning-v2.png'
 const levels = [
   { percent: '3%', condition: 'Сразу после регистрации', lift: 0 },
   { percent: '7%', condition: 'От 20 000 ₽ оборота', lift: 34 },
@@ -17,15 +20,15 @@ const levels = [
   title="Программа лояльности"
   description="DI Bonus в ресторанах «Чашка кофе»: бонусы за любимые встречи."
   active="loyalty"
-  image="/images/home-morning-v2.png"
+  image={heroImage}
 >
   <div class="loyalty-page">
     <section class="loyalty-hero" aria-labelledby="loyalty-title">
-      <img src="/images/home-morning-v2.png" alt="Кофе и свежая выпечка в ресторане «Чашка кофе»" />
+      <img src={heroImage} alt="Кофе и свежая выпечка в ресторане «Чашка кофе»" />
       <div class="loyalty-hero-shade" aria-hidden="true"></div>
       <div class="loyalty-hero-copy">
-        <h1 id="loyalty-title">Любимое<br />возвращается</h1>
-        <p>Показывайте электронную карту при каждом заказе — и часть стоимости вернётся бонусами на следующий визит.</p>
+        <h1 id="loyalty-title">{heroTitle.split(/\r?\n/).map((line) => <span>{line}</span>)}</h1>
+        <p>{heroDescription}</p>
         <div class="loyalty-actions">
           <a class="loyalty-button loyalty-button-dark" href="/app">Получить карту</a>
           <a class="loyalty-button loyalty-button-light" href="/loyalty-rules">Правила программы</a>
@@ -48,7 +51,7 @@ const levels = [
     <section class="welcome-scene" aria-labelledby="welcome-title">
       <div class="welcome-copy">
         <h2 id="welcome-title">Начните<br />с подарка</h2>
-        <p>После первого использования карты начислим приветственные бонусы. Они действуют 10 дней — можно оплатить до 20% следующего чека.</p>
+        <p>После скачивания нашего приложения начислим приветственные бонусы. Они действуют 10 дней — можно оплатить до 20% следующего чека.</p>
       </div>
       <div class="bonus-ticket" aria-label="500 приветственных бонусов">
         <span>Приветственные</span>
@@ -68,12 +71,11 @@ const levels = [
       </header>
 
       <div class="level-track">
-        <svg viewBox="0 0 1000 300" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M 42 252 C 185 252, 222 223, 292 213 S 440 178, 513 164 S 666 119, 734 102 S 882 48, 958 34"></path>
+        <svg viewBox="0 0 1000 400" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M 42 280 C 185 280, 222 251, 292 241 S 440 206, 513 192 S 666 147, 734 130 S 882 104, 958 108"></path>
         </svg>
-        {levels.map((level, index) => (
+        {levels.map((level) => (
           <article style={`--level-lift:${level.lift}px`}>
-            <b>0{index + 1}</b>
             <strong>{level.percent}</strong>
             <span>{level.condition}</span>
           </article>
@@ -98,28 +100,22 @@ const levels = [
 
       <div class="daily-flow">
         <article>
-          <b>01</b>
           <div>
             <h3>Откройте карту</h3>
             <p>Зарегистрируйтесь в приложении — карта появится в смартфоне сразу.</p>
           </div>
-          <span aria-hidden="true">↗</span>
         </article>
         <article>
-          <b>02</b>
           <div>
             <h3>Покажите в ресторане</h3>
             <p>Откройте QR-код перед оплатой, чтобы начислить или списать бонусы.</p>
           </div>
-          <span aria-hidden="true">↗</span>
         </article>
         <article>
-          <b>03</b>
           <div>
             <h3>Возвращайтесь за любимым</h3>
             <p>Следите за балансом, уровнем и персональными предложениями в одном месте.</p>
           </div>
-          <span aria-hidden="true">↗</span>
         </article>
       </div>
     </section>
@@ -151,7 +147,7 @@ const levels = [
   .loyalty-hero>img{position:absolute;z-index:-3;inset:0;width:100%;height:100%;object-fit:cover}
   .loyalty-hero-shade{position:absolute;z-index:-2;inset:0;background:linear-gradient(90deg,rgba(247,243,236,.98) 0%,rgba(247,243,236,.9) 34%,rgba(247,243,236,.18) 61%,rgba(18,40,30,.12) 100%)}
   .loyalty-hero-copy{display:flex;position:relative;z-index:2;min-height:inherit;padding:clamp(58px,7vw,116px);align-items:flex-start;justify-content:center;flex-direction:column}
-  .loyalty-hero h1{max-width:760px;margin:0;color:var(--ink);font-size:clamp(58px,6.7vw,112px);line-height:.82;letter-spacing:-.105em}
+  .loyalty-hero h1{max-width:760px;margin:0;color:var(--ink);font-size:clamp(58px,6.7vw,112px);line-height:.82;letter-spacing:-.105em}.loyalty-hero h1 span{display:block}
   .loyalty-hero-copy>p{max-width:510px;margin:28px 0 0;color:#504a44;font-size:15px;line-height:1.65}
   .loyalty-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:31px}
   .loyalty-button{display:inline-flex;min-height:50px;padding:0 24px;border:1px solid transparent;border-radius:var(--radius);align-items:center;justify-content:center;color:var(--moss);font-size:12px;font-weight:800;transition:background-color .22s ease,color .22s ease,border-color .22s ease,box-shadow .22s ease,transform .22s ease}
@@ -196,14 +192,13 @@ const levels = [
   .level-scene>header{display:grid;grid-template-columns:1.25fr .55fr;gap:60px;align-items:end}
   .level-scene h2{max-width:930px;margin:0;color:#fff;font-size:clamp(48px,5.7vw,91px);line-height:.85}
   .level-scene header p{max-width:410px;margin:0 0 5px;color:#d4dfd7;font-size:13px;line-height:1.65}
-  .level-track{position:relative;display:grid;height:330px;margin-top:80px;grid-template-columns:repeat(5,1fr);align-items:end}
+  .level-track{position:relative;display:grid;height:400px;margin-top:58px;grid-template-columns:repeat(5,1fr)}
   .level-track svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
   .level-track path{fill:none;stroke:rgba(189,214,90,.42);stroke-width:2;stroke-dasharray:5 8;vector-effect:non-scaling-stroke}
-  .level-track article{position:relative;z-index:1;display:flex;padding:0 15px calc(var(--level-lift) + 2px);align-items:flex-start;flex-direction:column}
-  .level-track article:after{position:absolute;bottom:calc(var(--level-lift) - 8px);left:15px;width:18px;height:18px;border:5px solid var(--moss);border-radius:50%;background:var(--lime);box-shadow:0 0 0 1px rgba(189,214,90,.65);content:''}
-  .level-track article b{color:#8da36f;font-size:9px;letter-spacing:.12em}
-  .level-track article strong{margin-top:9px;color:#fff;font-size:clamp(44px,4.6vw,73px);line-height:.82;letter-spacing:-.1em}
-  .level-track article span{max-width:135px;margin-top:13px;color:#cad8ce;font-size:10px;line-height:1.45}
+  .level-track article{position:relative;z-index:1;min-width:0}
+  .level-track article:after{position:absolute;bottom:calc(110px + var(--level-lift));left:15px;width:18px;height:18px;border:5px solid var(--moss);border-radius:50%;background:var(--lime);box-shadow:0 0 0 1px rgba(189,214,90,.65);content:''}
+  .level-track article strong{position:absolute;bottom:calc(142px + var(--level-lift));left:15px;color:#fff;font-size:clamp(44px,4.6vw,73px);line-height:.82;letter-spacing:-.1em}
+  .level-track article span{position:absolute;bottom:calc(23px + var(--level-lift));left:15px;max-width:145px;color:#cad8ce;font-size:10px;line-height:1.45}
   .level-note{display:flex;margin-top:26px;padding-top:23px;border-top:1px solid rgba(255,255,255,.18);align-items:center;justify-content:space-between;gap:25px}
   .level-note span{color:#cdd9d1;font-size:11px;line-height:1.55}
   .level-note a{padding-bottom:4px;border-bottom:1px solid var(--lime);color:var(--lime);font-size:11px;font-weight:800;transition:color .2s ease,border-color .2s ease}
@@ -218,12 +213,9 @@ const levels = [
   .daily-card>strong{display:block;margin-top:52px;font-size:56px;line-height:.8;letter-spacing:-.09em}
   .daily-card>small{display:block;margin-top:12px;color:#60705e;font-size:10px}
   .daily-flow{align-self:center;border-top:1px solid var(--line)}
-  .daily-flow article{display:grid;grid-template-columns:56px 1fr 40px;gap:18px;min-height:155px;padding:30px 0;border-bottom:1px solid var(--line);align-items:start}
-  .daily-flow article>b{padding-top:6px;color:#72902e;font-size:10px}
+  .daily-flow article{display:grid;grid-template-columns:1fr;min-height:155px;padding:30px 0;border-bottom:1px solid var(--line);align-items:start}
   .daily-flow h3{margin:0;font-size:clamp(25px,2.3vw,37px);line-height:.95;letter-spacing:-.065em}
   .daily-flow p{max-width:530px;margin:15px 0 0;color:var(--muted);font-size:12px;line-height:1.6}
-  .daily-flow article>span{display:grid;width:39px;height:39px;border:1px solid var(--line);border-radius:50%;place-items:center;color:var(--moss);font-size:17px;transition:background-color .2s ease,color .2s ease,transform .2s ease}
-  .daily-flow article:hover>span{background:var(--moss);color:#fff;transform:rotate(45deg)}
 
   .app-scene{display:grid;grid-template-columns:minmax(0,.8fr) minmax(380px,1.2fr);min-height:620px;padding:clamp(62px,7vw,110px) var(--content-gutter);align-items:center;gap:50px;overflow:hidden;border-radius:var(--radius);background:#182f24;color:#fff}
   .app-copy{position:relative;z-index:2}
@@ -264,12 +256,12 @@ const levels = [
     .level-track:before{position:absolute;top:7px;bottom:12px;left:10px;border-left:1px dashed rgba(189,214,90,.55);content:''}
     .level-track article{min-height:110px;padding:0 0 26px}
     .level-track article:after{top:4px;bottom:auto;left:-34px}
-    .level-track article strong{font-size:52px}
-    .level-track article span{max-width:none;margin-top:8px}
+    .level-track article strong{position:static;font-size:52px}
+    .level-track article span{position:static;display:block;max-width:none;margin-top:8px}
     .level-note{align-items:flex-start;flex-direction:column}
     .daily-scene{padding:72px 24px;gap:66px}
     .daily-card{margin-top:60px}
-    .daily-flow article{grid-template-columns:40px 1fr 36px;gap:9px}
+    .daily-flow article{grid-template-columns:1fr}
     .app-scene{padding:72px 24px 40px;gap:20px}
     .app-visual{min-height:400px;order:2}
     .app-visual img{width:min(108vw,510px)}
@@ -284,14 +276,13 @@ const levels = [
     .bonus-ticket{width:calc(100% - 18px)}
     .bonus-ticket>strong{font-size:114px}
     .bonus-ticket>p{font-size:34px}
-    .daily-flow article{grid-template-columns:33px 1fr}
-    .daily-flow article>span{display:none}
+    .daily-flow article{grid-template-columns:1fr}
     .daily-intro h2,.welcome-copy h2,.app-copy h2{font-size:49px}
     .app-visual{min-height:330px}
   }
 
   @media(prefers-reduced-motion:reduce){
     .loyalty-pass{animation:none}
-    .bonus-ticket,.app-visual img,.daily-flow article>span,.loyalty-button{transition:none}
+    .bonus-ticket,.app-visual img,.loyalty-button{transition:none}
   }
 </style>

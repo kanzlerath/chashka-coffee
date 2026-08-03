@@ -4,6 +4,9 @@ import ContentBlocks from '../components/ContentBlocks.astro'
 import { getManagedPage } from '../lib/public-api'
 
 const page = await getManagedPage('CERTIFICATES')
+const heroTitle = page?.heroTitle ?? 'Подарок,\nкоторый выбирают сами'
+const heroDescription = page?.heroDescription ?? 'Кофе утром, любимый десерт или долгий ужин — подарите повод прийти в «Чашку кофе» за своим моментом.'
+const heroImage = page?.heroImageUrl ?? '/images/certificate-paper-a6.png'
 const paperValues = ['1 000', '1 500', '2 000', '3 000', '5 000']
 const paperRules = [
   ['01', 'Покажите сертификат', 'Передайте бумажный сертификат сотруднику ресторана до расчёта.'],
@@ -17,13 +20,13 @@ const paperRules = [
   title="Подарочные сертификаты"
   description="Бумажные и пластиковые подарочные сертификаты «Чашка кофе»."
   active="certificates"
-  image="/images/certificate-paper-a6.png"
+  image={heroImage}
 >
   <div class="certificates-page">
     <section class="certificate-hero" aria-labelledby="certificate-title">
       <div class="certificate-hero-copy">
-        <h1 id="certificate-title">Подарок,<br />который выбирают сами</h1>
-        <p>Кофе утром, любимый десерт или долгий ужин — подарите повод прийти в «Чашку кофе» за своим моментом.</p>
+        <h1 id="certificate-title">{heroTitle.split(/\r?\n/).map((line) => <span>{line}</span>)}</h1>
+        <p>{heroDescription}</p>
         <div class="certificate-actions">
           <a class="certificate-button certificate-button-dark" href="/restaurants">Где купить</a>
           <a class="certificate-button certificate-button-light" href="/certificate-rules">Правила сертификатов</a>
@@ -32,7 +35,7 @@ const paperRules = [
 
       <div class="paper-object">
         <div class="paper-shadow" aria-hidden="true"></div>
-        <img src="/images/certificate-paper-a6.png" alt="Бумажный подарочный сертификат «Чашка кофе» номиналом 1500 рублей" />
+        <img src={heroImage} alt="Бумажный подарочный сертификат «Чашка кофе»" />
         <span aria-hidden="true">бумажный</span>
       </div>
     </section>
@@ -76,11 +79,9 @@ const paperRules = [
       </div>
 
       <div class="value-tape" aria-label="Номиналы бумажных сертификатов">
-        {paperValues.map((value, index) => (
+        {paperValues.map((value) => (
           <div>
-            <small>0{index + 1}</small>
-            <strong>{value}</strong>
-            <span>₽</span>
+            <strong>{value} ₽</strong>
           </div>
         ))}
       </div>
@@ -88,7 +89,6 @@ const paperRules = [
       <div class="custom-value">
         <span>Пластиковый сертификат</span>
         <strong>Любая сумма</strong>
-        <p>Вы выбираете размер подарка сами.</p>
       </div>
     </section>
 
@@ -99,14 +99,12 @@ const paperRules = [
       </header>
 
       <div class="use-flow">
-        {paperRules.map(([number, title, text]) => (
+        {paperRules.map(([, title, text]) => (
           <article>
-            <b>{number}</b>
             <div>
               <h3>{title}</h3>
               <p>{text}</p>
             </div>
-            <span aria-hidden="true">↗</span>
           </article>
         ))}
       </div>
@@ -127,7 +125,7 @@ const paperRules = [
         </div>
       </div>
       <div class="ending-mark" aria-hidden="true">
-        <span>ЧК</span>
+        <img src="/brand/logo.png" alt="" />
         <i>для хорошего дня</i>
       </div>
     </section>
@@ -143,7 +141,7 @@ const paperRules = [
   .certificate-hero{position:relative;isolation:isolate;min-height:clamp(650px,52vw,790px);overflow:hidden;border-radius:var(--radius);background:#d8b9a7}
   .certificate-hero:before{position:absolute;z-index:-1;inset:0;background:radial-gradient(circle at 74% 42%,rgba(255,249,239,.55),transparent 32%),linear-gradient(116deg,rgba(255,255,255,.2),transparent 43%);content:''}
   .certificate-hero-copy{display:flex;position:relative;z-index:2;min-height:inherit;width:58%;padding:clamp(58px,7vw,116px);align-items:flex-start;justify-content:center;flex-direction:column}
-  .certificate-hero h1{max-width:810px;margin:0;color:var(--ink);font-size:clamp(58px,6.4vw,106px);line-height:.82;letter-spacing:-.105em}
+  .certificate-hero h1{max-width:810px;margin:0;color:var(--ink);font-size:clamp(58px,6.4vw,106px);line-height:.82;letter-spacing:-.105em}.certificate-hero h1 span{display:block}
   .certificate-hero-copy>p{max-width:520px;margin:29px 0 0;color:#4e423b;font-size:15px;line-height:1.65}
   .certificate-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:31px}
   .certificate-button{display:inline-flex;min-height:50px;padding:0 24px;border:1px solid transparent;border-radius:var(--radius);align-items:center;justify-content:center;font-size:12px;font-weight:800;transition:background-color .22s ease,color .22s ease,border-color .22s ease,box-shadow .22s ease,transform .22s ease}
@@ -187,27 +185,21 @@ const paperRules = [
   .values-copy h2{margin:0;font-size:clamp(48px,5.3vw,85px);line-height:.85}
   .values-copy p{margin:24px 0 0;color:var(--muted);font-size:13px}
   .value-tape{align-self:center;border-top:1px solid rgba(31,59,46,.22)}
-  .value-tape>div{display:grid;grid-template-columns:50px 1fr 34px;padding:21px 0;border-bottom:1px solid rgba(31,59,46,.22);align-items:baseline;transition:padding-left .22s ease,color .22s ease}
-  .value-tape>div:hover{padding-left:10px;color:#68862a}
-  .value-tape small{color:#728d3a;font-size:9px}
+  .value-tape>div{display:flex;justify-content:flex-end;padding:21px 0;border-bottom:1px solid rgba(31,59,46,.22);align-items:baseline;transition:padding-right .22s ease,color .22s ease}
+  .value-tape>div:hover{padding-right:10px;color:#68862a}
   .value-tape strong{font-size:clamp(30px,3.2vw,50px);line-height:.8;letter-spacing:-.08em}
-  .value-tape span{font-size:14px;font-weight:800}
-  .custom-value{grid-column:1/-1;display:flex;margin-top:15px;padding:26px 0 0;border-top:1px solid rgba(31,59,46,.22);align-items:center;gap:32px}
+  .custom-value{grid-column:1/-1;display:flex;margin-top:15px;padding:26px 0 0;border-top:1px solid rgba(31,59,46,.22);align-items:center;justify-content:space-between;gap:32px}
   .custom-value>span{color:#6e7a6b;font-size:10px;font-weight:800}
-  .custom-value>strong{font-family:'21Cent',Georgia,serif;font-size:clamp(43px,5vw,78px);font-style:italic;font-weight:400;line-height:.8}
-  .custom-value>p{margin:0 0 0 auto;color:var(--muted);font-size:11px}
+  .custom-value>strong{font-size:clamp(30px,3.2vw,50px);line-height:.8;letter-spacing:-.08em;text-align:right}
 
   .use-scene{padding:clamp(76px,8vw,126px) var(--content-gutter) clamp(58px,6vw,92px);overflow:hidden;border-radius:var(--radius);background:var(--moss);color:#fff}
   .use-scene>header{display:grid;grid-template-columns:.85fr .55fr;align-items:end;gap:70px}
   .use-scene h2{margin:0;color:#fff;font-size:clamp(50px,5.5vw,88px);line-height:.84}
   .use-scene>header p{max-width:390px;margin:0 0 5px;color:#d4dfd7;font-size:13px;line-height:1.65}
   .use-flow{margin-top:70px;border-top:1px solid rgba(255,255,255,.2)}
-  .use-flow article{display:grid;grid-template-columns:70px 1fr 45px;min-height:126px;padding:27px 0;border-bottom:1px solid rgba(255,255,255,.2);align-items:start;gap:20px}
-  .use-flow article>b{padding-top:7px;color:var(--lime);font-size:10px}
+  .use-flow article{display:grid;grid-template-columns:1fr;min-height:126px;padding:27px 0;border-bottom:1px solid rgba(255,255,255,.2);align-items:start}
   .use-flow h3{margin:0;color:#fff;font-size:clamp(25px,2.5vw,39px);line-height:.95;letter-spacing:-.065em}
   .use-flow p{max-width:620px;margin:13px 0 0;color:#cdd9d1;font-size:11px;line-height:1.55}
-  .use-flow article>span{display:grid;width:41px;height:41px;border:1px solid rgba(255,255,255,.25);border-radius:50%;place-items:center;color:var(--lime);font-size:17px;transition:background-color .2s ease,color .2s ease,transform .2s ease}
-  .use-flow article:hover>span{background:var(--lime);color:var(--moss);transform:rotate(45deg)}
   .use-note{display:flex;margin-top:29px;align-items:center;justify-content:space-between;gap:30px}
   .use-note p{max-width:650px;margin:0;color:#c7d5cb;font-size:10px;line-height:1.6}
   .use-note a{padding-bottom:4px;border-bottom:1px solid var(--lime);color:var(--lime);font-size:11px;font-weight:800;transition:color .2s ease,border-color .2s ease}
@@ -217,7 +209,7 @@ const paperRules = [
   .certificate-ending h2{margin:0;color:#fff;font-size:clamp(51px,5.7vw,91px);line-height:.84}
   .certificate-ending>div:first-child>p{max-width:550px;margin:27px 0 0;color:#d3dfd7;font-size:14px;line-height:1.7}
   .ending-mark{position:relative;justify-self:center;display:flex;width:min(100%,380px);aspect-ratio:1;padding:50px;border:1px solid rgba(189,214,90,.32);border-radius:50%;box-shadow:0 0 0 50px rgba(189,214,90,.05),0 0 0 100px rgba(189,214,90,.025);align-items:center;justify-content:center;flex-direction:column}
-  .ending-mark span{color:var(--lime);font-size:108px;font-weight:800;line-height:.8;letter-spacing:-.17em}
+  .ending-mark img{width:min(72%,230px);height:auto;transform:translate(8%,-4%) rotate(4deg)}
   .ending-mark i{margin-top:22px;color:#d8e2da;font-family:'21Cent',Georgia,serif;font-size:28px;font-style:italic}
 
   @media(max-width:1100px){
@@ -244,8 +236,7 @@ const paperRules = [
     .paper-miniature{width:min(72%,310px)}
     .plastic-format>img{width:min(110%,520px);margin-bottom:-16%}
     .values-scene{grid-template-columns:1fr;gap:55px}
-    .custom-value{align-items:flex-start;flex-direction:column;gap:13px}
-    .custom-value>p{margin:0}
+    .custom-value{align-items:flex-end;gap:13px}
     .use-flow{margin-top:55px}
     .use-note{align-items:flex-start;flex-direction:column}
     .certificate-ending{grid-template-columns:1fr;gap:75px}
@@ -261,15 +252,12 @@ const paperRules = [
     .paper-miniature>span{font-size:31px}
     .paper-miniature>strong{font-size:45px}
     .plastic-format>img{width:118%;margin-right:-14%;margin-bottom:-9%}
-    .value-tape>div{grid-template-columns:38px 1fr 28px}
-    .use-flow article{grid-template-columns:36px 1fr;gap:9px}
-    .use-flow article>span{display:none}
+    .use-flow article{grid-template-columns:1fr}
     .values-copy h2,.certificate-ending h2{font-size:49px}
-    .ending-mark span{font-size:92px}
   }
 
   @media(prefers-reduced-motion:reduce){
     .paper-object{animation:none}
-    .paper-miniature,.plastic-format>img,.use-flow article>span,.certificate-button{transition:none}
+    .paper-miniature,.plastic-format>img,.certificate-button{transition:none}
   }
 </style>

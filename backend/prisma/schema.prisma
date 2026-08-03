@@ -219,12 +219,16 @@ model ContentEntry {
 }
 
 model ManagedPage {
-  id        String         @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  key       ManagedPageKey @unique
-  title     String         @db.VarChar(180)
-  blocks    Json           @default("[]")
-  createdAt DateTime       @default(now()) @map("created_at")
-  updatedAt DateTime       @updatedAt @map("updated_at")
+  id              String         @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  key             ManagedPageKey @unique
+  title           String         @db.VarChar(180)
+  heroTitle       String?        @map("hero_title") @db.VarChar(180)
+  heroDescription String?        @map("hero_description") @db.VarChar(500)
+  heroImageUrl    String?        @map("hero_image_url")
+  coffeeTastes    Json?          @map("coffee_tastes")
+  blocks          Json           @default("[]")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
 
   @@map("managed_pages")
 }
@@ -235,6 +239,7 @@ model Product {
   status       PublicationStatus @default(DRAFT)
   slug         String            @unique @db.VarChar(120)
   name         String            @db.VarChar(180)
+  category     String?           @db.VarChar(120)
   subtitle     String?           @db.VarChar(180)
   description  String?
   ingredients  String?

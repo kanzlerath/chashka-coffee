@@ -30,6 +30,7 @@ type ProductRecord = {
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
   slug: string
   name: string
+  category: string | null
   subtitle: string | null
   description: string | null
   ingredients: string | null

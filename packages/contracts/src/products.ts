@@ -25,6 +25,7 @@ const productFields = {
   status: productStatusSchema,
   slug,
   name: z.string().trim().min(1).max(180),
+  category: nullableText(120),
   subtitle: nullableText(180),
   description: nullableText(8_000),
   ingredients: nullableText(4_000),
@@ -40,6 +41,7 @@ const productFields = {
 
 export const upsertProductRequestSchema = z.object({
   ...productFields,
+  category: nullableText(120).optional(),
   variants: z.array(productVariantInputSchema).min(1).max(12),
 }).strict()
 export type UpsertProductRequest = z.infer<typeof upsertProductRequestSchema>

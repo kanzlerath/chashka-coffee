@@ -9,14 +9,17 @@ const formats = [
 ];
 const stages = ['Знакомимся', 'Оцениваем локацию', 'Проектируем', 'Открываемся'];
 const page = await getManagedPage('FRANCHISE');
+const heroTitle = page?.heroTitle ?? 'Открывайте\nместо, куда\nхочется вернуться';
+const heroDescription = page?.heroDescription ?? 'Не просто точку с кофе — живой ресторан с характером, понятной моделью и поддержкой на каждом шаге.';
+const heroImage = page?.heroImageUrl ?? '/images/restaurants-hero.png';
 ---
-<PageShell title="Франшиза" active="franchise">
+<PageShell title="Франшиза" active="franchise" image={heroImage}>
       <section class="hero">
-        <img src="/images/restaurants-hero.png" alt="Интерьер ресторана" />
+        <img src={heroImage} alt="Интерьер ресторана" />
         <div class="hero-copy">
           <p>франшиза чашка кофе</p>
-          <h1>Открывайте<br />место, куда<br />хочется вернуться</h1>
-          <span>Не просто точку с кофе — живой ресторан с характером, понятной моделью и поддержкой на каждом шаге.</span>
+          <h1>{heroTitle.split(/\r?\n/).map((line, index, lines) => <>{line}{index < lines.length - 1 && <br />}</>)}</h1>
+          <span>{heroDescription}</span>
           <a href="#form">Получить презентацию</a>
         </div>
         <div class="mark">ЧК<br /><em>coffee<br />people</em></div>

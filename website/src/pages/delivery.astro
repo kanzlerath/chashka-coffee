@@ -4,6 +4,10 @@ import ContentBlocks from '../components/ContentBlocks.astro'
 import { getManagedPage } from '../lib/public-api'
 
 const page = await getManagedPage('DELIVERY')
+const heroTitle = page?.heroTitle ?? 'Любимое\nприедет.'
+const heroLines = heroTitle.split(/\r?\n/).filter(Boolean)
+const heroDescription = page?.heroDescription ?? 'Для медленного утра, обеда между встречами или вечера, когда хочется остаться дома.'
+const heroImage = page?.heroImageUrl ?? '/images/home-breakfast.png'
 const steps = [
   {
     number: '01',
@@ -48,16 +52,16 @@ const cargo = [
   title="Доставка"
   description="Доставка и самовывоз из ресторанов «Чашка кофе»: любимые блюда и кофе в приложении или Яндекс Еде."
   active="delivery"
-  image="/images/home-breakfast.png"
+  image={heroImage}
 >
   <div class="delivery-page">
     <section class="delivery-hero" aria-labelledby="delivery-title">
       <figure class="delivery-hero-visual">
-        <img src="/images/home-breakfast.png" alt="Кофе, круассан и ягоды на светлом столе" fetchpriority="high" />
+        <img src={heroImage} alt="Кофе, круассан и ягоды на светлом столе" fetchpriority="high" />
       </figure>
       <div class="delivery-hero-copy">
-        <h1 id="delivery-title"><span>Любимое</span><em>приедет.</em></h1>
-        <p>Для медленного утра, обеда между встречами или вечера, когда хочется остаться дома.</p>
+        <h1 id="delivery-title"><span>{heroLines[0]}</span>{heroLines.length > 1 && <em>{heroLines.slice(1).join(' ')}</em>}</h1>
+        <p>{heroDescription}</p>
         <div class="delivery-actions">
           <a class="delivery-button delivery-button-dark" href="/app">Заказать в приложении</a>
           <a class="delivery-button delivery-button-accent" href="/menu">Посмотреть меню</a>
@@ -571,15 +575,14 @@ const cargo = [
   .delivery-ordering-board {
     display: grid;
     grid-template-columns: minmax(0, 1.32fr) minmax(300px, .68fr);
-    overflow: hidden;
-    border-radius: var(--radius);
-    background: var(--moss);
+    gap: 12px;
   }
 
   .delivery-ordering-board article {
     position: relative;
     min-width: 0;
     overflow: hidden;
+    border-radius: var(--radius);
   }
 
   .delivery-ordering-board h3 {
@@ -675,7 +678,6 @@ const cargo = [
     justify-content: space-between;
     gap: 42px;
     padding: clamp(38px, 5.5vw, 84px);
-    border-top: 1px solid #c7cec0;
     background: #e4eadc;
     color: var(--ink);
   }

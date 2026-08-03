@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { managedPageKeySchema, managedPageListResponseSchema, managedPageResponseSchema, upsertManagedPageRequestSchema, type ManagedPageKey, type UpsertManagedPageRequest } from '@chashka-coffee/contracts'
+import { managedPageKeySchema, managedPageListResponseSchema, managedPageResponseSchema, upsertManagedPageRequestSchema, type CoffeeTaste, type ManagedPage, type ManagedPageKey, type UpsertManagedPageRequest } from '@chashka-coffee/contracts'
 import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 
@@ -7,22 +7,59 @@ import { AdminField, AdminFormIntro, AdminPageHeader } from '@/components/admin'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { BlockEditor } from '@/features/content-admin'
 import { useAuth } from '@/features/auth'
 
 const labels: Record<ManagedPageKey, string> = { HOME: 'Главная', COFFEE: 'Кофе', RESTAURANTS: 'Рестораны', DELIVERY: 'Доставка', APP: 'Приложение', LOYALTY: 'Лояльность', CERTIFICATES: 'Сертификаты', BAKERY: 'Кондитерская', FRANCHISE: 'Франшиза', JOBS: 'Вакансии', CONTACTS: 'Контакты', ABOUT: 'О нас', BANQUETS: 'Банкеты', PROMOTIONS: 'Акции' }
 
+const heroDefaults: Partial<Record<ManagedPageKey, Pick<UpsertManagedPageRequest, 'heroTitle' | 'heroDescription' | 'heroImageUrl'>>> = {
+  ABOUT: { heroTitle: 'Город меняется.\nЛюбимое место\ностаётся.', heroDescription: 'Мы создаём рестораны, в которых одинаково естественно начать утро, назначить важную встречу и задержаться без особого повода.', heroImageUrl: '/images/restaurants-hero.png' },
+  COFFEE: { heroTitle: 'Кофе —\nнаша работа.', heroDescription: 'Выбираем зерно, строим профиль обжарки и каждый день настраиваем вкус в чашке.', heroImageUrl: '/images/coffee-editorial-v1.webp' },
+  BAKERY: { heroTitle: 'Десерты\nс честным составом', heroDescription: 'Собираем торты и десерты вручную — из натуральных ингредиентов и заготовок собственного производства.', heroImageUrl: '/images/bakery-hero-v1.png' },
+  DELIVERY: { heroTitle: 'Любимое\nприедет.', heroDescription: 'Для медленного утра, обеда между встречами или вечера, когда хочется остаться дома.', heroImageUrl: '/images/home-breakfast.png' },
+  LOYALTY: { heroTitle: 'Любимое\nвозвращается', heroDescription: 'Показывайте электронную карту при каждом заказе — и часть стоимости вернётся бонусами на следующий визит.', heroImageUrl: '/images/home-morning-v2.png' },
+  APP: { heroTitle: 'Вся «Чашка»\nв вашем телефоне', heroDescription: 'Заказывайте и оплачивайте онлайн, копите бонусы, возвращайтесь к любимым блюдам и узнавайте о новом раньше всех.', heroImageUrl: '/brand/bento/App.svg' },
+  CERTIFICATES: { heroTitle: 'Подарок,\nкоторый выбирают сами', heroDescription: 'Кофе утром, любимый десерт или долгий ужин — подарите повод прийти в «Чашку кофе» за своим моментом.', heroImageUrl: '/images/certificate-paper-a6.png' },
+  FRANCHISE: { heroTitle: 'Открывайте\nместо, куда\nхочется вернуться', heroDescription: 'Не просто точку с кофе — живой ресторан с характером, понятной моделью и поддержкой на каждом шаге.', heroImageUrl: '/images/restaurants-hero.png' },
+  JOBS: { heroTitle: 'Работа\nсо вкусом к людям', heroDescription: 'Ищем внимательных людей, которым важны гости, команда и хорошо сделанная работа.', heroImageUrl: '/images/home-hero-v1.png' },
+  BANQUETS: { heroTitle: 'Соберём\nваш повод', heroDescription: 'Семейный праздник, важный ужин или встреча команды — выберите место, а мы поможем с деталями.', heroImageUrl: '/images/restaurants-hero.png' },
+}
+
+const defaultCoffeeTastes: CoffeeTaste[] = [
+  { title: 'Абрикос', description: 'сочная сладость и мягкая кислотность', imageUrl: '/images/coffee-taste-apricot-v1.webp' },
+  { title: 'Шоколад', description: 'плотность, какао и долгий тёплый шлейф', imageUrl: '/images/coffee-taste-chocolate-v1.webp' },
+  { title: 'Персик', description: 'бархатистый аромат и лёгкая свежесть', imageUrl: '/images/coffee-taste-peach-v1.webp' },
+  { title: 'Вишня', description: 'ягодная сочность и винная кислинка', imageUrl: '/images/coffee-taste-cherry-v1.webp' },
+  { title: 'Апельсин', description: 'яркий цитрус, цедра и чистая свежесть', imageUrl: '/images/coffee-taste-orange-v1.webp' },
+  { title: 'Карамель', description: 'тягучая сладость и округлый тёплый вкус', imageUrl: '/images/coffee-taste-caramel-v1.webp' },
+  { title: 'Фундук', description: 'жареный орех и мягкое сливочное послевкусие', imageUrl: '/images/coffee-taste-hazelnut-v1.webp' },
+]
+
+function pageDraft(key: ManagedPageKey, page?: ManagedPage): UpsertManagedPageRequest {
+  const hero = heroDefaults[key] ?? { heroTitle: null, heroDescription: null, heroImageUrl: null }
+  return {
+    key,
+    title: page?.title ?? labels[key],
+    heroTitle: page?.heroTitle ?? hero.heroTitle,
+    heroDescription: page?.heroDescription ?? hero.heroDescription,
+    heroImageUrl: page?.heroImageUrl ?? hero.heroImageUrl,
+    coffeeTastes: key === 'COFFEE' ? page?.coffeeTastes ?? defaultCoffeeTastes : null,
+    blocks: page?.blocks ?? [],
+  }
+}
+
 export function ManagedPagesPage({ mode = 'list', pageKey }: { mode?: 'list' | 'edit'; pageKey?: string }) {
   const { api } = useAuth()
   const queryClient = useQueryClient()
   const parsedKey = pageKey ? managedPageKeySchema.safeParse(pageKey).data : undefined
-  const [draft, setDraft] = useState<UpsertManagedPageRequest>({ key: parsedKey ?? 'ABOUT', title: labels[parsedKey ?? 'ABOUT'], blocks: [] })
+  const [draft, setDraft] = useState<UpsertManagedPageRequest>(() => pageDraft(parsedKey ?? 'ABOUT'))
   const pages = useQuery({ queryKey: ['admin', 'pages'], queryFn: () => api.request('/api/admin/pages', managedPageListResponseSchema) })
   const selected = parsedKey ? pages.data?.pages.find((item) => item.key === parsedKey) : undefined
 
   useEffect(() => {
     if (!parsedKey) return
-    setDraft(selected ? { key: selected.key, title: selected.title, blocks: selected.blocks } : { key: parsedKey, title: labels[parsedKey], blocks: [] })
+    setDraft(pageDraft(parsedKey, selected))
   }, [parsedKey, selected])
 
   const save = useMutation({
@@ -52,12 +89,50 @@ export function ManagedPagesPage({ mode = 'list', pageKey }: { mode?: 'list' | '
     <AdminPageHeader eyebrow="Страницы" title={labels[parsedKey]} description="Изменяйте блоки сверху вниз — в том же порядке они появляются на сайте." actions={<Button asChild variant="outline"><Link to="/pages">К списку страниц</Link></Button>} />
     <Card className="admin-editor-surface"><CardHeader><CardTitle>Содержание страницы</CardTitle><CardDescription>Скрытые блоки сохраняются в редакторе, но не показываются посетителям.</CardDescription></CardHeader><CardContent>
       <form className="admin-form-stack" onSubmit={(event) => { event.preventDefault(); save.mutate() }}>
-        <AdminFormIntro>Название используется как главный заголовок. Каждый блок ниже можно включать, скрывать и переставлять.</AdminFormIntro>
-        <AdminField label="Название страницы" required hint={`Например: ${labels[parsedKey]}`}><Input required value={draft.title} onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} /></AdminField>
+        <AdminFormIntro>Первый экран и смысловые блоки сохраняются отдельно: изменение текста не затрагивает композицию страницы.</AdminFormIntro>
+        <AdminField label="Название раздела" required hint="Используется в админке и метаданных страницы"><Input required value={draft.title} onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} /></AdminField>
+        {heroDefaults[parsedKey] ? <section className="admin-form-subsection admin-form-stack">
+          <div><h3 className="admin-field-heading">Первый экран</h3><p className="admin-field-hint">Изображение, заголовок и описание меняются без перестройки вёрстки.</p></div>
+          <AdminField label="Изображение" required hint="Ссылка из медиатеки вида /images/… или полный адрес https://…"><Input required value={draft.heroImageUrl ?? ''} onChange={(event) => setDraft((current) => ({ ...current, heroImageUrl: event.target.value || null }))} /></AdminField>
+          <AdminField label="Заголовок" required hint="Переносы строк сохраняются"><Textarea required value={draft.heroTitle ?? ''} onChange={(event) => setDraft((current) => ({ ...current, heroTitle: event.target.value || null }))} /></AdminField>
+          <AdminField label="Описание" required><Textarea required value={draft.heroDescription ?? ''} onChange={(event) => setDraft((current) => ({ ...current, heroDescription: event.target.value || null }))} /></AdminField>
+        </section> : null}
+        {parsedKey === 'COFFEE' ? <CoffeeTasteEditor tastes={draft.coffeeTastes ?? defaultCoffeeTastes} onChange={(coffeeTastes) => setDraft((current) => ({ ...current, coffeeTastes }))} /> : null}
         <BlockEditor blocks={draft.blocks} onChange={(blocks) => setDraft((current) => ({ ...current, blocks }))} />
         {save.isError ? <p className="admin-state-message admin-state-error">Не удалось сохранить страницу. Проверьте обязательные поля блоков.</p> : null}
         <div className="admin-form-actions"><Button disabled={save.isPending} size="lg" type="submit">{save.isPending ? 'Сохраняем…' : 'Сохранить страницу'}</Button><Button asChild variant="outline"><Link to="/pages">Отмена</Link></Button></div>
       </form>
     </CardContent></Card>
+  </section>
+}
+
+function CoffeeTasteEditor({ tastes, onChange }: { tastes: CoffeeTaste[]; onChange: (tastes: CoffeeTaste[]) => void }) {
+  const update = (index: number, next: CoffeeTaste) => onChange(tastes.map((taste, tasteIndex) => tasteIndex === index ? next : taste))
+  const move = (index: number, direction: -1 | 1) => {
+    const target = index + direction
+    if (target < 0 || target >= tastes.length) return
+    const next = [...tastes]
+    ;[next[index], next[target]] = [next[target], next[index]]
+    onChange(next)
+  }
+
+  return <section className="admin-form-subsection admin-form-stack">
+    <div><h3 className="admin-field-heading">Аккордеон вкусов</h3><p className="admin-field-hint">Каждый вкус содержит фотографию, заголовок и подпись под ним.</p></div>
+    <div className="admin-gallery-images">
+      {tastes.map((taste, index) => <section className="admin-gallery-image" key={`${taste.title}-${index}`}>
+        <div className="admin-gallery-preview">{taste.imageUrl ? <img alt="" src={taste.imageUrl} /> : <span>Нет изображения</span>}<b>{index + 1}</b></div>
+        <div className="admin-gallery-image-fields">
+          <AdminField label="Заголовок" required><Input required value={taste.title} onChange={(event) => update(index, { ...taste, title: event.target.value })} /></AdminField>
+          <AdminField label="Описание" required><Input required value={taste.description} onChange={(event) => update(index, { ...taste, description: event.target.value })} /></AdminField>
+          <AdminField label="Изображение" required><Input required value={taste.imageUrl} onChange={(event) => update(index, { ...taste, imageUrl: event.target.value })} /></AdminField>
+        </div>
+        <div className="admin-gallery-image-actions">
+          <Button aria-label="Переместить вкус выше" disabled={index === 0} size="sm" type="button" variant="ghost" onClick={() => move(index, -1)}>↑</Button>
+          <Button aria-label="Переместить вкус ниже" disabled={index === tastes.length - 1} size="sm" type="button" variant="ghost" onClick={() => move(index, 1)}>↓</Button>
+          <Button disabled={tastes.length === 1} size="sm" type="button" variant="ghost" onClick={() => onChange(tastes.filter((_, tasteIndex) => tasteIndex !== index))}>Удалить</Button>
+        </div>
+      </section>)}
+    </div>
+    <Button disabled={tastes.length >= 12} type="button" variant="outline" onClick={() => onChange([...tastes, { title: 'Новый вкус', description: 'Короткое описание вкуса', imageUrl: '/images/coffee-taste-apricot-v1.webp' }])}>Добавить вкус</Button>
   </section>
 }

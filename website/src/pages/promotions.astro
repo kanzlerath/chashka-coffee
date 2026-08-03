@@ -32,13 +32,13 @@ const offers: PromotionCardEntry[] = publishedOffers.length ? publishedOffers : 
         <p>Там они появляются первыми, а ещё можно копить баллы и оплачивать ими любимый кофе.</p>
         <a href="/app">Узнать о приложении</a>
       </div>
-      <b aria-hidden="true">ЧК</b>
+      <img class="promotions-app-logo" src="/brand/logo.png" alt="" aria-hidden="true" />
     </section>
   </section>
 </PageShell>
 
 <style>
-  .promotions-page{padding:clamp(58px,7.5vw,118px) 0 clamp(88px,10vw,156px)}
+  .promotions-page{padding:clamp(58px,7.5vw,118px) 0 14px}
   .promotions-heading{margin-bottom:clamp(42px,5vw,72px)}
   .promotions-heading h1{margin:0;font-size:clamp(52px,6vw,94px);line-height:.88;letter-spacing:-.09em}
   .promotions-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
@@ -49,14 +49,14 @@ const offers: PromotionCardEntry[] = publishedOffers.length ? publishedOffers : 
   .promotions-app p{max-width:520px;margin:24px 0 0;color:#dce7de;font-size:14px;line-height:1.65}
   .promotions-app a{display:inline-flex;min-height:50px;align-items:center;margin-top:30px;padding:0 21px;border-radius:var(--radius);background:var(--lime);color:var(--moss);font-size:11px;font-weight:800;text-decoration:none;transition:background-color .2s ease,transform .2s ease}
   .promotions-app a:hover{background:#d0e86c;transform:translateY(-2px)}
-  .promotions-app>b{position:absolute;right:-.08em;bottom:-.3em;color:#bddb3d;font-size:clamp(220px,27vw,480px);line-height:1;letter-spacing:-.18em;opacity:.92}
+  .promotions-app-logo{position:absolute;right:clamp(-120px,-5vw,-58px);bottom:clamp(-150px,-8vw,-76px);width:clamp(300px,32vw,520px);height:auto;opacity:.96;transform:rotate(-8deg)}
   @media(max-width:700px){
-    .promotions-page{padding:52px var(--mobile-gutter) 84px}
+    .promotions-page{padding:52px var(--mobile-gutter) 12px}
     .promotions-heading{margin-bottom:36px}
     .promotions-grid{grid-template-columns:1fr;gap:10px}
     .promotions-app{min-height:540px;align-items:flex-start;margin-top:64px;padding:46px 24px}
     .promotions-app h2{font-size:48px}.promotions-app p{font-size:13px}.promotions-app a{width:100%;justify-content:center}
-    .promotions-app>b{right:-.12em;bottom:-.14em;font-size:260px}
+    .promotions-app-logo{right:-92px;bottom:-82px;width:300px}
   }
   @media(prefers-reduced-motion:reduce){.promotions-app a{transition:none}.promotions-app a:hover{transform:none}}
 </style>
