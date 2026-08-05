@@ -29,6 +29,13 @@ maybeDescribe('online coffee order API integration', () => {
   beforeEach(async () => {
     await prisma.orderItem.deleteMany()
     await prisma.order.deleteMany()
+    await prisma.customerConsent.deleteMany()
+    await prisma.customerNote.deleteMany()
+    await prisma.customerTagAssignment.deleteMany()
+    await prisma.customerTag.deleteMany()
+    await prisma.lead.updateMany({ data: { crmCustomerId: null } })
+    await prisma.customerAccount.updateMany({ data: { crmCustomerId: null } })
+    await prisma.customer.deleteMany()
     await prisma.productVariant.deleteMany()
     await prisma.product.deleteMany()
     await prisma.restaurantOpeningHours.deleteMany()
@@ -97,6 +104,17 @@ maybeDescribe('online coffee order API integration', () => {
     expect(repeatedBody.order.id).toBe(createdBody.order.id)
     expect(repeatedBody.accessToken).toBe(createdBody.accessToken)
     expect(await prisma.order.count()).toBe(1)
+    const crmCustomer = await prisma.customer.findUnique({ where: { phone: '79131234567' } })
+    expect(crmCustomer).toMatchObject({ name: 'Анна', email: null, status: 'ACTIVE' })
+    expect(crmCustomer).not.toBeNull()
+    expect(await prisma.order.findUnique({ where: { id: createdBody.order.id }, select: { crmCustomerId: true } })).toEqual({ crmCustomerId: crmCustomer!.id })
+
+    const lead = await app.request('/api/leads', json({
+      type: 'CONTACT', name: 'Анна', phone: '+7 (913) 123-45-67', email: null, message: 'Вопрос по заказу', metadata: null,
+    }))
+    expect(lead.status).toBe(201)
+    const leadId = (await lead.json()).lead.id
+    expect(await prisma.lead.findUnique({ where: { id: leadId }, select: { crmCustomerId: true } })).toEqual({ crmCustomerId: crmCustomer!.id })
 
     const retrieved = await app.request(`/api/store/orders/${createdBody.accessToken}`)
     expect(retrieved.status).toBe(200)

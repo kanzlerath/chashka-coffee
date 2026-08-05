@@ -1,5 +1,6 @@
 import {
   createLeadRequestSchema,
+  customerPhoneSchema,
   leadListResponseSchema,
   leadResponseSchema,
   leadStatusSchema,
@@ -82,7 +83,11 @@ export function createLeadsModule({ db, requireAuth, requireLeadAccess }: { db: 
   routes.openapi(submit, async (c) => {
     const input = c.req.valid('json')
     const { metadata, ...data } = input
-    const lead = await db.lead.create({ data: { ...data, payload: metadata ?? undefined } })
+    const normalizedPhone = input.phone ? customerPhoneSchema.safeParse(input.phone) : null
+    const customer = normalizedPhone?.success
+      ? await db.customer.findUnique({ where: { phone: normalizedPhone.data }, select: { id: true } })
+      : null
+    const lead = await db.lead.create({ data: { ...data, payload: metadata ?? undefined, crmCustomerId: customer?.id } })
     return c.json({ lead: dto(lead) }, 201)
   })
   adminRoutes.openapi(list, async (c) => {

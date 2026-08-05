@@ -156,28 +156,46 @@ export function createPrismaOrderRepository(db: DbClient): OrderRepository {
 
     async create(input: CreateOrderRecord) {
       try {
-        const order = await db.order.create({
-          data: {
-            publicNumber: input.publicNumber,
-            accessTokenHash: input.accessTokenHash,
-            idempotencyKey: input.idempotencyKey,
-            customerId: input.customerId,
-            pickupRestaurantId: input.pickupLocation.id,
-            customerName: input.customer.name,
-            customerPhone: input.customer.phone,
-            customerEmail: input.customer.email,
-            pickupSlug: input.pickupLocation.slug,
-            pickupName: input.pickupLocation.name,
-            pickupCity: input.pickupLocation.city,
-            pickupAddress: input.pickupLocation.address,
-            pickupPhone: input.pickupLocation.phone,
-            pickupOpeningHoursLabel: input.pickupLocation.openingHoursLabel,
-            itemCount: input.itemCount,
-            totalKopecks: input.totalKopecks,
-            comment: input.comment,
-            items: { create: input.items },
-          },
-          include: includeItems,
+        const order = await db.$transaction(async (tx) => {
+          const crmCustomer = await tx.customer.upsert({
+            where: { phone: input.customer.phone },
+            create: { name: input.customer.name, phone: input.customer.phone, email: input.customer.email },
+            update: {
+              name: input.customer.name,
+              ...(input.customer.email ? { email: input.customer.email } : {}),
+              status: 'ACTIVE',
+            },
+          })
+          if (input.customerId) {
+            await tx.customerAccount.updateMany({
+              where: { id: input.customerId },
+              data: { crmCustomerId: crmCustomer.id },
+            })
+          }
+          return tx.order.create({
+            data: {
+              publicNumber: input.publicNumber,
+              accessTokenHash: input.accessTokenHash,
+              idempotencyKey: input.idempotencyKey,
+              customerId: input.customerId,
+              crmCustomerId: crmCustomer.id,
+              pickupRestaurantId: input.pickupLocation.id,
+              customerName: input.customer.name,
+              customerPhone: input.customer.phone,
+              customerEmail: input.customer.email,
+              pickupSlug: input.pickupLocation.slug,
+              pickupName: input.pickupLocation.name,
+              pickupCity: input.pickupLocation.city,
+              pickupAddress: input.pickupLocation.address,
+              pickupPhone: input.pickupLocation.phone,
+              pickupOpeningHoursLabel: input.pickupLocation.openingHoursLabel,
+              itemCount: input.itemCount,
+              totalKopecks: input.totalKopecks,
+              comment: input.comment,
+              items: { create: input.items },
+            },
+            include: includeItems,
+          })
         })
         return toOrder(order as OrderRecord)
       } catch (error) {

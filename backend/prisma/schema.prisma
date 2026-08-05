@@ -98,6 +98,22 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum CustomerStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum CommunicationChannel {
+  PUSH
+  EMAIL
+  SMS
+}
+
+enum ConsentStatus {
+  GRANTED
+  WITHDRAWN
+}
+
 enum ManagedPageKey {
   HOME
   COFFEE
@@ -127,16 +143,17 @@ enum MediaAssetStatus {
 }
 
 model User {
-  id           String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  email        String            @unique
-  passwordHash String            @map("password_hash")
-  displayName  String?           @map("display_name")
-  role         UserRole          @default(EDITOR)
-  roles        UserRole[]        @default([])
-  createdAt    DateTime          @default(now()) @map("created_at")
-  updatedAt    DateTime          @updatedAt @map("updated_at")
-  sessions     AuthSession[]
-  auditEvents  AdminAuditEvent[]
+  id            String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  email         String            @unique
+  passwordHash  String            @map("password_hash")
+  displayName   String?           @map("display_name")
+  role          UserRole          @default(EDITOR)
+  roles         UserRole[]        @default([])
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+  sessions      AuthSession[]
+  auditEvents   AdminAuditEvent[]
+  customerNotes CustomerNote[]
 
   @@map("users")
 }
@@ -182,6 +199,8 @@ model CustomerAccount {
   updatedAt            DateTime          @updatedAt @map("updated_at")
   sessions             CustomerSession[]
   orders               Order[]
+  crmCustomerId        String?           @unique(map: "customer_accounts_crm_customer_id_key") @map("crm_customer_id") @db.Uuid
+  crmCustomer          Customer?         @relation(fields: [crmCustomerId], references: [id], onDelete: SetNull, map: "customer_accounts_crm_customer_id_fkey")
 
   @@map("customer_accounts")
 }
@@ -401,19 +420,96 @@ model MediaAsset {
 }
 
 model Lead {
-  id        String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  type      LeadType
-  status    LeadStatus @default(NEW)
-  name      String     @db.VarChar(180)
-  phone     String?    @db.VarChar(40)
-  email     String?    @db.VarChar(320)
-  message   String?
-  payload   Json?
-  createdAt DateTime   @default(now()) @map("created_at")
-  updatedAt DateTime   @updatedAt @map("updated_at")
+  id            String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  type          LeadType
+  status        LeadStatus @default(NEW)
+  name          String     @db.VarChar(180)
+  phone         String?    @db.VarChar(40)
+  email         String?    @db.VarChar(320)
+  message       String?
+  payload       Json?
+  crmCustomerId String?    @map("crm_customer_id") @db.Uuid
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+  crmCustomer   Customer?  @relation(fields: [crmCustomerId], references: [id], onDelete: SetNull, map: "leads_crm_customer_id_fkey")
 
   @@index([type, status, createdAt], map: "leads_type_status_created_at_idx")
+  @@index([crmCustomerId, createdAt], map: "leads_crm_customer_created_at_idx")
   @@map("leads")
+}
+
+model Customer {
+  id        String                  @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name      String                  @db.VarChar(180)
+  phone     String                  @unique @db.VarChar(20)
+  email     String?                 @db.VarChar(320)
+  status    CustomerStatus          @default(ACTIVE)
+  createdAt DateTime                @default(now()) @map("created_at")
+  updatedAt DateTime                @updatedAt @map("updated_at")
+  account   CustomerAccount?
+  orders    Order[]
+  leads     Lead[]
+  notes     CustomerNote[]
+  tags      CustomerTagAssignment[]
+  consents  CustomerConsent[]
+
+  @@index([createdAt], map: "customers_created_at_idx")
+  @@index([updatedAt], map: "customers_updated_at_idx")
+  @@map("customers")
+}
+
+model CustomerNote {
+  id         String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  customerId String   @map("customer_id") @db.Uuid
+  authorId   String?  @map("author_id") @db.Uuid
+  body       String   @db.VarChar(4000)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade, map: "customer_notes_customer_id_fkey")
+  author     User?    @relation(fields: [authorId], references: [id], onDelete: SetNull, map: "customer_notes_author_id_fkey")
+
+  @@index([customerId, createdAt], map: "customer_notes_customer_created_at_idx")
+  @@map("customer_notes")
+}
+
+model CustomerTag {
+  id        String                  @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name      String                  @unique @db.VarChar(80)
+  color     String?                 @db.VarChar(20)
+  createdAt DateTime                @default(now()) @map("created_at")
+  updatedAt DateTime                @updatedAt @map("updated_at")
+  customers CustomerTagAssignment[]
+
+  @@map("customer_tags")
+}
+
+model CustomerTagAssignment {
+  customerId String      @map("customer_id") @db.Uuid
+  tagId      String      @map("tag_id") @db.Uuid
+  createdAt  DateTime    @default(now()) @map("created_at")
+  customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade, map: "customer_tag_assignments_customer_id_fkey")
+  tag        CustomerTag @relation(fields: [tagId], references: [id], onDelete: Cascade, map: "customer_tag_assignments_tag_id_fkey")
+
+  @@id([customerId, tagId])
+  @@index([tagId], map: "customer_tag_assignments_tag_id_idx")
+  @@map("customer_tag_assignments")
+}
+
+model CustomerConsent {
+  id          String               @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  customerId  String               @map("customer_id") @db.Uuid
+  channel     CommunicationChannel
+  status      ConsentStatus
+  source      String               @db.VarChar(120)
+  grantedAt   DateTime?            @map("granted_at")
+  withdrawnAt DateTime?            @map("withdrawn_at")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+  customer    Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade, map: "customer_consents_customer_id_fkey")
+
+  @@unique([customerId, channel], map: "customer_consents_customer_channel_key")
+  @@index([channel, status], map: "customer_consents_channel_status_idx")
+  @@map("customer_consents")
 }
 
 model JobOpening {
@@ -477,6 +573,7 @@ model Order {
   accessTokenHash         String           @unique @map("access_token_hash") @db.VarChar(64)
   idempotencyKey          String           @unique @map("idempotency_key") @db.Uuid
   customerId              String?          @map("customer_id") @db.Uuid
+  crmCustomerId           String?          @map("crm_customer_id") @db.Uuid
   pickupRestaurantId      String?          @map("pickup_restaurant_id") @db.Uuid
   status                  OrderStatus      @default(AWAITING_PAYMENT)
   paymentStatus           PaymentStatus    @default(PENDING) @map("payment_status")
@@ -495,11 +592,13 @@ model Order {
   createdAt               DateTime         @default(now()) @map("created_at")
   updatedAt               DateTime         @updatedAt @map("updated_at")
   customer                CustomerAccount? @relation(fields: [customerId], references: [id], onDelete: SetNull, map: "orders_customer_id_fkey")
+  crmCustomer             Customer?        @relation(fields: [crmCustomerId], references: [id], onDelete: SetNull, map: "orders_crm_customer_id_fkey")
   pickupRestaurant        Restaurant?      @relation(fields: [pickupRestaurantId], references: [id], onDelete: SetNull, map: "orders_pickup_restaurant_id_fkey")
   items                   OrderItem[]
 
   @@index([createdAt], map: "orders_created_at_idx")
   @@index([customerId, createdAt], map: "orders_customer_created_at_idx")
+  @@index([crmCustomerId, createdAt], map: "orders_crm_customer_created_at_idx")
   @@index([pickupRestaurantId, status, createdAt], map: "orders_pickup_status_created_at_idx")
   @@map("orders")
 }
