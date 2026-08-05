@@ -88,6 +88,7 @@ if (target === 'website' || target === 'all') {
   // server islands, or other runtime-rendered routes need a runtime service instead.
   await writePreparedSpec('website-static-app.yaml.example', 'website-static-app.yaml', {
     ...commonReplacements(),
+    'https://REPLACE_WITH_BACKEND_DEFAULT_INGRESS': requiredUrlEnv('DO_BACKEND_URL'),
     'https://REPLACE_WITH_WEBAPP_DEFAULT_INGRESS': requiredUrlEnv('DO_WEBAPP_URL'),
   })
 }
@@ -132,7 +133,7 @@ function printUsage() {
   console.error('  backend-initial: JWT_SECRET')
   console.error('  backend-final: JWT_SECRET, DO_WEBAPP_URL')
   console.error('  webapp: DO_BACKEND_URL')
-  console.error('  website: DO_WEBAPP_URL')
+  console.error('  website: DO_BACKEND_URL, DO_WEBAPP_URL')
   console.error('  all: JWT_SECRET, DO_BACKEND_URL, DO_WEBAPP_URL')
   console.error('')
   console.error('Optional deployment settings:')
@@ -293,7 +294,7 @@ function assertSafeProductionEnv(outputName, contents) {
     assertCorsOrigins(outputName, corsOrigins)
   }
 
-  for (const key of ['VITE_API_URL', 'PUBLIC_WEBAPP_URL']) {
+  for (const key of ['VITE_API_URL', 'PUBLIC_API_URL', 'PUBLIC_WEBAPP_URL']) {
     const value = findEnvValue(contents, key)
     if (value !== undefined) {
       assertBuildTimeHttpsUrl(outputName, key, value)

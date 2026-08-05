@@ -1,45 +1,43 @@
 ---
+import type { ContentEntry } from '@chashka-coffee/contracts'
+
 import PageShell from '../../layouts/PageShell.astro'
 import ContentBlocks from '../../components/ContentBlocks.astro'
-import NotFoundPage from '../../components/NotFoundPage.astro'
 import { formatPublicationDate, getPublicationDate } from '../../lib/journal'
-import { getContentEntry, getContentSlugs } from '../../lib/public-api'
+import { getContent } from '../../lib/public-api'
+import { createContentStaticPaths } from '../../lib/static-detail-paths'
 
 export async function getStaticPaths() {
-  return (await getContentSlugs('ARTICLE', ['coffee-for-warm-morning', 'coffee-morning', 'croissant-now', 'novosibirsk-route', 'after-roasting']))
-    .map((slug) => ({ params: { slug } }))
+  return createContentStaticPaths(await getContent('ARTICLE'))
 }
 
-const entry = await getContentEntry('ARTICLE',Astro.params.slug!)
-const publishedAt = entry ? getPublicationDate(entry) : null
-const hasVisibleBlocks = entry?.blocks.some((block) => block.isVisible) ?? false
-if (!entry) { Astro.response.status = 404; Astro.response.statusText = 'Not Found' }
+const { entry } = Astro.props as { entry: ContentEntry }
+const publishedAt = getPublicationDate(entry)
+const hasVisibleBlocks = entry.blocks.some((block) => block.isVisible)
 ---
 
-{entry
-  ? <PageShell title={entry.title} description={entry.excerpt ?? undefined} active="journal" image={entry.imageUrl ?? '/images/home-morning-v2.png'}>
-      <article class="article-detail">
-        <header class="article-head">
-          <div class="article-head__copy">
-            <time datetime={publishedAt!}>{formatPublicationDate(publishedAt!)}</time>
-            <h1>{entry.title}</h1>
-            {entry.excerpt && <p>{entry.excerpt}</p>}
-          </div>
-          <figure>
-            <img src={entry.imageUrl ?? '/images/home-morning-v2.png'} alt={`Обложка новости «${entry.title}»`} />
-          </figure>
-        </header>
+<PageShell title={entry.title} description={entry.excerpt ?? undefined} active="journal" image={entry.imageUrl ?? '/images/home-morning-v2.png'}>
+  <article class="article-detail">
+    <header class="article-head">
+      <div class="article-head__copy">
+        <time datetime={publishedAt}>{formatPublicationDate(publishedAt)}</time>
+        <h1>{entry.title}</h1>
+        {entry.excerpt && <p>{entry.excerpt}</p>}
+      </div>
+      <figure>
+        <img src={entry.imageUrl ?? '/images/home-morning-v2.png'} alt={`Обложка новости «${entry.title}»`} />
+      </figure>
+    </header>
 
-        {hasVisibleBlocks
-          ? <ContentBlocks blocks={entry.blocks} />
-          : <section class="article-body"><p>{entry.body}</p></section>}
+    {hasVisibleBlocks
+      ? <ContentBlocks blocks={entry.blocks} />
+      : <section class="article-body"><p>{entry.body}</p></section>}
 
-        <div class="article-back">
-          <a class="button" href="/journal">Ко всем новостям</a>
-        </div>
-      </article>
-    </PageShell>
-  : <NotFoundPage/>}
+    <div class="article-back">
+      <a class="button" href="/journal">Ко всем новостям</a>
+    </div>
+  </article>
+</PageShell>
 
 <style>
   .article-detail{display:grid;gap:var(--section-gap);width:100%}

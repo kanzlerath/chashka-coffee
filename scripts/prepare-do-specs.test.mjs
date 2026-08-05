@@ -5,6 +5,7 @@ import { describe, expect, test } from 'bun:test';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const backendSpecPath = resolve(repoRoot, '.scratch/deploy/backend-app.yaml');
+const websiteSpecPath = resolve(repoRoot, '.scratch/deploy/website-static-app.yaml');
 
 describe('prepare-do-specs', () => {
   test('rejects placeholder and obviously weak production JWT secrets', () => {
@@ -109,9 +110,21 @@ describe('prepare-do-specs', () => {
     instance_count: 2`);
     expect(spec).not.toContain('REPLACE_WITH_');
   });
+
+  test('gives the static website backend access while prerendering public content', () => {
+    const result = runPrepareSpecs({}, { target: 'website' });
+
+    expect(result.stderr).toBe('');
+    expect(result.status).toBe(0);
+
+    const spec = readFileSync(websiteSpecPath, 'utf8');
+    expect(spec).toContain(`- key: PUBLIC_API_URL
+        value: "https://api.example.com"`);
+    expect(spec).not.toContain('REPLACE_WITH_');
+  });
 });
 
-function runPrepareSpecs(extraEnv = {}, { skipReleaseGitCheck = true } = {}) {
+function runPrepareSpecs(extraEnv = {}, { skipReleaseGitCheck = true, target = 'backend-final' } = {}) {
   const testOnlyEnv = skipReleaseGitCheck
     ? {
         NODE_ENV: 'test',
@@ -119,7 +132,7 @@ function runPrepareSpecs(extraEnv = {}, { skipReleaseGitCheck = true } = {}) {
       }
     : {};
 
-  return spawnSync(process.execPath, ['scripts/prepare-do-specs.mjs', 'backend-final'], {
+  return spawnSync(process.execPath, ['scripts/prepare-do-specs.mjs', target], {
     cwd: repoRoot,
     encoding: 'utf8',
     env: {
@@ -130,6 +143,7 @@ function runPrepareSpecs(extraEnv = {}, { skipReleaseGitCheck = true } = {}) {
       DO_GITHUB_REPO: 'owner/repo',
       DO_GIT_BRANCH: 'main',
       JWT_SECRET: 'abcdefghijklmnopqrstuvwxyz123456',
+      DO_BACKEND_URL: 'https://api.example.com',
       DO_WEBAPP_URL: 'https://webapp.example.com',
       ...extraEnv,
     },

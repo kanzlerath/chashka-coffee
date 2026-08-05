@@ -15,6 +15,10 @@ static_sites:
     output_dir: website/dist
     index_document: index.html
     envs:
+      - key: PUBLIC_API_URL
+        value: "https://REPLACE_WITH_BACKEND_DEFAULT_INGRESS"
+        scope: BUILD_TIME
+        type: GENERAL
       - key: PUBLIC_WEBAPP_URL
         value: "https://REPLACE_WITH_WEBAPP_DEFAULT_INGRESS"
         scope: BUILD_TIME

@@ -259,11 +259,11 @@ Required component shape (static build):
 - Build command: `bun install --frozen-lockfile && bun run build:website`.
 - Output directory: `website/dist`.
 - Index document: `index.html`.
-- Build-time env only when the website intentionally needs public config, such as `PUBLIC_WEBAPP_URL=https://webapp.example.com`.
+- Build-time env: `PUBLIC_API_URL=https://api.example.com` for prerendered public content and browser API calls, plus `PUBLIC_WEBAPP_URL=https://webapp.example.com` for links into the staff app.
 
 Keep website independent from authenticated browser-app flows unless the product explicitly needs shared API data.
 
-`PUBLIC_WEBAPP_URL` is also build-time public config. If website links point to the webapp, generate it as a concrete URL and redeploy website after it changes.
+`PUBLIC_API_URL` and `PUBLIC_WEBAPP_URL` are build-time public config. The website build reads published journal, event, promotion, product, restaurant, and managed-page data from `PUBLIC_API_URL`; if it points at the wrong origin, the generated static site cannot contain those detail routes. Redeploy the website after either URL or published static content changes.
 
 ## Managed PostgreSQL
 
@@ -347,11 +347,12 @@ After deployment:
 ## Failure Modes This Template Guards Against
 
 - `GitHub user not authenticated`: App Platform GitHub integration was not connected or did not have repository access before `doctl apps create`.
-- Empty secrets or URLs in generated specs: `JWT_SECRET`, `CORS_ORIGINS`, `VITE_API_URL`, and `PUBLIC_WEBAPP_URL` must be concrete before deployment.
+- Empty secrets or URLs in generated specs: `JWT_SECRET`, `CORS_ORIGINS`, `VITE_API_URL`, `PUBLIC_API_URL`, and `PUBLIC_WEBAPP_URL` must be concrete before deployment.
 - Dirty or ambiguous release source: deployment tooling must stop when the worktree has uncommitted/untracked files, the checkout branch differs from `DO_GIT_BRANCH`, or the branch is not pushed and in sync.
 - Backend crash on startup: empty, placeholder, or obviously weak `JWT_SECRET` is rejected by env validation, so the spec generator must fail before App Platform deploys it.
 - Broken browser auth CORS: production CORS must use exact HTTPS origins, not wildcard or empty values.
 - Webapp calling its own `/api/*`: missing `VITE_API_URL` at static build time makes the bundle use the wrong origin.
+- Missing journal detail pages: missing `PUBLIC_API_URL` at website build time prevents published API content from becoming static routes.
 - Empty website links: missing `PUBLIC_WEBAPP_URL` at build time can bake invalid public links into website output.
 - Stale remote build dependencies: static site build commands run `bun install --frozen-lockfile` before `bun run build:*`.
 - Frozen backend install failures: `backend/Dockerfile` copies all workspace manifests before `bun install --frozen-lockfile`.

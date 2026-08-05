@@ -1,12 +1,26 @@
 ---
+import type { ContentEntry } from '@chashka-coffee/contracts'
+
 import StoryDetail from '../../components/StoryDetail.astro';
-import { getContentSlugs } from '../../lib/public-api';
-const promotions={'summer-breakfasts':{title:'Летние завтраки',intro:'Любимые блюда и кофе по специальной цене — до 12:00 по будням.',meta:'Действует до 31 августа'},'coffee-to-go':{title:'Кофе с собой',intro:'Второй напиток для прогулки, дороги или человека рядом.',meta:'Предложение действует каждый день'},'dessert-cappuccino':{title:'Десерт к капучино',intro:'Добавьте к напитку немного сладкого настроения.',meta:'Предложение действует до конца месяца'}};
-type Story = { title: string; intro: string; meta: string; image?: string }
-interface Props { story?: Story }
-const fallbackStory: Story={title:'Акция «Чашки кофе»',intro:'Подробности предложения скоро появятся на странице.',meta:'Чашка кофе'};
-export async function getStaticPaths(){return (await getContentSlugs('PROMOTION',['summer-breakfasts','coffee-to-go','dessert-cappuccino'])).map((slug)=>({params:{slug}}));}
-let story: Story = Astro.props.story ?? promotions[Astro.params.slug as keyof typeof promotions] ?? fallbackStory;
-try { const response = await fetch(`${import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'}/api/content/${Astro.params.slug}`); if (response.ok) { const { entry } = await response.json(); story = { title: entry.title, intro: entry.excerpt ?? entry.body ?? story.intro, meta: entry.endsAt ? `До ${new Date(entry.endsAt).toLocaleDateString('ru-RU')}` : story.meta, image: entry.imageUrl ?? undefined } } } catch { /* static editorial fallback remains available */ }
+import { promotionPeriodLabel } from '../../lib/promotions'
+import { getContent } from '../../lib/public-api'
+import { createContentStaticPaths } from '../../lib/static-detail-paths'
+
+export async function getStaticPaths() {
+  return createContentStaticPaths(await getContent('PROMOTION'))
+}
+
+const { entry } = Astro.props as { entry: ContentEntry }
 ---
-<StoryDetail action="Ко всем акциям" actionHref="/promotions" {...story}/>
+<StoryDetail
+  active="promotions"
+  action="Ко всем акциям"
+  actionHref="/promotions"
+  blocks={entry.blocks}
+  body={entry.body}
+  eyebrow="Акция"
+  image={entry.imageUrl ?? undefined}
+  intro={entry.excerpt ?? entry.body ?? 'Условия акции указаны ниже.'}
+  meta={promotionPeriodLabel(entry)}
+  title={entry.title}
+/>
