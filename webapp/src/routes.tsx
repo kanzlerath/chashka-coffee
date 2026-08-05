@@ -13,6 +13,8 @@ import {
   ContentPromotionCreateAdminRoute,
   ContentPromotionEditAdminRoute,
   ContentPromotionsAdminRoute,
+  CustomerDetailAdminRoute,
+  CustomersAdminRoute,
   HomePage,
   HomepageAdminRoute,
   JobCreateAdminRoute,
@@ -53,6 +55,8 @@ const appRoute = route('/app', AppPage)
 const activityRoute = route('/activity', ActivityAdminRoute)
 const statisticsRoute = route('/statistics', StatisticsAdminRoute)
 const ordersRoute = route('/orders', OrdersAdminRoute)
+const customersRoute = route('/customers', CustomersAdminRoute)
+const customerDetailRoute = route('/customers/$customerId', CustomerDetailAdminRoute)
 const restaurantsRoute = route('/restaurants', RestaurantsAdminRoute)
 const restaurantCreateRoute = route('/restaurants/new', RestaurantCreateAdminRoute)
 const restaurantEditRoute = route('/restaurants/$restaurantId', RestaurantEditAdminRoute)
@@ -97,7 +101,7 @@ const pagesRoute = route('/pages', ManagedPagesAdminRoute)
 const pageEditRoute = route('/pages/$pageKey', ManagedPageEditAdminRoute)
 
 const routeTree = rootRoute.addChildren([
-  indexRoute, appRoute, activityRoute, statisticsRoute, ordersRoute, restaurantsRoute, restaurantCreateRoute, restaurantEditRoute,
+  indexRoute, appRoute, activityRoute, statisticsRoute, ordersRoute, customersRoute, customerDetailRoute, restaurantsRoute, restaurantCreateRoute, restaurantEditRoute,
   menusRoute, menuCreateRoute, menuDetailRoute, menuCategoryCreateRoute, menuItemCreateRoute, menuItemEditRoute,
   teamRoute, teamCreateRoute, teamEditRoute,
   productsLegacyRoute, coffeeRoute, coffeeCreateRoute, coffeeEditRoute, cakesRoute, cakeCreateRoute, cakeEditRoute,

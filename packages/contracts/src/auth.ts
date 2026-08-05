@@ -30,6 +30,7 @@ export const staffPermissionSchema = z.enum([
   'JOB_APPLICATIONS_MANAGE',
   'MEDIA_MANAGE',
   'CUSTOMERS_READ',
+  'CUSTOMERS_MANAGE',
   'ANALYTICS_READ',
   'AUDIT_READ',
 ])

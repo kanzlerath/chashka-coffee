@@ -18,6 +18,7 @@ import { createAnalyticsModule } from './modules/analytics'
 import { createWorkspaceModule } from './modules/workspace'
 import { createCustomerAccountModule, type PremiumBonusGateway } from './modules/customer-account'
 import { createOrdersModule } from './modules/orders'
+import { createCrmModule } from './modules/crm'
 
 type CreateAppOptions = {
   env: AppEnv
@@ -39,6 +40,7 @@ export function createApp({ env, prisma, premiumBonusGateway }: CreateAppOptions
   const workspace = createWorkspaceModule({ db: prisma, requireAuth: auth.requireAuth })
   const customerAccount = createCustomerAccountModule({ db: prisma, env, gateway: premiumBonusGateway })
   const orders = createOrdersModule({ db: prisma, env, requireAuth: auth.requireAuth, requireOrderAccess: auth.requirePermission('ORDERS_MANAGE'), resolveCustomerId: customerAccount.resolveCustomerId })
+  const crm = createCrmModule({ db: prisma, requireAuth: auth.requireAuth, requireCustomerRead: auth.requirePermission('CUSTOMERS_READ') })
   const app = new OpenAPIHono<AuthHttpEnv>({
     defaultHook: validationErrorHook,
   })
@@ -95,6 +97,7 @@ export function createApp({ env, prisma, premiumBonusGateway }: CreateAppOptions
   app.route('/api/admin', analytics.adminRoutes)
   app.route('/api/admin', workspace.adminRoutes)
   app.route('/api/admin', orders.adminRoutes)
+  app.route('/api/admin', crm)
 
   app.doc('/openapi.json', {
     openapi: '3.0.0',

@@ -71,3 +71,4 @@ export function createAuthModule({
 export type { AuthHttpEnv }
 export type { LogoutCleanup, ProjectUser } from './application/ports'
 export type { AuthenticatedPrincipal } from './domain/user'
+export { hashPassword } from './infrastructure/passwords'

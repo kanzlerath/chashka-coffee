@@ -1,4 +1,4 @@
-import { analyticsSummaryResponseSchema } from '@chashka-coffee/contracts'
+import { analyticsSummaryResponseSchema, crmAnalyticsResponseSchema } from '@chashka-coffee/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 
@@ -12,9 +12,14 @@ const periods = [7, 30, 90] as const
 export function StatisticsPage() {
   const { api } = useAuth()
   const [days, setDays] = useState<(typeof periods)[number]>(30)
+  const [view, setView] = useState<'SALES' | 'SITE'>('SALES')
   const summary = useQuery({
     queryKey: ['admin', 'analytics', days],
     queryFn: () => api.request(`/api/admin/analytics?days=${days}`, analyticsSummaryResponseSchema),
+  })
+  const crmSummary = useQuery({
+    queryKey: ['admin', 'crm-analytics', days],
+    queryFn: () => api.request(`/api/admin/crm-analytics?days=${days}`, crmAnalyticsResponseSchema),
   })
 
   const maxViews = Math.max(1, ...(summary.data?.daily.map((point) => point.views) ?? [1]))
@@ -23,8 +28,8 @@ export function StatisticsPage() {
     <section className="admin-page">
       <AdminPageHeader
         eyebrow="Аналитика"
-        title="Статистика сайта"
-        description="Обезличенные просмотры помогают понять, какие страницы действительно нужны гостям. Имена, телефоны и IP-адреса здесь не собираются."
+        title={view === 'SALES' ? 'Продажи кофе' : 'Статистика сайта'}
+        description={view === 'SALES' ? 'Выручка и клиентские показатели рассчитаны только по онлайн-заказам кофе.' : 'Обезличенные просмотры помогают понять, какие страницы действительно нужны гостям. Имена, телефоны и IP-адреса здесь не собираются.'}
         actions={(
           <div className="admin-period-switch" aria-label="Период статистики">
             {periods.map((period) => (
@@ -36,9 +41,18 @@ export function StatisticsPage() {
         )}
       />
 
-      {summary.isPending ? <p className="admin-state-message">Собираем статистику…</p> : null}
-      {summary.isError ? <p className="admin-state-message admin-state-error">Не удалось загрузить статистику. Проверьте API и применена ли последняя миграция базы.</p> : null}
-      {summary.data ? (
+      <div className="mb-5 flex gap-2 border-b pb-4">
+        <Button size="sm" variant={view === 'SALES' ? 'default' : 'ghost'} onClick={() => setView('SALES')}>Продажи и клиенты</Button>
+        <Button size="sm" variant={view === 'SITE' ? 'default' : 'ghost'} onClick={() => setView('SITE')}>Посещаемость сайта</Button>
+      </div>
+
+      {view === 'SALES' && crmSummary.isPending ? <p className="admin-state-message">Собираем показатели продаж…</p> : null}
+      {view === 'SALES' && crmSummary.isError ? <p className="admin-state-message admin-state-error">Не удалось загрузить показатели продаж.</p> : null}
+      {view === 'SALES' && crmSummary.data ? <SalesAnalytics data={crmSummary.data} /> : null}
+
+      {view === 'SITE' && summary.isPending ? <p className="admin-state-message">Собираем статистику…</p> : null}
+      {view === 'SITE' && summary.isError ? <p className="admin-state-message admin-state-error">Не удалось загрузить статистику. Проверьте API и применена ли последняя миграция базы.</p> : null}
+      {view === 'SITE' && summary.data ? (
         <>
           <div className="admin-metric-strip">
             <Metric value={summary.data.overview.views} label={`Просмотров за ${days} дней`} />
@@ -106,6 +120,35 @@ export function StatisticsPage() {
     </section>
   )
 }
+
+function SalesAnalytics({ data }: { data: import('@chashka-coffee/contracts').CrmAnalyticsResponse }) {
+  const maxRevenue = Math.max(1, ...data.daily.map((point) => point.revenueKopecks))
+  return <>
+    <div className="admin-metric-strip">
+      <SalesMetric value={money(data.overview.revenueKopecks)} label={`Выручка за ${data.periodDays} дней`} previous={percentChange(data.overview.revenueKopecks, data.previous.revenueKopecks)} />
+      <SalesMetric value={data.overview.paidOrders.toLocaleString('ru-RU')} label="Оплаченных заказов" previous={percentChange(data.overview.paidOrders, data.previous.paidOrders)} />
+      <SalesMetric value={money(data.overview.averageCheckKopecks)} label="Средний чек" />
+      <SalesMetric value={`${data.overview.repeatRatePercent.toLocaleString('ru-RU')}%`} label="Повторные клиенты" />
+    </div>
+    <div className="mt-3 grid gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-3">
+      <div className="bg-background px-5 py-4"><strong className="block text-xl">{data.overview.newCustomers}</strong><span className="text-xs text-muted-foreground">Новых покупателей</span></div>
+      <div className="bg-background px-5 py-4"><strong className="block text-xl">{data.overview.returningCustomers}</strong><span className="text-xs text-muted-foreground">Вернувшихся покупателей</span></div>
+      <div className="bg-background px-5 py-4"><strong className="block text-xl">{data.overview.cancelledOrders}</strong><span className="text-xs text-muted-foreground">Отменённых заказов</span></div>
+    </div>
+    <div className="admin-analytics-grid mt-6">
+      <Card className="admin-analytics-chart">
+        <CardHeader><CardTitle>Выручка по дням</CardTitle><CardDescription>Только оплаченные онлайн-заказы.</CardDescription></CardHeader>
+        <CardContent><div className="admin-chart-bars" role="img" aria-label="Выручка онлайн-заказов по дням">{data.daily.map((point) => <div className="admin-chart-day" key={point.date} title={`${formatDate(point.date)}: ${money(point.revenueKopecks)}, ${point.paidOrders} заказов`}><span style={{ height: `${Math.max(4, (point.revenueKopecks / maxRevenue) * 100)}%` }} /><small>{new Date(`${point.date}T00:00:00`).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })}</small></div>)}</div></CardContent>
+      </Card>
+      <Card><CardHeader><CardTitle>Лидеры продаж</CardTitle><CardDescription>Товары по выручке за выбранный период.</CardDescription></CardHeader><CardContent className="admin-ranked-list">{data.topProducts.length ? data.topProducts.map((product, index) => <div key={product.name}><span>{index + 1}</span><p><strong>{product.name}</strong><small>{product.quantity} шт.</small></p><b>{money(product.revenueKopecks)}</b></div>) : <p className="admin-empty-copy">Оплаченных заказов за период пока нет.</p>}</CardContent></Card>
+    </div>
+    <Card className="mt-6"><CardHeader><CardTitle>Точки самовывоза</CardTitle><CardDescription>Вклад ресторанов в онлайн-продажи кофе.</CardDescription></CardHeader><CardContent className="admin-table-wrap"><table className="admin-data-table"><thead><tr><th>Ресторан</th><th>Оплачено заказов</th><th>Выручка</th></tr></thead><tbody>{data.topPickupLocations.map((location) => <tr key={location.name}><td><strong>{location.name}</strong></td><td>{location.paidOrders}</td><td>{money(location.revenueKopecks)}</td></tr>)}</tbody></table></CardContent></Card>
+  </>
+}
+
+function SalesMetric({ value, label, previous }: { value: string; label: string; previous?: string }) { return <div><strong>{value}</strong><span>{label}{previous ? ` · ${previous}` : ''}</span></div> }
+function money(kopecks: number) { return `${(kopecks / 100).toLocaleString('ru-RU')} ₽` }
+function percentChange(current: number, previous: number) { if (!previous) return current ? 'новое' : 'без изменений'; const value = Math.round(((current - previous) / previous) * 100); return `${value > 0 ? '+' : ''}${value}% к прошлому периоду` }
 
 function Metric({ value, label }: { value: number; label: string }) {
   return <div><strong>{value.toLocaleString('ru-RU')}</strong><span>{label}</span></div>

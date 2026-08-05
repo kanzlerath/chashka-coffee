@@ -51,10 +51,12 @@ import { TeamPage } from '@/features/staff-admin'
 import { StatisticsPage } from '@/features/analytics-admin'
 import { ActivityPage } from '@/features/workspace-admin'
 import { OrdersPage } from '@/features/orders-admin'
+import { CustomerDetailPage, CustomersPage } from '@/features/crm-admin'
 
 const workspaceNavigation = [
   { to: '/', label: 'Обзор', icon: DashboardSquare01Icon },
   { to: '/orders', label: 'Заказы', icon: Coffee02Icon, permission: 'ORDERS_MANAGE' },
+  { to: '/customers', label: 'Клиенты', icon: UserGroupIcon, permission: 'CUSTOMERS_READ' },
   { to: '/restaurants', label: 'Рестораны', icon: RestaurantIcon, permission: 'CATALOG_MANAGE' },
   { to: '/menus', label: 'Меню', icon: MenuRestaurantIcon, permission: 'CATALOG_MANAGE' },
 ] as const
@@ -471,6 +473,23 @@ export function OrdersAdminRoute() {
   if (!auth.user) return <HomePage />
   if (!hasPermission(auth.user, 'ORDERS_MANAGE')) return <AccessDenied title="Заказы" description="Раздел доступен оператору заказов." />
   return <OrdersPage />
+}
+
+export function CustomersAdminRoute() {
+  const auth = useAuth()
+  if (auth.isBootstrapping) return <LoadingState />
+  if (!auth.user) return <HomePage />
+  if (!hasPermission(auth.user, 'CUSTOMERS_READ')) return <AccessDenied title="Клиенты" description="CRM доступна суперадмину." />
+  return <CustomersPage />
+}
+
+export function CustomerDetailAdminRoute() {
+  const auth = useAuth()
+  const { customerId } = useParams({ strict: false }) as { customerId: string }
+  if (auth.isBootstrapping) return <LoadingState />
+  if (!auth.user) return <HomePage />
+  if (!hasPermission(auth.user, 'CUSTOMERS_READ')) return <AccessDenied title="Клиенты" description="CRM доступна суперадмину." />
+  return <CustomerDetailPage customerId={customerId} />
 }
 
 export function MediaAdminRoute() {
