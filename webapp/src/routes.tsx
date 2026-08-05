@@ -2,6 +2,7 @@ import { createRootRoute, createRoute, createRouter, redirect } from '@tanstack/
 import type { ReactNode } from 'react'
 
 import {
+  ActivityAdminRoute,
   AppPage,
   ContentArticleCreateAdminRoute,
   ContentArticleEditAdminRoute,
@@ -18,6 +19,7 @@ import {
   JobEditAdminRoute,
   JobsAdminRoute,
   LeadsAdminRoute,
+  OrdersAdminRoute,
   ManagedPagesAdminRoute,
   ManagedPageEditAdminRoute,
   MediaAdminRoute,
@@ -48,7 +50,9 @@ const route = <TPath extends string>(path: TPath, component: () => ReactNode) =>
 
 const indexRoute = route('/', HomePage)
 const appRoute = route('/app', AppPage)
+const activityRoute = route('/activity', ActivityAdminRoute)
 const statisticsRoute = route('/statistics', StatisticsAdminRoute)
+const ordersRoute = route('/orders', OrdersAdminRoute)
 const restaurantsRoute = route('/restaurants', RestaurantsAdminRoute)
 const restaurantCreateRoute = route('/restaurants/new', RestaurantCreateAdminRoute)
 const restaurantEditRoute = route('/restaurants/$restaurantId', RestaurantEditAdminRoute)
@@ -93,7 +97,7 @@ const pagesRoute = route('/pages', ManagedPagesAdminRoute)
 const pageEditRoute = route('/pages/$pageKey', ManagedPageEditAdminRoute)
 
 const routeTree = rootRoute.addChildren([
-  indexRoute, appRoute, statisticsRoute, restaurantsRoute, restaurantCreateRoute, restaurantEditRoute,
+  indexRoute, appRoute, activityRoute, statisticsRoute, ordersRoute, restaurantsRoute, restaurantCreateRoute, restaurantEditRoute,
   menusRoute, menuCreateRoute, menuDetailRoute, menuCategoryCreateRoute, menuItemCreateRoute, menuItemEditRoute,
   teamRoute, teamCreateRoute, teamEditRoute,
   productsLegacyRoute, coffeeRoute, coffeeCreateRoute, coffeeEditRoute, cakesRoute, cakeCreateRoute, cakeEditRoute,

@@ -4,6 +4,7 @@ import {
   customerQrResponseSchema,
   customerSendCodeResponseSchema,
   customerSessionResponseSchema,
+  customerOrderListResponseSchema,
   type CustomerProfile,
 } from '@chashka-coffee/contracts'
 
@@ -83,6 +84,11 @@ export function createCustomerAccountApi({
         body: JSON.stringify({}),
       })
       return json(response, (value) => customerQrResponseSchema.parse(value))
+    },
+
+    async getOrders() {
+      const response = await request('/api/customer/orders')
+      return json(response, (value) => customerOrderListResponseSchema.parse(value)).then((result) => result.orders)
     },
 
     async logout() {

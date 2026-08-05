@@ -32,6 +32,7 @@ type RestaurantSeed = {
   phone: string
   menuSlug: (typeof menus)[number]
   isAtApartHotel?: boolean
+  coffeePickupEnabled?: boolean
   latitude: number
   longitude: number
 }
@@ -63,9 +64,9 @@ type MenuCategorySeed = {
 }
 
 const restaurants: RestaurantSeed[] = [
-  { slug: 'krasny-prospekt', name: 'Чашка кофе — Красный проспект', format: 'CITY', area: 'CITY', city: 'Новосибирск', address: 'Красный проспект, 25', phone: '+7 (383) 123-20-20', menuSlug: 'city-core', latitude: 55.0302, longitude: 82.9204 },
-  { slug: 'ulitsa-lenina', name: 'Чашка кофе — улица Ленина', format: 'CITY', area: 'CITY', city: 'Новосибирск', address: 'ул. Ленина, 12', phone: '+7 (383) 123-20-21', menuSlug: 'city-core', latitude: 55.0281, longitude: 82.9127 },
-  { slug: 'akademgorodok', name: 'Чашка кофе — Академгородок', format: 'CITY', area: 'CITY', city: 'Новосибирск', address: 'проспект Академика Коптюга, 4', phone: '+7 (383) 123-20-22', menuSlug: 'city-core', latitude: 54.8499, longitude: 83.1052 },
+  { slug: 'krasny-prospekt', name: 'Чашка кофе — Красный проспект', format: 'CITY', area: 'CITY', city: 'Новосибирск', address: 'Красный проспект, 25', phone: '+7 (383) 123-20-20', menuSlug: 'city-core', coffeePickupEnabled: true, latitude: 55.0302, longitude: 82.9204 },
+  { slug: 'ulitsa-lenina', name: 'Чашка кофе — улица Ленина', format: 'CITY', area: 'CITY', city: 'Новосибирск', address: 'ул. Ленина, 12', phone: '+7 (383) 123-20-21', menuSlug: 'city-core', coffeePickupEnabled: true, latitude: 55.0281, longitude: 82.9127 },
+  { slug: 'akademgorodok', name: 'Чашка кофе — Академгородок', format: 'CITY', area: 'CITY', city: 'Новосибирск', address: 'проспект Академика Коптюга, 4', phone: '+7 (383) 123-20-22', menuSlug: 'city-core', coffeePickupEnabled: true, latitude: 54.8499, longitude: 83.1052 },
   { slug: 'galereya-novosibirsk', name: 'Чашка кофе — Галерея Новосибирск', format: 'CITY', area: 'CITY', city: 'Новосибирск', address: 'ул. Гоголя, 13', phone: '+7 (383) 123-20-23', menuSlug: 'city-core', latitude: 55.0412, longitude: 82.9208 },
   { slug: 'rechnoy-vokzal', name: 'Чашка кофе — Речной вокзал', format: 'CITY', area: 'CITY', city: 'Новосибирск', address: 'ул. Большевистская, 12', phone: '+7 (383) 123-20-24', menuSlug: 'city-core', latitude: 55.0066, longitude: 82.9383 },
   { slug: 'ploshchad-lenina', name: 'Чашка кофе — площадь Ленина', format: 'CITY', area: 'CITY', city: 'Новосибирск', address: 'Красный проспект, 29', phone: '+7 (383) 123-20-25', menuSlug: 'city-signature', latitude: 55.0298, longitude: 82.9196 },
@@ -193,6 +194,7 @@ async function seed() {
         format: restaurant.format,
         area: restaurant.area,
         isAtApartHotel: restaurant.isAtApartHotel ?? false,
+        coffeePickupEnabled: restaurant.coffeePickupEnabled ?? false,
         city: restaurant.city,
         address: restaurant.address,
         phone: restaurant.phone,

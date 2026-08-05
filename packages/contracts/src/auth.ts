@@ -10,8 +10,49 @@ const displayNameSchema = z
 
 export const emailSchema = z.string().trim().toLowerCase().email().max(254)
 
-export const userRoleSchema = z.enum(['ADMIN', 'EDITOR'])
+export const userRoleSchema = z.enum([
+  'SUPER_ADMIN',
+  'CONTENT_MANAGER',
+  'CATALOG_MANAGER',
+  'ORDER_OPERATOR',
+  'LEAD_OPERATOR',
+  'RECRUITER',
+])
 export type UserRole = z.infer<typeof userRoleSchema>
+
+export const staffPermissionSchema = z.enum([
+  'STAFF_MANAGE',
+  'CONTENT_MANAGE',
+  'CATALOG_MANAGE',
+  'ORDERS_MANAGE',
+  'LEADS_MANAGE',
+  'JOBS_MANAGE',
+  'JOB_APPLICATIONS_MANAGE',
+  'MEDIA_MANAGE',
+  'CUSTOMERS_READ',
+  'ANALYTICS_READ',
+  'AUDIT_READ',
+])
+export type StaffPermission = z.infer<typeof staffPermissionSchema>
+
+export const rolePermissions: Readonly<Record<UserRole, readonly StaffPermission[]>> = {
+  SUPER_ADMIN: staffPermissionSchema.options,
+  CONTENT_MANAGER: ['CONTENT_MANAGE', 'MEDIA_MANAGE'],
+  CATALOG_MANAGER: ['CATALOG_MANAGE', 'MEDIA_MANAGE'],
+  ORDER_OPERATOR: ['ORDERS_MANAGE'],
+  LEAD_OPERATOR: ['LEADS_MANAGE'],
+  RECRUITER: ['JOBS_MANAGE', 'JOB_APPLICATIONS_MANAGE'],
+}
+
+export function hasPermission(
+  user: { roles: readonly UserRole[] } | null | undefined,
+  permission: StaffPermission,
+) {
+  return Boolean(user?.roles.some((role) => rolePermissions[role].includes(permission)))
+}
+
+const assignedRolesSchema = z.array(userRoleSchema).min(1).max(userRoleSchema.options.length)
+  .refine((roles) => new Set(roles).size === roles.length, 'Roles must be unique')
 
 export const passwordSchema = z
   .string()
@@ -22,7 +63,7 @@ export const userSchema = z.object({
   id: z.string(),
   email: emailSchema,
   displayName: z.string().nullable(),
-  role: userRoleSchema,
+  roles: assignedRolesSchema,
   createdAt: z.string().datetime(),
 })
 
@@ -41,13 +82,13 @@ export const createStaffUserRequestSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   displayName: displayNameSchema,
-  role: userRoleSchema.default('EDITOR'),
+  roles: assignedRolesSchema.default(['CONTENT_MANAGER']),
 })
 
 export const updateStaffUserRequestSchema = z.object({
   email: emailSchema,
   displayName: z.string().trim().min(2).max(80).nullable(),
-  role: userRoleSchema,
+  roles: assignedRolesSchema,
   password: z.union([passwordSchema, z.literal('')]).optional().transform((value) => value || undefined),
 })
 export const staffUserListResponseSchema = z.object({ users: z.array(userSchema) })

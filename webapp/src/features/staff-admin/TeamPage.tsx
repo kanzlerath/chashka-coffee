@@ -18,8 +18,19 @@ import { Input } from '@/components/ui/input'
 import { useAuth } from '@/features/auth'
 
 type TeamPageProps = { mode?: 'list' | 'create' | 'edit'; userId?: string }
-type StaffDraft = { displayName: string; email: string; password: string; role: UserRole }
-const emptyDraft: StaffDraft = { displayName: '', email: '', password: '', role: 'EDITOR' }
+type StaffDraft = { displayName: string; email: string; password: string; roles: UserRole[] }
+const emptyDraft: StaffDraft = { displayName: '', email: '', password: '', roles: ['CONTENT_MANAGER'] }
+
+const roleOptions: { value: UserRole; label: string; description: string }[] = [
+  { value: 'SUPER_ADMIN', label: 'Суперадмин', description: 'Полный доступ, команда, CRM и аналитика.' },
+  { value: 'CONTENT_MANAGER', label: 'Контент-мейкер', description: 'Страницы, акции, события, журнал и медиатека.' },
+  { value: 'CATALOG_MANAGER', label: 'Ответственный за меню', description: 'Рестораны, меню, кофе, торты и цены.' },
+  { value: 'ORDER_OPERATOR', label: 'Оператор заказов', description: 'Онлайн-заказы кофе и этапы выдачи.' },
+  { value: 'LEAD_OPERATOR', label: 'Оператор заявок', description: 'Бронирования, банкеты, вопросы и обращения.' },
+  { value: 'RECRUITER', label: 'Рекрутер', description: 'Вакансии и отклики кандидатов.' },
+]
+
+const roleName = (role: UserRole) => roleOptions.find((option) => option.value === role)?.label ?? role
 
 export function TeamPage({ mode = 'list', userId }: TeamPageProps) {
   if (mode === 'list') return <TeamList />
@@ -50,14 +61,14 @@ function TeamList() {
             <Link className="admin-directory-row" key={user.id} params={{ userId: user.id }} to="/team/$userId">
               <span className="admin-person-avatar">{initials(user)}</span>
               <span><strong>{user.displayName ?? 'Имя не указано'}</strong><small>{user.email}</small></span>
-              <span className="admin-role-badge">{user.role === 'ADMIN' ? 'Администратор' : 'Редактор'}</span>
+              <span className="admin-role-badge">{user.roles.map(roleName).join(' · ')}</span>
               {currentUser?.id === user.id ? <small className="admin-current-user">Это вы</small> : null}
             </Link>
           ))}
           {staff.isError ? <p className="admin-state-message admin-state-error">Не удалось загрузить сотрудников.</p> : null}
         </CardContent>
       </Card>
-      <div className="admin-help-note"><strong>Как выбрать роль?</strong><p>Редактор работает с ресторанами и меню. Администратор дополнительно управляет публикациями, заявками, сотрудниками и настройками сайта.</p></div>
+      <div className="admin-help-note"><strong>Роли можно совмещать</strong><p>Выдавайте только те рабочие зоны, которые нужны сотруднику. Персональные данные и системные настройки остаются закрыты без соответствующего права.</p></div>
     </section>
   )
 }
@@ -72,7 +83,7 @@ function StaffEditor({ mode, userId }: Required<Pick<TeamPageProps, 'mode'>> & {
 
   useEffect(() => {
     if (mode === 'edit' && selected) {
-      setDraft({ displayName: selected.displayName ?? '', email: selected.email, password: '', role: selected.role })
+      setDraft({ displayName: selected.displayName ?? '', email: selected.email, password: '', roles: selected.roles })
     }
   }, [mode, selected])
 
@@ -111,7 +122,7 @@ function StaffEditor({ mode, userId }: Required<Pick<TeamPageProps, 'mode'>> & {
       <Card className="admin-editor-surface">
         <CardHeader><CardTitle>Данные для входа</CardTitle><CardDescription>Все поля подписаны так, как их увидит сотрудник.</CardDescription></CardHeader>
         <CardContent>
-          <form className="admin-form-stack" onSubmit={(event) => { event.preventDefault(); save.mutate() }}>
+          <form className="admin-form-stack" onSubmit={(event) => { event.preventDefault(); if (!event.currentTarget.reportValidity()) return; save.mutate() }}>
             <AdminFormIntro>Имя отображается в админке. E-mail используется как логин.</AdminFormIntro>
             <div className="admin-form-grid-2">
               <AdminField label="Имя сотрудника" hint="Например: Анна Петрова"><Input placeholder="Анна Петрова" value={draft.displayName} onChange={(event) => setDraft((value) => ({ ...value, displayName: event.target.value }))} /></AdminField>
@@ -120,11 +131,26 @@ function StaffEditor({ mode, userId }: Required<Pick<TeamPageProps, 'mode'>> & {
             <AdminField label={mode === 'create' ? 'Временный пароль' : 'Новый пароль'} hint={mode === 'create' ? 'Не короче 8 символов. Передайте его сотруднику лично или в защищённом чате.' : 'Оставьте поле пустым, если пароль менять не нужно.'} required={mode === 'create'}>
               <Input minLength={8} required={mode === 'create'} type="password" autoComplete="new-password" placeholder={mode === 'create' ? 'Минимум 8 символов' : 'Оставить текущий пароль'} value={draft.password} onChange={(event) => setDraft((value) => ({ ...value, password: event.target.value }))} />
             </AdminField>
-            <AdminField label="Уровень доступа" hint="Администратор может управлять сотрудниками, заявками и публикациями.">
-              <select value={draft.role} onChange={(event) => setDraft((value) => ({ ...value, role: event.target.value as UserRole }))}><option value="EDITOR">Редактор — рестораны и меню</option><option value="ADMIN">Администратор — полный доступ</option></select>
+            <AdminField label="Рабочие роли" hint="Можно выбрать несколько ролей. Хотя бы одна обязательна.">
+              <div className="grid gap-2 sm:grid-cols-2">
+                {roleOptions.map((option) => {
+                  const checked = draft.roles.includes(option.value)
+                  return <label className="flex cursor-pointer gap-3 rounded-lg border p-3" key={option.value}>
+                    <input
+                      checked={checked}
+                      type="checkbox"
+                      onChange={() => setDraft((value) => ({
+                        ...value,
+                        roles: checked ? value.roles.filter((role) => role !== option.value) : [...value.roles, option.value],
+                      }))}
+                    />
+                    <span><strong className="block text-sm">{option.label}</strong><small className="text-xs text-muted-foreground">{option.description}</small></span>
+                  </label>
+                })}
+              </div>
             </AdminField>
             {save.isError ? <p className="admin-state-message admin-state-error">Не удалось сохранить. Проверьте e-mail, пароль и убедитесь, что в команде остаётся хотя бы один администратор.</p> : null}
-            <div className="admin-form-actions"><Button disabled={save.isPending} size="lg" type="submit">{save.isPending ? 'Сохраняем…' : mode === 'create' ? 'Создать сотрудника' : 'Сохранить изменения'}</Button></div>
+            <div className="admin-form-actions"><Button disabled={save.isPending || draft.roles.length === 0} size="lg" type="submit">{save.isPending ? 'Сохраняем…' : mode === 'create' ? 'Создать сотрудника' : 'Сохранить изменения'}</Button></div>
           </form>
         </CardContent>
       </Card>

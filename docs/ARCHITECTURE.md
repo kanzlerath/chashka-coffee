@@ -68,7 +68,7 @@ Refresh-token rotation creates a new session and revokes the previous one. `/api
 
 ## Frontend
 
-There are two browser surfaces. `website` (Astro, SSG by default, SSR/hybrid only when needed) owns the customer-facing site: public indexable content plus the client-rendered `/account` loyalty view and its shared header dialog. The account HTML is static and `noindex`; personalization is fetched directly from the backend with an HttpOnly customer-session cookie, so private data is never included in generated HTML or shared caches. `webapp` (React CSR) remains the staff-only admin surface. Both share `@chashka-coffee/contracts`.
+There are two browser surfaces. `website` (Astro, SSG by default, SSR/hybrid only when needed) owns the customer-facing site: public indexable content, the local coffee cart, client-rendered `/checkout` and `/order` flows, plus the client-rendered `/account` loyalty view and its shared header dialog. Checkout and account HTML are static and `noindex`; private or personalized data is fetched directly from the backend and never included in generated HTML or shared caches. `webapp` (React CSR) remains the staff-only admin surface. Both share `@chashka-coffee/contracts`.
 
 The webapp follows these client rules:
 
@@ -87,6 +87,12 @@ Do not create a new form, query, auth, or API abstraction until the existing pat
 `website` is a separate Astro workspace for customer-facing SSG pages. Pages, including the `/account` shell, prerender to static HTML by default. Durable public content uses rebuild/redeploy; personalized customer data stays client-side and comes from no-store API endpoints. Cached on-demand/SSR routes, server islands, or personalized SSR remain available only if a later feature needs them and would require an Astro adapter plus a runtime-capable deployment. Shared CDN caching is only for anonymous, public-equivalent HTML; auth-dependent responses must never enter a shared cache.
 
 SEO-critical content must be present in the initial HTML: titles, descriptions, canonical URLs, social preview tags, product/category names, indexable descriptions, and public prices when snippets need them. The customer-account exception is intentionally client-side and `noindex`. Its API client consumes `@chashka-coffee/contracts`; the backend owns SMS verification, PremiumBonus access, session enforcement, rate limits, and QR generation.
+
+## Online Coffee Orders
+
+The `orders` backend module owns quoting, pickup eligibility, immutable order snapshots, idempotent creation, private guest access tokens and status transitions. Prices are always rebuilt from published product variants on the server; the browser cart is only an input and convenience cache. Restaurants opt into pickup through `coffeePickupEnabled`, and checkout never accepts an arbitrary address or delivery mode.
+
+Guest receipts use an opaque token in the `/order` URL; only its SHA-256 hash is stored. Signed-in customer orders additionally link to `CustomerAccount` and appear in `/account`. Order items and pickup details keep snapshots so deleting or editing catalog and restaurant records does not rewrite historical orders. Payment is an explicit seam: new orders remain `AWAITING_PAYMENT`/`PENDING` until a future provider confirms payment. See [ONLINE_COFFEE_ORDERS.md](ONLINE_COFFEE_ORDERS.md) for the operational flow and API surface.
 
 Astro remains the default website stack because it is content-first, static-first, low-JS by default, and gives agents a clear SEO surface. Choose Next.js only when a project intentionally wants a Vercel-optimized ISR/cache platform. Treat TanStack Start as an optional future React full-stack path for teams that want one React app with selective SSR, not as the baseline for non-programmer vibe-coding projects.
 

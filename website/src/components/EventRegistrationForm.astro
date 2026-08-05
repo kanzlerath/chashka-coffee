@@ -3,7 +3,7 @@ const { eventSlug, eventTitle } = Astro.props as { eventSlug: string; eventTitle
 ---
 <form class="event-form" data-event-form data-event-slug={eventSlug} data-event-title={eventTitle} novalidate>
   <label>Ваше имя<input name="name" autocomplete="name" required /></label>
-  <label>Телефон<input name="phone" autocomplete="tel" inputmode="tel" required placeholder="+7" /></label>
+  <label>Телефон<input name="phone" type="tel" autocomplete="tel" inputmode="tel" required placeholder="+7 (999) 000-00-00" /></label>
   <label>E-mail<input name="email" autocomplete="email" type="email" /></label>
   <label>Количество гостей<input name="guests" type="number" min="1" max="20" value="1" required /></label>
   <label class="wide">Комментарий<textarea name="message" placeholder="Вопрос или важная деталь"></textarea></label>
@@ -11,8 +11,13 @@ const { eventSlug, eventTitle } = Astro.props as { eventSlug: string; eventTitle
   <button type="submit">Записаться</button><p aria-live="polite"></p>
 </form>
 <script>
+  import { attachRussianPhoneMask } from '../lib/contact-fields'
+
   const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
-  document.querySelectorAll<HTMLFormElement>('[data-event-form]').forEach((form) => form.addEventListener('submit', async (event) => {
+  document.querySelectorAll<HTMLFormElement>('[data-event-form]').forEach((form) => {
+    const phoneInput = form.elements.namedItem('phone')
+    if (phoneInput instanceof HTMLInputElement) attachRussianPhoneMask(phoneInput)
+    form.addEventListener('submit', async (event) => {
     event.preventDefault()
     if (!form.reportValidity()) return
     const values = new FormData(form)
@@ -22,7 +27,8 @@ const { eventSlug, eventTitle } = Astro.props as { eventSlug: string; eventTitle
     if (button) button.disabled = true
     if (status) status.textContent = 'Отправляем…'
     try { const response = await fetch(`${apiUrl}/api/leads`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); if(!response.ok) throw new Error(); form.reset(); if(status) status.textContent='Вы в списке! Мы свяжемся для подтверждения.' } catch { if(status) status.textContent='Не удалось отправить заявку. Попробуйте ещё раз.' } finally { if(button) button.disabled=false }
-  }))
+    })
+  })
 </script>
 <style>
   .event-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}.event-form label{display:grid;gap:7px;color:#dce6dd;font-size:10px;font-weight:700}.event-form input,.event-form textarea{width:100%;min-height:50px;padding:14px 16px;border:1px solid rgba(255,255,255,.2);border-radius:var(--radius);background:#fff;color:var(--ink);outline:0}.event-form textarea{min-height:105px;resize:vertical}.event-form .wide,.event-form .consent,.event-form button,.event-form>p{grid-column:1/-1}.event-form .consent{display:flex;align-items:center;gap:10px}.event-form .consent input{width:18px;min-height:18px}.event-form button{min-height:52px;border:0;border-radius:var(--radius);background:var(--lime);color:var(--moss);font-weight:800;cursor:pointer}.event-form>p{min-height:20px;margin:0;color:#fff;font-size:12px}@media(max-width:650px){.event-form{grid-template-columns:1fr}.event-form .wide,.event-form .consent,.event-form button,.event-form>p{grid-column:1}}

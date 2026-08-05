@@ -4,13 +4,15 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { ZodError } from 'zod'
 
-import { AdminField, AdminFormIntro, AdminPageHeader, AdminTabs } from '@/components/admin'
+import { AdminDraftRecovery, AdminField, AdminFormIntro, AdminPageHeader, AdminTabs } from '@/components/admin'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/features/auth'
+import { formatRussianPhone } from '@/lib/contact-fields'
 import { nullableDraftText } from '@/lib/form-drafts'
+import { useEditorDraft } from '@/hooks/use-editor-draft'
 import { toPublicSlug } from '@/lib/slugify'
 import { ApiRequestError } from '@/platform/api/http-client'
 import { CatalogAdminApi } from './api'
@@ -26,7 +28,7 @@ const defaultHours: RestaurantOpeningHoursEntry[] = [
 ]
 
 const emptyRestaurant: UpsertRestaurantRequest = {
-  slug: '', name: '', format: 'CITY', area: 'CITY', isAtApartHotel: false,
+  slug: '', name: '', format: 'CITY', area: 'CITY', isAtApartHotel: false, coffeePickupEnabled: false,
   city: 'Новосибирск', address: '', phone: '', description: null, coverImageUrl: null,
   aboutTitle: 'О ресторане', aboutText: null, visitAmenities: [],
   galleryUrls: [], menuPdfUrl: null,
@@ -42,20 +44,19 @@ export function RestaurantsPage({ mode = 'list', restaurantId }: { mode?: 'list'
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const api = useMemo(() => new CatalogAdminApi(authApi), [authApi])
-  const [draft, setDraft] = useState<UpsertRestaurantRequest>(() => freshRestaurant())
   const [overrideItem, setOverrideItem] = useState<LocalMenuItem | null>(null)
   const [overrideDraft, setOverrideDraft] = useState<UpsertRestaurantMenuItemOverrideRequest>({ description: null, ingredients: null, weightGrams: null, measurementUnit: null, priceKopecks: null })
   const [scheduleDraft, setScheduleDraft] = useState<UpsertRestaurantScheduleExceptionRequest>(emptyScheduleException)
   const [editorTab, setEditorTab] = useState<'main' | 'about' | 'media' | 'map' | 'schedule' | 'menu'>('main')
   const restaurants = useQuery({ queryKey: ['admin', 'restaurants'], queryFn: () => api.listRestaurants() })
   const selected = mode === 'edit' ? restaurants.data?.restaurants.find((restaurant) => restaurant.id === restaurantId) ?? null : null
+  const editor = useEditorDraft<UpsertRestaurantRequest>({ key: `restaurant:${restaurantId ?? 'new'}`, initialValue: selected ? restaurantToDraft(selected) : freshRestaurant(), sourceVersion: selected?.updatedAt ?? (mode === 'create' ? 'new' : 'loading'), enabled: mode !== 'list' && (mode === 'create' || Boolean(selected)) })
+  const { draft, setDraft } = editor
   const menus = useQuery({ queryKey: ['admin', 'menus'], queryFn: () => api.listMenus() })
   const restaurantMenu = useQuery({ queryKey: ['admin', 'restaurant-menu', selected?.id], enabled: Boolean(selected?.id && selected.menuId), queryFn: () => api.getRestaurantMenuDetail(selected!.id) })
   const scheduleExceptions = useQuery({ queryKey: ['admin', 'restaurant-schedule-exceptions', selected?.id], enabled: Boolean(selected?.id), queryFn: () => api.listRestaurantScheduleExceptions(selected!.id) })
 
   useEffect(() => {
-    if (mode === 'create') setDraft(freshRestaurant())
-    if (selected) setDraft(restaurantToDraft(selected))
     setOverrideItem(null)
     setScheduleDraft(emptyScheduleException())
     setEditorTab('main')
@@ -71,7 +72,9 @@ export function RestaurantsPage({ mode = 'list', restaurantId }: { mode?: 'list'
       return selected ? api.updateRestaurant(selected.id, payload) : api.createRestaurant(payload)
     },
     onSuccess: async (result) => {
-      setDraft(restaurantToDraft(result.restaurant))
+      const savedDraft = restaurantToDraft(result.restaurant)
+      editor.markSaved(savedDraft)
+      setDraft(savedDraft)
       await queryClient.invalidateQueries({ queryKey: ['admin', 'restaurants'] })
       if (mode === 'create') {
         await navigate({ to: '/restaurants/$restaurantId', params: { restaurantId: result.restaurant.id } })
@@ -117,7 +120,7 @@ export function RestaurantsPage({ mode = 'list', restaurantId }: { mode?: 'list'
     return <section className="admin-page">
       <AdminPageHeader eyebrow="Каталог" title="Рестораны" description="Адреса, график работы и меню каждой точки сети." actions={<Button asChild><Link to="/restaurants/new">Добавить ресторан</Link></Button>} />
       <Card className="admin-directory-card">
-        <CardHeader><CardTitle>Все рестораны</CardTitle><CardDescription>Откройте нужную точку — её данные появятся на отдельной странице.</CardDescription></CardHeader>
+        <CardHeader><CardTitle>Все рестораны</CardTitle></CardHeader>
         <CardContent className="admin-directory-list">
           {restaurants.isPending ? <p className="admin-empty-state">Загружаем рестораны…</p> : null}
           {restaurants.data?.restaurants.map((restaurant) => <Link key={restaurant.id} to="/restaurants/$restaurantId" params={{ restaurantId: restaurant.id }} className="admin-directory-row admin-directory-row-simple">
@@ -137,15 +140,17 @@ export function RestaurantsPage({ mode = 'list', restaurantId }: { mode?: 'list'
 
   return <section className="admin-page">
     <AdminPageHeader eyebrow="Рестораны" title={selected ? selected.name : 'Новый ресторан'} description={selected ? 'Изменяйте данные конкретной точки. Сохранение не затронет другие рестораны.' : 'Сначала заполните основные данные. График-исключения и локальное меню появятся после создания.'} actions={<Button asChild variant="outline"><Link to="/restaurants">К списку ресторанов</Link></Button>} />
+    {editor.recovery ? <AdminDraftRecovery savedAt={editor.recovery.savedAt} onRestore={editor.restore} onDiscard={editor.discardRecovery} /> : null}
     <Card className="admin-editor-card admin-editor-card-wide"><CardHeader><CardTitle>{selected ? 'Настройки ресторана' : 'Основные данные'}</CardTitle><CardDescription>Поля с пометкой «обязательно» нужны для публикации точки на сайте.</CardDescription></CardHeader><CardContent>
-      <form className="grid gap-4" onSubmit={(event) => { event.preventDefault(); save.mutate() }}>
+      <form className="grid gap-4" onSubmit={(event) => { event.preventDefault(); if (!event.currentTarget.reportValidity()) return; save.mutate() }}>
         <AdminTabs label="Разделы ресторана" value={editorTab} onChange={setEditorTab} tabs={[{ value: 'main', label: 'Основное' }, { value: 'about', label: 'О ресторане' }, { value: 'media', label: 'Фото и PDF' }, { value: 'map', label: 'Карта' }, { value: 'schedule', label: 'График' }, { value: 'menu', label: 'Меню' }]} />
         {editorTab === 'main' ? <>
         <AdminFormIntro>Название, контакты и фотография — то, что увидит гость на странице ресторана.</AdminFormIntro>
         <AdminField label="Название ресторана" required hint="Например: Чашка кофе на Красном проспекте"><Input required placeholder="Чашка кофе на…" value={draft.name} onChange={(event) => change('name', event.target.value)} /></AdminField>
         <div className="grid gap-4 sm:grid-cols-2"><AdminField label="Тип ресторана" required hint="Выберите, где находится точка."><select value={draft.format} onChange={(event) => { const value = event.target.value as UpsertRestaurantRequest['format']; change('format', value); change('area', value === 'AIRPORT' ? 'AIRPORT' : 'CITY') }}><option value="CITY">В городе</option><option value="AIRPORT">В аэропорту</option></select></AdminField><AdminField label="Город" required><Input required placeholder="Новосибирск" value={draft.city} onChange={(event) => change('city', event.target.value)} /></AdminField></div>
         <AdminField label="Адрес" required hint="Полный адрес, который можно скопировать в навигатор."><Input required placeholder="Красный проспект, 25" value={draft.address} onChange={(event) => change('address', event.target.value)} /></AdminField>
-        <AdminField label="Телефон" required hint="Показывается посетителям и используется для кнопки «Позвонить»."><Input required type="tel" placeholder="+7 (383) 123-20-20" value={draft.phone} onChange={(event) => change('phone', event.target.value)} /></AdminField>
+        <AdminField label="Телефон" required hint="Показывается посетителям и используется для кнопки «Позвонить»."><Input required type="tel" inputMode="tel" pattern="\\+7 \\(\\d{3}\\) \\d{3}-\\d{2}-\\d{2}" placeholder="+7 (383) 123-20-20" value={draft.phone} onChange={(event) => change('phone', formatRussianPhone(event.target.value))} /></AdminField>
+        <label className="admin-check-row"><input checked={draft.coffeePickupEnabled} type="checkbox" onChange={(event) => change('coffeePickupEnabled', event.target.checked)} /><span><strong>Выдавать онлайн-заказы кофе</strong><small>Точка появится в списке самовывоза при оформлении заказа.</small></span></label>
         <AdminField label="Короткое описание" hint="Два-три предложения об атмосфере, кухне или особенностях точки."><Textarea placeholder="Светлый городской ресторан для завтраков, встреч и неспешных ужинов." value={draft.description ?? ''} onChange={(event) => change('description', nullableDraftText(event.target.value))} /></AdminField>
         <AdminField label="Фотография ресторана" hint="Вставьте прямую ссылку на загруженное изображение из медиатеки."><Input type="url" placeholder="https://…" value={draft.coverImageUrl ?? ''} onChange={(event) => change('coverImageUrl', nullableDraftText(event.target.value))} /></AdminField>
         <details className="admin-advanced-fields"><summary>Технические настройки</summary><div className="pt-4"><AdminField label="Адрес страницы" hint="Можно не заполнять — адрес создастся автоматически из названия."><Input value={draft.slug} placeholder="krasny-prospekt" onChange={(event) => change('slug', event.target.value)} /></AdminField></div></details>
@@ -217,6 +222,7 @@ export function restaurantToDraft(restaurant: AdminRestaurant): UpsertRestaurant
   } = restaurant
   return {
     ...draft,
+    phone: formatRussianPhone(restaurant.phone),
     format: restaurant.format === 'AIRPORT' ? 'AIRPORT' : 'CITY',
     area: restaurant.area === 'AIRPORT' ? 'AIRPORT' : 'CITY',
     isAtApartHotel: false,
@@ -233,6 +239,7 @@ const restaurantFieldLabels: Record<string, string> = {
   city: 'Город',
   address: 'Адрес',
   phone: 'Телефон',
+  coffeePickupEnabled: 'Самовывоз кофе',
   description: 'Короткое описание',
   aboutTitle: 'Заголовок блока «О ресторане»',
   aboutText: 'Текст блока «О ресторане»',

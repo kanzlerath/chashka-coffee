@@ -1,4 +1,5 @@
 import {
+  contentBlockListSchema,
   productDetailSchema,
   productDeleteResponseSchema,
   productListResponseSchema,
@@ -17,6 +18,7 @@ import type { DbClient } from '../../db'
 import { Prisma } from '../../generated/prisma/client'
 import { AppError, validationErrorHook } from '../../http/errors'
 import type { AuthHttpEnv } from '../auth'
+import { nextCopyIdentity } from '../../copy-identity'
 
 const idParams = z.object({ id: z.uuid() })
 const slugParams = z.object({ slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/) })
@@ -27,7 +29,8 @@ const includeVariants = { variants: { orderBy: { position: 'asc' as const } } }
 type ProductRecord = {
   id: string
   type: 'COFFEE' | 'CAKE'
-  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+  status: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED'
+  publishAt: Date | null
   slug: string
   name: string
   category: string | null
@@ -40,6 +43,7 @@ type ProductRecord = {
   imageUrl: string | null
   galleryUrls: unknown
   details: unknown
+  blocks: unknown
   isFeatured: boolean
   position: number
   createdAt: Date
@@ -50,9 +54,11 @@ type ProductRecord = {
 function dto(product: ProductRecord): Product {
   return {
     ...product,
+    publishAt: product.publishAt?.toISOString() ?? null,
     tastingNotes: z.array(z.string()).parse(product.tastingNotes),
     galleryUrls: z.array(z.string()).parse(product.galleryUrls),
     details: z.array(productDetailSchema).parse(product.details),
+    blocks: contentBlockListSchema.parse(product.blocks),
     variants: product.variants.map((variant) => ({
       id: variant.id,
       ...productVariantInputSchema.parse({
@@ -70,7 +76,7 @@ function dto(product: ProductRecord): Product {
 
 function data(input: UpsertProductRequest) {
   const { variants, ...product } = input
-  return { product, variants }
+  return { product: { ...product, publishAt: product.publishAt ? new Date(product.publishAt) : null }, variants }
 }
 
 async function availableProductSlug(db: DbClient, requestedSlug: string) {
@@ -101,21 +107,25 @@ function productWriteError(error: unknown): never {
 export function createProductsModule({ db, requireAuth, requireAdmin }: { db: DbClient; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireAdmin: MiddlewareHandler<AuthHttpEnv> }) {
   const routes = new OpenAPIHono({ defaultHook: validationErrorHook })
   const adminRoutes = new OpenAPIHono<AuthHttpEnv>({ defaultHook: validationErrorHook })
-  adminRoutes.use('*', requireAuth, requireAdmin)
+  adminRoutes.use('/products', requireAuth, requireAdmin)
+  adminRoutes.use('/products/*', requireAuth, requireAdmin)
 
   const publicList = createRoute({ method: 'get', path: '/', request: { query: z.object({ type: productTypeSchema }) }, responses: { 200: { content: { 'application/json': { schema: productListResponseSchema } }, description: 'Published products' } } })
   const publicDetail = createRoute({ method: 'get', path: '/{slug}', request: { params: slugParams }, responses: { 200: { content: { 'application/json': { schema: productResponseSchema } }, description: 'Published product' }, 404: { content: errorContent, description: 'Product not found' } } })
   const adminList = createRoute({ method: 'get', path: '/products', request: { query: z.object({ type: productTypeSchema.optional() }) }, responses: { 200: { content: { 'application/json': { schema: productListResponseSchema } }, description: 'Products' } } })
   const create = createRoute({ method: 'post', path: '/products', request: { body: { content: { 'application/json': { schema: upsertProductRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: productResponseSchema } }, description: 'Product created' }, 409: { content: errorContent, description: 'Product slug conflict' } } })
   const update = createRoute({ method: 'put', path: '/products/{id}', request: { params: idParams, body: { content: { 'application/json': { schema: upsertProductRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: productResponseSchema } }, description: 'Product updated' }, 404: { content: errorContent, description: 'Product not found' }, 409: { content: errorContent, description: 'Product slug conflict' } } })
+  const copy = createRoute({ method: 'post', path: '/products/{id}/copy', request: { params: idParams }, responses: { 201: { content: { 'application/json': { schema: productResponseSchema } }, description: 'Product copied' }, 404: { content: errorContent, description: 'Product not found' }, 409: { content: errorContent, description: 'Product copy conflict' } } })
   const remove = createRoute({ method: 'delete', path: '/products/{id}', request: { params: idParams }, responses: { 200: { content: { 'application/json': { schema: productDeleteResponseSchema } }, description: 'Product deleted' }, 404: { content: errorContent, description: 'Product not found' } } })
 
   routes.openapi(publicList, async (c) => {
-    const products = await db.product.findMany({ where: { type: c.req.valid('query').type, status: 'PUBLISHED' }, include: includeVariants, orderBy: [{ isFeatured: 'desc' }, { position: 'asc' }, { name: 'asc' }] })
+    const now = new Date()
+    const products = await db.product.findMany({ where: { type: c.req.valid('query').type, OR: [{ status: 'PUBLISHED' }, { status: 'SCHEDULED', publishAt: { lte: now } }] }, include: includeVariants, orderBy: [{ isFeatured: 'desc' }, { position: 'asc' }, { name: 'asc' }] })
     return c.json({ products: products.map((product) => dto(product as ProductRecord)) }, 200)
   })
   routes.openapi(publicDetail, async (c) => {
-    const product = await db.product.findFirst({ where: { slug: c.req.valid('param').slug, status: 'PUBLISHED' }, include: includeVariants })
+    const now = new Date()
+    const product = await db.product.findFirst({ where: { slug: c.req.valid('param').slug, OR: [{ status: 'PUBLISHED' }, { status: 'SCHEDULED', publishAt: { lte: now } }] }, include: includeVariants })
     if (!product) throw new AppError(404, 'NOT_FOUND', 'Product not found')
     return c.json({ product: dto(product as ProductRecord) }, 200)
   })
@@ -142,6 +152,47 @@ export function createProductsModule({ db, requireAuth, requireAdmin }: { db: Db
     } catch (error) {
       return productWriteError(error)
     }
+  })
+  adminRoutes.openapi(copy, async (c) => {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const source = await db.product.findUnique({ where: { id: c.req.valid('param').id }, include: includeVariants })
+      if (!source) throw new AppError(404, 'NOT_FOUND', 'Product not found')
+      const nameBase = source.name.replace(/ — копия(?: \d+)?$/, '')
+      const slugBase = source.slug.replace(/-copy(?:-\d+)?$/, '')
+      const occupied = await db.product.findMany({ where: { OR: [{ type: source.type, name: { startsWith: nameBase } }, { slug: { startsWith: slugBase } }] }, select: { name: true, slug: true } })
+      const identity = nextCopyIdentity({ name: source.name, slug: source.slug, occupiedNames: occupied.map((product) => product.name), occupiedSlugs: occupied.map((product) => product.slug) })
+
+      try {
+        const product = await db.product.create({
+          data: {
+            type: source.type,
+            status: 'DRAFT',
+            publishAt: null,
+            ...identity,
+            category: source.category,
+            subtitle: source.subtitle,
+            description: source.description,
+            ingredients: source.ingredients,
+            origin: source.origin,
+            roastLevel: source.roastLevel,
+            tastingNotes: z.array(z.string()).parse(source.tastingNotes),
+            imageUrl: source.imageUrl,
+            galleryUrls: z.array(z.string()).parse(source.galleryUrls),
+            details: z.array(productDetailSchema).parse(source.details),
+            blocks: contentBlockListSchema.parse(source.blocks),
+            isFeatured: source.isFeatured,
+            position: source.position,
+            variants: { create: source.variants.map(({ label, weightGrams, priceKopecks, position, isAvailable }) => ({ label, weightGrams, priceKopecks, position, isAvailable })) },
+          },
+          include: includeVariants,
+        })
+        return c.json({ product: dto(product as ProductRecord) }, 201)
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002' && attempt < 2) continue
+        return productWriteError(error)
+      }
+    }
+    throw new AppError(409, 'CONFLICT', 'Не удалось подобрать имя для копии.')
   })
   adminRoutes.openapi(remove, async (c) => {
     try {

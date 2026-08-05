@@ -64,7 +64,7 @@ export function LoginForm({
                 id={emailId}
                 name={field.name}
                 value={field.state.value}
-                type="text"
+                type="email"
                 inputMode="email"
                 autoComplete="email"
                 aria-invalid={hasErrors(fieldErrors.email)}

@@ -14,9 +14,8 @@ import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import type { AppEnv } from '../../../env'
 import { AppError, validationErrorHook } from '../../../http/errors'
 import type { CustomerAccountService } from '../application/customer-account-service'
+import { customerSessionCookieName } from '../session-cookie'
 import { executeCustomerAccount } from './errors'
-
-const customerSessionCookieName = 'chashka_customer_session'
 
 const errorContent = { 'application/json': { schema: apiErrorSchema } }
 
@@ -152,7 +151,7 @@ function setCustomerSessionCookie(c: Context, token: string, expiresAt: Date, en
     httpOnly: true,
     secure: env.COOKIE_SECURE,
     sameSite: env.COOKIE_SECURE ? 'None' : 'Lax',
-    path: '/api/customer',
+    path: '/api',
     expires: expiresAt,
     maxAge: 7 * 24 * 60 * 60,
   })
@@ -160,9 +159,8 @@ function setCustomerSessionCookie(c: Context, token: string, expiresAt: Date, en
 
 function deleteCustomerSessionCookie(c: Context, env: AppEnv) {
   deleteCookie(c, customerSessionCookieName, {
-    path: '/api/customer',
+    path: '/api',
     secure: env.COOKIE_SECURE,
     sameSite: env.COOKIE_SECURE ? 'None' : 'Lax',
   })
 }
-

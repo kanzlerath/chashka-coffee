@@ -31,6 +31,7 @@ export type CatalogRepository = {
   deleteRestaurantMenuItemOverride(restaurantId: string, itemId: string): Promise<boolean>
   listAdminMenus(): Promise<AdminMenu[]>
   createMenu(input: UpsertMenuRequest): Promise<AdminMenu>
+  copyMenu(id: string): Promise<AdminMenu | null>
   updateMenu(id: string, input: UpsertMenuRequest): Promise<AdminMenu | null>
   deleteMenu(id: string): Promise<'deleted' | 'not_found' | 'in_use'>
   getAdminMenuDetail(id: string): Promise<AdminMenuDetailResponse | null>

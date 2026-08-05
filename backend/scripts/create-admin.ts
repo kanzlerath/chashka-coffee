@@ -17,11 +17,11 @@ try {
   const passwordHash = await Bun.password.hash(password, { algorithm: 'argon2id' })
   const user = await db.user.upsert({
     where: { email: email.trim().toLowerCase() },
-    create: { email: email.trim().toLowerCase(), passwordHash, displayName: 'Никита Лужков', role: 'ADMIN' },
-    update: { passwordHash, displayName: 'Никита Лужков', role: 'ADMIN' },
-    select: { id: true, email: true, role: true },
+    create: { email: email.trim().toLowerCase(), passwordHash, displayName: 'Никита Лужков', role: 'ADMIN', roles: ['SUPER_ADMIN'] },
+    update: { passwordHash, displayName: 'Никита Лужков', role: 'ADMIN', roles: ['SUPER_ADMIN'] },
+    select: { id: true, email: true, roles: true },
   })
-  console.log(`Admin ready: ${user.email} (${user.role})`)
+  console.log(`Super admin ready: ${user.email} (${user.roles.join(', ')})`)
 } finally {
   await db.$disconnect()
 }

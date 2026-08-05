@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { contentBlockListSchema } from './content'
+
 const uuid = z.uuid()
 const slug = z.string().trim().min(1).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
 const nullableText = (max: number) => z.string().trim().max(max).nullable()
@@ -7,7 +9,7 @@ const publicUrl = z.string().trim().min(1).max(2_048).refine((value) => value.st
 
 export const productTypeSchema = z.enum(['COFFEE', 'CAKE'])
 export type ProductType = z.infer<typeof productTypeSchema>
-export const productStatusSchema = z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED'])
+export const productStatusSchema = z.enum(['DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED'])
 export const productDetailSchema = z.object({ label: z.string().trim().min(1).max(80), value: z.string().trim().min(1).max(500) }).strict()
 
 export const productVariantInputSchema = z.object({
@@ -23,6 +25,7 @@ export type ProductVariant = z.infer<typeof productVariantSchema>
 const productFields = {
   type: productTypeSchema,
   status: productStatusSchema,
+  publishAt: z.string().datetime().nullable().default(null),
   slug,
   name: z.string().trim().min(1).max(180),
   category: nullableText(120),
@@ -35,6 +38,7 @@ const productFields = {
   imageUrl: publicUrl.nullable(),
   galleryUrls: z.array(publicUrl).max(12),
   details: z.array(productDetailSchema).max(20),
+  blocks: contentBlockListSchema.default([]),
   isFeatured: z.boolean(),
   position: z.number().int().nonnegative(),
 }

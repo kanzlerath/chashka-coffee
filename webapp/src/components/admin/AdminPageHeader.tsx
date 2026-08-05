@@ -1,11 +1,10 @@
 import type { ReactNode } from 'react'
 
+import { Typography } from '@/components/ui/typography'
 import { cn } from '@/lib/utils'
 
 export function AdminPageHeader({
-  eyebrow,
   title,
-  description,
   actions,
   className,
 }: {
@@ -17,12 +16,8 @@ export function AdminPageHeader({
 }) {
   return (
     <header className={cn('admin-page-header', className)}>
-      <div className="grid gap-1.5">
-        {eyebrow ? <p className="admin-eyebrow">{eyebrow}</p> : null}
-        <h1>{title}</h1>
-        {description ? <p>{description}</p> : null}
-      </div>
-      {actions ? <div className="admin-page-actions">{actions}</div> : null}
+      <Typography as="h1" variant="h1">{title}</Typography>
+      {actions ? <Typography as="div" variant="bodySm" className="admin-page-actions">{actions}</Typography> : null}
     </header>
   )
 }

@@ -11,6 +11,7 @@ const restaurant: AdminRestaurant = {
   format: 'CITY',
   area: 'CITY',
   isAtApartHotel: false,
+  coffeePickupEnabled: true,
   city: 'Новосибирск',
   address: 'Красный проспект, 25',
   phone: '+7 (383) 123-20-20',

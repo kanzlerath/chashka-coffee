@@ -34,8 +34,11 @@ export function createCustomerAccountModule({
 
   return {
     routes: createCustomerAccountRoutes({ env, service }),
+    resolveCustomerId: (sessionToken: string | undefined) => service.resolveCustomerId(sessionToken),
   }
 }
+
+export { customerSessionCookieName } from './session-cookie'
 
 function createConfiguredGateway(env: AppEnv): PremiumBonusGateway {
   if (!env.PREMIUMBONUS_API_TOKEN) {
@@ -56,4 +59,3 @@ function createConfiguredGateway(env: AppEnv): PremiumBonusGateway {
 }
 
 export type { PremiumBonusGateway } from './application/ports'
-

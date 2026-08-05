@@ -36,6 +36,12 @@ enum MenuItemMeasurementUnit {
 enum UserRole {
   ADMIN
   EDITOR
+  SUPER_ADMIN
+  CONTENT_MANAGER
+  CATALOG_MANAGER
+  ORDER_OPERATOR
+  LEAD_OPERATOR
+  RECRUITER
 }
 
 enum AnalyticsDevice {
@@ -57,6 +63,7 @@ enum HomepageSlideMediaType {
 
 enum PublicationStatus {
   DRAFT
+  SCHEDULED
   PUBLISHED
   ARCHIVED
 }
@@ -73,6 +80,22 @@ enum LeadType {
 enum ProductType {
   COFFEE
   CAKE
+}
+
+enum OrderStatus {
+  AWAITING_PAYMENT
+  PAID
+  PREPARING
+  READY_FOR_PICKUP
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
 }
 
 enum ManagedPageKey {
@@ -104,21 +127,39 @@ enum MediaAssetStatus {
 }
 
 model User {
-  id           String        @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  email        String        @unique
-  passwordHash String        @map("password_hash")
-  displayName  String?       @map("display_name")
-  role         UserRole      @default(EDITOR)
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
+  id           String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  email        String            @unique
+  passwordHash String            @map("password_hash")
+  displayName  String?           @map("display_name")
+  role         UserRole          @default(EDITOR)
+  roles        UserRole[]        @default([])
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
   sessions     AuthSession[]
+  auditEvents  AdminAuditEvent[]
 
   @@map("users")
 }
 
+model AdminAuditEvent {
+  id         String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  actorId    String?  @map("actor_id") @db.Uuid
+  actorName  String   @map("actor_name") @db.VarChar(320)
+  action     String   @db.VarChar(24)
+  resource   String   @db.VarChar(80)
+  resourceId String?  @map("resource_id") @db.VarChar(120)
+  path       String   @db.VarChar(500)
+  createdAt  DateTime @default(now()) @map("created_at")
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull, map: "admin_audit_events_actor_id_fkey")
+
+  @@index([createdAt], map: "admin_audit_events_created_at_idx")
+  @@index([resource, resourceId], map: "admin_audit_events_resource_id_idx")
+  @@map("admin_audit_events")
+}
+
 model AuthSession {
   id               String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  userId           String    @db.Uuid @map("user_id")
+  userId           String    @map("user_id") @db.Uuid
   refreshTokenHash String    @unique(map: "auth_sessions_refresh_token_hash_key") @map("refresh_token_hash")
   expiresAt        DateTime  @map("expires_at")
   revokedAt        DateTime? @map("revoked_at")
@@ -140,13 +181,14 @@ model CustomerAccount {
   createdAt            DateTime          @default(now()) @map("created_at")
   updatedAt            DateTime          @updatedAt @map("updated_at")
   sessions             CustomerSession[]
+  orders               Order[]
 
   @@map("customer_accounts")
 }
 
 model CustomerSession {
   id               String          @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  customerId       String          @db.Uuid @map("customer_id")
+  customerId       String          @map("customer_id") @db.Uuid
   sessionTokenHash String          @unique(map: "customer_sessions_token_hash_key") @map("session_token_hash")
   expiresAt        DateTime        @map("expires_at")
   revokedAt        DateTime?       @map("revoked_at")
@@ -191,27 +233,28 @@ model PageView {
 }
 
 model ContentEntry {
-  id          String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  type        ContentEntryType
-  status      PublicationStatus @default(DRAFT)
-  slug        String            @unique @db.VarChar(120)
-  title       String            @db.VarChar(180)
-  excerpt     String?           @db.VarChar(500)
-  body        String?
-  blocks      Json              @default("[]")
-  imageUrl    String?           @map("image_url")
-  ctaLabel    String?           @map("cta_label") @db.VarChar(80)
-  ctaUrl      String?           @map("cta_url")
-  startsAt    DateTime?         @map("starts_at")
-  endsAt      DateTime?         @map("ends_at")
-  eventStartsAt DateTime?       @map("event_starts_at")
-  location    String?           @db.VarChar(220)
-  priceKopecks Int?             @map("price_kopecks")
-  registrationEnabled Boolean   @default(false) @map("registration_enabled")
-  isFeatured  Boolean           @default(false) @map("is_featured")
-  position    Int               @default(0)
-  createdAt   DateTime          @default(now()) @map("created_at")
-  updatedAt   DateTime          @updatedAt @map("updated_at")
+  id                  String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  type                ContentEntryType
+  status              PublicationStatus @default(DRAFT)
+  slug                String            @unique @db.VarChar(120)
+  title               String            @db.VarChar(180)
+  excerpt             String?           @db.VarChar(500)
+  body                String?
+  blocks              Json              @default("[]")
+  imageUrl            String?           @map("image_url")
+  ctaLabel            String?           @map("cta_label") @db.VarChar(80)
+  ctaUrl              String?           @map("cta_url")
+  startsAt            DateTime?         @map("starts_at")
+  endsAt              DateTime?         @map("ends_at")
+  publishAt           DateTime?         @map("publish_at")
+  eventStartsAt       DateTime?         @map("event_starts_at")
+  location            String?           @db.VarChar(220)
+  priceKopecks        Int?              @map("price_kopecks")
+  registrationEnabled Boolean           @default(false) @map("registration_enabled")
+  isFeatured          Boolean           @default(false) @map("is_featured")
+  position            Int               @default(0)
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
 
   @@index([type, status, position], map: "content_entries_type_status_position_idx")
   @@index([startsAt], map: "content_entries_starts_at_idx")
@@ -226,6 +269,7 @@ model ManagedPage {
   heroDescription String?        @map("hero_description") @db.VarChar(500)
   heroImageUrl    String?        @map("hero_image_url")
   coffeeTastes    Json?          @map("coffee_tastes")
+  appChoices      Json?          @map("app_choices")
   blocks          Json           @default("[]")
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @updatedAt @map("updated_at")
@@ -237,6 +281,7 @@ model Product {
   id           String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
   type         ProductType
   status       PublicationStatus @default(DRAFT)
+  publishAt    DateTime?         @map("publish_at")
   slug         String            @unique @db.VarChar(120)
   name         String            @db.VarChar(180)
   category     String?           @db.VarChar(120)
@@ -249,6 +294,7 @@ model Product {
   imageUrl     String?           @map("image_url")
   galleryUrls  Json              @default("[]") @map("gallery_urls")
   details      Json              @default("[]")
+  blocks       Json              @default("[]")
   isFeatured   Boolean           @default(false) @map("is_featured")
   position     Int               @default(0)
   createdAt    DateTime          @default(now()) @map("created_at")
@@ -260,14 +306,15 @@ model Product {
 }
 
 model ProductVariant {
-  id           String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  productId    String   @db.Uuid @map("product_id")
-  label        String   @db.VarChar(80)
-  weightGrams  Int?     @map("weight_grams")
-  priceKopecks Int      @map("price_kopecks")
-  position     Int      @default(0)
-  isAvailable  Boolean  @default(true) @map("is_available")
-  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade, map: "product_variants_product_id_fkey")
+  id           String      @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  productId    String      @map("product_id") @db.Uuid
+  label        String      @db.VarChar(80)
+  weightGrams  Int?        @map("weight_grams")
+  priceKopecks Int         @map("price_kopecks")
+  position     Int         @default(0)
+  isAvailable  Boolean     @default(true) @map("is_available")
+  product      Product     @relation(fields: [productId], references: [id], onDelete: Cascade, map: "product_variants_product_id_fkey")
+  orderItems   OrderItem[]
 
   @@index([productId, position], map: "product_variants_product_id_position_idx")
   @@map("product_variants")
@@ -295,7 +342,7 @@ model HomepageSlide {
 
 model HomepageBestseller {
   id          String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  menuItemId  String   @db.Uuid @map("menu_item_id")
+  menuItemId  String   @map("menu_item_id") @db.Uuid
   badge       String?  @db.VarChar(40)
   position    Int      @default(0)
   isPublished Boolean  @default(false) @map("is_published")
@@ -323,7 +370,7 @@ model HomepageDaySection {
 
 model HomepageDayPart {
   id          String             @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  sectionId   String             @db.Uuid @map("section_id")
+  sectionId   String             @map("section_id") @db.Uuid
   label       String             @db.VarChar(80)
   title       String             @db.VarChar(180)
   description String?            @db.VarChar(500)
@@ -339,15 +386,15 @@ model HomepageDayPart {
 }
 
 model MediaAsset {
-  id          String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  objectKey   String   @unique @map("object_key") @db.VarChar(1024)
-  publicUrl   String   @map("public_url")
-  filename    String   @db.VarChar(255)
-  contentType String   @map("content_type") @db.VarChar(120)
-  byteSize    Int      @map("byte_size")
+  id          String           @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  objectKey   String           @unique @map("object_key") @db.VarChar(1024)
+  publicUrl   String           @map("public_url")
+  filename    String           @db.VarChar(255)
+  contentType String           @map("content_type") @db.VarChar(120)
+  byteSize    Int              @map("byte_size")
   status      MediaAssetStatus @default(READY)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
 
   @@index([createdAt], map: "media_assets_created_at_idx")
   @@map("media_assets")
@@ -370,49 +417,53 @@ model Lead {
 }
 
 model JobOpening {
-  id           String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  slug         String   @unique @db.VarChar(120)
-  title        String   @db.VarChar(180)
-  department   String?  @db.VarChar(120)
-  location     String?  @db.VarChar(180)
-  employmentType String? @map("employment_type") @db.VarChar(80)
-  description  String?
-  isPublished  Boolean  @default(false) @map("is_published")
-  position     Int      @default(0)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id             String             @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  slug           String             @unique @db.VarChar(120)
+  title          String             @db.VarChar(180)
+  department     String?            @db.VarChar(120)
+  location       String?            @db.VarChar(180)
+  employmentType String?            @map("employment_type") @db.VarChar(80)
+  description    String?
+  isPublished    Boolean            @default(false) @map("is_published")
+  status         PublicationStatus?
+  publishAt      DateTime?          @map("publish_at")
+  position       Int                @default(0)
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
 
   @@index([isPublished, position], map: "job_openings_published_position_idx")
   @@map("job_openings")
 }
 
 model Restaurant {
-  id                 String                       @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  slug               String                       @unique @db.VarChar(120)
-  name               String                       @db.VarChar(180)
-  format             RestaurantFormat
-  area               RestaurantArea
-  isAtApartHotel     Boolean                      @default(false) @map("is_at_apart_hotel")
-  city               String                       @db.VarChar(100)
-  address            String                       @db.VarChar(300)
-  phone              String                       @db.VarChar(40)
-  description        String?
-  aboutTitle         String?                      @map("about_title") @db.VarChar(180)
-  aboutText          String?                      @map("about_text")
-  visitAmenities     Json                         @default("[]") @map("visit_amenities")
-  coverImageUrl      String?                      @map("cover_image_url")
-  galleryUrls        Json                         @default("[]") @map("gallery_urls")
-  menuPdfUrl         String?                      @map("menu_pdf_url")
-  latitude           Decimal?                     @db.Decimal(9, 6)
-  longitude          Decimal?                     @db.Decimal(9, 6)
-  yandexMapsUrl      String?                      @map("yandex_maps_url")
-  twoGisUrl          String?                      @map("two_gis_url")
-  createdAt          DateTime                     @default(now()) @map("created_at")
-  updatedAt          DateTime                     @updatedAt @map("updated_at")
-  openingHours       RestaurantOpeningHours[]
-  scheduleExceptions RestaurantScheduleException[]
-  menuAssignments    RestaurantMenu[]
-  menuItemOverrides  MenuItemOverride[]
+  id                  String                        @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  slug                String                        @unique @db.VarChar(120)
+  name                String                        @db.VarChar(180)
+  format              RestaurantFormat
+  area                RestaurantArea
+  isAtApartHotel      Boolean                       @default(false) @map("is_at_apart_hotel")
+  coffeePickupEnabled Boolean                       @default(false) @map("coffee_pickup_enabled")
+  city                String                        @db.VarChar(100)
+  address             String                        @db.VarChar(300)
+  phone               String                        @db.VarChar(40)
+  description         String?
+  aboutTitle          String?                       @map("about_title") @db.VarChar(180)
+  aboutText           String?                       @map("about_text")
+  visitAmenities      Json                          @default("[]") @map("visit_amenities")
+  coverImageUrl       String?                       @map("cover_image_url")
+  galleryUrls         Json                          @default("[]") @map("gallery_urls")
+  menuPdfUrl          String?                       @map("menu_pdf_url")
+  latitude            Decimal?                      @db.Decimal(9, 6)
+  longitude           Decimal?                      @db.Decimal(9, 6)
+  yandexMapsUrl       String?                       @map("yandex_maps_url")
+  twoGisUrl           String?                       @map("two_gis_url")
+  createdAt           DateTime                      @default(now()) @map("created_at")
+  updatedAt           DateTime                      @updatedAt @map("updated_at")
+  openingHours        RestaurantOpeningHours[]
+  scheduleExceptions  RestaurantScheduleException[]
+  menuAssignments     RestaurantMenu[]
+  menuItemOverrides   MenuItemOverride[]
+  pickupOrders        Order[]
 
   @@index([format], map: "restaurants_format_idx")
   @@index([area], map: "restaurants_area_idx")
@@ -420,12 +471,64 @@ model Restaurant {
   @@map("restaurants")
 }
 
+model Order {
+  id                      String           @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  publicNumber            String           @unique @map("public_number") @db.VarChar(32)
+  accessTokenHash         String           @unique @map("access_token_hash") @db.VarChar(64)
+  idempotencyKey          String           @unique @map("idempotency_key") @db.Uuid
+  customerId              String?          @map("customer_id") @db.Uuid
+  pickupRestaurantId      String?          @map("pickup_restaurant_id") @db.Uuid
+  status                  OrderStatus      @default(AWAITING_PAYMENT)
+  paymentStatus           PaymentStatus    @default(PENDING) @map("payment_status")
+  customerName            String           @map("customer_name") @db.VarChar(180)
+  customerPhone           String           @map("customer_phone") @db.VarChar(20)
+  customerEmail           String?          @map("customer_email") @db.VarChar(320)
+  pickupSlug              String           @map("pickup_slug") @db.VarChar(120)
+  pickupName              String           @map("pickup_name") @db.VarChar(180)
+  pickupCity              String           @map("pickup_city") @db.VarChar(100)
+  pickupAddress           String           @map("pickup_address") @db.VarChar(300)
+  pickupPhone             String           @map("pickup_phone") @db.VarChar(40)
+  pickupOpeningHoursLabel String           @map("pickup_opening_hours_label") @db.VarChar(180)
+  itemCount               Int              @map("item_count")
+  totalKopecks            Int              @map("total_kopecks")
+  comment                 String?
+  createdAt               DateTime         @default(now()) @map("created_at")
+  updatedAt               DateTime         @updatedAt @map("updated_at")
+  customer                CustomerAccount? @relation(fields: [customerId], references: [id], onDelete: SetNull, map: "orders_customer_id_fkey")
+  pickupRestaurant        Restaurant?      @relation(fields: [pickupRestaurantId], references: [id], onDelete: SetNull, map: "orders_pickup_restaurant_id_fkey")
+  items                   OrderItem[]
+
+  @@index([createdAt], map: "orders_created_at_idx")
+  @@index([customerId, createdAt], map: "orders_customer_created_at_idx")
+  @@index([pickupRestaurantId, status, createdAt], map: "orders_pickup_status_created_at_idx")
+  @@map("orders")
+}
+
+model OrderItem {
+  id               String          @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  orderId          String          @map("order_id") @db.Uuid
+  variantId        String?         @map("variant_id") @db.Uuid
+  productName      String          @map("product_name") @db.VarChar(180)
+  variantLabel     String          @map("variant_label") @db.VarChar(80)
+  imageUrl         String?         @map("image_url")
+  unitPriceKopecks Int             @map("unit_price_kopecks")
+  quantity         Int
+  totalKopecks     Int             @map("total_kopecks")
+  position         Int             @default(0)
+  order            Order           @relation(fields: [orderId], references: [id], onDelete: Cascade, map: "order_items_order_id_fkey")
+  variant          ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull, map: "order_items_variant_id_fkey")
+
+  @@index([orderId, position], map: "order_items_order_position_idx")
+  @@index([variantId], map: "order_items_variant_id_idx")
+  @@map("order_items")
+}
+
 model RestaurantOpeningHours {
   id           String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  restaurantId String     @db.Uuid @map("restaurant_id")
+  restaurantId String     @map("restaurant_id") @db.Uuid
   dayOfWeek    Int        @map("day_of_week")
-  opensAt      String?    @db.VarChar(5) @map("opens_at")
-  closesAt     String?    @db.VarChar(5) @map("closes_at")
+  opensAt      String?    @map("opens_at") @db.VarChar(5)
+  closesAt     String?    @map("closes_at") @db.VarChar(5)
   isClosed     Boolean    @default(false) @map("is_closed")
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade, map: "restaurant_opening_hours_restaurant_id_fkey")
 
@@ -435,11 +538,11 @@ model RestaurantOpeningHours {
 
 model RestaurantScheduleException {
   id           String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  restaurantId String     @db.Uuid @map("restaurant_id")
+  restaurantId String     @map("restaurant_id") @db.Uuid
   date         DateTime   @db.Date
   label        String     @db.VarChar(180)
-  opensAt      String?    @db.VarChar(5) @map("opens_at")
-  closesAt     String?    @db.VarChar(5) @map("closes_at")
+  opensAt      String?    @map("opens_at") @db.VarChar(5)
+  closesAt     String?    @map("closes_at") @db.VarChar(5)
   isClosed     Boolean    @default(false) @map("is_closed")
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade, map: "restaurant_schedule_exceptions_restaurant_id_fkey")
 
@@ -448,22 +551,22 @@ model RestaurantScheduleException {
 }
 
 model Menu {
-  id           String           @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  slug         String           @unique @db.VarChar(120)
-  name         String           @db.VarChar(180)
-  description  String?
-  createdAt    DateTime         @default(now()) @map("created_at")
-  updatedAt    DateTime         @updatedAt @map("updated_at")
-  restaurants  RestaurantMenu[]
-  categories   MenuCategory[]
+  id          String           @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  slug        String           @unique @db.VarChar(120)
+  name        String           @db.VarChar(180)
+  description String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  restaurants RestaurantMenu[]
+  categories  MenuCategory[]
 
   @@map("menus")
 }
 
 model RestaurantMenu {
   id           String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  restaurantId String     @db.Uuid @map("restaurant_id")
-  menuId       String     @db.Uuid @map("menu_id")
+  restaurantId String     @map("restaurant_id") @db.Uuid
+  menuId       String     @map("menu_id") @db.Uuid
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade, map: "restaurant_menus_restaurant_id_fkey")
   menu         Menu       @relation(fields: [menuId], references: [id], onDelete: Restrict, map: "restaurant_menus_menu_id_fkey")
 
@@ -473,13 +576,13 @@ model RestaurantMenu {
 }
 
 model MenuCategory {
-  id        String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  menuId    String     @db.Uuid @map("menu_id")
-  slug      String     @db.VarChar(120)
-  name      String     @db.VarChar(100)
-  position  Int        @default(0)
-  menu      Menu       @relation(fields: [menuId], references: [id], onDelete: Cascade, map: "menu_categories_menu_id_fkey")
-  items     MenuItem[]
+  id       String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  menuId   String     @map("menu_id") @db.Uuid
+  slug     String     @db.VarChar(120)
+  name     String     @db.VarChar(100)
+  position Int        @default(0)
+  menu     Menu       @relation(fields: [menuId], references: [id], onDelete: Cascade, map: "menu_categories_menu_id_fkey")
+  items    MenuItem[]
 
   @@unique([menuId, slug], map: "menu_categories_menu_id_slug_key")
   @@index([menuId, position], map: "menu_categories_menu_id_position_idx")
@@ -487,29 +590,29 @@ model MenuCategory {
 }
 
 model MenuItem {
-  id              String             @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  categoryId      String             @db.Uuid @map("category_id")
-  slug            String             @db.VarChar(120)
-  name            String             @db.VarChar(180)
-  description     String?
-  ingredients     String?
-  weightGrams     Int?               @map("weight_grams")
-  measurementUnit MenuItemMeasurementUnit @default(GRAM) @map("measurement_unit")
-  priceKopecks    Int                @map("price_kopecks")
-  calories        Int?
-  proteins        Decimal?           @db.Decimal(6, 2)
-  fats            Decimal?           @db.Decimal(6, 2)
-  carbohydrates   Decimal?           @db.Decimal(6, 2)
-  isVegetarian    Boolean            @default(false) @map("is_vegetarian")
-  isSpicy         Boolean            @default(false) @map("is_spicy")
-  isLactoseFree   Boolean            @default(false) @map("is_lactose_free")
-  isGlutenFree    Boolean            @default(false) @map("is_gluten_free")
-  isLight         Boolean            @default(false) @map("is_light")
-  marketingBadge  MarketingBadge?    @map("marketing_badge")
-  imageUrl        String?            @map("image_url")
-  position        Int                @default(0)
-  category        MenuCategory       @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "menu_items_category_id_fkey")
-  allergens       MenuItemAllergen[]
+  id                  String                  @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  categoryId          String                  @map("category_id") @db.Uuid
+  slug                String                  @db.VarChar(120)
+  name                String                  @db.VarChar(180)
+  description         String?
+  ingredients         String?
+  weightGrams         Int?                    @map("weight_grams")
+  measurementUnit     MenuItemMeasurementUnit @default(GRAM) @map("measurement_unit")
+  priceKopecks        Int                     @map("price_kopecks")
+  calories            Int?
+  proteins            Decimal?                @db.Decimal(6, 2)
+  fats                Decimal?                @db.Decimal(6, 2)
+  carbohydrates       Decimal?                @db.Decimal(6, 2)
+  isVegetarian        Boolean                 @default(false) @map("is_vegetarian")
+  isSpicy             Boolean                 @default(false) @map("is_spicy")
+  isLactoseFree       Boolean                 @default(false) @map("is_lactose_free")
+  isGlutenFree        Boolean                 @default(false) @map("is_gluten_free")
+  isLight             Boolean                 @default(false) @map("is_light")
+  marketingBadge      MarketingBadge?         @map("marketing_badge")
+  imageUrl            String?                 @map("image_url")
+  position            Int                     @default(0)
+  category            MenuCategory            @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "menu_items_category_id_fkey")
+  allergens           MenuItemAllergen[]
   restaurantOverrides MenuItemOverride[]
   homepageBestsellers HomepageBestseller[]
 
@@ -528,8 +631,8 @@ model Allergen {
 }
 
 model MenuItemAllergen {
-  menuItemId String   @db.Uuid @map("menu_item_id")
-  allergenId String   @db.Uuid @map("allergen_id")
+  menuItemId String   @map("menu_item_id") @db.Uuid
+  allergenId String   @map("allergen_id") @db.Uuid
   menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade, map: "menu_item_allergens_menu_item_id_fkey")
   allergen   Allergen @relation(fields: [allergenId], references: [id], onDelete: Restrict, map: "menu_item_allergens_allergen_id_fkey")
 
@@ -539,16 +642,16 @@ model MenuItemAllergen {
 }
 
 model MenuItemOverride {
-  id            String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  restaurantId  String     @db.Uuid @map("restaurant_id")
-  menuItemId    String     @db.Uuid @map("menu_item_id")
-  description   String?
-  ingredients   String?
-  weightGrams   Int?       @map("weight_grams")
+  id              String                   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  restaurantId    String                   @map("restaurant_id") @db.Uuid
+  menuItemId      String                   @map("menu_item_id") @db.Uuid
+  description     String?
+  ingredients     String?
+  weightGrams     Int?                     @map("weight_grams")
   measurementUnit MenuItemMeasurementUnit? @map("measurement_unit")
-  priceKopecks  Int?       @map("price_kopecks")
-  restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade, map: "menu_item_overrides_restaurant_id_fkey")
-  menuItem      MenuItem   @relation(fields: [menuItemId], references: [id], onDelete: Cascade, map: "menu_item_overrides_menu_item_id_fkey")
+  priceKopecks    Int?                     @map("price_kopecks")
+  restaurant      Restaurant               @relation(fields: [restaurantId], references: [id], onDelete: Cascade, map: "menu_item_overrides_restaurant_id_fkey")
+  menuItem        MenuItem                 @relation(fields: [menuItemId], references: [id], onDelete: Cascade, map: "menu_item_overrides_menu_item_id_fkey")
 
   @@unique([restaurantId, menuItemId], map: "menu_item_overrides_restaurant_id_menu_item_id_key")
   @@index([menuItemId], map: "menu_item_overrides_menu_item_id_idx")

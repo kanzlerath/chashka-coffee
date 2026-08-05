@@ -4,6 +4,7 @@ import { AuthFailure } from '../domain/errors'
 import { sessionExpiresAt, type SessionMetadata } from '../domain/session'
 import type { AuthUserRecord, AuthenticatedPrincipal } from '../domain/user'
 import { toBaseUserDto, userDtoFromPrincipal } from '../domain/user'
+import { effectiveRoles } from '../domain/user'
 import type {
   AccessTokens,
   AuthRepository,
@@ -39,7 +40,7 @@ export class AuthService {
     }
 
     const passwordHash = await this.dependencies.passwords.hash(input.password)
-    const user = await this.dependencies.repository.createPasswordUser({ ...input, passwordHash, role: 'ADMIN' })
+    const user = await this.dependencies.repository.createPasswordUser({ ...input, passwordHash, roles: ['SUPER_ADMIN'] })
     return this.issueSession(user, metadata)
   }
 
@@ -77,7 +78,7 @@ export class AuthService {
       : undefined
     const user = await this.dependencies.repository.updateUser({ ...input, id, passwordHash })
 
-    if (passwordHash || current.role !== input.role || current.email !== input.email) {
+    if (passwordHash || !sameRoles(effectiveRoles(current), input.roles) || current.email !== input.email) {
       await this.dependencies.repository.revokeUserSessions({
         userId: id,
         now: this.dependencies.clock.now(),
@@ -201,4 +202,8 @@ export class AuthService {
   private refreshExpiresAt(now: Date) {
     return sessionExpiresAt(now, this.dependencies.refreshTokenTtlDays)
   }
+}
+
+function sameRoles(left: readonly string[], right: readonly string[]) {
+  return left.length === right.length && left.every((role) => right.includes(role))
 }

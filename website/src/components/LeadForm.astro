@@ -9,7 +9,7 @@ const { type, submitLabel = 'Отправить заявку', subjectLabel, sou
 ---
 <form class="lead-form" data-lead-form data-lead-type={type} data-lead-source={source} novalidate>
   <label>Ваше имя<input name="name" autocomplete="name" required placeholder="Как к вам обращаться" /></label>
-  <label>Телефон<input name="phone" autocomplete="tel" inputmode="tel" required placeholder="+7" /></label>
+  <label>Телефон<input name="phone" type="tel" autocomplete="tel" inputmode="tel" required placeholder="+7 (999) 000-00-00" /></label>
   <label>E-mail<input name="email" autocomplete="email" type="email" placeholder="name@mail.ru" /></label>
   {subjectLabel && <label>{subjectLabel}<input name="subject" placeholder={subjectLabel} /></label>}
   <label class="lead-form-message">Комментарий<textarea name="message" placeholder="Расскажите, чем помочь"></textarea></label>
@@ -18,8 +18,12 @@ const { type, submitLabel = 'Отправить заявку', subjectLabel, sou
   <small>Нажимая кнопку, вы соглашаетесь с <a href="/consent">обработкой персональных данных</a>.</small>
 </form>
 <script>
+  import { attachRussianPhoneMask } from '../lib/contact-fields'
+
   const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
   document.querySelectorAll<HTMLFormElement>('[data-lead-form]').forEach((form) => {
+    const phoneInput = form.elements.namedItem('phone')
+    if (phoneInput instanceof HTMLInputElement) attachRussianPhoneMask(phoneInput)
     const status = form.querySelector<HTMLElement>('.lead-form-status')
     const button = form.querySelector<HTMLButtonElement>('button[type="submit"]')
     form.addEventListener('submit', async (event) => {

@@ -7,7 +7,7 @@ import { createPrismaAuthRepository } from './infrastructure/auth-repository'
 import { signAccessToken, verifyAccessToken } from './infrastructure/access-tokens'
 import { hashPassword, verifyPassword } from './infrastructure/passwords'
 import { createRefreshToken, hashRefreshToken } from './infrastructure/refresh-tokens'
-import { createRequireAdmin, createRequireAuth, type AuthHttpEnv } from './transport/middleware'
+import { createRequireAnyPermission, createRequirePermission, createRequireAuth, type AuthHttpEnv } from './transport/middleware'
 import { createAdminUserRoutes } from './transport/admin-routes'
 import { createAuthRoutes } from './transport/routes'
 
@@ -52,13 +52,17 @@ export function createAuthModule({
     repository: createPrismaAuthRepository(db),
   })
   const requireAuth = createRequireAuth((accessToken) => service.authenticateAccessToken(accessToken))
-  const requireAdmin = createRequireAdmin()
+  const requirePermission = createRequirePermission
+  const requireAnyPermission = createRequireAnyPermission
+  const requireAdmin = requirePermission('STAFF_MANAGE')
 
   return {
     authenticateAccessToken: (accessToken: string | undefined) =>
       service.authenticateAccessToken(accessToken),
     requireAuth,
     requireAdmin,
+    requirePermission,
+    requireAnyPermission,
     routes: createAuthRoutes({ env, requireAuth, service }),
     adminRoutes: createAdminUserRoutes({ service, requireAuth, requireAdmin }),
   }

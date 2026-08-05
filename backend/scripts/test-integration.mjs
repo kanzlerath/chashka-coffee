@@ -82,7 +82,7 @@ try {
 
   run('bun', ['run', 'prisma:generate'], { env })
   run('bun', ['run', 'prisma:deploy'], { env })
-  run('bun', ['test', 'src/modules/auth/auth.integration.test.ts', 'src/modules/customer-account/customer-account.integration.test.ts'], { env })
+  run('bun', ['test', 'src/modules/auth/auth.integration.test.ts', 'src/modules/customer-account/customer-account.integration.test.ts', 'src/modules/orders/orders.integration.test.ts'], { env })
 } catch (error) {
   exitCode = typeof error === 'object' && error !== null && 'exitCode' in error
     ? Number(error.exitCode)

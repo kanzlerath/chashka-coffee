@@ -106,11 +106,13 @@ export const contentBlockListSchema = z.array(contentBlockSchema).max(80)
 
 export const contentEntryTypeSchema = z.enum(['PROMOTION', 'EVENT', 'ARTICLE'])
 export type ContentEntryType = z.infer<typeof contentEntryTypeSchema>
-export const publicationStatusSchema = z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED'])
+export const publicationStatusSchema = z.enum(['DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED'])
+export type PublicationStatus = z.infer<typeof publicationStatusSchema>
 export const contentEntrySchema = z.object({
   id: uuid, type: contentEntryTypeSchema, status: publicationStatusSchema, slug,
   title: z.string().trim().min(1).max(180), excerpt: nullableText(500), body: nullableText(20_000), blocks: contentBlockListSchema, imageUrl: nullableUrl,
   ctaLabel: nullableText(80), ctaUrl: nullableUrl, startsAt: z.string().datetime().nullable(), endsAt: z.string().datetime().nullable(),
+  publishAt: z.string().datetime().nullable().default(null),
   eventStartsAt: z.string().datetime().nullable(), location: nullableText(220), priceKopecks: z.number().int().nonnegative().nullable(), registrationEnabled: z.boolean(), isFeatured: z.boolean(), position: z.number().int().nonnegative(),
   createdAt: z.string().datetime(), updatedAt: z.string().datetime(),
 })

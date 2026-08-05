@@ -24,7 +24,8 @@ export function createPrismaAuthRepository(db: DbClient): AuthRepository {
             email: input.email,
             passwordHash: input.passwordHash,
             displayName: input.displayName,
-            role: input.role,
+            role: input.roles.includes('SUPER_ADMIN') ? 'ADMIN' : 'EDITOR',
+            roles: input.roles,
           },
         })
       } catch (error) {
@@ -125,16 +126,20 @@ export function createPrismaAuthRepository(db: DbClient): AuthRepository {
         return await db.$transaction(async (tx) => {
           const current = await tx.user.findUnique({ where: { id } })
           if (!current) throw new AuthFailure('staff_not_found', 'Staff user was not found')
-          if (current.role === 'ADMIN' && data.role !== 'ADMIN') {
-            const adminCount = await tx.user.count({ where: { role: 'ADMIN' } })
-            if (adminCount <= 1) throw new AuthFailure('last_admin', 'The last administrator cannot be demoted')
+          const currentIsSuperAdmin = current.roles.includes('SUPER_ADMIN') || (current.roles.length === 0 && current.role === 'ADMIN')
+          if (currentIsSuperAdmin && !data.roles.includes('SUPER_ADMIN')) {
+            const superAdminCount = await tx.user.count({
+              where: { OR: [{ roles: { has: 'SUPER_ADMIN' } }, { roles: { isEmpty: true }, role: 'ADMIN' }] },
+            })
+            if (superAdminCount <= 1) throw new AuthFailure('last_admin', 'The last super administrator cannot be demoted')
           }
           return tx.user.update({
             where: { id },
             data: {
               email: data.email,
               displayName: data.displayName,
-              role: data.role,
+              role: data.roles.includes('SUPER_ADMIN') ? 'ADMIN' : 'EDITOR',
+              roles: data.roles,
               ...(passwordHash ? { passwordHash } : {}),
             },
           })
@@ -151,9 +156,12 @@ export function createPrismaAuthRepository(db: DbClient): AuthRepository {
       await db.$transaction(async (tx) => {
         const current = await tx.user.findUnique({ where: { id } })
         if (!current) throw new AuthFailure('staff_not_found', 'Staff user was not found')
-        if (current.role === 'ADMIN') {
-          const adminCount = await tx.user.count({ where: { role: 'ADMIN' } })
-          if (adminCount <= 1) throw new AuthFailure('last_admin', 'The last administrator cannot be deleted')
+        const currentIsSuperAdmin = current.roles.includes('SUPER_ADMIN') || (current.roles.length === 0 && current.role === 'ADMIN')
+        if (currentIsSuperAdmin) {
+          const superAdminCount = await tx.user.count({
+            where: { OR: [{ roles: { has: 'SUPER_ADMIN' } }, { roles: { isEmpty: true }, role: 'ADMIN' }] },
+          })
+          if (superAdminCount <= 1) throw new AuthFailure('last_admin', 'The last super administrator cannot be deleted')
         }
         await tx.user.delete({ where: { id } })
       })

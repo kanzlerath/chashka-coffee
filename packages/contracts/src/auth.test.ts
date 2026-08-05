@@ -7,6 +7,7 @@ import {
   cookieLogoutRequestSchema,
   cookieRefreshRequestSchema,
   cookieRefreshResponseSchema,
+  hasPermission,
   loginRequestSchema,
   meResponseSchema,
   registerRequestSchema,
@@ -15,13 +16,14 @@ import {
   tokenRefreshRequestSchema,
   tokenRefreshResponseSchema,
   updateStaffUserRequestSchema,
+  type UserDto,
 } from './index'
 
-const validUser = {
+const validUser: UserDto = {
   id: 'user_1',
   email: 'user@example.com',
   displayName: null,
-  role: 'ADMIN' as const,
+  roles: ['SUPER_ADMIN'],
   createdAt: '2026-05-11T00:00:00.000Z',
 }
 
@@ -84,32 +86,40 @@ describe('auth contracts', () => {
       email: ' EDITOR@Example.COM ',
       password: 'temporary-password',
       displayName: ' Анна Петрова ',
-      role: 'EDITOR',
+      roles: ['CONTENT_MANAGER', 'CATALOG_MANAGER'],
     })).toEqual({
       email: 'editor@example.com',
       password: 'temporary-password',
       displayName: 'Анна Петрова',
-      role: 'EDITOR',
+      roles: ['CONTENT_MANAGER', 'CATALOG_MANAGER'],
     })
 
     expect(updateStaffUserRequestSchema.parse({
       email: 'ADMIN@example.com',
       displayName: null,
-      role: 'ADMIN',
+      roles: ['SUPER_ADMIN'],
       password: '',
     })).toEqual({
       email: 'admin@example.com',
       displayName: null,
-      role: 'ADMIN',
+      roles: ['SUPER_ADMIN'],
       password: undefined,
     })
 
     expect(() => updateStaffUserRequestSchema.parse({
       email: 'admin@example.com',
       displayName: 'A',
-      role: 'ADMIN',
+      roles: ['SUPER_ADMIN'],
       password: 'short',
     })).toThrow()
+  })
+
+  test('maps composable staff roles to explicit permissions', () => {
+    expect(hasPermission({ roles: ['CONTENT_MANAGER'] }, 'CONTENT_MANAGE')).toBe(true)
+    expect(hasPermission({ roles: ['CONTENT_MANAGER'] }, 'CUSTOMERS_READ')).toBe(false)
+    expect(hasPermission({ roles: ['RECRUITER'] }, 'JOB_APPLICATIONS_MANAGE')).toBe(true)
+    expect(hasPermission({ roles: ['SUPER_ADMIN'] }, 'STAFF_MANAGE')).toBe(true)
+    expect(hasPermission(null, 'ORDERS_MANAGE')).toBe(false)
   })
 
   test('keeps cookie requests empty and requires explicit token transport credentials', () => {

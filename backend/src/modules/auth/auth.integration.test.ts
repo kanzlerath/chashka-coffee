@@ -1,4 +1,5 @@
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test'
+import type { UserRole } from '@chashka-coffee/contracts'
 
 import { createApp } from '../../app'
 import { createPrisma } from '../../db'
@@ -27,7 +28,13 @@ maybeDescribe('auth API integration', () => {
   const app = createApp({ env, prisma })
 
   beforeEach(async () => {
+    await prisma.adminAuditEvent.deleteMany()
     await prisma.pageView.deleteMany()
+    await prisma.managedPage.deleteMany()
+    await prisma.contentEntry.deleteMany()
+    await prisma.jobOpening.deleteMany()
+    await prisma.lead.deleteMany()
+    await prisma.mediaAsset.deleteMany()
     await prisma.product.deleteMany()
     await prisma.restaurant.deleteMany()
     await prisma.menu.deleteMany()
@@ -429,8 +436,8 @@ maybeDescribe('auth API integration', () => {
     expect(sessions).toBe(2)
   })
 
-  test('lets an administrator manage staff while protecting the last administrator', async () => {
-    const administrator = await createUser('owner@example.com', 'password123', 'Владелец', 'ADMIN')
+  test('lets a super administrator assign composable roles while protecting the last super administrator', async () => {
+    const administrator = await createUser('owner@example.com', 'password123', 'Владелец', ['SUPER_ADMIN'])
     const adminLogin = await app.request('/api/auth/token/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -442,7 +449,7 @@ maybeDescribe('auth API integration', () => {
     const created = await app.request('/api/admin/users', {
       method: 'POST',
       headers: authorization,
-      body: JSON.stringify({ email: 'editor@example.com', password: 'temporary-password', displayName: 'Редактор', role: 'EDITOR' }),
+      body: JSON.stringify({ email: 'editor@example.com', password: 'temporary-password', displayName: 'Редактор', roles: ['CONTENT_MANAGER', 'CATALOG_MANAGER'] }),
     })
     expect(created.status).toBe(201)
     const createdBody = await created.json()
@@ -450,7 +457,7 @@ maybeDescribe('auth API integration', () => {
     const updated = await app.request(`/api/admin/users/${createdBody.user.id}`, {
       method: 'PUT',
       headers: authorization,
-      body: JSON.stringify({ email: 'content@example.com', password: 'updated-password', displayName: 'Контент-менеджер', role: 'EDITOR' }),
+      body: JSON.stringify({ email: 'content@example.com', password: 'updated-password', displayName: 'Контент-менеджер', roles: ['CONTENT_MANAGER'] }),
     })
     expect(updated.status).toBe(200)
     expect((await updated.json()).user).toMatchObject({ email: 'content@example.com', displayName: 'Контент-менеджер' })
@@ -472,7 +479,7 @@ maybeDescribe('auth API integration', () => {
     const demoteLastAdmin = await app.request(`/api/admin/users/${administrator.id}`, {
       method: 'PUT',
       headers: authorization,
-      body: JSON.stringify({ email: administrator.email, displayName: administrator.displayName, role: 'EDITOR' }),
+      body: JSON.stringify({ email: administrator.email, displayName: administrator.displayName, roles: ['CONTENT_MANAGER'] }),
     })
     expect(demoteLastAdmin.status).toBe(409)
 
@@ -480,6 +487,39 @@ maybeDescribe('auth API integration', () => {
     expect(deleted.status).toBe(200)
     expect(await deleted.json()).toEqual({ deleted: true })
     expect(await prisma.user.findUnique({ where: { id: createdBody.user.id } })).toBeNull()
+  })
+
+  test('keeps operational roles inside their assigned work areas', async () => {
+    await prisma.lead.createMany({ data: [
+      { type: 'CONTACT', name: 'Гость', phone: '79130000001', email: null, message: 'Вопрос' },
+      { type: 'JOB', name: 'Кандидат', phone: '79130000002', email: null, message: 'Отклик' },
+    ] })
+    await createUser('leads@example.com', 'password123', 'Оператор заявок', ['LEAD_OPERATOR'])
+    await createUser('recruiter@example.com', 'password123', 'Рекрутер', ['RECRUITER'])
+    await createUser('orders@example.com', 'password123', 'Оператор заказов', ['ORDER_OPERATOR'])
+
+    const loginAs = async (email: string) => {
+      const response = await app.request('/api/auth/token/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: 'password123' }),
+      })
+      const body = await response.json()
+      return { Authorization: `Bearer ${body.accessToken}` }
+    }
+
+    const leadHeaders = await loginAs('leads@example.com')
+    const recruiterHeaders = await loginAs('recruiter@example.com')
+    const orderHeaders = await loginAs('orders@example.com')
+
+    const operatorLeads = await (await app.request('/api/admin/leads', { headers: leadHeaders })).json()
+    const recruiterLeads = await (await app.request('/api/admin/leads', { headers: recruiterHeaders })).json()
+    expect(operatorLeads.leads.map((lead: { type: string }) => lead.type)).toEqual(['CONTACT'])
+    expect(recruiterLeads.leads.map((lead: { type: string }) => lead.type)).toEqual(['JOB'])
+    expect((await app.request('/api/admin/jobs', { headers: recruiterHeaders })).status).toBe(200)
+    expect((await app.request('/api/admin/jobs', { headers: leadHeaders })).status).toBe(403)
+    expect((await app.request('/api/admin/orders', { headers: orderHeaders })).status).toBe(200)
+    expect((await app.request('/api/admin/users', { headers: orderHeaders })).status).toBe(403)
+    expect((await app.request('/api/admin/analytics?days=7', { headers: recruiterHeaders })).status).toBe(403)
   })
 
   test('records anonymous page views and exposes their summary only to administrators', async () => {
@@ -494,7 +534,7 @@ maybeDescribe('auth API integration', () => {
     const anonymousSummary = await app.request('/api/admin/analytics?days=7')
     expect(anonymousSummary.status).toBe(401)
 
-    await createUser('analytics@example.com', 'password123', 'Аналитик', 'ADMIN')
+    await createUser('analytics@example.com', 'password123', 'Аналитик', ['SUPER_ADMIN'])
     const login = await app.request('/api/auth/token/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -512,8 +552,8 @@ maybeDescribe('auth API integration', () => {
     })
   })
 
-  test('creates duplicate-named products safely and lets administrators delete catalog records', async () => {
-    await createUser('catalog@example.com', 'password123', 'Каталог', 'ADMIN')
+  test('copies products and menu sets with independent children and lets administrators delete catalog records', async () => {
+    await createUser('catalog@example.com', 'password123', 'Каталог', ['CATALOG_MANAGER'])
     const login = await app.request('/api/auth/token/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -525,6 +565,7 @@ maybeDescribe('auth API integration', () => {
       type: 'COFFEE', status: 'DRAFT', slug: 'ethiopia-guji', name: 'Эфиопия Гуджи',
       subtitle: null, description: null, ingredients: null, origin: null, roastLevel: null,
       tastingNotes: [], imageUrl: null, galleryUrls: [], details: [], isFeatured: false, position: 10,
+      blocks: [{ id: '018f20e8-38e4-7a65-9aa5-77e1d8613a11', type: 'TEXT', isVisible: true, title: 'Как заваривать', text: '<p>Для фильтра.</p>' }],
       variants: [{ label: '250 г', weightGrams: 250, priceKopecks: 79000, position: 10, isAvailable: true }],
     }
 
@@ -537,6 +578,30 @@ maybeDescribe('auth API integration', () => {
     expect(firstBody.product.slug).toBe('ethiopia-guji')
     expect(secondBody.product.slug).toBe('ethiopia-guji-2')
 
+    const copiedProduct = await app.request(`/api/admin/products/${firstBody.product.id}/copy`, { method: 'POST', headers })
+    const copiedProductBody = await copiedProduct.json()
+    expect(copiedProduct.status).toBe(201)
+    expect(copiedProductBody.product).toMatchObject({
+      name: 'Эфиопия Гуджи — копия',
+      slug: 'ethiopia-guji-copy',
+      status: 'DRAFT',
+    })
+    expect(copiedProductBody.product.id).not.toBe(firstBody.product.id)
+    expect(copiedProductBody.product.variants).toHaveLength(1)
+    expect(copiedProductBody.product.variants[0]).toMatchObject({ label: '250 г', weightGrams: 250, priceKopecks: 79000 })
+    expect(copiedProductBody.product.variants[0].id).not.toBe(firstBody.product.variants[0].id)
+    expect(copiedProductBody.product.blocks).toMatchObject([{ type: 'TEXT', title: 'Как заваривать' }])
+
+    const copiedProductAgain = await app.request(`/api/admin/products/${firstBody.product.id}/copy`, { method: 'POST', headers })
+    expect(await copiedProductAgain.json()).toMatchObject({ product: { name: 'Эфиопия Гуджи — копия 2', slug: 'ethiopia-guji-copy-2' } })
+
+    const cake = await app.request('/api/admin/products', {
+      method: 'POST', headers, body: JSON.stringify({ ...productPayload, type: 'CAKE', slug: 'honey-cake', name: 'Медовик', category: 'Торты' }),
+    })
+    const cakeBody = await cake.json()
+    const copiedCake = await app.request(`/api/admin/products/${cakeBody.product.id}/copy`, { method: 'POST', headers })
+    expect(await copiedCake.json()).toMatchObject({ product: { type: 'CAKE', name: 'Медовик — копия', slug: 'honey-cake-copy', status: 'DRAFT' } })
+
     const deletedProduct = await app.request(`/api/admin/products/${firstBody.product.id}`, { method: 'DELETE', headers })
     expect(deletedProduct.status).toBe(200)
     expect(await deletedProduct.json()).toEqual({ success: true })
@@ -544,7 +609,7 @@ maybeDescribe('auth API integration', () => {
 
     const restaurantPayload = {
       slug: 'krasny-prospekt', name: 'Чашка кофе на Красном проспекте', format: 'CITY', area: 'CITY',
-      isAtApartHotel: false, city: 'Новосибирск', address: 'Красный проспект, 25', phone: '+7 383 000-00-00',
+      isAtApartHotel: false, coffeePickupEnabled: true, city: 'Новосибирск', address: 'Красный проспект, 25', phone: '+7 383 000-00-00',
       description: null, aboutTitle: 'О ресторане', aboutText: 'Тестовое описание ресторана.', visitAmenities: [{ iconUrl: '/images/wifi.svg', title: 'Wi-Fi', description: 'Для гостей доступен беспроводной интернет.' }], coverImageUrl: null, galleryUrls: [], menuPdfUrl: null, latitude: null, longitude: null, yandexMapsUrl: null, twoGisUrl: null,
       openingHours: Array.from({ length: 7 }, (_, dayOfWeek) => ({ dayOfWeek, opensAt: '08:00', closesAt: '22:00', isClosed: false })),
     }
@@ -580,6 +645,26 @@ maybeDescribe('auth API integration', () => {
     })
     const itemBody = await item.json()
     expect(item.status).toBe(201)
+    const allergen = await prisma.allergen.upsert({ where: { slug: 'nuts' }, create: { slug: 'nuts', name: 'Орехи' }, update: {} })
+    await prisma.menuItemAllergen.create({ data: { menuItemId: itemBody.id, allergenId: allergen.id } })
+
+    const copiedMenu = await app.request(`/api/admin/menus/${menuBody.menu.id}/copy`, { method: 'POST', headers })
+    const copiedMenuBody = await copiedMenu.json()
+    expect(copiedMenu.status).toBe(201)
+    expect(copiedMenuBody.menu).toMatchObject({ name: 'Основное меню — копия', slug: 'main-menu-copy', categoryCount: 1, restaurantCount: 0 })
+
+    const copiedMenuDetail = await app.request(`/api/admin/menus/${copiedMenuBody.menu.id}/detail`, { headers })
+    const copiedMenuDetailBody = await copiedMenuDetail.json()
+    expect(copiedMenuDetail.status).toBe(200)
+    expect(copiedMenuDetailBody.categories).toHaveLength(1)
+    expect(copiedMenuDetailBody.categories[0]).toMatchObject({ slug: 'breakfasts', name: 'Завтраки' })
+    expect(copiedMenuDetailBody.categories[0].id).not.toBe(categoryBody.id)
+    expect(copiedMenuDetailBody.categories[0].items[0]).toMatchObject(itemPayload)
+    expect(copiedMenuDetailBody.categories[0].items[0].id).not.toBe(itemBody.id)
+    expect(await prisma.menuItemAllergen.count({ where: { menuItemId: copiedMenuDetailBody.categories[0].items[0].id, allergenId: allergen.id } })).toBe(1)
+
+    const copiedMenuAgain = await app.request(`/api/admin/menus/${menuBody.menu.id}/copy`, { method: 'POST', headers })
+    expect(await copiedMenuAgain.json()).toMatchObject({ menu: { name: 'Основное меню — копия 2', slug: 'main-menu-copy-2' } })
 
     const deletedItem = await app.request(`/api/admin/items/${itemBody.id}`, { method: 'DELETE', headers })
     expect(deletedItem.status).toBe(200)
@@ -592,6 +677,80 @@ maybeDescribe('auth API integration', () => {
     const deletedMenu = await app.request(`/api/admin/menus/${menuBody.menu.id}`, { method: 'DELETE', headers })
     expect(deletedMenu.status).toBe(200)
     expect(await deletedMenu.json()).toEqual({ success: true })
+  })
+
+  test('publishes scheduled content when due and records admin history and bulk updates', async () => {
+    await createUser('workspace@example.com', 'password123', 'Контент', ['SUPER_ADMIN'])
+    const login = await app.request('/api/auth/token/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'workspace@example.com', password: 'password123' }),
+    })
+    const { accessToken } = await login.json()
+    const headers = { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }
+    const contentPayload = {
+      type: 'PROMOTION', status: 'SCHEDULED', publishAt: new Date(Date.now() + 86_400_000).toISOString(), slug: 'scheduled-breakfast', title: 'Завтрак по расписанию',
+      excerpt: null, body: null, blocks: [], imageUrl: null, ctaLabel: null, ctaUrl: null, startsAt: null, endsAt: null,
+      eventStartsAt: null, location: null, priceKopecks: null, registrationEnabled: false, isFeatured: false, position: 10,
+    }
+
+    const created = await app.request('/api/admin/content', { method: 'POST', headers, body: JSON.stringify(contentPayload) })
+    const createdBody = await created.json()
+    expect(created.status).toBe(201)
+
+    const beforeSchedule = await app.request('/api/content?type=PROMOTION')
+    expect((await beforeSchedule.json()).entries).toHaveLength(0)
+
+    const duePayload = { ...contentPayload, publishAt: new Date(Date.now() - 60_000).toISOString() }
+    const updated = await app.request(`/api/admin/content/${createdBody.entry.id}`, { method: 'PUT', headers, body: JSON.stringify(duePayload) })
+    expect(updated.status).toBe(200)
+    const afterSchedule = await app.request('/api/content?type=PROMOTION')
+    expect((await afterSchedule.json()).entries[0]?.title).toBe('Завтрак по расписанию')
+
+    const bulk = await app.request('/api/admin/workspace/bulk-status', {
+      method: 'POST', headers,
+      body: JSON.stringify({ resource: 'CONTENT', ids: [createdBody.entry.id], status: 'ARCHIVED' }),
+    })
+    expect(await bulk.json()).toEqual({ updated: 1 })
+
+    const workspace = await app.request('/api/admin/workspace', { headers })
+    const workspaceBody = await workspace.json()
+    expect(workspace.status).toBe(200)
+    expect(workspaceBody.recentActivity.map((event: { action: string }) => event.action)).toEqual(expect.arrayContaining(['CREATE', 'UPDATE', 'BULK_UPDATE']))
+
+    const search = await app.request('/api/admin/workspace/search?q=Завтрак', { headers })
+    expect((await search.json()).results[0]).toMatchObject({ resource: 'CONTENT', title: 'Завтрак по расписанию', status: 'ARCHIVED' })
+  })
+
+  test('saves application choices in the admin API and exposes them on the public page', async () => {
+    await createUser('pages@example.com', 'password123', 'Редактор страниц', ['CONTENT_MANAGER'])
+    const login = await app.request('/api/auth/token/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'pages@example.com', password: 'password123' }),
+    })
+    const { accessToken } = await login.json()
+    const headers = { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }
+    const appChoices = [{
+      id: '018f8d94-1f4f-7000-8000-000000000201',
+      label: 'Заказать',
+      title: 'Выбрать ресторан и заказать',
+      description: 'Доставка или самовывоз из ближайшей «Чашки».',
+      imageUrl: '/images/app/order-screen.webp',
+      imageAlt: 'Главный экран приложения с выбором ресторана',
+    }]
+
+    const saved = await app.request('/api/admin/pages/APP', {
+      method: 'PUT', headers,
+      body: JSON.stringify({
+        key: 'APP', title: 'Приложение', heroTitle: 'Вся «Чашка»', heroDescription: 'Всё внутри.',
+        heroImageUrl: '/images/app/hero.webp', coffeeTastes: null, appChoices, blocks: [],
+      }),
+    })
+    expect(saved.status).toBe(200)
+    expect((await saved.json()).page.appChoices).toEqual(appChoices)
+
+    const publicPage = await app.request('/api/pages/APP')
+    expect(publicPage.status).toBe(200)
+    expect((await publicPage.json()).page.appChoices).toEqual(appChoices)
   })
 
   async function loginForMeGuard(email: string) {
@@ -625,13 +784,14 @@ maybeDescribe('auth API integration', () => {
     }
   }
 
-  async function createUser(email: string, password = 'password123', displayName: string | null = null, role: 'ADMIN' | 'EDITOR' = 'EDITOR') {
+  async function createUser(email: string, password = 'password123', displayName: string | null = null, roles: UserRole[] = ['CATALOG_MANAGER']) {
     return prisma.user.create({
       data: {
         email,
         passwordHash: await hashPassword(password),
         displayName,
-        role,
+        role: roles.includes('SUPER_ADMIN') ? 'ADMIN' : 'EDITOR',
+        roles,
       },
     })
   }

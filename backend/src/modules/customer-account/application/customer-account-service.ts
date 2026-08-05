@@ -129,6 +129,15 @@ export class CustomerAccountService {
     }
   }
 
+  async resolveCustomerId(sessionToken: string | undefined): Promise<string | null> {
+    if (!sessionToken) return null
+    const session = await this.dependencies.repository.findActiveSession({
+      tokenHash: this.dependencies.sessionTokens.hash(sessionToken),
+      now: this.dependencies.clock.now(),
+    })
+    return session?.customer.id ?? null
+  }
+
   async logout(sessionToken: string | undefined) {
     if (!sessionToken) return
     await this.dependencies.repository.revokeSession({
@@ -166,4 +175,3 @@ export class CustomerAccountService {
     }
   }
 }
-

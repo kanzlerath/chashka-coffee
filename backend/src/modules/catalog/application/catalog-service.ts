@@ -42,6 +42,7 @@ export class CatalogService {
 
   listAdminMenus() { return this.repository.listAdminMenus() }
   createMenu(input: UpsertMenuRequest) { return this.repository.createMenu(input) }
+  copyMenu(id: string) { return this.repository.copyMenu(id) }
   updateMenu(id: string, input: UpsertMenuRequest) { return this.repository.updateMenu(id, input) }
   deleteMenu(id: string) { return this.repository.deleteMenu(id) }
   getAdminMenuDetail(id: string) { return this.repository.getAdminMenuDetail(id) }

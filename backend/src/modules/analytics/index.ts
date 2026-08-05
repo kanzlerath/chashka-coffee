@@ -26,7 +26,7 @@ export function createAnalyticsModule({
 }) {
   const routes = new OpenAPIHono({ defaultHook: validationErrorHook })
   const adminRoutes = new OpenAPIHono<AuthHttpEnv>({ defaultHook: validationErrorHook })
-  adminRoutes.use('*', requireAuth, requireAdmin)
+  adminRoutes.use('/analytics', requireAuth, requireAdmin)
 
   const record = createRoute({
     method: 'post',

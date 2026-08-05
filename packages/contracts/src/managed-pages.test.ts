@@ -45,6 +45,29 @@ describe('managed marketing pages', () => {
     expect(page.coffeeTastes?.[0]?.title).toBe('Абрикос')
   })
 
+  test('stores editable application choices with their phone screens', () => {
+    const page = upsertManagedPageRequestSchema.parse({
+      key: 'APP',
+      title: 'Приложение',
+      heroTitle: 'Вся «Чашка»\nв вашем телефоне',
+      heroDescription: 'Заказывайте и копите бонусы.',
+      heroImageUrl: '/images/app/hero.webp',
+      coffeeTastes: null,
+      appChoices: [{
+        id: '018f8d94-1f4f-7000-8000-000000000002',
+        label: 'Заказать',
+        title: 'Выбрать ресторан и заказать',
+        description: 'Доставка или самовывоз из ближайшей «Чашки».',
+        imageUrl: '/images/app/order-screen.webp',
+        imageAlt: 'Главный экран приложения с выбором ресторана',
+      }],
+      blocks: [],
+    })
+
+    expect(page.appChoices?.[0]?.label).toBe('Заказать')
+    expect(page.appChoices?.[0]?.imageUrl).toBe('/images/app/order-screen.webp')
+  })
+
   test('keeps new hero fields optional for existing admin clients', () => {
     const page = upsertManagedPageRequestSchema.parse({
       key: 'ABOUT',
@@ -54,5 +77,6 @@ describe('managed marketing pages', () => {
 
     expect(page.heroTitle).toBeUndefined()
     expect(page.coffeeTastes).toBeUndefined()
+    expect(page.appChoices).toBeUndefined()
   })
 })

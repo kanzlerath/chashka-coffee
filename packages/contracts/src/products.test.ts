@@ -19,6 +19,13 @@ describe('product catalog contracts', () => {
       imageUrl: '/images/coffee.webp',
       galleryUrls: ['/images/coffee-detail.webp'],
       details: [{ label: 'Обработка', value: 'Натуральная' }],
+      blocks: [{
+        id: '018f20e8-38e4-7a65-9aa5-77e1d8613a11',
+        type: 'TEXT',
+        isVisible: true,
+        title: 'Как раскрывается вкус',
+        text: '<p>Лучше всего — в фильтре.</p>',
+      }],
       isFeatured: true,
       position: 10,
       variants: [
@@ -29,6 +36,7 @@ describe('product catalog contracts', () => {
 
     expect(product.variants).toHaveLength(2)
     expect(product.tastingNotes[0]).toBe('бергамот')
+    expect(product.blocks).toMatchObject([{ type: 'TEXT', title: 'Как раскрывается вкус' }])
   })
 
   test('rejects products without a purchasable presentation', () => {

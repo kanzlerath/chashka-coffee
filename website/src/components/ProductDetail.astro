@@ -1,6 +1,7 @@
 ---
 import type { Product } from '@chashka-coffee/contracts'
 import PageShell from '../layouts/PageShell.astro'
+import ContentBlocks from './ContentBlocks.astro'
 import ProductCard from './ProductCard.astro'
 const { product, related = [] } = Astro.props as { product: Product; related?: Product[] }
 const available = product.variants.filter((variant) => variant.isAvailable)
@@ -14,13 +15,39 @@ const kind = product.type === 'COFFEE' ? 'Кофе собственной обж
     <div class="product-info"><p>{kind}</p><h1>{product.name}</h1>{product.subtitle && <strong>{product.subtitle}</strong>}<span>{product.description}</span>
       {product.tastingNotes.length > 0 && <div class="notes">{product.tastingNotes.map((note) => <b>{note}</b>)}</div>}
       <dl>{product.origin && <div><dt>Происхождение</dt><dd>{product.origin}</dd></div>}{product.roastLevel && <div><dt>Обжарка</dt><dd>{product.roastLevel}</dd></div>}{product.details.map((detail) => <div><dt>{detail.label}</dt><dd>{detail.value}</dd></div>)}</dl>
-      <div class="variants">{available.map((variant) => <div><span>{variant.label}</span><strong>{money(variant.priceKopecks)}</strong></div>)}</div>
-      <p class="product-order">{product.type === 'COFFEE' ? 'Продажа кофе онлайн появится позже. Сейчас его можно найти в наших ресторанах.' : 'Для заказа торта свяжитесь с кондитерской не менее чем за 48 часов.'}</p>
+      {product.type === 'COFFEE' ? <form class="product-purchase" data-product-purchase data-product-name={product.name} data-product-slug={product.slug} data-image-url={product.imageUrl ?? ''}>
+        <fieldset class="variants"><legend>Выберите фасовку</legend>{available.map((variant, index) => <label><input type="radio" name="variant" value={variant.id} checked={index === 0} data-variant-label={variant.label} data-price={variant.priceKopecks}/><span>{variant.label}</span><strong>{money(variant.priceKopecks)}</strong></label>)}</fieldset>
+        <button class="product-add" type="submit" disabled={available.length === 0}>{available.length ? 'Добавить в корзину' : 'Сейчас нет в продаже'}</button>
+        <p class="product-order" data-product-message>Самовывоз из выбранных ресторанов. Наличие и цена подтвердятся при оформлении.</p>
+      </form> : <p class="product-order">Для заказа торта свяжитесь с кондитерской не менее чем за 48 часов.</p>}
     </div>
   </article>
+  {product.blocks.some((block) => block.isVisible) && <section class="product-blocks"><ContentBlocks blocks={product.blocks}/></section>}
   {related.length > 0 && <section class="related"><header><p>Ещё в каталоге</p><h2>Попробуйте другой вкус</h2></header><div>{related.slice(0,3).map((item) => <ProductCard product={item}/>)}</div></section>}
   <a class="back" href={backHref}>Вернуться в каталог</a>
 </PageShell>
+<script>
+  import { addCartItem } from '../lib/cart-store'
+
+  document.querySelectorAll<HTMLFormElement>('[data-product-purchase]').forEach((form) => {
+    form.addEventListener('submit', (event) => {
+      event.preventDefault()
+      const selected = form.querySelector<HTMLInputElement>('input[name="variant"]:checked')
+      if (!selected) return
+      addCartItem({
+        variantId: selected.value,
+        productSlug: form.dataset.productSlug ?? '',
+        productName: form.dataset.productName ?? '',
+        variantLabel: selected.dataset.variantLabel ?? '',
+        imageUrl: form.dataset.imageUrl || null,
+        unitPriceKopecks: Number(selected.dataset.price),
+      })
+      const message = form.querySelector<HTMLElement>('[data-product-message]')
+      if (message) message.textContent = `${selected.dataset.variantLabel} добавлено в корзину.`
+      document.dispatchEvent(new CustomEvent('coffee-cart:open'))
+    })
+  })
+</script>
 <style>
-  .product-detail{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(420px,.92fr);gap:clamp(35px,6vw,90px);padding:clamp(40px,6vw,92px) 0 clamp(100px,11vw,170px)}.product-gallery>img{width:100%;aspect-ratio:1/.95;border-radius:var(--radius);background:#eee9e1;object-fit:cover}.product-gallery>div{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.product-gallery>div img{width:100%;aspect-ratio:1/.7;border-radius:var(--radius);object-fit:cover}.product-info{position:sticky;top:130px;height:max-content}.product-info>p:first-child,.related header p{margin:0;color:#6f902b;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.product-info h1{margin:18px 0 16px;font-size:clamp(48px,5.3vw,86px);line-height:.88}.product-info>strong{display:block;margin-bottom:16px;font-size:15px}.product-info>span{display:block;max-width:640px;color:var(--muted);font-size:15px;line-height:1.65}.notes{display:flex;flex-wrap:wrap;gap:7px;margin-top:26px}.notes b{padding:9px 12px;border-radius:var(--radius);background:#e6ecd9;color:var(--moss);font-size:10px}.product-info dl{display:grid;grid-template-columns:1fr 1fr;margin:34px 0 0;border-top:1px solid var(--line)}.product-info dl>div{padding:19px 0;border-bottom:1px solid var(--line)}.product-info dt{color:var(--muted);font-size:10px}.product-info dd{margin:7px 0 0;font-size:14px;font-weight:700}.variants{display:grid;gap:8px;margin-top:28px}.variants>div{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-radius:var(--radius);background:var(--sand)}.variants span{font-size:13px}.variants strong{font-size:22px}.product-order{padding-top:23px!important;color:var(--muted)!important;font-size:12px!important;line-height:1.6!important}.related{padding:0 0 clamp(90px,10vw,150px)}.related header{max-width:800px;margin-bottom:45px}.related h2{margin:14px 0 0;font-size:clamp(40px,4.5vw,70px)}.related>div{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}@media(max-width:900px){.product-detail{grid-template-columns:1fr;padding:32px 20px 90px}.product-info{position:static}.related{padding:0 20px 90px}.related>div{grid-template-columns:1fr}.product-gallery>div{display:none}}
+  .product-detail{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(420px,.92fr);gap:clamp(35px,6vw,90px);padding:clamp(40px,6vw,92px) 0 clamp(100px,11vw,170px)}.product-gallery>img{width:100%;aspect-ratio:1/.95;border-radius:var(--radius);background:#eee9e1;object-fit:cover}.product-gallery>div{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.product-gallery>div img{width:100%;aspect-ratio:1/.7;border-radius:var(--radius);object-fit:cover}.product-info{position:sticky;top:130px;height:max-content}.product-info>p:first-child,.related header p{margin:0;color:#6f902b;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.product-info h1{margin:18px 0 16px;font-size:clamp(48px,5.3vw,86px);line-height:.88}.product-info>strong{display:block;margin-bottom:16px;font-size:15px}.product-info>span{display:block;max-width:640px;color:var(--muted);font-size:15px;line-height:1.65}.notes{display:flex;flex-wrap:wrap;gap:7px;margin-top:26px}.notes b{padding:9px 12px;border-radius:var(--radius);background:#e6ecd9;color:var(--moss);font-size:10px}.product-info dl{display:grid;grid-template-columns:1fr 1fr;margin:34px 0 0;border-top:1px solid var(--line)}.product-info dl>div{padding:19px 0;border-bottom:1px solid var(--line)}.product-info dt{color:var(--muted);font-size:10px}.product-info dd{margin:7px 0 0;font-size:14px;font-weight:700}.product-purchase{margin-top:28px}.variants{display:grid;margin:0;padding:0;border:0;gap:8px}.variants legend{margin-bottom:9px;color:#746e67;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.variants label{display:flex;position:relative;align-items:center;justify-content:space-between;padding:17px 19px;border:1px solid transparent;border-radius:var(--radius);background:var(--sand);cursor:pointer;transition:border-color .2s ease,background .2s ease,transform .2s ease}.variants label:has(input:checked){border-color:#78912f;background:#edf1e3;transform:translateX(3px)}.variants input{position:absolute;opacity:0}.variants span{font-size:13px}.variants strong{font-size:22px}.product-add{width:100%;min-height:56px;margin-top:10px;border:0;border-radius:var(--radius);background:#1f3b2e;color:#fff;cursor:pointer;font-size:11px;font-weight:850;letter-spacing:.04em;transition:background .2s ease,transform .2s ease}.product-add:hover{background:#294d3b;transform:translateY(-1px)}.product-add:focus-visible{outline:3px solid #bdd65a;outline-offset:3px}.product-add:disabled{cursor:not-allowed;opacity:.5}.product-order{margin:0;padding-top:14px!important;color:var(--muted)!important;font-size:10px!important;line-height:1.6!important}.product-blocks{display:grid;gap:var(--section-gap);padding:0 0 clamp(100px,11vw,170px)}.related{padding:0 0 clamp(90px,10vw,150px)}.related header{max-width:800px;margin-bottom:45px}.related h2{margin:14px 0 0;font-size:clamp(40px,4.5vw,70px)}.related>div{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}@media(max-width:900px){.product-detail{grid-template-columns:1fr;padding:32px 20px 90px}.product-info{position:static}.product-blocks{padding:0 20px 90px}.related{padding:0 20px 90px}.related>div{grid-template-columns:1fr}.product-gallery>div{display:none}}
 </style>

@@ -7,6 +7,7 @@ import {
   updateLeadStatusRequestSchema,
   type Lead,
 } from '@chashka-coffee/contracts'
+import { hasPermission } from '@chashka-coffee/contracts'
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi'
 import type { MiddlewareHandler } from 'hono'
 import { z } from 'zod'
@@ -53,10 +54,11 @@ function readMetadata(value: unknown): Record<string, string> | null {
   return entries.length ? Object.fromEntries(entries) : null
 }
 
-export function createLeadsModule({ db, requireAuth, requireAdmin }: { db: DbClient; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireAdmin: MiddlewareHandler<AuthHttpEnv> }) {
+export function createLeadsModule({ db, requireAuth, requireLeadAccess }: { db: DbClient; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireLeadAccess: MiddlewareHandler<AuthHttpEnv> }) {
   const routes = new OpenAPIHono({ defaultHook: validationErrorHook })
   const adminRoutes = new OpenAPIHono<AuthHttpEnv>({ defaultHook: validationErrorHook })
-  adminRoutes.use('*', requireAuth, requireAdmin)
+  adminRoutes.use('/leads', requireAuth, requireLeadAccess)
+  adminRoutes.use('/leads/*', requireAuth, requireLeadAccess)
 
   const submit = createRoute({
     method: 'post', path: '/',
@@ -85,10 +87,15 @@ export function createLeadsModule({ db, requireAuth, requireAdmin }: { db: DbCli
   })
   adminRoutes.openapi(list, async (c) => {
     const { type, status } = c.req.valid('query')
-    const leads = await db.lead.findMany({ where: { ...(type ? { type } : {}), ...(status ? { status } : {}) }, orderBy: { createdAt: 'desc' } })
+    const allowedTypes = leadTypesFor(c.var.user)
+    if (type && !allowedTypes.includes(type)) throw new AppError(403, 'FORBIDDEN', 'This lead type is not available to your role')
+    const leads = await db.lead.findMany({ where: { type: type ?? { in: allowedTypes }, ...(status ? { status } : {}) }, orderBy: { createdAt: 'desc' } })
     return c.json({ leads: leads.map(dto) }, 200)
   })
   adminRoutes.openapi(updateStatus, async (c) => {
+    const existing = await db.lead.findUnique({ where: { id: c.req.valid('param').id }, select: { type: true } })
+    if (!existing) throw new AppError(404, 'NOT_FOUND', 'Lead not found')
+    if (!leadTypesFor(c.var.user).includes(existing.type)) throw new AppError(403, 'FORBIDDEN', 'This lead type is not available to your role')
     try {
       const lead = await db.lead.update({ where: { id: c.req.valid('param').id }, data: c.req.valid('json') })
       return c.json({ lead: dto(lead) }, 200)
@@ -98,4 +105,13 @@ export function createLeadsModule({ db, requireAuth, requireAdmin }: { db: DbCli
   })
 
   return { routes, adminRoutes }
+}
+
+function leadTypesFor(user: AuthHttpEnv['Variables']['user']) {
+  const types: DatabaseLead['type'][] = []
+  if (hasPermission(user, 'LEADS_MANAGE')) {
+    types.push('CONTACT', 'RESERVATION', 'FRANCHISE', 'BANQUET', 'EVENT_REGISTRATION')
+  }
+  if (hasPermission(user, 'JOB_APPLICATIONS_MANAGE')) types.push('JOB')
+  return types
 }

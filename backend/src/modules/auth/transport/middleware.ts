@@ -1,4 +1,5 @@
 import { createMiddleware } from 'hono/factory'
+import { hasPermission, type StaffPermission } from '@chashka-coffee/contracts'
 
 import { AppError } from '../../../http/errors'
 import type { AuthenticatedPrincipal } from '../domain/user'
@@ -10,9 +11,20 @@ export type AuthHttpEnv = {
   }
 }
 
-export function createRequireAdmin() {
+export function createRequirePermission(permission: StaffPermission) {
   return createMiddleware<AuthHttpEnv>(async (c, next) => {
-    if (c.var.user.role !== 'ADMIN') throw new AppError(403, 'FORBIDDEN', 'Administrator access is required')
+    if (!hasPermission(c.var.user, permission)) {
+      throw new AppError(403, 'FORBIDDEN', 'Your account does not have permission for this action')
+    }
+    await next()
+  })
+}
+
+export function createRequireAnyPermission(permissions: readonly StaffPermission[]) {
+  return createMiddleware<AuthHttpEnv>(async (c, next) => {
+    if (!permissions.some((permission) => hasPermission(c.var.user, permission))) {
+      throw new AppError(403, 'FORBIDDEN', 'Your account does not have permission for this action')
+    }
     await next()
   })
 }

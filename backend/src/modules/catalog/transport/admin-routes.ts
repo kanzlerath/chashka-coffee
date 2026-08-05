@@ -73,6 +73,7 @@ const overrideItemRoute = createRoute({ method: 'put', path: '/restaurants/{id}/
 const deleteOverrideItemRoute = createRoute({ method: 'delete', path: '/restaurants/{id}/menu-items/{itemId}/override', request: { params: overrideParams }, responses: { 200: { content: { 'application/json': { schema: operationSuccessResponseSchema } }, description: 'Restaurant item override removed' }, 404: { content: errorContent, description: 'Override not found' } } })
 const listMenusRoute = createRoute({ method: 'get', path: '/menus', responses: { 200: { content: { 'application/json': { schema: adminMenuListResponseSchema } }, description: 'Menu sets' } } })
 const createMenuRoute = createRoute({ method: 'post', path: '/menus', request: { body: { content: { 'application/json': { schema: upsertMenuRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: adminMenuResponseSchema } }, description: 'Menu created' } } })
+const copyMenuRoute = createRoute({ method: 'post', path: '/menus/{id}/copy', request: { params: idParams }, responses: { 201: { content: { 'application/json': { schema: adminMenuResponseSchema } }, description: 'Menu copied' }, 404: { content: errorContent, description: 'Menu not found' } } })
 const updateMenuRoute = createRoute({ method: 'put', path: '/menus/{id}', request: { params: idParams, body: { content: { 'application/json': { schema: upsertMenuRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: adminMenuResponseSchema } }, description: 'Menu updated' } } })
 const deleteMenuRoute = createRoute({ method: 'delete', path: '/menus/{id}', request: { params: idParams }, responses: { 200: { content: { 'application/json': { schema: operationSuccessResponseSchema } }, description: 'Menu deleted' }, 404: { content: errorContent, description: 'Menu not found' }, 409: { content: errorContent, description: 'Menu is assigned to restaurants' } } })
 const menuDetailRoute = createRoute({ method: 'get', path: '/menus/{id}/detail', request: { params: idParams }, responses: { 200: { content: { 'application/json': { schema: adminMenuDetailResponseSchema } }, description: 'Menu editor detail' } } })
@@ -88,7 +89,9 @@ const deleteScheduleExceptionRoute = createRoute({ method: 'delete', path: '/res
 
 export function createCatalogAdminRoutes({ service, requireAuth, requireAdmin }: { service: CatalogService; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireAdmin: MiddlewareHandler<AuthHttpEnv> }) {
   const routes = new OpenAPIHono<AuthHttpEnv>({ defaultHook: validationErrorHook })
-  routes.use('*', requireAuth, requireAdmin)
+  for (const path of ['/restaurants', '/restaurants/*', '/menus', '/menus/*', '/categories/*', '/items/*']) {
+    routes.use(path, requireAuth, requireAdmin)
+  }
 
   routes.openapi(listRoute, async (c) => c.json({ restaurants: await service.listAdminRestaurants() }, 200))
   routes.openapi(createRouteDefinition, async (c) => executeCatalog(async () => c.json({ restaurant: await service.createRestaurant(c.req.valid('json')) }, 201)))
@@ -124,6 +127,11 @@ export function createCatalogAdminRoutes({ service, requireAuth, requireAdmin }:
   })
   routes.openapi(listMenusRoute, async (c) => c.json({ menus: await service.listAdminMenus() }, 200))
   routes.openapi(createMenuRoute, async (c) => c.json({ menu: await service.createMenu(c.req.valid('json')) }, 201))
+  routes.openapi(copyMenuRoute, async (c) => {
+    const menu = await service.copyMenu(c.req.valid('param').id)
+    if (!menu) throw new AppError(404, 'NOT_FOUND', 'Menu not found')
+    return c.json({ menu }, 201)
+  })
   routes.openapi(updateMenuRoute, async (c) => {
     const menu = await service.updateMenu(c.req.valid('param').id, c.req.valid('json'))
     if (!menu) throw new AppError(404, 'NOT_FOUND', 'Menu not found')

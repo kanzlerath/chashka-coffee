@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 
 import { handleError } from '../../../http/errors'
 import { AuthFailure } from '../domain/errors'
-import { createRequireAuth, type AuthHttpEnv } from './middleware'
+import { createRequireAuth, createRequirePermission, type AuthHttpEnv } from './middleware'
 
 describe('requireAuth middleware', () => {
   test('rejects missing and invalid bearer tokens', async () => {
@@ -44,7 +44,7 @@ function createProtectedTestApp() {
       id: 'user-1',
       email: 'user@example.com',
       displayName: null,
-      role: 'EDITOR',
+      roles: ['CATALOG_MANAGER'],
       createdAt: '2026-01-01T00:00:00.000Z',
       sessionId: 'session-1',
     }
@@ -63,3 +63,26 @@ function createProtectedTestApp() {
 
   return app
 }
+
+describe('requirePermission middleware', () => {
+  test('allows only principals whose assigned roles grant the permission', async () => {
+    const app = new Hono<AuthHttpEnv>()
+    app.use('*', async (c, next) => {
+      c.set('user', {
+        id: 'user-1',
+        email: 'user@example.com',
+        displayName: null,
+        roles: c.req.header('x-role') === 'super' ? ['SUPER_ADMIN'] : ['ORDER_OPERATOR'],
+        createdAt: '2026-01-01T00:00:00.000Z',
+        sessionId: 'session-1',
+      })
+      await next()
+    })
+    app.use('*', createRequirePermission('STAFF_MANAGE'))
+    app.get('/', (c) => c.json({ ok: true }))
+    app.onError(handleError)
+
+    expect((await app.request('/')).status).toBe(403)
+    expect((await app.request('/', { headers: { 'x-role': 'super' } })).status).toBe(200)
+  })
+})

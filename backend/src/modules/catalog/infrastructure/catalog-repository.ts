@@ -23,6 +23,7 @@ import { formatOpeningHours } from '../domain/opening-hours'
 
 import type { DbClient } from '../../../db'
 import type { CatalogRepository } from '../application/ports'
+import { nextCopyIdentity } from '../../../copy-identity'
 
 function toOpeningHours(entries: { dayOfWeek: number; opensAt: string | null; closesAt: string | null; isClosed: boolean }[]) {
   return entries.map(({ dayOfWeek, opensAt, closesAt, isClosed }) => ({ dayOfWeek, opensAt, closesAt, isClosed }))
@@ -76,7 +77,7 @@ function dietaryMarks(item: { isVegetarian: boolean; isSpicy: boolean; isLactose
 }
 
 function toAdminRestaurant(restaurant: {
-  id: string; slug: string; name: string; format: 'CITY' | 'PARK' | 'AIRPORT' | 'APART_HOTEL'; area: 'CITY' | 'PARK' | 'AIRPORT'; isAtApartHotel: boolean; city: string; address: string; phone: string; description: string | null; aboutTitle: string | null; aboutText: string | null; visitAmenities: Prisma.JsonValue; coverImageUrl: string | null; galleryUrls: Prisma.JsonValue; menuPdfUrl: string | null; latitude: Prisma.Decimal | null; longitude: Prisma.Decimal | null; yandexMapsUrl: string | null; twoGisUrl: string | null; createdAt: Date; updatedAt: Date; openingHours?: { dayOfWeek: number; opensAt: string | null; closesAt: string | null; isClosed: boolean }[]; menuAssignments?: { menu: { id: string; name: string } }[]
+  id: string; slug: string; name: string; format: 'CITY' | 'PARK' | 'AIRPORT' | 'APART_HOTEL'; area: 'CITY' | 'PARK' | 'AIRPORT'; isAtApartHotel: boolean; coffeePickupEnabled: boolean; city: string; address: string; phone: string; description: string | null; aboutTitle: string | null; aboutText: string | null; visitAmenities: Prisma.JsonValue; coverImageUrl: string | null; galleryUrls: Prisma.JsonValue; menuPdfUrl: string | null; latitude: Prisma.Decimal | null; longitude: Prisma.Decimal | null; yandexMapsUrl: string | null; twoGisUrl: string | null; createdAt: Date; updatedAt: Date; openingHours?: { dayOfWeek: number; opensAt: string | null; closesAt: string | null; isClosed: boolean }[]; menuAssignments?: { menu: { id: string; name: string } }[]
 }): AdminRestaurant {
   return {
     id: restaurant.id,
@@ -85,6 +86,7 @@ function toAdminRestaurant(restaurant: {
     format: restaurant.format,
     area: restaurant.area,
     isAtApartHotel: restaurant.isAtApartHotel,
+    coffeePickupEnabled: restaurant.coffeePickupEnabled,
     city: restaurant.city,
     address: restaurant.address,
     phone: restaurant.phone,
@@ -359,6 +361,78 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
     async createMenu(input) {
       const menu = await db.menu.create({ data: input, include: { _count: { select: { categories: true, restaurants: true } } } })
       return toAdminMenu(menu)
+    },
+
+    async copyMenu(id) {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const source = await db.menu.findUnique({
+          where: { id },
+          include: {
+            categories: {
+              orderBy: { position: 'asc' },
+              include: {
+                items: {
+                  orderBy: { position: 'asc' },
+                  include: { allergens: { select: { allergenId: true } } },
+                },
+              },
+            },
+          },
+        })
+        if (!source) return null
+
+        const occupied = await db.menu.findMany({
+          where: { OR: [{ name: { startsWith: source.name.replace(/ — копия(?: \d+)?$/, '') } }, { slug: { startsWith: source.slug.replace(/-copy(?:-\d+)?$/, '') } }] },
+          select: { name: true, slug: true },
+        })
+        const identity = nextCopyIdentity({ name: source.name, slug: source.slug, occupiedNames: occupied.map((menu) => menu.name), occupiedSlugs: occupied.map((menu) => menu.slug) })
+
+        try {
+          const menu = await db.menu.create({
+            data: {
+              ...identity,
+              description: source.description,
+              categories: {
+                create: source.categories.map((category) => ({
+                  slug: category.slug,
+                  name: category.name,
+                  position: category.position,
+                  items: {
+                    create: category.items.map((item) => ({
+                      slug: item.slug,
+                      name: item.name,
+                      description: item.description,
+                      ingredients: item.ingredients,
+                      weightGrams: item.weightGrams,
+                      measurementUnit: item.measurementUnit,
+                      priceKopecks: item.priceKopecks,
+                      calories: item.calories,
+                      proteins: item.proteins,
+                      fats: item.fats,
+                      carbohydrates: item.carbohydrates,
+                      isVegetarian: item.isVegetarian,
+                      isSpicy: item.isSpicy,
+                      isLactoseFree: item.isLactoseFree,
+                      isGlutenFree: item.isGlutenFree,
+                      isLight: item.isLight,
+                      marketingBadge: item.marketingBadge,
+                      imageUrl: item.imageUrl,
+                      position: item.position,
+                      allergens: { create: item.allergens.map(({ allergenId }) => ({ allergenId })) },
+                    })),
+                  },
+                })),
+              },
+            },
+            include: { _count: { select: { categories: true, restaurants: true } } },
+          })
+          return toAdminMenu(menu)
+        } catch (error) {
+          if (isUniqueConstraintError(error) && attempt < 2) continue
+          throw error
+        }
+      }
+      throw new Error('Could not copy menu')
     },
 
     async updateMenu(id, input) {

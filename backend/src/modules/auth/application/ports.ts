@@ -13,7 +13,7 @@ export type AuthRepository = {
   findUserByEmail(email: string): Promise<AuthUserRecord | null>
   findUserById(id: string): Promise<AuthUserRecord | null>
   countUsers(): Promise<number>
-  createPasswordUser(input: RegisterPayload & { passwordHash: string; role: UserRole }): Promise<AuthUserRecord>
+  createPasswordUser(input: RegisterPayload & { passwordHash: string; roles: UserRole[] }): Promise<AuthUserRecord>
   createSession(input: {
     userId: string
     refreshTokenHash: string

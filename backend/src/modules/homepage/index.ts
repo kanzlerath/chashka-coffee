@@ -159,7 +159,8 @@ function dayPartInput(input: UpsertHomepageDayPartRequest) {
 export function createHomepageModule({ db, requireAuth, requireAdmin }: { db: DbClient; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireAdmin: MiddlewareHandler<AuthHttpEnv> }) {
   const routes = new OpenAPIHono({ defaultHook: validationErrorHook })
   const adminRoutes = new OpenAPIHono<AuthHttpEnv>({ defaultHook: validationErrorHook })
-  adminRoutes.use('*', requireAuth, requireAdmin)
+  adminRoutes.use('/homepage', requireAuth, requireAdmin)
+  adminRoutes.use('/homepage/*', requireAuth, requireAdmin)
 
   const publicHomepage = createRoute({ method: 'get', path: '/', responses: { 200: { content: { 'application/json': { schema: homepagePublicResponseSchema } }, description: 'Published homepage content' } } })
   const adminHomepage = createRoute({ method: 'get', path: '/homepage', responses: { 200: { content: { 'application/json': { schema: homepageAdminResponseSchema } }, description: 'Homepage editor data' } } })

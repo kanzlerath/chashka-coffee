@@ -15,7 +15,9 @@ import { createHomepageModule } from './modules/homepage'
 import { createProductsModule } from './modules/products'
 import { createManagedPagesModule } from './modules/managed-pages'
 import { createAnalyticsModule } from './modules/analytics'
+import { createWorkspaceModule } from './modules/workspace'
 import { createCustomerAccountModule, type PremiumBonusGateway } from './modules/customer-account'
+import { createOrdersModule } from './modules/orders'
 
 type CreateAppOptions = {
   env: AppEnv
@@ -25,16 +27,18 @@ type CreateAppOptions = {
 
 export function createApp({ env, prisma, premiumBonusGateway }: CreateAppOptions) {
   const auth = createAuthModule({ db: prisma, env })
-  const catalog = createCatalogModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
-  const content = createContentModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
-  const media = createMediaModule({ db: prisma, env, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
-  const leads = createLeadsModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
-  const jobs = createJobsModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
-  const homepage = createHomepageModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
-  const products = createProductsModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
-  const managedPages = createManagedPagesModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
-  const analytics = createAnalyticsModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requireAdmin })
+  const catalog = createCatalogModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('CATALOG_MANAGE') })
+  const content = createContentModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('CONTENT_MANAGE') })
+  const media = createMediaModule({ db: prisma, env, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('MEDIA_MANAGE') })
+  const leads = createLeadsModule({ db: prisma, requireAuth: auth.requireAuth, requireLeadAccess: auth.requireAnyPermission(['LEADS_MANAGE', 'JOB_APPLICATIONS_MANAGE']) })
+  const jobs = createJobsModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('JOBS_MANAGE') })
+  const homepage = createHomepageModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('CONTENT_MANAGE') })
+  const products = createProductsModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('CATALOG_MANAGE') })
+  const managedPages = createManagedPagesModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('CONTENT_MANAGE') })
+  const analytics = createAnalyticsModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('ANALYTICS_READ') })
+  const workspace = createWorkspaceModule({ db: prisma, requireAuth: auth.requireAuth })
   const customerAccount = createCustomerAccountModule({ db: prisma, env, gateway: premiumBonusGateway })
+  const orders = createOrdersModule({ db: prisma, env, requireAuth: auth.requireAuth, requireOrderAccess: auth.requirePermission('ORDERS_MANAGE'), resolveCustomerId: customerAccount.resolveCustomerId })
   const app = new OpenAPIHono<AuthHttpEnv>({
     defaultHook: validationErrorHook,
   })
@@ -68,6 +72,9 @@ export function createApp({ env, prisma, premiumBonusGateway }: CreateAppOptions
 
   app.route('/api/auth', auth.routes)
   app.route('/api/customer', customerAccount.routes)
+  app.route('/api/customer', orders.customerRoutes)
+  app.route('/api/store', orders.storeRoutes)
+  app.use('/api/admin/*', auth.requireAuth, workspace.auditMiddleware)
   app.route('/api/admin', auth.adminRoutes)
   app.route('/api/restaurants', catalog.routes)
   app.route('/api/content', content.routes)
@@ -86,6 +93,8 @@ export function createApp({ env, prisma, premiumBonusGateway }: CreateAppOptions
   app.route('/api/admin', products.adminRoutes)
   app.route('/api/admin', managedPages.adminRoutes)
   app.route('/api/admin', analytics.adminRoutes)
+  app.route('/api/admin', workspace.adminRoutes)
+  app.route('/api/admin', orders.adminRoutes)
 
   app.doc('/openapi.json', {
     openapi: '3.0.0',

@@ -26,7 +26,8 @@ const deleteRouteDefinition = createRoute({
 
 export function createAdminUserRoutes({ service, requireAuth, requireAdmin }: { service: AuthService; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireAdmin: MiddlewareHandler<AuthHttpEnv> }) {
   const routes = new OpenAPIHono<AuthHttpEnv>({ defaultHook: validationErrorHook })
-  routes.use('*', requireAuth, requireAdmin)
+  routes.use('/users', requireAuth, requireAdmin)
+  routes.use('/users/*', requireAuth, requireAdmin)
   routes.openapi(listRoute, async (c) => c.json({ users: await service.listUsers() }, 200))
   routes.openapi(createRouteDefinition, async (c) => c.json({ user: await executeAuth(() => service.createStaffUser(c.req.valid('json'))) }, 201))
   routes.openapi(updateRouteDefinition, async (c) => c.json({ user: await executeAuth(() => service.updateStaffUser(c.req.valid('param').id, c.req.valid('json'))) }, 200))

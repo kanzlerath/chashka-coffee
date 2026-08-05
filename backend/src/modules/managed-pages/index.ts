@@ -1,4 +1,5 @@
 import {
+  appChoiceSchema,
   coffeeTasteSchema,
   contentBlockListSchema,
   managedPageKeySchema,
@@ -24,6 +25,7 @@ type PageRecord = {
   heroDescription: string | null
   heroImageUrl: string | null
   coffeeTastes: unknown | null
+  appChoices: unknown | null
   blocks: unknown
   createdAt: Date
   updatedAt: Date
@@ -32,6 +34,7 @@ function dto(page: PageRecord): ManagedPage {
   return {
     ...page,
     coffeeTastes: page.coffeeTastes === null ? null : coffeeTasteSchema.array().parse(page.coffeeTastes),
+    appChoices: page.appChoices === null ? null : appChoiceSchema.array().parse(page.appChoices),
     blocks: contentBlockListSchema.parse(page.blocks),
     createdAt: page.createdAt.toISOString(),
     updatedAt: page.updatedAt.toISOString(),
@@ -41,7 +44,8 @@ function dto(page: PageRecord): ManagedPage {
 export function createManagedPagesModule({ db, requireAuth, requireAdmin }: { db: DbClient; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireAdmin: MiddlewareHandler<AuthHttpEnv> }) {
   const routes = new OpenAPIHono({ defaultHook: validationErrorHook })
   const adminRoutes = new OpenAPIHono<AuthHttpEnv>({ defaultHook: validationErrorHook })
-  adminRoutes.use('*', requireAuth, requireAdmin)
+  adminRoutes.use('/pages', requireAuth, requireAdmin)
+  adminRoutes.use('/pages/*', requireAuth, requireAdmin)
 
   const keyParams = z.object({ key: managedPageKeySchema })
   const publicDetail = createRoute({ method: 'get', path: '/{key}', request: { params: keyParams }, responses: { 200: { content: { 'application/json': { schema: managedPageResponseSchema } }, description: 'Managed page' }, 404: { description: 'Managed page not found' } } })
@@ -62,15 +66,17 @@ export function createManagedPagesModule({ db, requireAuth, requireAdmin }: { db
     const input = c.req.valid('json')
     if (input.key !== key) throw new AppError(400, 'VALIDATION_ERROR', 'Page key must match route key')
     const coffeeTastes = input.coffeeTastes === undefined ? undefined : input.coffeeTastes ?? Prisma.DbNull
+    const appChoices = input.appChoices === undefined ? undefined : input.appChoices ?? Prisma.DbNull
     const page = await db.managedPage.upsert({
       where: { key },
-      create: { ...input, coffeeTastes },
+      create: { ...input, coffeeTastes, appChoices },
       update: {
         title: input.title,
         heroTitle: input.heroTitle,
         heroDescription: input.heroDescription,
         heroImageUrl: input.heroImageUrl,
         coffeeTastes,
+        appChoices,
         blocks: input.blocks,
       },
     })

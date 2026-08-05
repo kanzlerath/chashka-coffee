@@ -1,15 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { managedPageKeySchema, managedPageListResponseSchema, managedPageResponseSchema, upsertManagedPageRequestSchema, type CoffeeTaste, type ManagedPage, type ManagedPageKey, type UpsertManagedPageRequest } from '@chashka-coffee/contracts'
+import { managedPageKeySchema, managedPageListResponseSchema, managedPageResponseSchema, upsertManagedPageRequestSchema, type AppChoice, type CoffeeTaste, type ManagedPage, type ManagedPageKey, type UpsertManagedPageRequest } from '@chashka-coffee/contracts'
 import { Link } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
 
-import { AdminField, AdminFormIntro, AdminPageHeader } from '@/components/admin'
+import { AdminDraftRecovery, AdminField, AdminFormIntro, AdminPageHeader } from '@/components/admin'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { BlockEditor } from '@/features/content-admin'
 import { useAuth } from '@/features/auth'
+import { useEditorDraft } from '@/hooks/use-editor-draft'
 
 const labels: Record<ManagedPageKey, string> = { HOME: 'Главная', COFFEE: 'Кофе', RESTAURANTS: 'Рестораны', DELIVERY: 'Доставка', APP: 'Приложение', LOYALTY: 'Лояльность', CERTIFICATES: 'Сертификаты', BAKERY: 'Кондитерская', FRANCHISE: 'Франшиза', JOBS: 'Вакансии', CONTACTS: 'Контакты', ABOUT: 'О нас', BANQUETS: 'Банкеты', PROMOTIONS: 'Акции' }
 
@@ -19,7 +19,7 @@ const heroDefaults: Partial<Record<ManagedPageKey, Pick<UpsertManagedPageRequest
   BAKERY: { heroTitle: 'Десерты\nс честным составом', heroDescription: 'Собираем торты и десерты вручную — из натуральных ингредиентов и заготовок собственного производства.', heroImageUrl: '/images/bakery-hero-v1.png' },
   DELIVERY: { heroTitle: 'Любимое\nприедет.', heroDescription: 'Для медленного утра, обеда между встречами или вечера, когда хочется остаться дома.', heroImageUrl: '/images/home-breakfast.png' },
   LOYALTY: { heroTitle: 'Любимое\nвозвращается', heroDescription: 'Показывайте электронную карту при каждом заказе — и часть стоимости вернётся бонусами на следующий визит.', heroImageUrl: '/images/home-morning-v2.png' },
-  APP: { heroTitle: 'Вся «Чашка»\nв вашем телефоне', heroDescription: 'Заказывайте и оплачивайте онлайн, копите бонусы, возвращайтесь к любимым блюдам и узнавайте о новом раньше всех.', heroImageUrl: '/brand/bento/App.svg' },
+  APP: { heroTitle: 'Вся «Чашка»\nв вашем телефоне', heroDescription: 'Заказывайте и оплачивайте онлайн, копите бонусы, возвращайтесь к любимым блюдам и узнавайте о новом раньше всех.', heroImageUrl: '/images/app/hero.webp' },
   CERTIFICATES: { heroTitle: 'Подарок,\nкоторый выбирают сами', heroDescription: 'Кофе утром, любимый десерт или долгий ужин — подарите повод прийти в «Чашку кофе» за своим моментом.', heroImageUrl: '/images/certificate-paper-a6.png' },
   FRANCHISE: { heroTitle: 'Открывайте\nместо, куда\nхочется вернуться', heroDescription: 'Не просто точку с кофе — живой ресторан с характером, понятной моделью и поддержкой на каждом шаге.', heroImageUrl: '/images/restaurants-hero.png' },
   JOBS: { heroTitle: 'Работа\nсо вкусом к людям', heroDescription: 'Ищем внимательных людей, которым важны гости, команда и хорошо сделанная работа.', heroImageUrl: '/images/home-hero-v1.png' },
@@ -36,6 +36,25 @@ const defaultCoffeeTastes: CoffeeTaste[] = [
   { title: 'Фундук', description: 'жареный орех и мягкое сливочное послевкусие', imageUrl: '/images/coffee-taste-hazelnut-v1.webp' },
 ]
 
+const defaultAppChoices: AppChoice[] = [
+  {
+    id: '018f8d94-1f4f-7000-8000-000000000101',
+    label: 'Заказать',
+    title: 'Выбрать ресторан и заказать',
+    description: 'Доставка или самовывоз, актуальное меню и ближайшая «Чашка» — всё начинается с одного экрана.',
+    imageUrl: '/images/app/order-screen.webp',
+    imageAlt: 'Главный экран приложения Чашка кофе с выбором доставки, самовывоза и ресторана',
+  },
+  {
+    id: '018f8d94-1f4f-7000-8000-000000000102',
+    label: 'Открыть карту',
+    title: 'Показать карту и получить бонусы',
+    description: 'QR-карта всегда под рукой: откройте её перед оплатой, чтобы копить и использовать бонусы.',
+    imageUrl: '/images/app/bonus-card.webp',
+    imageAlt: 'Экран бонусной QR-карты в приложении Чашка кофе',
+  },
+]
+
 function pageDraft(key: ManagedPageKey, page?: ManagedPage): UpsertManagedPageRequest {
   const hero = heroDefaults[key] ?? { heroTitle: null, heroDescription: null, heroImageUrl: null }
   return {
@@ -45,6 +64,7 @@ function pageDraft(key: ManagedPageKey, page?: ManagedPage): UpsertManagedPageRe
     heroDescription: page?.heroDescription ?? hero.heroDescription,
     heroImageUrl: page?.heroImageUrl ?? hero.heroImageUrl,
     coffeeTastes: key === 'COFFEE' ? page?.coffeeTastes ?? defaultCoffeeTastes : null,
+    appChoices: key === 'APP' ? page?.appChoices ?? defaultAppChoices : null,
     blocks: page?.blocks ?? [],
   }
 }
@@ -53,18 +73,14 @@ export function ManagedPagesPage({ mode = 'list', pageKey }: { mode?: 'list' | '
   const { api } = useAuth()
   const queryClient = useQueryClient()
   const parsedKey = pageKey ? managedPageKeySchema.safeParse(pageKey).data : undefined
-  const [draft, setDraft] = useState<UpsertManagedPageRequest>(() => pageDraft(parsedKey ?? 'ABOUT'))
   const pages = useQuery({ queryKey: ['admin', 'pages'], queryFn: () => api.request('/api/admin/pages', managedPageListResponseSchema) })
   const selected = parsedKey ? pages.data?.pages.find((item) => item.key === parsedKey) : undefined
-
-  useEffect(() => {
-    if (!parsedKey) return
-    setDraft(pageDraft(parsedKey, selected))
-  }, [parsedKey, selected])
+  const editor = useEditorDraft<UpsertManagedPageRequest>({ key: `page:${parsedKey ?? 'unknown'}`, initialValue: pageDraft(parsedKey ?? 'ABOUT', selected), sourceVersion: selected?.updatedAt ?? (parsedKey ? 'base' : 'loading'), enabled: mode === 'edit' && Boolean(parsedKey) })
+  const { draft, setDraft } = editor
 
   const save = useMutation({
     mutationFn: () => api.request(`/api/admin/pages/${parsedKey}`, managedPageResponseSchema, { method: 'PUT', body: upsertManagedPageRequestSchema.parse(draft) }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['admin', 'pages'] }),
+    onSuccess: ({ page }) => { const savedDraft = pageDraft(page.key, page); editor.markSaved(savedDraft); setDraft(savedDraft); void queryClient.invalidateQueries({ queryKey: ['admin', 'pages'] }) },
   })
 
   if (mode === 'list') return <section className="admin-page admin-content-workspace">
@@ -87,6 +103,7 @@ export function ManagedPagesPage({ mode = 'list', pageKey }: { mode?: 'list' | '
 
   return <section className="admin-page admin-content-workspace admin-page-editor">
     <AdminPageHeader eyebrow="Страницы" title={labels[parsedKey]} description="Изменяйте блоки сверху вниз — в том же порядке они появляются на сайте." actions={<Button asChild variant="outline"><Link to="/pages">К списку страниц</Link></Button>} />
+    {editor.recovery ? <AdminDraftRecovery savedAt={editor.recovery.savedAt} onRestore={editor.restore} onDiscard={editor.discardRecovery} /> : null}
     <Card className="admin-editor-surface"><CardHeader><CardTitle>Содержание страницы</CardTitle><CardDescription>Скрытые блоки сохраняются в редакторе, но не показываются посетителям.</CardDescription></CardHeader><CardContent>
       <form className="admin-form-stack" onSubmit={(event) => { event.preventDefault(); save.mutate() }}>
         <AdminFormIntro>Первый экран и смысловые блоки сохраняются отдельно: изменение текста не затрагивает композицию страницы.</AdminFormIntro>
@@ -98,11 +115,52 @@ export function ManagedPagesPage({ mode = 'list', pageKey }: { mode?: 'list' | '
           <AdminField label="Описание" required><Textarea required value={draft.heroDescription ?? ''} onChange={(event) => setDraft((current) => ({ ...current, heroDescription: event.target.value || null }))} /></AdminField>
         </section> : null}
         {parsedKey === 'COFFEE' ? <CoffeeTasteEditor tastes={draft.coffeeTastes ?? defaultCoffeeTastes} onChange={(coffeeTastes) => setDraft((current) => ({ ...current, coffeeTastes }))} /> : null}
+        {parsedKey === 'APP' ? <AppChoiceEditor choices={draft.appChoices ?? defaultAppChoices} onChange={(appChoices) => setDraft((current) => ({ ...current, appChoices }))} /> : null}
         <BlockEditor blocks={draft.blocks} onChange={(blocks) => setDraft((current) => ({ ...current, blocks }))} />
         {save.isError ? <p className="admin-state-message admin-state-error">Не удалось сохранить страницу. Проверьте обязательные поля блоков.</p> : null}
         <div className="admin-form-actions"><Button disabled={save.isPending} size="lg" type="submit">{save.isPending ? 'Сохраняем…' : 'Сохранить страницу'}</Button><Button asChild variant="outline"><Link to="/pages">Отмена</Link></Button></div>
       </form>
     </CardContent></Card>
+  </section>
+}
+
+function AppChoiceEditor({ choices, onChange }: { choices: AppChoice[]; onChange: (choices: AppChoice[]) => void }) {
+  const update = (index: number, next: AppChoice) => onChange(choices.map((choice, choiceIndex) => choiceIndex === index ? next : choice))
+  const move = (index: number, direction: -1 | 1) => {
+    const target = index + direction
+    if (target < 0 || target >= choices.length) return
+    const next = [...choices]
+    ;[next[index], next[target]] = [next[target], next[index]]
+    onChange(next)
+  }
+
+  return <section className="admin-form-subsection admin-form-stack">
+    <div><h3 className="admin-field-heading">Блок «Что сегодня важнее?»</h3><p className="admin-field-hint">Пункты переключаются слева направо. Для каждого задайте подпись вкладки, пояснение и экран приложения внутри телефона.</p></div>
+    <div className="admin-gallery-images">
+      {choices.map((choice, index) => <section className="admin-gallery-image" key={choice.id}>
+        <div className="admin-gallery-preview">{choice.imageUrl ? <img alt="" src={choice.imageUrl} /> : <span>Нет изображения</span>}<b>{index + 1}</b></div>
+        <div className="admin-gallery-image-fields">
+          <AdminField label="Название вкладки" required><Input required value={choice.label} onChange={(event) => update(index, { ...choice, label: event.target.value })} /></AdminField>
+          <AdminField label="Заголовок" required><Input required value={choice.title} onChange={(event) => update(index, { ...choice, title: event.target.value })} /></AdminField>
+          <AdminField label="Описание" required><Textarea required value={choice.description} onChange={(event) => update(index, { ...choice, description: event.target.value })} /></AdminField>
+          <AdminField label="Скриншот" required hint="Ссылка из медиатеки вида /images/… или полный адрес https://…"><Input required value={choice.imageUrl} onChange={(event) => update(index, { ...choice, imageUrl: event.target.value })} /></AdminField>
+          <AdminField label="Описание изображения" required hint="Коротко опишите, что видно на экране"><Input required value={choice.imageAlt} onChange={(event) => update(index, { ...choice, imageAlt: event.target.value })} /></AdminField>
+        </div>
+        <div className="admin-gallery-image-actions">
+          <Button aria-label="Переместить пункт выше" disabled={index === 0} size="sm" type="button" variant="ghost" onClick={() => move(index, -1)}>↑</Button>
+          <Button aria-label="Переместить пункт ниже" disabled={index === choices.length - 1} size="sm" type="button" variant="ghost" onClick={() => move(index, 1)}>↓</Button>
+          <Button disabled={choices.length === 1} size="sm" type="button" variant="ghost" onClick={() => onChange(choices.filter((_, choiceIndex) => choiceIndex !== index))}>Удалить</Button>
+        </div>
+      </section>)}
+    </div>
+    <Button disabled={choices.length >= 6} type="button" variant="outline" onClick={() => onChange([...choices, {
+      id: crypto.randomUUID(),
+      label: 'Новый пункт',
+      title: 'Заголовок сценария',
+      description: 'Коротко объясните, что пользователь может сделать на этом экране.',
+      imageUrl: '/images/app/order-screen.webp',
+      imageAlt: 'Экран приложения Чашка кофе',
+    }])}>Добавить пункт</Button>
   </section>
 }
 

@@ -117,6 +117,7 @@ export const adminRestaurantSchema = z.object({
   format: restaurantFormatSchema,
   area: restaurantAreaSchema,
   isAtApartHotel: z.boolean(),
+  coffeePickupEnabled: z.boolean(),
   city: z.string().trim().min(1).max(100),
   address: z.string().trim().min(1).max(300),
   phone: z.string().trim().min(1).max(40),

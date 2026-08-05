@@ -15,7 +15,8 @@ const errorSchema = z.object({ error: z.object({ code: z.string(), message: z.st
 
 export function createMediaModule({ db, env, requireAuth, requireAdmin }: { db: DbClient; env: AppEnv; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireAdmin: MiddlewareHandler<AuthHttpEnv> }) {
   const routes = new OpenAPIHono<AuthHttpEnv>({ defaultHook: validationErrorHook })
-  routes.use('*', requireAuth, requireAdmin)
+  routes.use('/media', requireAuth, requireAdmin)
+  routes.use('/media/*', requireAuth, requireAdmin)
   const list = createRoute({ method: 'get', path: '/media', responses: { 200: { content: { 'application/json': { schema: mediaAssetListResponseSchema } }, description: 'Ready media assets' } } })
   const upload = createRoute({ method: 'post', path: '/media/uploads', request: { body: { content: { 'application/json': { schema: createMediaUploadRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: mediaUploadResponseSchema } }, description: 'Presigned public image upload' } } })
   const confirm = createRoute({ method: 'post', path: '/media/{id}/confirm', request: { params: idParams }, responses: { 200: { content: { 'application/json': { schema: mediaAssetResponseSchema } }, description: 'Media asset confirmed' }, 404: { content: { 'application/json': { schema: errorSchema } }, description: 'Media asset not found' } } })

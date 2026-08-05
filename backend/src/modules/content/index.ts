@@ -20,14 +20,15 @@ const idParams = z.object({ id: z.uuid() })
 const errorSchema = z.object({ error: z.object({ code: z.string(), message: z.string() }) })
 const errorContent = { 'application/json': { schema: errorSchema } }
 
-function dto(entry: { id: string; type: 'PROMOTION' | 'EVENT' | 'ARTICLE'; status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'; slug: string; title: string; excerpt: string | null; body: string | null; blocks: unknown; imageUrl: string | null; ctaLabel: string | null; ctaUrl: string | null; startsAt: Date | null; endsAt: Date | null; eventStartsAt: Date | null; location: string | null; priceKopecks: number | null; registrationEnabled: boolean; isFeatured: boolean; position: number; createdAt: Date; updatedAt: Date }): ContentEntry {
-  return { ...entry, blocks: contentBlockListSchema.parse(entry.blocks), startsAt: entry.startsAt?.toISOString() ?? null, endsAt: entry.endsAt?.toISOString() ?? null, eventStartsAt: entry.eventStartsAt?.toISOString() ?? null, createdAt: entry.createdAt.toISOString(), updatedAt: entry.updatedAt.toISOString() }
+function dto(entry: { id: string; type: 'PROMOTION' | 'EVENT' | 'ARTICLE'; status: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED'; slug: string; title: string; excerpt: string | null; body: string | null; blocks: unknown; imageUrl: string | null; ctaLabel: string | null; ctaUrl: string | null; startsAt: Date | null; endsAt: Date | null; publishAt: Date | null; eventStartsAt: Date | null; location: string | null; priceKopecks: number | null; registrationEnabled: boolean; isFeatured: boolean; position: number; createdAt: Date; updatedAt: Date }): ContentEntry {
+  return { ...entry, blocks: contentBlockListSchema.parse(entry.blocks), startsAt: entry.startsAt?.toISOString() ?? null, endsAt: entry.endsAt?.toISOString() ?? null, publishAt: entry.publishAt?.toISOString() ?? null, eventStartsAt: entry.eventStartsAt?.toISOString() ?? null, createdAt: entry.createdAt.toISOString(), updatedAt: entry.updatedAt.toISOString() }
 }
 
 export function createContentModule({ db, requireAuth, requireAdmin }: { db: DbClient; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireAdmin: MiddlewareHandler<AuthHttpEnv> }) {
   const routes = new OpenAPIHono({ defaultHook: validationErrorHook })
   const adminRoutes = new OpenAPIHono<AuthHttpEnv>({ defaultHook: validationErrorHook })
-  adminRoutes.use('*', requireAuth, requireAdmin)
+  adminRoutes.use('/content', requireAuth, requireAdmin)
+  adminRoutes.use('/content/*', requireAuth, requireAdmin)
   const list = createRoute({ method: 'get', path: '/content', request: { query: z.object({ type: contentEntryTypeSchema.optional() }) }, responses: { 200: { content: { 'application/json': { schema: contentEntryListResponseSchema } }, description: 'Content entries' } } })
   const create = createRoute({ method: 'post', path: '/content', request: { body: { content: { 'application/json': { schema: upsertContentEntryRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: contentEntryResponseSchema } }, description: 'Content entry created' } } })
   const update = createRoute({ method: 'put', path: '/content/{id}', request: { params: idParams, body: { content: { 'application/json': { schema: upsertContentEntryRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: contentEntryResponseSchema } }, description: 'Content entry updated' }, 404: { content: errorContent, description: 'Content entry not found' } } })
@@ -37,12 +38,12 @@ export function createContentModule({ db, requireAuth, requireAdmin }: { db: DbC
 
   routes.openapi(publicList, async (c) => {
     const now = new Date()
-    const entries = await db.contentEntry.findMany({ where: { type: c.req.valid('query').type, status: 'PUBLISHED', AND: [{ OR: [{ startsAt: null }, { startsAt: { lte: now } }] }, { OR: [{ endsAt: null }, { endsAt: { gte: now } }] }] }, orderBy: [{ isFeatured: 'desc' }, { position: 'asc' }, { eventStartsAt: 'asc' }] })
+    const entries = await db.contentEntry.findMany({ where: { type: c.req.valid('query').type, OR: [{ status: 'PUBLISHED' }, { status: 'SCHEDULED', publishAt: { lte: now } }], AND: [{ OR: [{ startsAt: null }, { startsAt: { lte: now } }] }, { OR: [{ endsAt: null }, { endsAt: { gte: now } }] }] }, orderBy: [{ isFeatured: 'desc' }, { position: 'asc' }, { eventStartsAt: 'asc' }] })
     return c.json({ entries: entries.map(dto) }, 200)
   })
   routes.openapi(publicDetail, async (c) => {
     const now = new Date()
-    const entry = await db.contentEntry.findFirst({ where: { slug: c.req.valid('param').slug, status: 'PUBLISHED', AND: [{ OR: [{ startsAt: null }, { startsAt: { lte: now } }] }, { OR: [{ endsAt: null }, { endsAt: { gte: now } }] }] } })
+    const entry = await db.contentEntry.findFirst({ where: { slug: c.req.valid('param').slug, OR: [{ status: 'PUBLISHED' }, { status: 'SCHEDULED', publishAt: { lte: now } }], AND: [{ OR: [{ startsAt: null }, { startsAt: { lte: now } }] }, { OR: [{ endsAt: null }, { endsAt: { gte: now } }] }] } })
     if (!entry) throw new AppError(404, 'NOT_FOUND', 'Content entry not found')
     return c.json({ entry: dto(entry) }, 200)
   })
@@ -73,5 +74,5 @@ export function createContentModule({ db, requireAuth, requireAdmin }: { db: DbC
 }
 
 function dates(input: UpsertContentEntryRequest) {
-  return { ...input, startsAt: input.startsAt ? new Date(input.startsAt) : null, endsAt: input.endsAt ? new Date(input.endsAt) : null, eventStartsAt: input.eventStartsAt ? new Date(input.eventStartsAt) : null }
+  return { ...input, startsAt: input.startsAt ? new Date(input.startsAt) : null, endsAt: input.endsAt ? new Date(input.endsAt) : null, publishAt: input.publishAt ? new Date(input.publishAt) : null, eventStartsAt: input.eventStartsAt ? new Date(input.eventStartsAt) : null }
 }

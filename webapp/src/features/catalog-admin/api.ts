@@ -59,6 +59,7 @@ export class CatalogAdminApi {
   listMenus() { return this.auth.request('/api/admin/menus', adminMenuListResponseSchema) }
   getMenu(id: string) { return this.auth.request(`/api/admin/menus/${id}/detail`, adminMenuDetailResponseSchema) }
   createMenu(input: UpsertMenuRequest) { return this.auth.request('/api/admin/menus', adminMenuResponseSchema, { method: 'POST', body: upsertMenuRequestSchema.parse(input) }) }
+  copyMenu(id: string) { return this.auth.request(`/api/admin/menus/${id}/copy`, adminMenuResponseSchema, { method: 'POST' }) }
   deleteMenu(id: string) { return this.auth.request(`/api/admin/menus/${id}`, operationSuccessResponseSchema, { method: 'DELETE' }) }
   createCategory(menuId: string, input: UpsertMenuCategoryRequest) { return this.auth.request(`/api/admin/menus/${menuId}/categories`, createdIdResponseSchema, { method: 'POST', body: upsertMenuCategoryRequestSchema.parse(input) }) }
   deleteCategory(id: string) { return this.auth.request(`/api/admin/categories/${id}`, operationSuccessResponseSchema, { method: 'DELETE' }) }
