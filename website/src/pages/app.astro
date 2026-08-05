@@ -110,7 +110,8 @@ const appChoices = page?.appChoices ?? defaultAppChoices
     let animationFrame = 0
     let previousFrame = 0
     let launched = false
-    let lastPointer: { x: number; y: number } | undefined
+    let isVisible = false
+    let lastScrollY = window.scrollY
 
     const measure = () => states.forEach((state) => {
       state.baseX = state.element.offsetLeft
@@ -119,6 +120,50 @@ const appChoices = page?.appChoices ?? defaultAppChoices
     const render = () => states.forEach((state) => {
       state.element.style.transform = `translate3d(${state.x}px, ${state.y}px, 0) rotate(${state.rotation})`
     })
+    const keepInBounds = (state: typeof states[number], width: number, height: number) => {
+      const minX = -state.baseX
+      const maxX = width - state.element.offsetWidth - state.baseX
+      const floor = height - state.element.offsetHeight - state.baseY
+
+      if (state.x < minX || state.x > maxX) {
+        state.x = Math.min(Math.max(state.x, minX), maxX)
+        state.vx *= -.46
+      }
+      if (state.y > floor) {
+        state.y = floor
+        state.vy = Math.abs(state.vy) > 24 ? state.vy * -.3 : 0
+        state.vx *= .86
+      }
+    }
+    const separateCollisions = (width: number, height: number) => {
+      for (let pass = 0; pass < 2; pass += 1) states.forEach((state, index) => {
+        states.slice(index + 1).forEach((other) => {
+          const left = state.baseX + state.x
+          const top = state.baseY + state.y
+          const otherLeft = other.baseX + other.x
+          const otherTop = other.baseY + other.y
+          const overlapX = Math.min(left + state.element.offsetWidth, otherLeft + other.element.offsetWidth) - Math.max(left, otherLeft)
+          const overlapY = Math.min(top + state.element.offsetHeight, otherTop + other.element.offsetHeight) - Math.max(top, otherTop)
+
+          if (overlapX <= 0 || overlapY <= 0) return
+          if (overlapX < overlapY) {
+            const direction = left + state.element.offsetWidth / 2 < otherLeft + other.element.offsetWidth / 2 ? -1 : 1
+            state.x += direction * overlapX / 2
+            other.x -= direction * overlapX / 2
+            state.vx += direction * 8
+            other.vx -= direction * 8
+          } else {
+            const direction = top + state.element.offsetHeight / 2 < otherTop + other.element.offsetHeight / 2 ? -1 : 1
+            state.y += direction * overlapY / 2
+            other.y -= direction * overlapY / 2
+            state.vy += direction * 7
+            other.vy -= direction * 7
+          }
+          keepInBounds(state, width, height)
+          keepInBounds(other, width, height)
+        })
+      })
+    }
     const tick = (now: number) => {
       const delta = Math.min((now - previousFrame) / 1000 || 0, .032)
       const width = field.clientWidth
@@ -129,18 +174,10 @@ const appChoices = page?.appChoices ?? defaultAppChoices
         state.vy += 760 * delta
         state.x += state.vx * delta
         state.y += state.vy * delta
-        const maxX = width - state.element.offsetWidth - state.baseX
-        const floor = height - state.element.offsetHeight - state.baseY
-
-        if (state.x < -state.baseX || state.x > maxX) {
-          state.x = Math.min(Math.max(state.x, -state.baseX), maxX)
-          state.vx *= -.46
-        }
-        if (state.y > floor) {
-          state.y = floor
-          state.vy = Math.abs(state.vy) > 24 ? state.vy * -.3 : 0
-          state.vx *= .86
-        }
+        keepInBounds(state, width, height)
+      })
+      separateCollisions(width, height)
+      states.forEach((state) => {
         if (Math.abs(state.vx) + Math.abs(state.vy) > 2) isMoving = true
       })
 
@@ -163,39 +200,23 @@ const appChoices = page?.appChoices ?? defaultAppChoices
       })
       start()
     }
-    const disturb = (event: PointerEvent) => {
-      launch()
-      const bounds = field.getBoundingClientRect()
-      const pointerX = event.clientX - bounds.left
-      const pointerY = event.clientY - bounds.top
-      const deltaX = pointerX - (lastPointer?.x ?? pointerX)
-      const deltaY = pointerY - (lastPointer?.y ?? pointerY)
-
-      states.forEach((state, index) => {
-        const centerX = state.baseX + state.x + state.element.offsetWidth / 2
-        const centerY = state.baseY + state.y + state.element.offsetHeight / 2
-        const distanceX = centerX - pointerX
-        const distanceY = centerY - pointerY
-        const distance = Math.hypot(distanceX, distanceY) || 1
-        const force = Math.max(0, 1 - distance / 170)
-        state.vx += deltaX * .58 + (distanceX / distance) * force * 125 + (index - 2) * 2
-        state.vy += deltaY * .23 + (distanceY / distance) * force * 85 - force * 78
-      })
-
-      lastPointer = { x: pointerX, y: pointerY }
-      start()
-    }
-
     const observer = new IntersectionObserver((entries) => {
-      if (!entries.some((entry) => entry.isIntersecting)) return
-      launch()
-      observer.disconnect()
+      isVisible = entries.some((entry) => entry.isIntersecting)
+      if (isVisible) launch()
     }, { threshold: .35 })
     observer.observe(field)
-    field.addEventListener('pointerdown', disturb)
-    field.addEventListener('pointermove', disturb)
-    field.addEventListener('pointerleave', () => { lastPointer = undefined })
-    field.addEventListener('pointerup', () => { lastPointer = undefined })
+    window.addEventListener('scroll', () => {
+      const scrollDelta = window.scrollY - lastScrollY
+      lastScrollY = window.scrollY
+      if (!isVisible || Math.abs(scrollDelta) < 1) return
+
+      launch()
+      states.forEach((state, index) => {
+        state.vx += Math.max(-75, Math.min(75, scrollDelta * .12)) + (index - 2.5) * 5
+        state.vy -= Math.min(165, Math.abs(scrollDelta) * .35) + index * 4
+      })
+      start()
+    }, { passive: true })
   })
 </script>
 
