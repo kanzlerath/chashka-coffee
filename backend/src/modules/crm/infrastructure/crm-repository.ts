@@ -50,6 +50,7 @@ export class CrmRepository {
         leads: { orderBy: { createdAt: 'desc' } },
         notes: { include: { author: { select: { id: true, displayName: true, email: true } } }, orderBy: { createdAt: 'desc' } },
         consents: { orderBy: { channel: 'asc' } },
+        pushSubscriptions: { where: { isActive: true, revokedAt: null }, select: { id: true } },
       },
     })
     if (!customer) return null
@@ -67,6 +68,7 @@ export class CrmRepository {
         withdrawnAt: consent.withdrawnAt?.toISOString() ?? null,
         updatedAt: consent.updatedAt.toISOString(),
       })),
+      activePushSubscriptions: customer.pushSubscriptions.length,
     }
   }
 

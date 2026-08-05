@@ -114,6 +114,32 @@ enum ConsentStatus {
   WITHDRAWN
 }
 
+enum PushProvider {
+  WEB_PUSH
+  EXPO
+}
+
+enum PushPlatform {
+  WEB
+  IOS
+  ANDROID
+}
+
+enum NotificationCampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum NotificationDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
 enum ManagedPageKey {
   HOME
   COFFEE
@@ -143,17 +169,18 @@ enum MediaAssetStatus {
 }
 
 model User {
-  id            String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  email         String            @unique
-  passwordHash  String            @map("password_hash")
-  displayName   String?           @map("display_name")
-  role          UserRole          @default(EDITOR)
-  roles         UserRole[]        @default([])
-  createdAt     DateTime          @default(now()) @map("created_at")
-  updatedAt     DateTime          @updatedAt @map("updated_at")
-  sessions      AuthSession[]
-  auditEvents   AdminAuditEvent[]
-  customerNotes CustomerNote[]
+  id                    String                 @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  email                 String                 @unique
+  passwordHash          String                 @map("password_hash")
+  displayName           String?                @map("display_name")
+  role                  UserRole               @default(EDITOR)
+  roles                 UserRole[]             @default([])
+  createdAt             DateTime               @default(now()) @map("created_at")
+  updatedAt             DateTime               @updatedAt @map("updated_at")
+  sessions              AuthSession[]
+  auditEvents           AdminAuditEvent[]
+  customerNotes         CustomerNote[]
+  notificationCampaigns NotificationCampaign[]
 
   @@map("users")
 }
@@ -439,19 +466,21 @@ model Lead {
 }
 
 model Customer {
-  id        String                  @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  name      String                  @db.VarChar(180)
-  phone     String                  @unique @db.VarChar(20)
-  email     String?                 @db.VarChar(320)
-  status    CustomerStatus          @default(ACTIVE)
-  createdAt DateTime                @default(now()) @map("created_at")
-  updatedAt DateTime                @updatedAt @map("updated_at")
-  account   CustomerAccount?
-  orders    Order[]
-  leads     Lead[]
-  notes     CustomerNote[]
-  tags      CustomerTagAssignment[]
-  consents  CustomerConsent[]
+  id                     String                     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name                   String                     @db.VarChar(180)
+  phone                  String                     @unique @db.VarChar(20)
+  email                  String?                    @db.VarChar(320)
+  status                 CustomerStatus             @default(ACTIVE)
+  createdAt              DateTime                   @default(now()) @map("created_at")
+  updatedAt              DateTime                   @updatedAt @map("updated_at")
+  account                CustomerAccount?
+  orders                 Order[]
+  leads                  Lead[]
+  notes                  CustomerNote[]
+  tags                   CustomerTagAssignment[]
+  consents               CustomerConsent[]
+  pushSubscriptions      CustomerPushSubscription[]
+  notificationDeliveries NotificationDelivery[]
 
   @@index([createdAt], map: "customers_created_at_idx")
   @@index([updatedAt], map: "customers_updated_at_idx")
@@ -510,6 +539,70 @@ model CustomerConsent {
   @@unique([customerId, channel], map: "customer_consents_customer_channel_key")
   @@index([channel, status], map: "customer_consents_channel_status_idx")
   @@map("customer_consents")
+}
+
+model CustomerPushSubscription {
+  id         String                 @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  customerId String                 @map("customer_id") @db.Uuid
+  provider   PushProvider
+  platform   PushPlatform
+  endpoint   String                 @unique
+  p256dh     String?
+  authSecret String?                @map("auth_secret")
+  isActive   Boolean                @default(true) @map("is_active")
+  lastSeenAt DateTime               @default(now()) @map("last_seen_at")
+  revokedAt  DateTime?              @map("revoked_at")
+  createdAt  DateTime               @default(now()) @map("created_at")
+  updatedAt  DateTime               @updatedAt @map("updated_at")
+  customer   Customer               @relation(fields: [customerId], references: [id], onDelete: Cascade, map: "customer_push_subscriptions_customer_id_fkey")
+  deliveries NotificationDelivery[]
+
+  @@index([customerId, isActive], map: "customer_push_subscriptions_customer_active_idx")
+  @@map("customer_push_subscriptions")
+}
+
+model NotificationCampaign {
+  id          String                     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  createdById String?                    @map("created_by_id") @db.Uuid
+  name        String                     @db.VarChar(180)
+  channel     CommunicationChannel       @default(PUSH)
+  status      NotificationCampaignStatus @default(DRAFT)
+  audience    Json                       @default("{}")
+  title       String                     @db.VarChar(120)
+  body        String                     @db.VarChar(500)
+  deeplink    String?                    @db.VarChar(500)
+  scheduledAt DateTime?                  @map("scheduled_at")
+  startedAt   DateTime?                  @map("started_at")
+  completedAt DateTime?                  @map("completed_at")
+  createdAt   DateTime                   @default(now()) @map("created_at")
+  updatedAt   DateTime                   @updatedAt @map("updated_at")
+  createdBy   User?                      @relation(fields: [createdById], references: [id], onDelete: SetNull, map: "notification_campaigns_created_by_id_fkey")
+  deliveries  NotificationDelivery[]
+
+  @@index([status, scheduledAt], map: "notification_campaigns_status_scheduled_idx")
+  @@map("notification_campaigns")
+}
+
+model NotificationDelivery {
+  id                 String                     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  campaignId         String                     @map("campaign_id") @db.Uuid
+  customerId         String                     @map("customer_id") @db.Uuid
+  pushSubscriptionId String?                    @map("push_subscription_id") @db.Uuid
+  status             NotificationDeliveryStatus @default(PENDING)
+  providerMessageId  String?                    @map("provider_message_id") @db.VarChar(240)
+  errorCode          String?                    @map("error_code") @db.VarChar(120)
+  errorMessage       String?                    @map("error_message") @db.VarChar(500)
+  sentAt             DateTime?                  @map("sent_at")
+  createdAt          DateTime                   @default(now()) @map("created_at")
+  updatedAt          DateTime                   @updatedAt @map("updated_at")
+  campaign           NotificationCampaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade, map: "notification_deliveries_campaign_id_fkey")
+  customer           Customer                   @relation(fields: [customerId], references: [id], onDelete: Cascade, map: "notification_deliveries_customer_id_fkey")
+  pushSubscription   CustomerPushSubscription?  @relation(fields: [pushSubscriptionId], references: [id], onDelete: SetNull, map: "notification_deliveries_push_subscription_id_fkey")
+
+  @@index([campaignId, status], map: "notification_deliveries_campaign_status_idx")
+  @@index([customerId, createdAt], map: "notification_deliveries_customer_created_idx")
+  @@index([pushSubscriptionId], map: "notification_deliveries_subscription_idx")
+  @@map("notification_deliveries")
 }
 
 model JobOpening {

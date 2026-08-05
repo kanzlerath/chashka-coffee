@@ -162,6 +162,15 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
 
       <aside className="grid content-start gap-7">
         <section>
+          <SectionTitle title="Коммуникации" note="Готовность к отправке" />
+          <div className="grid gap-2 border-t pt-3">
+            <CommunicationRow label="Push" enabled={data.consents.some((consent) => consent.channel === 'PUSH' && consent.status === 'GRANTED')} detail={data.activePushSubscriptions ? `${data.activePushSubscriptions} активн. устройств` : 'Нет зарегистрированных устройств'} />
+            <CommunicationRow label="E-mail" enabled={data.consents.some((consent) => consent.channel === 'EMAIL' && consent.status === 'GRANTED')} detail={data.email ?? 'E-mail не указан'} />
+            <CommunicationRow label="SMS" enabled={data.consents.some((consent) => consent.channel === 'SMS' && consent.status === 'GRANTED')} detail={formatPhone(data.phone)} />
+          </div>
+        </section>
+
+        <section>
           <SectionTitle title="Теги" note="Ручные признаки клиента" />
           <div className="grid gap-2 border-t pt-3">
             {tags.data?.tags.map((tag) => <label className="flex cursor-pointer items-center justify-between gap-3 py-1 text-sm" key={tag.id}><span className="flex items-center gap-2"><Checkbox checked={selectedTags.includes(tag.id)} onCheckedChange={(checked) => { const next = checked ? [...selectedTags, tag.id] : selectedTags.filter((id) => id !== tag.id); setSelectedTags(next); saveTags.mutate(next) }} /><Tag name={tag.name} color={tag.color} /></span></label>)}
@@ -187,6 +196,7 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
 function SummaryCell({ label, value }: { label: string; value: string | number | undefined }) { return <div className="bg-background px-5 py-4"><strong className="block text-xl tracking-tight">{value ?? '—'}</strong><span className="mt-1 block text-xs text-muted-foreground">{label}</span></div> }
 function MetricValue({ value, label }: { value: string; label: string }) { return <span><strong className="block text-sm">{value}</strong><small className="text-xs text-muted-foreground">{label}</small></span> }
 function SectionTitle({ title, note }: { title: string; note: string }) { return <div className="mb-3 flex items-baseline justify-between gap-4"><h2 className="text-sm font-semibold">{title}</h2><span className="text-xs text-muted-foreground">{note}</span></div> }
+function CommunicationRow({ label, enabled, detail }: { label: string; enabled: boolean; detail: string }) { return <div className="flex items-center justify-between gap-4 py-1"><span><strong className="block text-sm">{label}</strong><small className="text-xs text-muted-foreground">{detail}</small></span><Badge variant={enabled ? 'secondary' : 'outline'}>{enabled ? 'Согласие есть' : 'Нет согласия'}</Badge></div> }
 function Tag({ name, color }: { name: string; color: string | null }) { return <Badge variant="outline" style={color ? { borderColor: color, color } : undefined}>{name}</Badge> }
 
 function OrderTimelineRow({ order }: { order: CrmCustomerDetail['orders'][number] }) { return <div className="grid gap-3 border-b py-4 sm:grid-cols-[110px_1fr_auto]"><time className="text-xs text-muted-foreground">{shortDateTime(order.createdAt)}</time><span><strong className="block text-sm">Заказ {order.publicNumber}</strong><small className="text-xs text-muted-foreground">{order.items.map((item) => `${item.productName} · ${item.quantity}`).join(', ')}<br />{order.pickupLocation.name}</small></span><span className="text-right"><strong className="block text-sm">{money(order.totalKopecks)}</strong><small className="text-xs text-muted-foreground">{order.paymentStatus === 'PAID' ? 'Оплачен' : 'Не оплачен'}</small></span></div> }

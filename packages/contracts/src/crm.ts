@@ -83,6 +83,7 @@ export const crmCustomerDetailSchema = crmCustomerSummarySchema.extend({
   leads: z.array(leadSchema),
   notes: z.array(crmCustomerNoteSchema),
   consents: z.array(crmCustomerConsentSchema),
+  activePushSubscriptions: z.number().int().nonnegative(),
 })
 export type CrmCustomerDetail = z.infer<typeof crmCustomerDetailSchema>
 

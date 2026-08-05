@@ -21,6 +21,9 @@ maybeDescribe('CRM API integration', () => {
 
   beforeEach(async () => {
     await prisma.adminAuditEvent.deleteMany()
+    await prisma.notificationDelivery.deleteMany()
+    await prisma.notificationCampaign.deleteMany()
+    await prisma.customerPushSubscription.deleteMany()
     await prisma.customerConsent.deleteMany()
     await prisma.customerNote.deleteMany()
     await prisma.customerTagAssignment.deleteMany()
@@ -39,6 +42,8 @@ maybeDescribe('CRM API integration', () => {
   test('lists, segments and manages an online customer with business analytics', async () => {
     const adminHeaders = await login('crm-admin@example.com', ['SUPER_ADMIN'])
     const customer = await prisma.customer.create({ data: { name: 'Анна', phone: '79131234567', email: 'anna@example.com' } })
+    await prisma.customerConsent.create({ data: { customerId: customer.id, channel: 'PUSH', status: 'GRANTED', source: 'website_checkout', grantedAt: new Date() } })
+    await prisma.customerPushSubscription.create({ data: { customerId: customer.id, provider: 'WEB_PUSH', platform: 'WEB', endpoint: 'https://push.example/subscription-1', p256dh: 'public-key', authSecret: 'auth-secret' } })
     await prisma.order.create({ data: orderData(customer.id, 'CRM-100001', 60_000, new Date('2026-08-01T10:00:00.000Z')) })
     await prisma.order.create({ data: orderData(customer.id, 'CRM-100002', 90_000, new Date('2026-08-03T10:00:00.000Z')) })
     await prisma.lead.create({ data: { type: 'CONTACT', name: 'Анна', phone: customer.phone, message: 'Вопрос по помолу', crmCustomerId: customer.id } })
@@ -66,6 +71,8 @@ maybeDescribe('CRM API integration', () => {
     expect(detailBody.customer.orders).toHaveLength(2)
     expect(detailBody.customer.leads).toHaveLength(1)
     expect(detailBody.customer.notes).toHaveLength(1)
+    expect(detailBody.customer.activePushSubscriptions).toBe(1)
+    expect(detailBody.customer.consents).toEqual([expect.objectContaining({ channel: 'PUSH', status: 'GRANTED' })])
 
     const analytics = await app.request('/api/admin/crm-analytics?days=30', { headers: adminHeaders })
     expect(analytics.status).toBe(200)
