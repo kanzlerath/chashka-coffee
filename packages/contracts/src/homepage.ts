@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { menuItemMeasurementUnitSchema } from './catalog'
+import { dietaryMarkSchema, menuItemMeasurementUnitSchema } from './catalog'
 
 const uuid = z.uuid()
 const nullableText = (max: number) => z.string().trim().max(max).nullable()
@@ -35,9 +35,16 @@ export const homepageBestsellerMenuItemSchema = z.object({
   slug: z.string().trim().min(1).max(120),
   name: z.string().trim().min(1).max(180),
   description: nullableText(1_000),
+  ingredients: nullableText(2_000),
   weightGrams: z.number().int().positive().nullable(),
   measurementUnit: menuItemMeasurementUnitSchema,
   priceKopecks: z.number().int().nonnegative(),
+  calories: z.number().int().nonnegative().nullable(),
+  proteins: z.number().nonnegative().nullable(),
+  fats: z.number().nonnegative().nullable(),
+  carbohydrates: z.number().nonnegative().nullable(),
+  allergens: z.array(z.string().trim().min(1).max(80)).max(20),
+  dietaryMarks: z.array(dietaryMarkSchema).max(5),
   imageUrl: nullablePublicUrl,
   marketingBadge: z.enum(['NEW', 'HIT', 'SEASONAL', 'SPECIAL']).nullable(),
   categoryName: z.string().trim().min(1).max(100),

@@ -37,13 +37,29 @@ type MenuItemWithCategory = {
   slug: string
   name: string
   description: string | null
+  ingredients: string | null
   weightGrams: number | null
   measurementUnit: 'GRAM' | 'MILLILITER' | 'PIECE'
   priceKopecks: number
+  calories: number | null
+  proteins: number | { toString(): string } | null
+  fats: number | { toString(): string } | null
+  carbohydrates: number | { toString(): string } | null
+  isVegetarian: boolean
+  isSpicy: boolean
+  isLactoseFree: boolean
+  isGlutenFree: boolean
+  isLight: boolean
   imageUrl: string | null
   marketingBadge: 'NEW' | 'HIT' | 'SEASONAL' | 'SPECIAL' | null
   category: { name: string }
+  allergens: Array<{ allergen: { name: string } }>
 }
+
+const bestsellerMenuItemInclude = {
+  category: true,
+  allergens: { include: { allergen: true } },
+} as const
 
 type HomepageBestsellerWithItem = {
   id: string
@@ -80,7 +96,32 @@ type HomepageDaySectionRecord = {
 }
 
 function menuItemDto(item: MenuItemWithCategory): HomepageBestsellerMenuItem {
-  return { id: item.id, slug: item.slug, name: item.name, description: item.description, weightGrams: item.weightGrams, measurementUnit: item.measurementUnit, priceKopecks: item.priceKopecks, imageUrl: item.imageUrl, marketingBadge: item.marketingBadge, categoryName: item.category.name }
+  const dietaryMarks: HomepageBestsellerMenuItem['dietaryMarks'] = []
+  if (item.isVegetarian) dietaryMarks.push('VEGETARIAN')
+  if (item.isSpicy) dietaryMarks.push('SPICY')
+  if (item.isLactoseFree) dietaryMarks.push('LACTOSE_FREE')
+  if (item.isGlutenFree) dietaryMarks.push('GLUTEN_FREE')
+  if (item.isLight) dietaryMarks.push('LIGHT')
+
+  return {
+    id: item.id,
+    slug: item.slug,
+    name: item.name,
+    description: item.description,
+    ingredients: item.ingredients,
+    weightGrams: item.weightGrams,
+    measurementUnit: item.measurementUnit,
+    priceKopecks: item.priceKopecks,
+    calories: item.calories,
+    proteins: item.proteins === null ? null : Number(item.proteins),
+    fats: item.fats === null ? null : Number(item.fats),
+    carbohydrates: item.carbohydrates === null ? null : Number(item.carbohydrates),
+    allergens: item.allergens.map(({ allergen }) => allergen.name),
+    dietaryMarks,
+    imageUrl: item.imageUrl,
+    marketingBadge: item.marketingBadge,
+    categoryName: item.category.name,
+  }
 }
 
 function slideDto(slide: { id: string; mediaType: 'IMAGE' | 'VIDEO'; mediaUrl: string; posterUrl: string | null; eyebrow: string | null; title: string; description: string | null; ctaLabel: string | null; ctaUrl: string | null; durationSeconds: number; isPublished: boolean; position: number; createdAt: Date; updatedAt: Date }): HomepageSlide {
@@ -137,7 +178,7 @@ export function createHomepageModule({ db, requireAuth, requireAdmin }: { db: Db
   routes.openapi(publicHomepage, async (c) => {
     const [slides, bestsellers, daySection] = await Promise.all([
       db.homepageSlide.findMany({ where: { isPublished: true }, orderBy: [{ position: 'asc' }, { createdAt: 'asc' }] }),
-      db.homepageBestseller.findMany({ where: { isPublished: true }, include: { menuItem: { include: { category: true } } }, orderBy: [{ position: 'asc' }, { createdAt: 'asc' }] }),
+      db.homepageBestseller.findMany({ where: { isPublished: true }, include: { menuItem: { include: bestsellerMenuItemInclude } }, orderBy: [{ position: 'asc' }, { createdAt: 'asc' }] }),
       db.homepageDaySection.findFirst({ where: { isPublished: true }, include: { parts: { where: { isPublished: true }, orderBy: [{ position: 'asc' }, { createdAt: 'asc' }] } }, orderBy: { createdAt: 'asc' } }),
     ])
     return c.json({ slides: slides.map(slideDto), bestsellers: bestsellers.map(bestsellerDto), daySection: daySection ? daySectionDto(daySection) : null }, 200)
@@ -146,8 +187,8 @@ export function createHomepageModule({ db, requireAuth, requireAdmin }: { db: Db
   adminRoutes.openapi(adminHomepage, async (c) => {
     const [slides, bestsellers, menuItems, daySection] = await Promise.all([
       db.homepageSlide.findMany({ orderBy: [{ position: 'asc' }, { createdAt: 'asc' }] }),
-      db.homepageBestseller.findMany({ include: { menuItem: { include: { category: true } } }, orderBy: [{ position: 'asc' }, { createdAt: 'asc' }] }),
-      db.menuItem.findMany({ include: { category: true }, orderBy: [{ category: { position: 'asc' } }, { position: 'asc' }, { name: 'asc' }] }),
+      db.homepageBestseller.findMany({ include: { menuItem: { include: bestsellerMenuItemInclude } }, orderBy: [{ position: 'asc' }, { createdAt: 'asc' }] }),
+      db.menuItem.findMany({ include: bestsellerMenuItemInclude, orderBy: [{ category: { position: 'asc' } }, { position: 'asc' }, { name: 'asc' }] }),
       db.homepageDaySection.findFirst({ include: { parts: { orderBy: [{ position: 'asc' }, { createdAt: 'asc' }] } }, orderBy: { createdAt: 'asc' } }),
     ])
     const uniqueMenuItems = [...new Map(menuItems.map((item) => [item.slug, item])).values()]
@@ -175,12 +216,12 @@ export function createHomepageModule({ db, requireAuth, requireAdmin }: { db: Db
     }
   })
   adminRoutes.openapi(createBestseller, async (c) => {
-    const bestseller = await db.homepageBestseller.create({ data: bestsellerInput(c.req.valid('json')), include: { menuItem: { include: { category: true } } } })
+    const bestseller = await db.homepageBestseller.create({ data: bestsellerInput(c.req.valid('json')), include: { menuItem: { include: bestsellerMenuItemInclude } } })
     return c.json({ bestseller: bestsellerDto(bestseller) }, 201)
   })
   adminRoutes.openapi(updateBestseller, async (c) => {
     try {
-      const bestseller = await db.homepageBestseller.update({ where: { id: c.req.valid('param').id }, data: bestsellerInput(c.req.valid('json')), include: { menuItem: { include: { category: true } } } })
+      const bestseller = await db.homepageBestseller.update({ where: { id: c.req.valid('param').id }, data: bestsellerInput(c.req.valid('json')), include: { menuItem: { include: bestsellerMenuItemInclude } } })
       return c.json({ bestseller: bestsellerDto(bestseller) }, 200)
     } catch {
       throw new AppError(404, 'NOT_FOUND', 'Homepage bestseller not found')

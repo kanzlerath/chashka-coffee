@@ -55,6 +55,7 @@ const badgeTone = (badge: string | null | undefined) => {
   if (value.includes('люб')) return 'favourite'
   return 'special'
 }
+const dietaryLabel = (mark: string) => ({ VEGETARIAN: 'Вегетарианское', SPICY: 'Острое', LACTOSE_FREE: 'Без лактозы', GLUTEN_FREE: 'Без глютена', LIGHT: 'Лёгкое' }[mark] ?? mark)
 const bestsellers = homepage?.bestsellers.length
   ? homepage.bestsellers.map((entry, index) => ({
       slug: entry.item.slug,
@@ -66,13 +67,13 @@ const bestsellers = homepage?.bestsellers.length
       imageUrl: entry.item.imageUrl ?? productFallbacks[index % productFallbacks.length],
       categoryName: entry.item.categoryName,
       description: entry.item.description ?? '',
-      ingredients: '',
-      allergens: [] as string[],
-      dietaryMarks: [] as string[],
-      calories: null,
-      proteins: null,
-      fats: null,
-      carbohydrates: null,
+      ingredients: entry.item.ingredients ?? '',
+      allergens: entry.item.allergens,
+      dietaryMarks: entry.item.dietaryMarks.map(dietaryLabel),
+      calories: entry.item.calories === null ? null : String(entry.item.calories),
+      proteins: entry.item.proteins === null ? null : `${entry.item.proteins} г`,
+      fats: entry.item.fats === null ? null : `${entry.item.fats} г`,
+      carbohydrates: entry.item.carbohydrates === null ? null : `${entry.item.carbohydrates} г`,
     }))
   : defaultBestsellers.map((item) => ({ ...item, badgeTone: badgeTone(item.badge) }))
 const bestsellerPayload = (item: (typeof bestsellers)[number]) => JSON.stringify({
@@ -145,9 +146,11 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
       </div>}
     </section>
 
-    <section class="home-bestsellers home-section" aria-labelledby="bestsellers-title">
+    <section class="home-bestsellers home-section" data-bestseller-carousel aria-labelledby="bestsellers-title">
       <header class="home-section-head"><div><h2 id="bestsellers-title">Бестселлеры</h2></div></header>
-      <div class="bestseller-list">{bestsellers.map((item) => <button type="button" class="product-card" data-dish-trigger data-dish={bestsellerPayload(item)} aria-haspopup="dialog"><div class="product-card-image"><img src={item.imageUrl} alt="" loading="lazy" />{item.badge && <span class={`product-badge product-badge--${item.badgeTone}`}>{item.badge}</span>}</div><div class="product-card-info"><small>{item.categoryName}</small><h3>{item.name}</h3><div><span>{item.output}</span><strong>{item.price}</strong></div></div></button>)}</div>
+      <div class="bestseller-viewport" data-bestseller-viewport aria-label="Бестселлеры" aria-roledescription="карусель" tabindex="0">
+        <div class="bestseller-list" data-bestseller-track style={`--bestseller-card-basis:${bestsellers.length === 2 ? '72%' : bestsellers.length === 3 ? '42%' : '30.4%'}`}>{bestsellers.map((item, index) => <button type="button" class="product-card" data-bestseller-card data-bestseller-index={index} data-dish-trigger data-dish={bestsellerPayload(item)} aria-haspopup="dialog"><div class="product-card-image"><img src={item.imageUrl} alt="" loading="lazy" draggable="false" />{item.badge && <span class={`product-badge product-badge--${item.badgeTone}`}>{item.badge}</span>}</div><div class="product-card-info"><small>{item.categoryName}</small><h3>{item.name}</h3><div><span>{item.output}</span><strong>{item.price}</strong></div></div></button>)}</div>
+      </div>
       <a class="ui-button ui-button--outline section-action" href="/menu">Смотреть все</a>
     </section>
 
@@ -297,6 +300,80 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
     scheduleAutoplay()
   }
 
+  const bestsellerCarousel = document.querySelector<HTMLElement>('[data-bestseller-carousel]')
+  if (bestsellerCarousel) {
+    const viewport = bestsellerCarousel.querySelector<HTMLElement>('[data-bestseller-viewport]')
+    const track = bestsellerCarousel.querySelector<HTMLElement>('[data-bestseller-track]')
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    let pointerId: number | null = null
+    let pointerStartX = 0
+    let pointerStartY = 0
+    let scrollStart = 0
+    let dragged = false
+    let suppressClick = false
+
+    const cards = () => track ? [...track.querySelectorAll<HTMLElement>('[data-bestseller-card]')] : []
+    const step = () => {
+      const first = cards()[0]
+      if (!first || !track) return 0
+      const styles = getComputedStyle(track)
+      return first.getBoundingClientRect().width + (Number.parseFloat(styles.columnGap || styles.gap) || 0)
+    }
+    const move = (direction: -1 | 1) => {
+      if (!viewport || cards().length < 2) return
+      const maxScroll = Math.max(0, viewport.scrollWidth - viewport.clientWidth)
+      const target = Math.min(maxScroll, Math.max(0, viewport.scrollLeft + step() * direction))
+      viewport.scrollTo({ left: target, behavior: reduceMotion.matches ? 'auto' : 'smooth' })
+    }
+
+    viewport?.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowLeft') { event.preventDefault(); move(-1) }
+      if (event.key === 'ArrowRight') { event.preventDefault(); move(1) }
+    })
+    viewport?.addEventListener('pointerdown', (event) => {
+      if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0) || cards().length < 2) return
+      pointerId = event.pointerId
+      pointerStartX = event.clientX
+      pointerStartY = event.clientY
+      scrollStart = viewport.scrollLeft
+      dragged = false
+    })
+    viewport?.addEventListener('pointermove', (event) => {
+      if (pointerId !== event.pointerId) return
+      const distanceX = event.clientX - pointerStartX
+      const distanceY = event.clientY - pointerStartY
+      if (!dragged && Math.abs(distanceX) < 6) return
+      if (!dragged && Math.abs(distanceY) > Math.abs(distanceX)) return
+      if (!dragged) {
+        dragged = true
+        viewport.setPointerCapture(event.pointerId)
+        bestsellerCarousel.classList.add('is-dragging')
+      }
+      viewport.scrollLeft = scrollStart - distanceX
+      event.preventDefault()
+    })
+    const finishDrag = (event: PointerEvent) => {
+      if (pointerId !== event.pointerId || !viewport) return
+      if (viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId)
+      pointerId = null
+      bestsellerCarousel.classList.remove('is-dragging')
+      if (dragged) {
+        suppressClick = true
+        const maxScroll = Math.max(0, viewport.scrollWidth - viewport.clientWidth)
+        const target = Math.min(maxScroll, Math.max(0, Math.round(viewport.scrollLeft / step()) * step()))
+        viewport.scrollTo({ left: target, behavior: reduceMotion.matches ? 'auto' : 'smooth' })
+        window.setTimeout(() => { suppressClick = false }, 0)
+      }
+    }
+    viewport?.addEventListener('pointerup', finishDrag)
+    viewport?.addEventListener('pointercancel', finishDrag)
+    viewport?.addEventListener('click', (event) => {
+      if (!suppressClick) return
+      event.preventDefault()
+      event.stopImmediatePropagation()
+    }, true)
+  }
+
   const places = document.querySelector<HTMLElement>('[data-home-places]')
   if (places) {
     const panels = [...places.querySelectorAll<HTMLElement>('[data-place-panel]')]
@@ -347,8 +424,16 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
   .story-arrows button:hover{background:transparent;color:#bddb3d}.story-arrows button[data-story-previous]:hover{transform:translateX(-3px)}.story-arrows button[data-story-next]:hover{transform:translateX(3px)}
   .story-arrows svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
   .story-progress button{border-radius:var(--home-radius)}
+  .bestseller-viewport{margin:29px 0 -30px;padding:8px 0 52px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;touch-action:pan-y;cursor:grab}
+  .bestseller-viewport::-webkit-scrollbar{display:none}
+  .bestseller-viewport:focus-visible{outline:3px solid #bddb3d;outline-offset:5px}
+  .bestseller-list{display:flex;min-width:0;gap:12px;margin:0;padding:0;overflow:visible;overflow-anchor:none;scroll-snap-type:none}
+  .bestseller-list>.product-card{flex:0 0 var(--bestseller-card-basis,30.4%);min-width:0;scroll-snap-align:start;scroll-snap-stop:always}
+  .home-bestsellers.is-dragging .bestseller-viewport{scroll-snap-type:none;cursor:grabbing;user-select:none}
+  .home-bestsellers.is-dragging .product-card{pointer-events:none}
   .product-card{display:grid;grid-template-rows:auto 1fr;align-content:start;padding:11px;background:#f7f5f0}
   button.product-card{width:100%;margin:0;appearance:none;color:inherit;font:inherit;text-align:left;vertical-align:top;cursor:pointer}
+  .bestseller-viewport button.product-card{cursor:grab}.home-bestsellers.is-dragging button.product-card{cursor:grabbing}
   button.product-card:focus-visible{outline:3px solid #bddb3d;outline-offset:4px}
   .product-card-image{align-self:start;width:100%;border-radius:var(--home-radius)}
   .product-card-image>span:not(.product-badge){position:absolute;z-index:1;top:12px;left:12px;padding:7px 10px;border-radius:var(--home-radius);background:rgba(255,253,249,.94);color:#29241f;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
@@ -421,7 +506,9 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
     .story-counter{font-size:10px}.story-arrows button{width:27px;height:27px}
     .home-section{padding-right:var(--mobile-gutter);padding-left:var(--mobile-gutter)}
     .menu-all svg{width:43px;height:43px;padding:10px}
-    .bestseller-list,.journal-list{margin-right:calc(var(--mobile-gutter) * -1);margin-left:calc(var(--mobile-gutter) * -1);padding-right:var(--mobile-gutter);padding-left:var(--mobile-gutter)}
+    .bestseller-viewport{margin-right:calc(var(--mobile-gutter) * -1);margin-left:calc(var(--mobile-gutter) * -1);padding-right:var(--mobile-gutter);padding-left:var(--mobile-gutter);scroll-padding-inline:var(--mobile-gutter)}
+    .bestseller-list>.product-card{flex-basis:min(78vw,340px)}
+    .journal-list{margin-right:calc(var(--mobile-gutter) * -1);margin-left:calc(var(--mobile-gutter) * -1);padding-right:var(--mobile-gutter);padding-left:var(--mobile-gutter)}
     .journal-list :global(.news-card){flex:0 0 95%;scroll-snap-align:start}
     .home-bento{grid-template-columns:repeat(2,minmax(0,1fr));margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter)}
     .bento-card{min-width:0;padding:18px}

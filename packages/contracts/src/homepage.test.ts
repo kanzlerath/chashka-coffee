@@ -36,13 +36,27 @@ describe('homepage contracts', () => {
       slug: 'cappuccino',
       name: 'Капучино',
       description: 'Кофе с молоком',
+      ingredients: 'Эспрессо, молоко',
       weightGrams: 320,
       measurementUnit: 'MILLILITER',
       priceKopecks: 29000,
+      calories: 120,
+      proteins: 6,
+      fats: 5,
+      carbohydrates: 9,
+      allergens: ['Молочный продукт'],
+      dietaryMarks: ['LIGHT'],
       imageUrl: '/images/cappuccino.png',
       marketingBadge: 'HIT',
       categoryName: 'Кофе',
-    })).toMatchObject({ weightGrams: 320, measurementUnit: 'MILLILITER' })
+    })).toMatchObject({
+      ingredients: 'Эспрессо, молоко',
+      weightGrams: 320,
+      measurementUnit: 'MILLILITER',
+      calories: 120,
+      allergens: ['Молочный продукт'],
+      dietaryMarks: ['LIGHT'],
+    })
   })
 
   test('accepts an editable day section with a linked day part', () => {
