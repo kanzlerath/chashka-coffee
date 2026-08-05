@@ -35,7 +35,7 @@ const appChoices = page?.appChoices ?? defaultAppChoices
     <div class="app-workspace-copy">
       <h2 id="app-workspace-title">Что сегодня<br />важнее?</h2>
       <div class="app-tabs" role="tablist" aria-label="Возможности приложения">
-        {appChoices.map((choice, index) => <button class:list={{ 'is-active': index === 0 }} type="button" role="tab" id={`app-tab-${choice.id}`} aria-controls={`app-panel-${choice.id}`} aria-selected={index === 0 ? 'true' : 'false'} tabindex={index === 0 ? 0 : -1} data-app-tab={choice.id}>{choice.label}<span aria-hidden="true">→</span></button>)}
+        {appChoices.map((choice, index) => <button class:list={{ 'is-active': index === 0 }} type="button" role="tab" id={`app-tab-${choice.id}`} aria-controls={`app-panel-${choice.id}`} aria-selected={index === 0 ? 'true' : 'false'} tabindex={index === 0 ? 0 : -1} data-app-tab={choice.id}><span>{choice.label}</span><svg class="app-tab-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-5-5 5 5-5 5" /></svg></button>)}
       </div>
     </div>
     <div class="app-device-stage">
@@ -53,9 +53,9 @@ const appChoices = page?.appChoices ?? defaultAppChoices
   </section>
 
   <section class="app-capabilities" aria-label="Другие возможности приложения">
-    <article class="capability-map"><h2>Меню зависит<br />от ресторана</h2><p>Покажем ближайшую точку, актуальное время работы и блюда, которые доступны прямо сейчас.</p><div aria-hidden="true"><span></span><span></span><span></span><i>Вы здесь</i></div></article>
-    <article class="capability-status"><div><strong>35</strong><span>минут</span></div><h2>Статус заказа<br />в реальном времени</h2><p>Видно, когда ресторан принял заказ, начал готовить и передал его курьеру.</p></article>
-    <article class="capability-feed"><h2>Новости, события<br />и персональные акции</h2><p>Пуши напомнят только о том, что действительно может пригодиться: новом меню, бонусах и промокодах.</p><div aria-hidden="true"><span>Новый десерт</span><span>+200 бонусов</span><span>Вечер в Чашке</span></div></article>
+    <article class="capability-map"><h2>Всё важное<br />рядом</h2><p>Покажем ближайшую точку, актуальное время работы и блюда, которые доступны прямо сейчас.</p><div aria-hidden="true"><span></span><span></span><span></span><i>Вы здесь</i></div></article>
+    <article class="capability-status"><div><strong>35</strong><span>минут</span></div><h2>Статус заказа<br />в реальном времени</h2></article>
+    <article class="capability-feed"><h2>Новости, события<br />и персональные акции</h2><div class="capability-feed-particles" data-feed-particles aria-hidden="true"><span style="--x:8%;--y:17%;--r:-5deg;--drift-x:13px;--drift-y:10px;--duration:5.7s">Новый десерт</span><span style="--x:32%;--y:56%;--r:3deg;--drift-x:-10px;--drift-y:14px;--duration:6.4s">+200 бонусов</span><span style="--x:56%;--y:20%;--r:-2deg;--drift-x:11px;--drift-y:-12px;--duration:5.2s">Вечер в Чашке</span><span style="--x:74%;--y:61%;--r:5deg;--drift-x:-14px;--drift-y:8px;--duration:6.8s">Кофе в подарок</span><span style="--x:44%;--y:76%;--r:-4deg;--drift-x:8px;--drift-y:-13px;--duration:5.9s">Новое меню</span><span style="--x:82%;--y:29%;--r:2deg;--drift-x:-9px;--drift-y:-10px;--duration:6.2s">−15% сегодня</span></div></article>
   </section>
 
   {page && <div class="app-managed"><ContentBlocks blocks={page.blocks} /></div>}
@@ -93,18 +93,120 @@ const appChoices = page?.appChoices ?? defaultAppChoices
       showScene(target?.dataset.appTab ?? '', true)
     })
   })
+
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  if (!reducedMotion) document.querySelectorAll<HTMLElement>('[data-feed-particles]').forEach((field) => {
+    const states = [...field.querySelectorAll<HTMLElement>('span')].map((element) => ({
+      element,
+      baseX: 0,
+      baseY: 0,
+      x: 0,
+      y: 0,
+      vx: 0,
+      vy: 0,
+      rotation: element.style.getPropertyValue('--r') || '0deg',
+    }))
+    let animationFrame = 0
+    let previousFrame = 0
+    let launched = false
+    let lastPointer: { x: number; y: number } | undefined
+
+    const measure = () => states.forEach((state) => {
+      state.baseX = state.element.offsetLeft
+      state.baseY = state.element.offsetTop
+    })
+    const render = () => states.forEach((state) => {
+      state.element.style.transform = `translate3d(${state.x}px, ${state.y}px, 0) rotate(${state.rotation})`
+    })
+    const tick = (now: number) => {
+      const delta = Math.min((now - previousFrame) / 1000 || 0, .032)
+      const width = field.clientWidth
+      const height = field.clientHeight
+      let isMoving = false
+
+      states.forEach((state) => {
+        state.vy += 760 * delta
+        state.x += state.vx * delta
+        state.y += state.vy * delta
+        const maxX = width - state.element.offsetWidth - state.baseX
+        const floor = height - state.element.offsetHeight - state.baseY
+
+        if (state.x < -state.baseX || state.x > maxX) {
+          state.x = Math.min(Math.max(state.x, -state.baseX), maxX)
+          state.vx *= -.46
+        }
+        if (state.y > floor) {
+          state.y = floor
+          state.vy = Math.abs(state.vy) > 24 ? state.vy * -.3 : 0
+          state.vx *= .86
+        }
+        if (Math.abs(state.vx) + Math.abs(state.vy) > 2) isMoving = true
+      })
+
+      render()
+      previousFrame = now
+      animationFrame = isMoving ? requestAnimationFrame(tick) : 0
+    }
+    const start = () => {
+      if (animationFrame) return
+      previousFrame = performance.now()
+      animationFrame = requestAnimationFrame(tick)
+    }
+    const launch = () => {
+      if (launched) return
+      launched = true
+      measure()
+      states.forEach((state, index) => {
+        state.vx = (index - (states.length - 1) / 2) * 5
+        state.vy = -14 - index * 6
+      })
+      start()
+    }
+    const disturb = (event: PointerEvent) => {
+      launch()
+      const bounds = field.getBoundingClientRect()
+      const pointerX = event.clientX - bounds.left
+      const pointerY = event.clientY - bounds.top
+      const deltaX = pointerX - (lastPointer?.x ?? pointerX)
+      const deltaY = pointerY - (lastPointer?.y ?? pointerY)
+
+      states.forEach((state, index) => {
+        const centerX = state.baseX + state.x + state.element.offsetWidth / 2
+        const centerY = state.baseY + state.y + state.element.offsetHeight / 2
+        const distanceX = centerX - pointerX
+        const distanceY = centerY - pointerY
+        const distance = Math.hypot(distanceX, distanceY) || 1
+        const force = Math.max(0, 1 - distance / 170)
+        state.vx += deltaX * .58 + (distanceX / distance) * force * 125 + (index - 2) * 2
+        state.vy += deltaY * .23 + (distanceY / distance) * force * 85 - force * 78
+      })
+
+      lastPointer = { x: pointerX, y: pointerY }
+      start()
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return
+      launch()
+      observer.disconnect()
+    }, { threshold: .35 })
+    observer.observe(field)
+    field.addEventListener('pointerdown', disturb)
+    field.addEventListener('pointermove', disturb)
+    field.addEventListener('pointerleave', () => { lastPointer = undefined })
+    field.addEventListener('pointerup', () => { lastPointer = undefined })
+  })
 </script>
 
 <style>
   .app-opening{position:relative;display:flex;min-height:calc(100svh - 126px);align-items:center;overflow:hidden;border-radius:var(--radius);background:#ead5c2;color:var(--ink);isolation:isolate}.app-opening:after{position:absolute;z-index:-1;inset:0;background:linear-gradient(90deg,rgba(249,237,224,.98) 0%,rgba(249,237,224,.87) 31%,rgba(249,237,224,.24) 55%,transparent 72%);content:''}.app-opening-image{position:absolute;z-index:-2;inset:0;width:100%;height:100%;object-fit:cover;object-position:center}.app-opening-copy{width:min(48%,720px);padding:clamp(42px,4.7vw,80px) clamp(52px,7vw,112px);animation:app-opening-in .7s cubic-bezier(.22,1,.36,1) both}.app-opening .app-opening-copy h1{margin:0;color:var(--ink)!important;font-size:clamp(52px,5.6vw,90px)!important}.app-opening .app-opening-copy h1 span{display:block}.app-opening-copy>p{max-width:510px;margin:24px 0 0;color:#65574e;font-size:15px;line-height:1.65}.app-opening :global(.store-badges){margin-top:30px}@keyframes app-opening-in{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
   .app-intro{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);align-items:end;gap:clamp(40px,8vw,130px);padding:clamp(100px,12vw,180px) var(--content-gutter)}.app-intro h2{margin:0;font-size:clamp(50px,5.6vw,91px)}.app-intro p{max-width:480px;margin:0 0 9px;color:var(--muted);font-size:15px;line-height:1.7}
-  .app-workspace{display:grid;grid-template-columns:minmax(250px,.75fr) minmax(260px,.75fr) minmax(260px,.7fr);align-items:center;gap:clamp(32px,5vw,78px);min-height:650px;padding:clamp(48px,6.5vw,100px);border-radius:var(--radius);background:#ebe4d9}.app-workspace-copy h2{margin:0 0 38px;font-size:clamp(42px,4.6vw,72px)}.app-tabs{display:grid}.app-tabs button{display:flex;min-height:58px;align-items:center;justify-content:space-between;padding:0;border:0;border-top:1px solid #cfc6ba;background:transparent;color:#756f68;cursor:pointer;font-size:13px;font-weight:700;text-align:left;transition:padding .22s ease,color .22s ease}.app-tabs button:last-child{border-bottom:1px solid #cfc6ba}.app-tabs button span{font-size:17px;opacity:0;transform:translateX(-8px);transition:opacity .22s ease,transform .22s ease}.app-tabs button:hover,.app-tabs button.is-active{padding-left:9px;color:var(--moss)}.app-tabs button.is-active span{opacity:1;transform:none}.app-tabs button:focus-visible{outline:3px solid var(--lime);outline-offset:3px}
-  .app-workspace>*{min-width:0}
-  .app-device-stage{position:relative;display:grid;place-items:center;justify-self:center;width:min(100%,340px);padding:14px}.app-device-shadow{position:absolute;right:2%;bottom:1%;width:82%;height:88%;border-radius:52px;background:rgba(69,55,43,.16);filter:blur(2px);transform:translate(18px,18px) rotate(4deg)}.app-device{position:relative;width:min(100%,304px);aspect-ratio:1179/2556;overflow:hidden;border:8px solid #15261e;border-radius:47px;background:#f4f3f0;box-shadow:0 24px 48px rgba(58,49,40,.18);transform:rotate(-2.5deg);transition:transform .5s cubic-bezier(.22,1,.36,1)}.app-device-stage:hover .app-device{transform:rotate(-.7deg) translateY(-7px)}.app-device-speaker{position:absolute;z-index:3;top:9px;left:50%;width:31%;height:24px;border-radius:999px;background:#101411;transform:translateX(-50%)}.app-device article{position:absolute;inset:0;animation:app-scene-in .38s cubic-bezier(.22,1,.36,1)}.app-device article img{display:block;width:100%;height:100%;object-fit:cover;object-position:center top}.app-scene-copy article{animation:app-scene-in .36s cubic-bezier(.22,1,.36,1)}.app-scene-copy h3{margin:0;font-size:clamp(29px,3vw,47px);line-height:.95;letter-spacing:-.065em}.app-scene-copy p{max-width:400px;margin:20px 0 0;color:var(--muted);font-size:13px;line-height:1.7}@keyframes app-scene-in{from{opacity:0;transform:translateY(12px) scale(.99)}to{opacity:1;transform:none}}
-  .app-device article[hidden],.app-scene-copy article[hidden]{display:none}
-  .app-capabilities{display:grid;grid-template-columns:1.08fr .92fr;grid-template-rows:auto auto;gap:12px;padding:clamp(90px,11vw,170px) 0}.app-capabilities article{position:relative;min-height:430px;padding:clamp(36px,5vw,75px);overflow:hidden;border-radius:var(--radius)}.app-capabilities h2{max-width:700px;margin:0;font-size:clamp(38px,4vw,65px)}.app-capabilities p{max-width:480px;margin:20px 0 0;font-size:13px;line-height:1.65}.capability-map{background:#dfe9d3}.capability-map>div{position:absolute;right:-5%;bottom:-21%;width:55%;aspect-ratio:1;border:1px solid #afc19e;border-radius:50%;transform:rotate(-8deg)}.capability-map>div:before,.capability-map>div:after{position:absolute;border:1px solid #afc19e;border-radius:50%;content:''}.capability-map>div:before{inset:18%}.capability-map>div:after{inset:36%}.capability-map>div span{position:absolute;z-index:1;width:13px;height:13px;border-radius:50%;background:var(--moss)}.capability-map>div span:nth-child(1){top:14%;left:28%}.capability-map>div span:nth-child(2){top:46%;right:11%;background:#e56f52}.capability-map>div span:nth-child(3){bottom:11%;left:34%;background:#efc86f}.capability-map>div i{position:absolute;z-index:2;top:47%;left:47%;padding:9px 11px;border-radius:var(--radius);background:var(--lime);font-size:9px;font-style:normal;font-weight:800;white-space:nowrap}.capability-status{background:var(--moss);color:#fff}.capability-status>div{display:flex;align-items:end;gap:9px;margin-bottom:100px;color:var(--lime)}.capability-status strong{font-size:clamp(80px,8vw,135px);line-height:.65;letter-spacing:-.1em}.capability-status span{font-size:14px}.capability-status h2{color:#fff}.capability-status p{color:#d6dfd7}.capability-feed{grid-column:1/-1;min-height:360px!important;background:#eee4d8}.capability-feed>div{display:flex;flex-wrap:wrap;gap:8px;margin-top:55px}.capability-feed>div span{padding:14px 17px;border-radius:var(--radius);background:#fff;font-size:11px;font-weight:700;box-shadow:0 12px 26px rgba(59,48,37,.08);transition:transform .25s ease}.capability-feed>div span:nth-child(2){background:var(--lime);transform:rotate(3deg)}.capability-feed>div span:nth-child(3){background:var(--moss);color:#fff;transform:rotate(-2deg)}.capability-feed:hover>div span{transform:translateY(-5px) rotate(0)}
+  .app-workspace{display:grid;grid-template-columns:minmax(250px,.75fr) minmax(260px,.75fr) minmax(260px,.7fr);align-items:center;gap:clamp(32px,5vw,78px);min-height:650px;padding:clamp(48px,6.5vw,100px);border-radius:var(--radius);background:#ebe4d9}.app-workspace-copy h2{margin:0 0 38px;font-size:clamp(42px,4.6vw,72px)}.app-tabs{display:grid}.app-tabs button{display:flex;min-height:58px;align-items:center;justify-content:space-between;padding:0;border:0;border-top:1px solid #cfc6ba;background:transparent;color:#756f68;cursor:pointer;font-size:13px;font-weight:700;text-align:left;transition:padding .22s ease,color .22s ease}.app-tabs button:last-child{border-bottom:1px solid #cfc6ba}.app-tab-arrow{width:18px;height:18px;opacity:0;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8;transform:translateX(-8px);transition:opacity .22s ease,transform .22s ease}.app-tabs button:hover,.app-tabs button.is-active{padding-left:9px;color:var(--moss)}.app-tabs button.is-active .app-tab-arrow{opacity:1;transform:none}.app-tabs button:focus-visible{outline:3px solid var(--lime);outline-offset:3px}
+  .app-workspace>*{min-width:0}.app-device-stage{position:relative;display:grid;place-items:center;justify-self:center;width:min(100%,340px);padding:14px}.app-device-shadow{position:absolute;right:2%;bottom:1%;width:82%;height:88%;border-radius:52px;background:rgba(69,55,43,.16);filter:blur(2px);transform:translate(18px,18px) rotate(4deg)}.app-device{position:relative;width:min(100%,304px);aspect-ratio:1179/2556;overflow:hidden;border:8px solid #15261e;border-radius:47px;background:#f4f3f0;box-shadow:0 24px 48px rgba(58,49,40,.18);transform:rotate(-2.5deg);transition:transform .5s cubic-bezier(.22,1,.36,1)}.app-device-stage:hover .app-device{transform:rotate(-.7deg) translateY(-7px)}.app-device-speaker{position:absolute;z-index:3;top:9px;left:50%;width:31%;height:24px;border-radius:999px;background:#101411;transform:translateX(-50%)}.app-device article{position:absolute;inset:0;animation:app-scene-in .38s cubic-bezier(.22,1,.36,1)}.app-device article img{display:block;width:100%;height:100%;object-fit:cover;object-position:center top}.app-scene-copy article{animation:app-scene-in .36s cubic-bezier(.22,1,.36,1)}.app-scene-copy h3{margin:0;font-size:clamp(29px,3vw,47px);line-height:.95;letter-spacing:-.065em}.app-scene-copy p{max-width:400px;margin:20px 0 0;color:var(--muted);font-size:13px;line-height:1.7}@keyframes app-scene-in{from{opacity:0;transform:translateY(12px) scale(.99)}to{opacity:1;transform:none}}.app-device article[hidden],.app-scene-copy article[hidden]{display:none}
+  .app-capabilities{display:grid;grid-template-columns:1.08fr .92fr;grid-template-rows:auto auto;gap:12px;padding:clamp(90px,11vw,170px) 0}.app-capabilities article{position:relative;min-height:430px;padding:clamp(36px,5vw,75px);overflow:hidden;border-radius:var(--radius)}.app-capabilities h2{max-width:700px;margin:0;font-size:clamp(38px,4vw,65px)}.app-capabilities p{max-width:480px;margin:20px 0 0;font-size:13px;line-height:1.65}.capability-map{background:#dfe9d3}.capability-map>div{position:absolute;right:-5%;bottom:-21%;width:55%;aspect-ratio:1;border:1px solid #afc19e;border-radius:50%;transform:rotate(-8deg)}.capability-map>div:before,.capability-map>div:after{position:absolute;border:1px solid #afc19e;border-radius:50%;content:''}.capability-map>div:before{inset:18%}.capability-map>div:after{inset:36%}.capability-map>div span{position:absolute;z-index:1;width:13px;height:13px;border-radius:50%;background:var(--moss)}.capability-map>div span:nth-child(1){top:14%;left:28%}.capability-map>div span:nth-child(2){top:46%;right:11%;background:#e56f52}.capability-map>div span:nth-child(3){bottom:11%;left:34%;background:#efc86f}.capability-map>div i{position:absolute;z-index:2;top:47%;left:47%;padding:9px 11px;border-radius:var(--radius);background:var(--lime);font-size:9px;font-style:normal;font-weight:800;white-space:nowrap}.capability-status{background:var(--moss);color:#fff}.capability-status>div{display:flex;align-items:end;gap:9px;margin-bottom:100px;color:var(--lime)}.capability-status strong{font-size:clamp(80px,8vw,135px);line-height:.65;letter-spacing:-.1em}.capability-status span{font-size:14px}.capability-status h2{color:#fff}.capability-status p{color:#d6dfd7}.capability-feed{grid-column:1/-1;min-height:360px!important;background:#eee4d8}.capability-feed>:not(.capability-feed-particles){position:relative;z-index:2}.capability-feed-particles{position:absolute;z-index:1;right:clamp(32px,5vw,75px);bottom:clamp(26px,4vw,58px);width:min(51%,610px);height:180px;touch-action:pan-y}.capability-feed-particles span{position:absolute;left:var(--x);top:var(--y);padding:14px 17px;border-radius:var(--radius);background:#fff;font-size:11px;font-weight:700;white-space:nowrap;box-shadow:0 12px 26px rgba(59,48,37,.08);transform:translate3d(0,0,0) rotate(var(--r));will-change:transform}.capability-feed-particles span:nth-child(2){background:var(--lime)}.capability-feed-particles span:nth-child(3){background:var(--moss);color:#fff}.capability-feed-particles span:nth-child(4){background:#f4c7a1}.capability-feed-particles span:nth-child(5){background:#dce7d4}.capability-feed-particles span:nth-child(6){background:#fff3cf}
   .app-managed{margin-bottom:14px}.app-download{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,.55fr);min-height:500px;align-items:center;padding:clamp(48px,7vw,105px);border-radius:var(--radius);background:var(--lime);color:var(--moss)}.app-download h2{margin:0;font-size:clamp(49px,5.6vw,91px)}.app-download p{margin:22px 0 0;font-size:14px}.app-download :global(.store-badges){margin-top:28px}.app-qr{justify-self:center;display:block;width:min(100%,230px);padding:9px;border-radius:var(--radius);background:#fff;box-shadow:0 20px 38px rgba(31,59,46,.16);transition:transform .25s ease}.app-qr:hover{transform:translateY(-5px) rotate(2deg)}.app-qr:focus-visible{outline:4px solid var(--moss);outline-offset:5px}.app-qr img{display:block;width:100%;height:auto;border-radius:calc(var(--radius) - 7px)}
-  @media(max-width:950px){.app-opening{min-height:680px;margin:0 var(--mobile-gutter);align-items:flex-start}.app-opening:after{background:linear-gradient(180deg,rgba(249,237,224,.98) 0%,rgba(249,237,224,.86) 38%,rgba(249,237,224,.08) 67%,transparent 100%)}.app-opening-image{object-position:69% center}.app-opening-copy{width:auto;padding:52px 25px}.app-opening-copy>p{max-width:440px}.app-intro,.app-workspace,.app-download{grid-template-columns:1fr}.app-intro{padding:85px 20px}.app-workspace,.app-download{margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter);padding:55px 24px}.app-tabs{grid-template-columns:repeat(2,minmax(0,1fr));margin:0 0 42px}.app-tabs button{min-height:50px;border-top:0;border-bottom:1px solid #cfc6ba}.app-tabs button span{display:none}.app-device-stage{margin-bottom:55px}.app-scene-copy{min-height:150px}.app-capabilities{grid-template-columns:1fr;padding:85px var(--mobile-gutter)}.capability-feed{grid-column:auto}.app-download{gap:55px}.app-qr{justify-self:start}}
-  @media(max-width:540px){.app-opening{min-height:620px}.app-opening-image{object-position:65% center}.app-opening .app-opening-copy h1{font-size:clamp(45px,13vw,60px)!important}.app-opening-copy>p{max-width:310px;font-size:13px}.app-device-stage{width:min(100%,300px)}.app-capabilities article{min-height:390px;padding:40px 24px}.capability-status>div{margin-bottom:80px}.capability-map>div{width:75%}.app-qr{width:185px}}
-  @media(prefers-reduced-motion:reduce){.app-device,.capability-feed>div span,.app-qr{transition:none}.app-opening-copy,.app-device article,.app-scene-copy article{animation:none}}
+  @media(max-width:950px){.app-opening{min-height:620px;margin:0 var(--mobile-gutter);align-items:flex-end}.app-opening:after{background:linear-gradient(180deg,transparent 20%,rgba(249,237,224,.35) 43%,rgba(249,237,224,.95) 72%,rgba(249,237,224,.99) 100%)}.app-opening-image{object-position:66% center}.app-opening-copy{width:auto;padding:32px 25px 28px}.app-opening .app-opening-copy h1{font-size:clamp(38px,7vw,54px)!important}.app-opening-copy>p{max-width:430px;margin-top:16px;font-size:13px}.app-opening :global(.store-badges){margin-top:22px}.app-intro{grid-template-columns:1fr;padding:76px var(--mobile-gutter);gap:26px}.app-intro h2{font-size:clamp(40px,10.5vw,58px)}.app-workspace{grid-template-columns:148px minmax(0,1fr);grid-template-areas:'controls controls' 'device details';align-items:center;gap:28px 18px;min-height:0;margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter);padding:34px 24px}.app-workspace-copy{grid-area:controls}.app-workspace-copy h2{margin-bottom:23px;font-size:clamp(33px,8vw,47px)}.app-tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}.app-tabs button{flex:1 0 max-content;min-height:42px;padding:0 12px;border:1px solid #cfc6ba!important;border-radius:999px;font-size:11px}.app-tabs button:hover,.app-tabs button.is-active{padding:0 12px;background:var(--moss);color:#fff}.app-tab-arrow{width:15px;height:15px;opacity:1;transform:none}.app-device-stage{grid-area:device;width:148px;margin:0;padding:5px}.app-device-shadow{border-radius:30px;transform:translate(8px,10px) rotate(4deg)}.app-device{width:136px;border-width:5px;border-radius:26px;box-shadow:0 14px 28px rgba(58,49,40,.18)}.app-device-speaker{top:6px;height:13px}.app-scene-copy{grid-area:details;align-self:end;min-height:0;padding-bottom:21px}.app-scene-copy h3{font-size:clamp(24px,6.4vw,32px)}.app-scene-copy p{margin-top:13px;font-size:11px;line-height:1.58}.app-capabilities{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:72px var(--mobile-gutter)}.app-capabilities article{min-height:258px;padding:20px}.app-capabilities h2{font-size:clamp(20px,5.4vw,27px);line-height:.92}.app-capabilities p{margin-top:12px;font-size:10px;line-height:1.55}.capability-map>div{right:-21%;bottom:-28%;width:110%}.capability-map>div span{width:9px;height:9px}.capability-map>div i{padding:6px 8px;font-size:7px}.capability-status>div{gap:5px;margin-bottom:48px}.capability-status strong{font-size:clamp(58px,16vw,80px)}.capability-status span{font-size:10px}.capability-feed{grid-column:1/-1;min-height:296px!important}.capability-feed h2{max-width:245px;font-size:clamp(26px,7.2vw,35px)}.capability-feed-particles{right:18px;bottom:13px;width:53%;height:165px}.capability-feed-particles span{padding:10px 12px;font-size:9px}.app-download{grid-template-columns:1fr;gap:42px;margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter);padding:52px 24px}.app-qr{justify-self:center}}
+  @media(max-width:540px){.app-opening{min-height:600px}.app-opening-image{object-position:63% center}.app-opening .app-opening-copy h1{font-size:clamp(37px,10.3vw,43px)!important}.app-opening-copy>p{max-width:310px;font-size:12px}.app-workspace{grid-template-columns:132px minmax(0,1fr);gap:22px 14px;padding:30px 18px}.app-device-stage{width:132px}.app-device{width:122px}.app-scene-copy{padding-bottom:14px}.app-capabilities article{min-height:244px;padding:18px}.capability-feed{min-height:285px!important}.capability-feed-particles{width:55%}.app-qr{width:185px}}
+  @media(prefers-reduced-motion:reduce){.app-device,.capability-feed-particles span,.app-qr{transition:none}.app-opening-copy,.app-device article,.app-scene-copy article,.capability-feed-particles span{animation:none}}
 </style>
