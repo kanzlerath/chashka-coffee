@@ -141,33 +141,38 @@ const appChoices = page?.appChoices ?? defaultAppChoices
       }
     }
     const separateCollisions = (width: number, height: number) => {
-      for (let pass = 0; pass < 2; pass += 1) states.forEach((state, index) => {
+      const gap = 5
+      for (let pass = 0; pass < 12; pass += 1) states.forEach((state, index) => {
         states.slice(index + 1).forEach((other) => {
-          const left = state.baseX + state.x
-          const top = state.baseY + state.y
-          const otherLeft = other.baseX + other.x
-          const otherTop = other.baseY + other.y
-          const overlapX = Math.min(left + state.element.offsetWidth, otherLeft + other.element.offsetWidth) - Math.max(left, otherLeft)
-          const overlapY = Math.min(top + state.element.offsetHeight, otherTop + other.element.offsetHeight) - Math.max(top, otherTop)
+          const left = state.baseX + state.x - gap / 2
+          const top = state.baseY + state.y - gap / 2
+          const otherLeft = other.baseX + other.x - gap / 2
+          const otherTop = other.baseY + other.y - gap / 2
+          const pillWidth = state.element.offsetWidth + gap
+          const pillHeight = state.element.offsetHeight + gap
+          const otherPillWidth = other.element.offsetWidth + gap
+          const otherPillHeight = other.element.offsetHeight + gap
+          const overlapX = Math.min(left + pillWidth, otherLeft + otherPillWidth) - Math.max(left, otherLeft)
+          const overlapY = Math.min(top + pillHeight, otherTop + otherPillHeight) - Math.max(top, otherTop)
 
           if (overlapX <= 0 || overlapY <= 0) return
           if (overlapX < overlapY) {
             const direction = left + state.element.offsetWidth / 2 < otherLeft + other.element.offsetWidth / 2 ? -1 : 1
-            state.x += direction * overlapX / 2
-            other.x -= direction * overlapX / 2
-            state.vx += direction * 8
-            other.vx -= direction * 8
-            const contactOffset = (top + state.element.offsetHeight / 2 - otherTop - other.element.offsetHeight / 2) / Math.max(state.element.offsetHeight, other.element.offsetHeight)
+            state.x += direction * (overlapX / 2 + .1)
+            other.x -= direction * (overlapX / 2 + .1)
+            state.vx += direction * 3
+            other.vx -= direction * 3
+            const contactOffset = (top + pillHeight / 2 - otherTop - otherPillHeight / 2) / Math.max(pillHeight, otherPillHeight)
             const rotationImpulse = contactOffset * (state.vx - other.vx) * .26
             state.angularVelocity -= rotationImpulse
             other.angularVelocity += rotationImpulse
           } else {
             const direction = top + state.element.offsetHeight / 2 < otherTop + other.element.offsetHeight / 2 ? -1 : 1
-            state.y += direction * overlapY / 2
-            other.y -= direction * overlapY / 2
-            state.vy += direction * 7
-            other.vy -= direction * 7
-            const contactOffset = (left + state.element.offsetWidth / 2 - otherLeft - other.element.offsetWidth / 2) / Math.max(state.element.offsetWidth, other.element.offsetWidth)
+            state.y += direction * (overlapY / 2 + .1)
+            other.y -= direction * (overlapY / 2 + .1)
+            state.vy += direction * 3
+            other.vy -= direction * 3
+            const contactOffset = (left + pillWidth / 2 - otherLeft - otherPillWidth / 2) / Math.max(pillWidth, otherPillWidth)
             const rotationImpulse = contactOffset * (state.vy - other.vy) * .24
             state.angularVelocity -= rotationImpulse
             other.angularVelocity += rotationImpulse
@@ -189,6 +194,7 @@ const appChoices = page?.appChoices ?? defaultAppChoices
         state.y += state.vy * delta
         state.angle += state.angularVelocity * delta
         state.angularVelocity *= .985
+        state.angle = Math.max(-12, Math.min(12, state.angle))
         keepInBounds(state, width, height)
       })
       separateCollisions(width, height)
