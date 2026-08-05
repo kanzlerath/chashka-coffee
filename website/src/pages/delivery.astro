@@ -109,35 +109,43 @@ const cargo = [
     <section class="delivery-ordering" aria-labelledby="ordering-title">
       <header data-delivery-reveal>
         <h2 id="ordering-title">Заказывайте,<br /><em>как удобно.</em></h2>
-        <p>В приложении «Чашки кофе», через привычный сервис или заранее на самовывоз.</p>
       </header>
 
       <div class="delivery-ordering-board" data-delivery-reveal>
-        <article class="delivery-ordering-app">
+        <a class="delivery-ordering-card delivery-ordering-app" href="/app" aria-label="Открыть приложение «Чашки кофе»">
           <div>
             <h3>Приложение<br />«Чашки кофе»</h3>
-            <p>Выбирайте ресторан, следите за заказом и копите DI Bonus в одном месте.</p>
-            <a class="delivery-button delivery-button-accent" href="/app">Открыть приложение</a>
           </div>
-          <img src="/brand/bento/App.svg" alt="" aria-hidden="true" />
-        </article>
+          <img src="/images/app/order-screen.webp" alt="" aria-hidden="true" />
+          <span class="delivery-ordering-link-cue" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M5 19 19 5M8 5h11v11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+        </a>
 
-        <article class="delivery-ordering-yandex">
+        <a class="delivery-ordering-card delivery-ordering-yandex" href="https://eda.yandex.ru/" target="_blank" rel="noreferrer" aria-label="Открыть «Чашку кофе» в Яндекс Еде">
           <img class="delivery-yandex-icon" src="/brand-badges/yandex-food.svg" alt="" aria-hidden="true" />
           <div>
             <h3>Яндекс Еда</h3>
-            <p>Найдите ближайшую «Чашку кофе» и оформите заказ знакомым способом.</p>
-            <a class="delivery-button delivery-button-dark" href="https://eda.yandex.ru/" target="_blank" rel="noreferrer">Перейти в сервис</a>
           </div>
-        </article>
+          <span class="delivery-ordering-link-cue" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M5 19 19 5M8 5h11v11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+        </a>
 
-        <article class="delivery-ordering-pickup">
+        <a class="delivery-ordering-card delivery-ordering-pickup" href="/restaurants" aria-label="Выбрать ресторан для самовывоза">
           <div>
             <h3>Самовывоз<br />без ожидания</h3>
-            <p>Закажите заранее — приготовим к вашему приходу.</p>
           </div>
-          <a class="delivery-button delivery-button-dark" href="/restaurants">Выбрать ресторан</a>
-        </article>
+          <span class="delivery-ordering-link-cue" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M5 19 19 5M8 5h11v11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+        </a>
       </div>
     </section>
 
@@ -260,8 +268,8 @@ const cargo = [
     z-index: 1;
     inset: 0;
     background:
-      linear-gradient(90deg, rgba(245, 240, 232, .97) 0%, rgba(245, 240, 232, .83) 34%, rgba(245, 240, 232, .08) 65%),
-      linear-gradient(0deg, rgba(236, 229, 218, .28), transparent 55%);
+      linear-gradient(90deg, rgba(245, 240, 232, .58) 0%, rgba(245, 240, 232, .32) 34%, rgba(245, 240, 232, .02) 65%),
+      linear-gradient(0deg, rgba(241, 235, 225, .72) 0%, rgba(241, 235, 225, .42) 44%, rgba(241, 235, 225, 0) 70%);
     content: '';
     pointer-events: none;
   }
@@ -282,6 +290,7 @@ const cargo = [
     height: 100%;
     object-fit: cover;
     object-position: center;
+    filter: brightness(.84) contrast(1.04) saturate(.94);
     transition: transform .9s cubic-bezier(.22, 1, .36, 1);
   }
 
@@ -313,7 +322,7 @@ const cargo = [
   }
 
   .delivery-hero h1 em {
-    margin-left: clamp(10px, 3.8vw, 60px);
+    margin-left: clamp(8px, 1vw, 16px);
     color: #708c2e;
     font-family: '21Cent', serif;
     font-size: 1.03em;
@@ -578,32 +587,39 @@ const cargo = [
     gap: 12px;
   }
 
-  .delivery-ordering-board article {
+  .delivery-ordering-card {
     position: relative;
     min-width: 0;
     overflow: hidden;
     border-radius: var(--radius);
+    color: inherit;
+    text-decoration: none;
+    transition: transform .28s cubic-bezier(.22, 1, .36, 1);
+  }
+
+  .delivery-ordering-card:hover {
+    transform: translateY(-5px);
+  }
+
+  .delivery-ordering-card:focus-visible {
+    outline: 3px solid var(--lime);
+    outline-offset: 4px;
   }
 
   .delivery-ordering-board h3 {
     margin: 0;
-    font-size: clamp(39px, 4.4vw, 70px);
+    font-size: clamp(34px, 3.4vw, 54px);
     line-height: .8;
     letter-spacing: -.085em;
   }
 
-  .delivery-ordering-board article p {
-    max-width: 410px;
-    margin: 25px 0 0;
-    font-size: 14px;
-    line-height: 1.7;
-  }
-
   .delivery-ordering-app {
-    display: flex;
-    min-height: 610px;
-    align-items: flex-end;
-    padding: clamp(45px, 6vw, 94px);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(210px, .62fr);
+    min-height: 440px;
+    gap: clamp(24px, 4vw, 64px);
+    align-items: end;
+    padding: clamp(40px, 3.8vw, 56px);
     background: var(--moss);
     color: #fff;
   }
@@ -625,33 +641,23 @@ const cargo = [
     flex-direction: column;
   }
 
-  .delivery-ordering-app p {
-    color: #d7e1d8;
-  }
-
-  .delivery-ordering-app .delivery-button,
-  .delivery-ordering-yandex .delivery-button {
-    margin-top: 32px;
-  }
-
   .delivery-ordering-app > img {
-    position: absolute;
-    z-index: 1;
-    right: clamp(-120px, -7vw, -68px);
-    bottom: -145px;
-    width: clamp(300px, 30vw, 470px);
-    filter: drop-shadow(24px 28px 0 rgba(8, 24, 16, .2));
+    position: relative;
+    z-index: 2;
+    justify-self: end;
+    width: clamp(210px, 18vw, 280px);
+    height: clamp(290px, 25vw, 320px);
+    border-radius: 22px;
+    box-shadow: 18px 20px 0 rgba(8, 24, 16, .2);
+    object-fit: cover;
+    object-position: top;
     transform: rotate(7deg);
     transition: transform .55s cubic-bezier(.22, 1, .36, 1);
   }
 
-  .delivery-ordering-app:hover > img {
-    transform: rotate(3deg) translateY(-10px);
-  }
-
   .delivery-ordering-yandex {
     display: flex;
-    min-height: 610px;
+    min-height: 460px;
     align-items: flex-end;
     padding: clamp(42px, 4.8vw, 74px);
     background: #ffe033;
@@ -659,7 +665,7 @@ const cargo = [
   }
 
   .delivery-ordering-yandex h3 {
-    font-size: clamp(40px, 3.6vw, 57px);
+    font-size: clamp(32px, 2.9vw, 46px);
   }
 
   .delivery-yandex-icon {
@@ -673,7 +679,7 @@ const cargo = [
   .delivery-ordering-pickup {
     grid-column: 1 / -1;
     display: flex;
-    min-height: 240px;
+    min-height: 180px;
     align-items: center;
     justify-content: space-between;
     gap: 42px;
@@ -683,11 +689,54 @@ const cargo = [
   }
 
   .delivery-ordering-pickup h3 {
-    font-size: clamp(34px, 3.8vw, 60px);
+    font-size: clamp(30px, 3.2vw, 50px);
   }
 
-  .delivery-ordering-pickup p {
-    color: var(--muted);
+  .delivery-ordering-link-cue {
+    position: absolute;
+    z-index: 3;
+    right: clamp(22px, 3vw, 44px);
+    bottom: clamp(22px, 3vw, 44px);
+    display: grid;
+    width: 44px;
+    aspect-ratio: 1;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--moss);
+    color: #fff;
+    transition: background-color .25s ease, color .25s ease;
+  }
+
+  .delivery-ordering-link-cue svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .delivery-ordering-card:hover .delivery-ordering-link-cue {
+    background: #fff;
+    color: var(--moss);
+  }
+
+  .delivery-ordering-app .delivery-ordering-link-cue {
+    top: clamp(22px, 3vw, 44px);
+    right: auto;
+    bottom: auto;
+    left: clamp(22px, 3vw, 44px);
+    background: var(--lime);
+    color: var(--moss);
+  }
+
+  .delivery-ordering-yandex .delivery-ordering-link-cue {
+    top: clamp(22px, 3vw, 44px);
+    right: auto;
+    bottom: auto;
+    left: clamp(22px, 3vw, 44px);
+    background: #111;
+    color: #ffe033;
+  }
+
+  .delivery-ordering-yandex:hover .delivery-ordering-link-cue {
+    color: #111;
   }
 
   .delivery-receipt-section {
@@ -866,8 +915,8 @@ const cargo = [
 
     .delivery-hero::after {
       background:
-        linear-gradient(0deg, rgba(241, 235, 225, .97) 0%, rgba(241, 235, 225, .82) 48%, rgba(241, 235, 225, .08) 78%),
-        linear-gradient(90deg, rgba(241, 235, 225, .75), transparent 80%);
+        linear-gradient(0deg, rgba(241, 235, 225, .62) 0%, rgba(241, 235, 225, .40) 48%, rgba(241, 235, 225, .02) 78%),
+        linear-gradient(90deg, rgba(241, 235, 225, .3), transparent 80%);
     }
 
     .delivery-hero-visual img {
@@ -880,7 +929,7 @@ const cargo = [
 
     .delivery-hero h1 {
       margin-bottom: 24px;
-      font-size: clamp(58px, 16vw, 72px);
+      font-size: clamp(48px, 13vw, 60px);
       line-height: .72;
     }
 
@@ -939,14 +988,14 @@ const cargo = [
     }
 
     .delivery-cargo {
-      min-height: 780px;
+      min-height: 0;
       margin: 0 var(--mobile-gutter);
-      padding: 50px 25px;
+      padding: 46px 25px 38px;
     }
 
     .delivery-cargo-scene {
       gap: 7px;
-      margin-top: 50px;
+      margin-top: 24px;
     }
 
     .delivery-cargo-item {
@@ -967,48 +1016,82 @@ const cargo = [
     }
 
     .delivery-ordering > header {
-      margin: 0 var(--delivery-edge) 54px;
+      margin: 0 var(--delivery-edge) 42px;
     }
 
     .delivery-ordering-board {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       margin: 0 var(--mobile-gutter);
     }
 
     .delivery-ordering-app {
-      min-height: 610px;
-      padding: 48px 25px;
+      grid-column: 1 / -1;
+      grid-template-columns: minmax(0, 1fr) 92px;
+      min-height: 248px;
+      gap: 14px;
+      align-items: start;
+      padding: 28px 18px;
     }
 
     .delivery-ordering-board h3 {
-      font-size: clamp(44px, 12.4vw, 59px);
+      font-size: clamp(28px, 7.7vw, 36px);
     }
 
     .delivery-ordering-app > img {
-      right: -76px;
-      bottom: -155px;
-      width: 380px;
+      width: 92px;
+      height: 186px;
+      border-radius: 14px;
+      box-shadow: 9px 11px 0 rgba(8, 24, 16, .2);
+      transform: rotate(4deg);
     }
 
     .delivery-ordering-yandex {
-      min-height: 470px;
-      padding: 43px 25px;
+      min-height: 200px;
+      align-items: flex-start;
+      padding: 28px 18px;
     }
 
     .delivery-yandex-icon {
-      top: 28px;
-      right: 28px;
-      width: 54px;
-      height: 54px;
+      display: none;
     }
 
     .delivery-ordering-pickup {
-      display: block;
-      min-height: 370px;
-      padding: 47px 25px;
+      display: flex;
+      min-height: 200px;
+      align-items: flex-start;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 28px 18px;
     }
 
-    .delivery-ordering-pickup .delivery-button {
-      margin-top: 34px;
+    .delivery-ordering-yandex h3,
+    .delivery-ordering-pickup h3 {
+      font-size: clamp(22px, 6vw, 28px);
+    }
+
+    .delivery-ordering-link-cue {
+      right: 18px;
+      bottom: 18px;
+      width: 40px;
+    }
+
+    .delivery-ordering-app .delivery-ordering-link-cue {
+      top: auto;
+      bottom: 18px;
+      left: 18px;
+    }
+
+    .delivery-ordering-yandex .delivery-ordering-link-cue {
+      top: auto;
+      right: 18px;
+      bottom: 18px;
+      left: auto;
+    }
+
+    .delivery-ordering-link-cue svg {
+      width: 17px;
+      height: 17px;
     }
 
     .delivery-receipt-section {
@@ -1031,11 +1114,19 @@ const cargo = [
   @media (max-width: 520px) {
     .delivery-actions {
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
     }
 
     .delivery-button {
       width: 100%;
+    }
+
+    .delivery-actions .delivery-button {
+      min-height: 48px;
+      padding: 0 8px;
+      font-size: 10px;
+      letter-spacing: -.01em;
     }
 
     .delivery-route-track li {
@@ -1043,7 +1134,7 @@ const cargo = [
     }
 
     .delivery-cargo {
-      min-height: 720px;
+      min-height: 0;
     }
 
     .delivery-cargo-copy .delivery-button {
@@ -1054,16 +1145,6 @@ const cargo = [
       align-self: flex-start;
     }
 
-    .delivery-ordering-app > img {
-      right: -96px;
-      bottom: -150px;
-      width: 350px;
-    }
-
-    .delivery-ordering-app .delivery-button,
-    .delivery-ordering-yandex .delivery-button {
-      width: 100%;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1077,6 +1158,8 @@ const cargo = [
     .delivery-route-track li > span,
     .delivery-cargo-item > div,
     .delivery-ordering-app > img,
+    .delivery-ordering-card,
+    .delivery-ordering-link-cue,
     .delivery-receipt,
     [data-delivery-reveal] {
       transition: none;
