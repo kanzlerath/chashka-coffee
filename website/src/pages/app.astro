@@ -105,7 +105,8 @@ const appChoices = page?.appChoices ?? defaultAppChoices
       y: 0,
       vx: 0,
       vy: 0,
-      rotation: element.style.getPropertyValue('--r') || '0deg',
+      angle: Number.parseFloat(element.style.getPropertyValue('--r')) || 0,
+      angularVelocity: 0,
     }))
     let animationFrame = 0
     let previousFrame = 0
@@ -118,7 +119,7 @@ const appChoices = page?.appChoices ?? defaultAppChoices
       state.baseY = state.element.offsetTop
     })
     const render = () => states.forEach((state) => {
-      state.element.style.transform = `translate3d(${state.x}px, ${state.y}px, 0) rotate(${state.rotation})`
+      state.element.style.transform = `translate3d(${state.x}px, ${state.y}px, 0) rotate(${state.angle}deg)`
     })
     const keepInBounds = (state: typeof states[number], width: number, height: number) => {
       const minX = -state.baseX
@@ -126,13 +127,17 @@ const appChoices = page?.appChoices ?? defaultAppChoices
       const floor = height - state.element.offsetHeight - state.baseY
 
       if (state.x < minX || state.x > maxX) {
+        const impactVelocity = state.vx
         state.x = Math.min(Math.max(state.x, minX), maxX)
         state.vx *= -.46
+        state.angularVelocity += (state.angle / 90) * impactVelocity * .08
       }
       if (state.y > floor) {
+        const impactVelocity = state.vy
         state.y = floor
         state.vy = Math.abs(state.vy) > 24 ? state.vy * -.3 : 0
         state.vx *= .86
+        state.angularVelocity += Math.sin(state.angle * Math.PI / 180) * impactVelocity * .08
       }
     }
     const separateCollisions = (width: number, height: number) => {
@@ -152,12 +157,20 @@ const appChoices = page?.appChoices ?? defaultAppChoices
             other.x -= direction * overlapX / 2
             state.vx += direction * 8
             other.vx -= direction * 8
+            const contactOffset = (top + state.element.offsetHeight / 2 - otherTop - other.element.offsetHeight / 2) / Math.max(state.element.offsetHeight, other.element.offsetHeight)
+            const rotationImpulse = contactOffset * (state.vx - other.vx) * .26
+            state.angularVelocity -= rotationImpulse
+            other.angularVelocity += rotationImpulse
           } else {
             const direction = top + state.element.offsetHeight / 2 < otherTop + other.element.offsetHeight / 2 ? -1 : 1
             state.y += direction * overlapY / 2
             other.y -= direction * overlapY / 2
             state.vy += direction * 7
             other.vy -= direction * 7
+            const contactOffset = (left + state.element.offsetWidth / 2 - otherLeft - other.element.offsetWidth / 2) / Math.max(state.element.offsetWidth, other.element.offsetWidth)
+            const rotationImpulse = contactOffset * (state.vy - other.vy) * .24
+            state.angularVelocity -= rotationImpulse
+            other.angularVelocity += rotationImpulse
           }
           keepInBounds(state, width, height)
           keepInBounds(other, width, height)
@@ -174,11 +187,13 @@ const appChoices = page?.appChoices ?? defaultAppChoices
         state.vy += 760 * delta
         state.x += state.vx * delta
         state.y += state.vy * delta
+        state.angle += state.angularVelocity * delta
+        state.angularVelocity *= .985
         keepInBounds(state, width, height)
       })
       separateCollisions(width, height)
       states.forEach((state) => {
-        if (Math.abs(state.vx) + Math.abs(state.vy) > 2) isMoving = true
+        if (Math.abs(state.vx) + Math.abs(state.vy) + Math.abs(state.angularVelocity) > 2) isMoving = true
       })
 
       render()
