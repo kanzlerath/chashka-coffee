@@ -5,7 +5,7 @@ import ContentBlocks from '../components/ContentBlocks.astro'
 import EditorialHero from '../components/EditorialHero.astro'
 import JobApplicationDialog from '../components/JobApplicationDialog.astro'
 import { fallbackJobOpenings, normalizeJobOpening, type JobOpeningCard } from '../lib/job-openings'
-import { getManagedPage } from '../lib/public-api'
+import { getManagedPage, managedPageImage } from '../lib/public-api'
 
 let jobs: JobOpeningCard[] = fallbackJobOpenings
 try {
@@ -20,6 +20,7 @@ const page = await getManagedPage('JOBS')
 const heroTitle = page?.heroTitle ?? 'Работа\nсо вкусом к людям'
 const heroDescription = page?.heroDescription ?? 'Ищем внимательных людей, которым важны гости, команда и хорошо сделанная работа.'
 const heroImage = page?.heroImageUrl ?? '/images/home-hero-v1.png'
+const teamImage = managedPageImage(page, 'team', { imageUrl: '/images/stock/jobs-team.jpg', imageAlt: 'Команда бариста за стойкой' })
 const values = [
   ['01', 'Можно прийти без опыта', 'Научим продукту, сервису и спокойной работе в ритме ресторана.'],
   ['02', 'Есть куда расти', 'От первой смены до роли тренера, менеджера или управляющего.'],
@@ -47,7 +48,7 @@ const restaurantFilters = [...new Map(jobs.flatMap((job) => job.restaurant ? [[j
   </section>
 
   <section class="jobs-portrait">
-    <figure><img src="/images/stock/jobs-team.jpg" alt="Команда бариста за стойкой" loading="lazy" /></figure>
+    <figure><img src={teamImage.imageUrl} alt={teamImage.imageAlt} loading="lazy" /></figure>
     <div>
       <p>Хороший сервис не играют по сценарию. Он получается там, где людям удобно говорить, спрашивать и помогать друг другу.</p>
       <blockquote>Работаем<br />вместе.<br /><em>По-настоящему.</em></blockquote>

@@ -4,6 +4,7 @@ import DishDialog from '../components/DishDialog.astro';
 import JournalCard from '../components/JournalCard.astro';
 import type { ContentEntry, HomepagePublicResponse, RestaurantSummary } from '@chashka-coffee/contracts';
 import { formatMenuPortion } from '../lib/menu-portion';
+import { getManagedPage, managedPageImage } from '../lib/public-api';
 
 const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
 let homepage: HomepagePublicResponse | null = null
@@ -39,6 +40,8 @@ const safeMenuHref = (href: string | null | undefined) => {
   return restaurants.some(({ slug }) => slug === menuRoute[1]) ? href : '/menu'
 }
 const slides = (homepage?.slides.length ? homepage.slides : defaultSlides).map((slide) => ({ ...slide, ctaUrl: safeMenuHref(slide.ctaUrl) }))
+const managedHome = await getManagedPage('HOME')
+const menuTileImage = managedPageImage(managedHome, 'menu-tile', { imageUrl: '/images/home-breakfast.png', imageAlt: 'Завтраки' })
 const productFallbacks = ['/images/home-breakfast.png', '/images/home-hero-v1.png', '/images/home-morning-v2.png', '/images/restaurants-hero.png']
 const badgeLabel = (value: string | null | undefined) => ({ NEW: 'Новинка', HIT: 'Хит', SEASONAL: 'Сезонное', SPECIAL: 'Специальное' }[value ?? ''] ?? value ?? null)
 const defaultBestsellers = [
@@ -113,7 +116,7 @@ const daySection = homepage?.daySection?.parts.length ? homepage.daySection : de
 const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
 ---
 
-<PageShell title="Чашка кофе" description="Чашка кофе — сеть ресторанов в Новосибирске: завтраки, десерты, кофе и места для хорошего дня." image="/images/home-morning-v2.png">
+<PageShell title="Чашка кофе" description="Чашка кофе — сеть ресторанов в Новосибирске: завтраки, десерты, кофе и места для хорошего дня." image={slides[0]?.mediaUrl ?? '/images/home-morning-v2.png'}>
   <div class="home-page">
     <section class="home-stories" data-home-stories aria-label="Актуальное в Чашке кофе" aria-roledescription="карусель" tabindex="0">
       <div class="stories-media">
@@ -171,7 +174,7 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
     <section class="home-menu home-section" aria-labelledby="menu-title">
       <header class="home-section-head"><div><h2 id="menu-title">Меню по настроению</h2></div></header>
       <div class="menu-grid">
-        <a class="menu-tile menu-main" href="/menu"><img src="/images/home-breakfast.png" alt="Завтраки" loading="lazy" /><span>Завтраки</span></a>
+        <a class="menu-tile menu-main" href="/menu"><img src={menuTileImage.imageUrl} alt={menuTileImage.imageAlt} loading="lazy" /><span>Завтраки</span></a>
         <a class="menu-tile menu-tile-coffee" href="/menu"><span>Кофе</span><img class="menu-tile-art menu-art-coffee" src="/images/coffee-inhouse.svg" alt="" aria-hidden="true" /></a>
         <a class="menu-tile menu-tile-seasonal" href="/promotions"><span>Летние<br />хиты</span><img class="menu-tile-art menu-art-seasonal" src="/images/summer-hits.svg" alt="" aria-hidden="true" /></a>
         <a class="menu-tile menu-tile-hot" href="/menu"><span>Горячие<br />блюда</span><img class="menu-tile-art menu-art-hot" src="/images/hot-dish.svg" alt="" aria-hidden="true" /></a>
@@ -300,80 +303,6 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
     scheduleAutoplay()
   }
 
-  const bestsellerCarousel = document.querySelector<HTMLElement>('[data-bestseller-carousel]')
-  if (bestsellerCarousel) {
-    const viewport = bestsellerCarousel.querySelector<HTMLElement>('[data-bestseller-viewport]')
-    const track = bestsellerCarousel.querySelector<HTMLElement>('[data-bestseller-track]')
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
-    let pointerId: number | null = null
-    let pointerStartX = 0
-    let pointerStartY = 0
-    let scrollStart = 0
-    let dragged = false
-    let suppressClick = false
-
-    const cards = () => track ? [...track.querySelectorAll<HTMLElement>('[data-bestseller-card]')] : []
-    const step = () => {
-      const first = cards()[0]
-      if (!first || !track) return 0
-      const styles = getComputedStyle(track)
-      return first.getBoundingClientRect().width + (Number.parseFloat(styles.columnGap || styles.gap) || 0)
-    }
-    const move = (direction: -1 | 1) => {
-      if (!viewport || cards().length < 2) return
-      const maxScroll = Math.max(0, viewport.scrollWidth - viewport.clientWidth)
-      const target = Math.min(maxScroll, Math.max(0, viewport.scrollLeft + step() * direction))
-      viewport.scrollTo({ left: target, behavior: reduceMotion.matches ? 'auto' : 'smooth' })
-    }
-
-    viewport?.addEventListener('keydown', (event) => {
-      if (event.key === 'ArrowLeft') { event.preventDefault(); move(-1) }
-      if (event.key === 'ArrowRight') { event.preventDefault(); move(1) }
-    })
-    viewport?.addEventListener('pointerdown', (event) => {
-      if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0) || cards().length < 2) return
-      pointerId = event.pointerId
-      pointerStartX = event.clientX
-      pointerStartY = event.clientY
-      scrollStart = viewport.scrollLeft
-      dragged = false
-    })
-    viewport?.addEventListener('pointermove', (event) => {
-      if (pointerId !== event.pointerId) return
-      const distanceX = event.clientX - pointerStartX
-      const distanceY = event.clientY - pointerStartY
-      if (!dragged && Math.abs(distanceX) < 6) return
-      if (!dragged && Math.abs(distanceY) > Math.abs(distanceX)) return
-      if (!dragged) {
-        dragged = true
-        viewport.setPointerCapture(event.pointerId)
-        bestsellerCarousel.classList.add('is-dragging')
-      }
-      viewport.scrollLeft = scrollStart - distanceX
-      event.preventDefault()
-    })
-    const finishDrag = (event: PointerEvent) => {
-      if (pointerId !== event.pointerId || !viewport) return
-      if (viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId)
-      pointerId = null
-      bestsellerCarousel.classList.remove('is-dragging')
-      if (dragged) {
-        suppressClick = true
-        const maxScroll = Math.max(0, viewport.scrollWidth - viewport.clientWidth)
-        const target = Math.min(maxScroll, Math.max(0, Math.round(viewport.scrollLeft / step()) * step()))
-        viewport.scrollTo({ left: target, behavior: reduceMotion.matches ? 'auto' : 'smooth' })
-        window.setTimeout(() => { suppressClick = false }, 0)
-      }
-    }
-    viewport?.addEventListener('pointerup', finishDrag)
-    viewport?.addEventListener('pointercancel', finishDrag)
-    viewport?.addEventListener('click', (event) => {
-      if (!suppressClick) return
-      event.preventDefault()
-      event.stopImmediatePropagation()
-    }, true)
-  }
-
   const places = document.querySelector<HTMLElement>('[data-home-places]')
   if (places) {
     const panels = [...places.querySelectorAll<HTMLElement>('[data-place-panel]')]
@@ -424,11 +353,11 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
   .story-arrows button:hover{background:transparent;color:#bddb3d}.story-arrows button[data-story-previous]:hover{transform:translateX(-3px)}.story-arrows button[data-story-next]:hover{transform:translateX(3px)}
   .story-arrows svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
   .story-progress button{border-radius:var(--home-radius)}
-  .bestseller-viewport{margin:29px 0 -30px;padding:8px 0 52px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;touch-action:pan-y;cursor:grab}
+  .bestseller-viewport{margin:29px 0 -30px;padding:8px 0 52px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-snap-type:none;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x;cursor:grab}
   .bestseller-viewport::-webkit-scrollbar{display:none}
   .bestseller-viewport:focus-visible{outline:3px solid #bddb3d;outline-offset:5px}
   .bestseller-list{display:flex;min-width:0;gap:12px;margin:0;padding:0;overflow:visible;overflow-anchor:none;scroll-snap-type:none}
-  .bestseller-list>.product-card{flex:0 0 var(--bestseller-card-basis,30.4%);min-width:0;scroll-snap-align:start;scroll-snap-stop:always}
+  .bestseller-list>.product-card{flex:0 0 var(--bestseller-card-basis,30.4%);min-width:0;scroll-snap-align:none;scroll-snap-stop:normal}
   .home-bestsellers.is-dragging .bestseller-viewport{scroll-snap-type:none;cursor:grabbing;user-select:none}
   .home-bestsellers.is-dragging .product-card{pointer-events:none}
   .product-card{display:grid;grid-template-rows:auto 1fr;align-content:start;padding:11px;background:#f7f5f0}
@@ -498,12 +427,13 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
     .home-stories,.stories-media,.bento-card,.home-day,.menu-tile,.menu-all,.places-stage,.home-home-coffee,.home-app-loyalty,.journal-card{border-radius:var(--home-radius)}
     .home-stories{display:block;min-height:calc(100svh - 116px);margin:0 var(--mobile-gutter)}
     .stories-media{display:block;min-height:0;border-radius:0!important}
-    .story-copy-item{--story-inset:24px;right:24px;bottom:var(--story-inset);left:var(--story-inset);width:auto}
-    .story-copy-item h1{max-width:340px;font-size:clamp(57px,16vw,78px);white-space:normal}.story-title-script{line-height:.76}.story-title-main{font-size:.8em}
+    .story-copy-item{--story-inset:76px;right:24px;bottom:var(--story-inset);left:24px;width:auto}
+    .story-copy-item h1{max-width:315px;font-size:clamp(48px,13vw,58px);white-space:normal}.story-title-script{line-height:.76}.story-title-main{font-size:.8em}
     .story-description{max-width:300px;margin-top:10px;font-size:13px;white-space:normal}
-    .story-navigation{right:20px;bottom:20px;gap:11px}
-    .story-progress{gap:5px}.story-progress button{width:24px}.story-progress button.is-active{width:42px}
-    .story-counter{font-size:10px}.story-arrows button{width:27px;height:27px}
+    .story-copy-item .ui-button{margin-top:18px}
+    .story-navigation{right:24px;bottom:20px;left:24px;gap:0}
+    .story-progress{width:100%;gap:5px}.story-progress button,.story-progress button.is-active{width:auto;flex:1}
+    .story-counter,.story-arrows{display:none}
     .home-section{padding-right:var(--mobile-gutter);padding-left:var(--mobile-gutter)}
     .menu-all svg{width:43px;height:43px;padding:10px}
     .bestseller-viewport{margin-right:calc(var(--mobile-gutter) * -1);margin-left:calc(var(--mobile-gutter) * -1);padding-right:var(--mobile-gutter);padding-left:var(--mobile-gutter);scroll-padding-inline:var(--mobile-gutter)}
@@ -511,10 +441,9 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
     .journal-list{margin-right:calc(var(--mobile-gutter) * -1);margin-left:calc(var(--mobile-gutter) * -1);padding-right:var(--mobile-gutter);padding-left:var(--mobile-gutter)}
     .journal-list :global(.news-card){flex:0 0 95%;scroll-snap-align:start}
     .home-bento{grid-template-columns:repeat(2,minmax(0,1fr));margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter)}
+    .home-bento{grid-template-rows:360px 220px 220px 160px}
     .bento-card{min-width:0;padding:18px}
-    .bento-card h2{max-width:100%;font-size:clamp(22px,6.8vw,28px);line-height:.91;letter-spacing:-.07em}
-    .bento-event h2,.bento-promo h2,.bento-bakery h2,.bento-certificates h2{font-size:clamp(18px,5.6vw,24px);overflow-wrap:normal;hyphens:auto}
-    .bento-bakery h2{font-size:clamp(16px,4.5vw,19px)}
+    .bento-card h2,.bento-event h2,.bento-promo h2,.bento-certificates h2,.bento-bakery h2{max-width:100%;font-size:clamp(18px,5.2vw,21px);line-height:.91;letter-spacing:-.07em;overflow-wrap:normal;hyphens:auto}
     .bento-art-app{right:7%;bottom:-18%;width:48%;max-height:70%}
     .bento-art-coffee{right:-4%;bottom:-12%;width:78%;max-height:72%}
     .bento-art-event{right:-10%;bottom:-14%;width:78%;max-height:70%}
@@ -531,10 +460,15 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
     .places-stage{height:auto;margin-right:0;margin-left:0;border-radius:var(--home-radius)}
     .place-list{max-height:390px;padding:0 20px 30px}
     .home-final-callouts{grid-template-columns:1fr;gap:10px;margin:0 var(--mobile-gutter)}
-    .home-final-callouts>.home-home-coffee,.home-final-callouts>.home-app-loyalty{display:block;min-height:330px;margin:0;padding:40px 20px}
-    .home-final-callouts h2{font-size:clamp(40px,12vw,58px)}
-    .home-final-callouts .home-coffee-visual{right:-6%;bottom:-17%;width:min(82%,320px);transform:translate(4%,6%) rotate(-6deg)}
-    .home-final-callouts .loyalty-visual{right:-8%;bottom:-5%;width:min(82%,330px);transform:translate(4%,3%) rotate(5deg)}
+    .home-final-callouts>.home-home-coffee,.home-final-callouts>.home-app-loyalty{display:block;min-height:330px;margin:0;padding:36px 20px}
+    .home-final-callouts>.home-home-coffee:after,.home-final-callouts>.home-app-loyalty:after{position:absolute;z-index:1;inset:0 auto 0 0;width:72%;content:'';pointer-events:none}
+    .home-final-callouts>.home-home-coffee:after{background:linear-gradient(90deg,#d9ceac 0%,#d9ceac 72%,rgba(217,206,172,0) 100%)}
+    .home-final-callouts>.home-app-loyalty:after{background:linear-gradient(90deg,#e9e2d9 0%,#e9e2d9 72%,rgba(233,226,217,0) 100%)}
+    .home-final-callouts>.home-home-coffee>div,.home-final-callouts>.home-app-loyalty>div{max-width:58%;z-index:2}
+    .home-final-callouts h2{font-size:clamp(35px,10vw,42px)}
+    .home-final-callouts p{max-width:none;font-size:12px}
+    .home-final-callouts .home-coffee-visual{right:-12%;bottom:-20%;width:min(69%,270px);transform:translate(4%,6%) rotate(-6deg)}
+    .home-final-callouts .loyalty-visual{right:-14%;bottom:-7%;width:min(69%,280px);transform:translate(4%,3%) rotate(5deg)}
     .home-final-callouts .home-home-coffee:hover .home-coffee-visual{transform:translate(4%,6%) rotate(-6deg)}
     .home-final-callouts .home-app-loyalty:hover .loyalty-visual{transform:translate(4%,3%) rotate(5deg)}
   }

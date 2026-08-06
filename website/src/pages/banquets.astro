@@ -2,12 +2,13 @@
 import PageShell from '../layouts/PageShell.astro'
 import LeadPanel from '../components/LeadPanel.astro'
 import ContentBlocks from '../components/ContentBlocks.astro'
-import { getManagedPage } from '../lib/public-api'
+import { getManagedPage, managedPageImage } from '../lib/public-api'
 
 const page = await getManagedPage('BANQUETS')
 const heroTitle = page?.heroTitle ?? 'Соберём\nваш повод'
 const heroDescription = page?.heroDescription ?? 'Семейный праздник, важный ужин или встреча команды — выберите настроение, а детали мы соберём вместе.'
 const heroImage = page?.heroImageUrl ?? '/images/restaurants-hero.png'
+const gatheringImage = managedPageImage(page, 'gathering', { imageUrl: '/images/stock/banquets-gathering.jpg', imageAlt: 'Гости за праздничным столом' })
 const occasions = [
   ['01', 'Семейные даты', 'Дни рождения, юбилеи и тёплые встречи за одним столом.'],
   ['02', 'Деловые события', 'Завтраки, камерные презентации и ужины с партнёрами.'],
@@ -48,7 +49,7 @@ const preparation = [
   </section>
 
   <section class="banquet-story">
-    <figure><img src="/images/stock/banquets-gathering.jpg" alt="Гости за праздничным столом" loading="lazy" /></figure>
+    <figure><img src={gatheringImage.imageUrl} alt={gatheringImage.imageAlt} loading="lazy" /></figure>
     <div>
       <blockquote>Повод ваш.<br />Забота — наша.</blockquote>
       <p>Можно прийти с точным сценарием или только с датой. Мы зададим нужные вопросы, предложим несколько вариантов и оставим вам главное — быть рядом с гостями.</p>

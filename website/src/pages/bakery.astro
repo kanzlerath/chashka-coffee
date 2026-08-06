@@ -3,6 +3,7 @@ import PageShell from '../layouts/PageShell.astro'
 import ContentBlocks from '../components/ContentBlocks.astro'
 import EditorialHero from '../components/EditorialHero.astro'
 import ProductCard from '../components/ProductCard.astro'
+import LeadPanel from '../components/LeadPanel.astro'
 import { getManagedPage, getProducts } from '../lib/public-api'
 
 const [products, page] = await Promise.all([getProducts('CAKE'), getManagedPage('BAKERY')])
@@ -93,8 +94,18 @@ const excluded = ['маргарин', 'спреды', 'покупные джем
 
   <section class="cake-order reveal-on-scroll">
     <div><h2>Ваш повод.<br />Наша работа.</h2><p>Мы с любовью создаём торты и десерты и хотим, чтобы вы были уверены в их натуральности. Спасибо, что выбираете нас.</p></div>
-    <a href="/contacts">Обсудить заказ <span aria-hidden="true">→</span></a>
+    <a href="#cake-request">Обсудить заказ <span aria-hidden="true">→</span></a>
   </section>
+
+  <LeadPanel
+    id="cake-request"
+    title={'Расскажите\nо вашем торте'}
+    description="Напишите дату, количество гостей и пожелания по вкусу. Кондитерская уточнит детали и рассчитает стоимость."
+    type="CAKE"
+    submitLabel="Отправить в кондитерскую"
+    subjectLabel="Повод или вид торта"
+    source="bakery_order_request"
+  />
 </PageShell>
 
 <script>

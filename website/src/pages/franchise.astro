@@ -2,12 +2,13 @@
 import PageShell from '../layouts/PageShell.astro'
 import LeadPanel from '../components/LeadPanel.astro'
 import ContentBlocks from '../components/ContentBlocks.astro'
-import { getManagedPage } from '../lib/public-api'
+import { getManagedPage, managedPageImage } from '../lib/public-api'
 
 const page = await getManagedPage('FRANCHISE')
 const heroTitle = page?.heroTitle ?? 'Бизнес,\nв который\nвозвращаются'
 const heroDescription = page?.heroDescription ?? 'Открывайте Чашку кофе в своём городе — с узнаваемым продуктом, готовой системой и командой, которая остаётся рядом после запуска.'
 const heroImage = page?.heroImageUrl ?? '/images/restaurants-hero.png'
+const roasteryImage = managedPageImage(page, 'roastery', { imageUrl: '/images/stock/franchise-roastery.jpg', imageAlt: 'Работа с зерном у кофейного ростера' })
 const formats = [
   ['01', 'Кофе-пойнт', 'от 5 м²', 'Компактный формат для деловых центров, транспортных узлов и пространств с быстрым трафиком.'],
   ['02', 'Кофейня с посадкой', 'городской ритм', 'Кофе, выпечка и понятное меню в месте, куда заходят по пути и остаются на разговор.'],
@@ -80,7 +81,7 @@ const stages = [
       <p>С 2017 года всё привезённое зерно мы обжариваем самостоятельно. Работаем со specialty-сортами и лучшими лотами из Колумбии, Эфиопии, Бразилии и других кофейных регионов.</p>
       <p>Для каждого сорта подбираем время, температуру и профиль, которые раскрывают его вкус и аромат.</p>
     </div>
-    <figure><img src="/images/stock/franchise-roastery.jpg" alt="Работа с зерном у кофейного ростера" loading="lazy" /></figure>
+    <figure><img src={roasteryImage.imageUrl} alt={roasteryImage.imageAlt} loading="lazy" /></figure>
   </section>
 
   <section class="franchise-support">

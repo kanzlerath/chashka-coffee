@@ -12,6 +12,7 @@ const { eventSlug, eventTitle } = Astro.props as { eventSlug: string; eventTitle
 </form>
 <script>
   import { attachRussianPhoneMask } from '../lib/contact-fields'
+  import { PUBLIC_FORM_SUCCESS_EVENT } from '../lib/form-success'
 
   const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
   document.querySelectorAll<HTMLFormElement>('[data-event-form]').forEach((form) => {
@@ -26,7 +27,17 @@ const { eventSlug, eventTitle } = Astro.props as { eventSlug: string; eventTitle
     const payload = { type:'EVENT_REGISTRATION', name:String(values.get('name') ?? '').trim(), phone:String(values.get('phone') ?? '').trim() || null, email:String(values.get('email') ?? '').trim() || null, message:String(values.get('message') ?? '').trim() || null, metadata:{ eventSlug:form.dataset.eventSlug ?? '', eventTitle:form.dataset.eventTitle ?? '', guests:String(values.get('guests') ?? '1') } }
     if (button) button.disabled = true
     if (status) status.textContent = 'Отправляем…'
-    try { const response = await fetch(`${apiUrl}/api/leads`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); if(!response.ok) throw new Error(); form.reset(); if(status) status.textContent='Вы в списке! Мы свяжемся для подтверждения.' } catch { if(status) status.textContent='Не удалось отправить заявку. Попробуйте ещё раз.' } finally { if(button) button.disabled=false }
+    try {
+      const response = await fetch(`${apiUrl}/api/leads`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) })
+      if (!response.ok) throw new Error()
+      form.reset()
+      if (status) status.textContent = 'Регистрация принята.'
+      document.dispatchEvent(new CustomEvent(PUBLIC_FORM_SUCCESS_EVENT, { detail: { type: 'EVENT_REGISTRATION', eventTitle: form.dataset.eventTitle, form } }))
+    } catch {
+      if (status) status.textContent = 'Не удалось отправить заявку. Попробуйте ещё раз.'
+    } finally {
+      if (button) button.disabled = false
+    }
     })
   })
 </script>

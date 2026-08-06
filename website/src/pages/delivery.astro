@@ -1,13 +1,14 @@
 ---
 import PageShell from '../layouts/PageShell.astro'
 import ContentBlocks from '../components/ContentBlocks.astro'
-import { getManagedPage } from '../lib/public-api'
+import { getManagedPage, managedPageImage } from '../lib/public-api'
 
 const page = await getManagedPage('DELIVERY')
 const heroTitle = page?.heroTitle ?? 'Любимое\nприедет.'
 const heroLines = heroTitle.split(/\r?\n/).filter(Boolean)
 const heroDescription = page?.heroDescription ?? 'Для медленного утра, обеда между встречами или вечера, когда хочется остаться дома.'
 const heroImage = page?.heroImageUrl ?? '/images/home-breakfast.png'
+const appOrderImage = managedPageImage(page, 'app-order-screen', { imageUrl: '/images/app/order-screen.webp', imageAlt: 'Экран заказа в приложении Чашка кофе' })
 const steps = [
   {
     number: '01',
@@ -116,7 +117,7 @@ const cargo = [
           <div>
             <h3>Приложение<br />«Чашки кофе»</h3>
           </div>
-          <img src="/images/app/order-screen.webp" alt="" aria-hidden="true" />
+          <img src={appOrderImage.imageUrl} alt={appOrderImage.imageAlt} />
           <span class="delivery-ordering-link-cue" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none">
               <path d="M5 19 19 5M8 5h11v11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />

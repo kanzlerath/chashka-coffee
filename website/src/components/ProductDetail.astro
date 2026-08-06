@@ -19,7 +19,7 @@ const kind = product.type === 'COFFEE' ? 'Кофе собственной обж
         <fieldset class="variants"><legend>Выберите фасовку</legend>{available.map((variant, index) => <label><input type="radio" name="variant" value={variant.id} checked={index === 0} data-variant-label={variant.label} data-price={variant.priceKopecks}/><span>{variant.label}</span><strong>{money(variant.priceKopecks)}</strong></label>)}</fieldset>
         <button class="product-add" type="submit" disabled={available.length === 0}>{available.length ? 'Добавить в корзину' : 'Сейчас нет в продаже'}</button>
         <p class="product-order" data-product-message>Самовывоз из выбранных ресторанов. Наличие и цена подтвердятся при оформлении.</p>
-      </form> : <p class="product-order">Для заказа торта свяжитесь с кондитерской не менее чем за 48 часов.</p>}
+      </form> : <p class="product-order">Для заказа торта оставьте <a href="/bakery#cake-request">заявку кондитерской</a> не менее чем за 48 часов.</p>}
     </div>
   </article>
   {product.blocks.some((block) => block.isVisible) && <section class="product-blocks"><ContentBlocks blocks={product.blocks}/></section>}

@@ -1,4 +1,4 @@
-import type { ContentEntry, JobOpening, ManagedPage, ManagedPageKey, Product, ProductType, RestaurantSummary } from '@chashka-coffee/contracts'
+import type { ContentEntry, JobOpening, ManagedPage, ManagedPageKey, Product, ProductType, RestaurantSummary, SiteSettings } from '@chashka-coffee/contracts'
 
 const apiOrigin = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
 
@@ -59,6 +59,15 @@ export async function getProductSlugs(type: ProductType, fallback: string[]) {
 export async function getManagedPage(key: ManagedPageKey) {
   const response = await getJson<{ page: ManagedPage }>(`/api/pages/${key}`)
   return response?.page ?? null
+}
+
+export function managedPageImage(page: ManagedPage | null, id: string, fallback: { imageUrl: string; imageAlt: string }) {
+  return page?.images.find((image) => image.id === id) ?? fallback
+}
+
+export async function getSiteSettings() {
+  const response = await getJson<{ settings: SiteSettings }>('/api/site-settings')
+  return response?.settings ?? null
 }
 
 export async function getContent(type: ContentEntry['type']) {

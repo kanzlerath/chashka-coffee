@@ -1,0 +1,67 @@
+<dialog class="form-success-dialog" data-form-success-dialog aria-labelledby="form-success-title" aria-describedby="form-success-copy">
+  <div class="form-success-card">
+    <button class="form-success-close" type="button" data-form-success-close aria-label="Закрыть сообщение">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 5 14 14M19 5 5 19" /></svg>
+    </button>
+
+    <div class="form-success-mark" aria-hidden="true">
+      <svg viewBox="0 0 48 48"><path d="m13 25 7 7 16-17" /></svg>
+    </div>
+
+    <p class="form-success-eyebrow" data-form-success-eyebrow>Заявка отправлена</p>
+    <h2 id="form-success-title" data-form-success-title>Мы всё получили</h2>
+    <p class="form-success-copy" id="form-success-copy" data-form-success-copy>Скоро свяжемся с вами по указанным контактам.</p>
+
+    <button class="form-success-return" type="button" data-form-success-return>
+      <span>Вернуться на страницу</span>
+      <span class="form-success-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
+      </span>
+    </button>
+  </div>
+</dialog>
+
+<script>
+  import { getPublicFormSuccessMessage, PUBLIC_FORM_SUCCESS_EVENT, type PublicFormSuccessContext } from '../lib/form-success'
+
+  type PublicFormSuccessDetail = PublicFormSuccessContext & { form?: HTMLFormElement }
+
+  const dialog = document.querySelector<HTMLDialogElement>('[data-form-success-dialog]')
+  const eyebrow = dialog?.querySelector<HTMLElement>('[data-form-success-eyebrow]')
+  const title = dialog?.querySelector<HTMLElement>('[data-form-success-title]')
+  const copy = dialog?.querySelector<HTMLElement>('[data-form-success-copy]')
+  const returnButton = dialog?.querySelector<HTMLButtonElement>('[data-form-success-return]')
+
+  const closeDialog = () => dialog?.close()
+
+  document.addEventListener(PUBLIC_FORM_SUCCESS_EVENT, (event) => {
+    if (!dialog) return
+    const detail = (event as CustomEvent<PublicFormSuccessDetail>).detail ?? {}
+    const message = getPublicFormSuccessMessage(detail)
+
+    if (eyebrow) eyebrow.textContent = message.eyebrow
+    if (title) title.textContent = message.title
+    if (copy) copy.textContent = message.copy
+
+    const sourceDialog = detail.form?.closest<HTMLDialogElement>('dialog[open]')
+    if (sourceDialog && sourceDialog !== dialog) sourceDialog.close()
+    if (!dialog.open) dialog.showModal()
+    returnButton?.focus()
+  })
+
+  dialog?.querySelector('[data-form-success-close]')?.addEventListener('click', closeDialog)
+  returnButton?.addEventListener('click', closeDialog)
+  dialog?.addEventListener('click', (event) => { if (event.target === dialog) closeDialog() })
+</script>
+
+<style>
+  .form-success-dialog{width:min(620px,calc(100vw - 40px));max-width:none;max-height:calc(100svh - 40px);margin:auto;padding:0;border:0;border-radius:var(--radius);background:transparent;color:#fff;overflow:visible}.form-success-dialog::backdrop{background:rgba(17,28,22,.7);backdrop-filter:blur(9px)}.form-success-dialog[open]{animation:form-success-dialog-in .32s cubic-bezier(.22,1,.36,1)}
+  .form-success-card{position:relative;display:flex;min-height:540px;padding:clamp(34px,6vw,62px);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);background:var(--moss);box-shadow:0 30px 100px rgba(14,25,18,.38);flex-direction:column;align-items:flex-start;overflow:hidden}.form-success-card:after{position:absolute;right:-105px;bottom:-125px;width:310px;height:310px;border:1px solid rgba(189,214,90,.17);border-radius:50%;box-shadow:0 0 0 58px rgba(189,214,90,.045),0 0 0 116px rgba(189,214,90,.025);content:"";pointer-events:none}
+  .form-success-close{position:absolute;z-index:2;top:20px;right:20px;display:grid;width:46px;height:46px;padding:0;border:1px solid rgba(255,255,255,.15);border-radius:var(--radius);background:rgba(255,255,255,.07);color:#fff;place-items:center;cursor:pointer;transition:background-color .2s ease,transform .2s ease}.form-success-close:hover{background:rgba(255,255,255,.14);transform:rotate(4deg)}.form-success-close:focus-visible,.form-success-return:focus-visible{outline:3px solid var(--lime);outline-offset:3px}.form-success-close svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-width:1.8}
+  .form-success-mark{display:grid;width:72px;height:72px;margin-bottom:auto;border-radius:50%;background:var(--lime);color:var(--moss);place-items:center;box-shadow:0 0 0 10px rgba(189,214,90,.09)}.form-success-mark svg{width:39px;height:39px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:3}.form-success-dialog[open] .form-success-mark svg{animation:form-success-check-in .48s .12s both cubic-bezier(.22,1,.36,1)}
+  .form-success-eyebrow{position:relative;z-index:1;margin:46px 0 14px;color:var(--lime);font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.form-success-card h2{position:relative;z-index:1;max-width:470px;margin:0;color:#fff;font-size:clamp(48px,7.5vw,76px);line-height:.88;letter-spacing:-.075em}.form-success-copy{position:relative;z-index:1;max-width:440px;margin:24px 0 34px;color:#d8e0da;font-size:14px;line-height:1.65}
+  .form-success-return{position:relative;z-index:1;display:flex;width:100%;min-height:58px;padding:7px 8px 7px 20px;border:0;border-radius:var(--radius);background:#fff;color:var(--moss);align-items:center;justify-content:space-between;font-size:12px;font-weight:800;cursor:pointer;transition:background-color .2s ease,transform .2s ease}.form-success-return:hover{background:#f3f6e7;transform:translateY(-2px)}.form-success-arrow{display:grid;width:43px;height:43px;border-radius:50%;background:var(--lime);place-items:center}.form-success-arrow svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8;transition:transform .2s ease}.form-success-return:hover .form-success-arrow svg{transform:translateX(2px)}
+  @keyframes form-success-dialog-in{from{opacity:0;transform:translateY(18px) scale(.975)}to{opacity:1;transform:none}}@keyframes form-success-check-in{from{opacity:0;transform:scale(.55) rotate(-12deg)}to{opacity:1;transform:none}}
+  @media(max-width:620px){.form-success-dialog{position:fixed;inset:auto 12px 12px;width:auto;max-height:calc(100svh - 24px);margin:0}.form-success-card{min-height:min(570px,calc(100svh - 24px));padding:30px 24px 24px}.form-success-close{top:16px;right:16px;width:43px;height:43px}.form-success-mark{width:62px;height:62px}.form-success-eyebrow{margin-top:40px}.form-success-card h2{font-size:clamp(45px,14vw,61px)}.form-success-copy{margin:20px 0 28px;font-size:13px}}
+  @media(prefers-reduced-motion:reduce){.form-success-dialog[open],.form-success-dialog[open] .form-success-mark svg{animation:none}.form-success-close,.form-success-return,.form-success-arrow svg{transition:none}}
+</style>
