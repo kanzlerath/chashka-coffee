@@ -522,6 +522,34 @@ maybeDescribe('auth API integration', () => {
     expect((await app.request('/api/admin/analytics?days=7', { headers: recruiterHeaders })).status).toBe(403)
   })
 
+  test('lets a recruiter link a vacancy to a restaurant and exposes the address in public data', async () => {
+    const restaurant = await prisma.restaurant.create({
+      data: { slug: 'krasny-prospekt', name: 'Чашка кофе', format: 'CITY', area: 'CITY', city: 'Новосибирск', address: 'Красный проспект, 25', phone: '+7 (383) 000-00-00' },
+    })
+    await createUser('recruiter@example.com', 'password123', 'Рекрутер', ['RECRUITER'])
+    const login = await app.request('/api/auth/token/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'recruiter@example.com', password: 'password123' }),
+    })
+    const { accessToken } = await login.json()
+    const headers = { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }
+
+    const restaurantOptions = await app.request('/api/admin/jobs/restaurants', { headers })
+    expect(restaurantOptions.status).toBe(200)
+    expect((await restaurantOptions.json()).restaurants).toEqual([{ id: restaurant.id, name: 'Чашка кофе', address: 'Красный проспект, 25' }])
+
+    const created = await app.request('/api/admin/jobs', {
+      method: 'POST', headers,
+      body: JSON.stringify({ slug: 'barista-krasny', title: 'Бариста', department: 'Ресторан', location: null, employmentType: 'Сменный график', description: 'Готовить напитки и помогать гостям.', restaurantId: restaurant.id, status: 'PUBLISHED', publishAt: null, position: 10 }),
+    })
+    expect(created.status).toBe(201)
+    expect((await created.json()).opening.restaurant).toEqual({ id: restaurant.id, name: 'Чашка кофе', address: 'Красный проспект, 25' })
+
+    const publicJobs = await app.request('/api/jobs')
+    expect(publicJobs.status).toBe(200)
+    expect((await publicJobs.json()).openings[0]).toMatchObject({ title: 'Бариста', restaurant: { id: restaurant.id, address: 'Красный проспект, 25' } })
+  })
+
   test('records anonymous page views and exposes their summary only to administrators', async () => {
     const visitorId = 'b3d1ac58-2630-4f66-97b8-70214886811c'
     const record = await app.request('/api/analytics/page-view', {

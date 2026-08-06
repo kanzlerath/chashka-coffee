@@ -613,14 +613,17 @@ model JobOpening {
   location       String?            @db.VarChar(180)
   employmentType String?            @map("employment_type") @db.VarChar(80)
   description    String?
+  restaurantId   String?            @map("restaurant_id") @db.Uuid
   isPublished    Boolean            @default(false) @map("is_published")
   status         PublicationStatus?
   publishAt      DateTime?          @map("publish_at")
   position       Int                @default(0)
   createdAt      DateTime           @default(now()) @map("created_at")
   updatedAt      DateTime           @updatedAt @map("updated_at")
+  restaurant     Restaurant?        @relation(fields: [restaurantId], references: [id], onDelete: SetNull, map: "job_openings_restaurant_id_fkey")
 
   @@index([isPublished, position], map: "job_openings_published_position_idx")
+  @@index([restaurantId, position], map: "job_openings_restaurant_position_idx")
   @@map("job_openings")
 }
 
@@ -653,6 +656,7 @@ model Restaurant {
   menuAssignments     RestaurantMenu[]
   menuItemOverrides   MenuItemOverride[]
   pickupOrders        Order[]
+  jobOpenings         JobOpening[]
 
   @@index([format], map: "restaurants_format_idx")
   @@index([area], map: "restaurants_area_idx")

@@ -1,4 +1,4 @@
-import type { JobOpening } from '@chashka-coffee/contracts'
+import type { JobOpening, JobOpeningRestaurant } from '@chashka-coffee/contracts'
 
 export type JobOpeningCard = {
   slug: string
@@ -6,40 +6,45 @@ export type JobOpeningCard = {
   place: string
   terms: string
   description: string
+  restaurant: JobOpeningRestaurant | null
 }
 
-type PublicJobOpening = Pick<JobOpening, 'slug' | 'title' | 'department' | 'location' | 'employmentType' | 'description'>
+type PublicJobOpening = Pick<JobOpening, 'slug' | 'title' | 'department' | 'location' | 'employmentType' | 'description' | 'restaurant'>
 
-const genericDescription = 'Подробности роли, задачи, график и финансовые условия обсудим при знакомстве. На встрече расскажем, как устроена смена, кто помогает на старте и какие возможности роста есть внутри команды.\n\nРасскажите о своём опыте и о том, какая работа вам интересна — команда поможет найти подходящий формат и ответит на вопросы.'
+const genericDescription = 'Условия и задачи уточнит рекрутер. Оставьте отклик — свяжемся и расскажем о графике, оплате и формате работы.'
 
 export const normalizeJobOpening = (opening: PublicJobOpening): JobOpeningCard => ({
   slug: opening.slug,
   title: opening.title,
-  place: [opening.department, opening.location].filter(Boolean).join(' · ') || 'Чашка кофе',
+  place: opening.restaurant ? `${opening.restaurant.name} · ${opening.restaurant.address}` : [opening.department, opening.location].filter(Boolean).join(' · ') || 'Чашка кофе',
   terms: opening.employmentType || 'Условия обсуждаются',
-  description: (opening.description?.trim().length ?? 0) >= 100 ? opening.description!.trim() : genericDescription,
+  description: opening.description?.trim() || genericDescription,
+  restaurant: opening.restaurant,
 })
 
 export const fallbackJobOpenings: JobOpeningCard[] = [
   {
     slug: 'barista',
     title: 'Бариста',
-    place: 'Рестораны в центре',
+    place: 'Чашка кофе · Красный проспект, 25',
     terms: 'от 45 000 ₽',
-    description: 'Готовить кофе по нашим рецептурам, помогать гостям выбирать напитки и поддерживать порядок на рабочем месте. Опыт не обязателен — важнее внимательность, доброжелательность и интерес к кофе.\n\nНа старте рядом будет наставник: познакомим с зерном, оборудованием и стандартами сервиса. Предлагаем сменный график, питание во время смены и понятный путь от бариста до тренера или менеджера.',
+    description: 'Готовить напитки по рецептурам, помогать гостям выбирать кофе и поддерживать порядок на станции.\n\nСменный график, питание на смене, обучение с наставником. Опыт не обязателен.',
+    restaurant: { id: 'fallback-krasny-prospekt', name: 'Чашка кофе', address: 'Красный проспект, 25' },
   },
   {
     slug: 'manager',
     title: 'Менеджер зала',
     place: 'Красный проспект',
     terms: 'от 55 000 ₽',
-    description: 'Организовывать спокойную работу смены, помогать команде в зале и решать вопросы гостей так, чтобы им хотелось возвращаться. Нужен опыт в гостеприимстве и умение сохранять внимание к деталям в живом темпе ресторана.\n\nДадим понятную зону ответственности, поддержку управляющего, питание и обучение внутри команды. График и финансовые условия подробно обсудим на встрече.',
+    description: 'Организовывать смену, помогать команде в зале и решать вопросы гостей.\n\nНужен опыт в гостеприимстве. График, оплата, питание и обучение — на встрече с управляющим.',
+    restaurant: { id: 'fallback-krasny-prospekt', name: 'Чашка кофе', address: 'Красный проспект, 25' },
   },
   {
     slug: 'pastry-chef',
     title: 'Кондитер',
     place: 'Собственное производство',
     terms: 'по итогам встречи',
-    description: 'Готовить торты и десерты по технологическим картам, работать с натуральными сливками, шоколадом, ягодами и заготовками собственного производства. Нам важны аккуратность, чистота процессов и уважение к продукту.\n\nПредлагаем оборудованный кондитерский цех, стабильный объём работы, поддержку шеф-кондитера и возможность расти внутри направления. Опыт приветствуется, а конкретный график и уровень оплаты определим после знакомства.',
+    description: 'Готовить торты и десерты по технологическим картам, работать с заготовками и соблюдать чистоту процессов.\n\nОборудованный цех, поддержка шеф-кондитера. Опыт приветствуется; график и оплату обсудим лично.',
+    restaurant: null,
   },
 ]

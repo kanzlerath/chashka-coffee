@@ -3,15 +3,16 @@ interface Props {
   type: 'CONTACT' | 'RESERVATION' | 'FRANCHISE' | 'BANQUET' | 'JOB'
   submitLabel?: string
   subjectLabel?: string
+  subjectValue?: string
   source?: string
 }
-const { type, submitLabel = 'Отправить заявку', subjectLabel, source } = Astro.props
+const { type, submitLabel = 'Отправить заявку', subjectLabel, subjectValue, source } = Astro.props
 ---
 <form class="lead-form" data-lead-form data-lead-type={type} data-lead-source={source} novalidate>
   <label>Ваше имя<input name="name" autocomplete="name" required placeholder="Как к вам обращаться" /></label>
   <label>Телефон<input name="phone" type="tel" autocomplete="tel" inputmode="tel" required placeholder="+7 (999) 000-00-00" /></label>
   <label>E-mail<input name="email" autocomplete="email" type="email" placeholder="name@mail.ru" /></label>
-  {subjectLabel && <label>{subjectLabel}<input name="subject" placeholder={subjectLabel} /></label>}
+  {subjectLabel && <label>{subjectLabel}<input name="subject" placeholder={subjectLabel} value={subjectValue} /></label>}
   <label class="lead-form-message">Комментарий<textarea name="message" placeholder="Расскажите, чем помочь"></textarea></label>
   <button type="submit">{submitLabel} <b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" /></svg></b></button>
   <p class="lead-form-status" aria-live="polite"></p>
