@@ -5,6 +5,8 @@ const nullableText = (max: number) => z.string().trim().max(max).nullable()
 const leadMetadataSchema = z.record(z.string().trim().min(1).max(80), z.string().trim().max(1_000))
 
 export const FOOTER_QUESTION_LEAD_SOURCE = 'footer_question_idea'
+export const JOB_OPENING_LEAD_SOURCE = 'job_opening_application'
+export const JOB_GENERAL_LEAD_SOURCE = 'jobs_general_contact'
 export const leadTypeSchema = z.enum(['CONTACT', 'RESERVATION', 'FRANCHISE', 'BANQUET', 'JOB', 'EVENT_REGISTRATION'])
 export const leadStatusSchema = z.enum(['NEW', 'IN_PROGRESS', 'CLOSED'])
 export type LeadType = z.infer<typeof leadTypeSchema>

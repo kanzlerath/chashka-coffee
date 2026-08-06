@@ -1,55 +1,92 @@
 ---
+import { JOB_GENERAL_LEAD_SOURCE, JOB_OPENING_LEAD_SOURCE } from '@chashka-coffee/contracts'
 import LeadForm from './LeadForm.astro'
 ---
 
-<dialog class="job-application-dialog" data-job-application-dialog aria-labelledby="job-application-title">
-  <div class="job-application-inner">
-    <button class="job-application-close" type="button" data-job-application-close aria-label="Закрыть форму">
+<dialog class="job-dialog" data-job-opening-dialog aria-labelledby="job-opening-application-title">
+  <div class="job-dialog-inner">
+    <button class="job-dialog-close" type="button" data-job-opening-close aria-label="Закрыть форму">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 5 14 14M19 5 5 19" /></svg>
     </button>
-    <div class="job-application-copy">
-      <span aria-hidden="true">ЧК</span>
+    <div class="job-dialog-copy">
+      <img src="/brand/logo.png" alt="" width="64" height="64" />
       <div>
-        <h2 id="job-application-title">Расскажите<br />о себе</h2>
-        <p>Можно без формального резюме. Напишите, чем вам интересна работа с нами и какой опыт хочется принести в команду.</p>
+        <p class="job-dialog-kicker">Отклик на вакансию</p>
+        <h2 id="job-opening-application-title" data-job-opening-title>Вакансия</h2>
+        <p class="job-dialog-place" data-job-opening-place hidden></p>
+        <p>Оставьте контакты — управляющий выбранного заведения свяжется с вами.</p>
       </div>
     </div>
-    <div class="job-application-form">
-      <LeadForm type="JOB" submitLabel="Отправить отклик" subjectLabel="Какая вакансия интересна?" source="jobs-dialog" />
+    <div class="job-dialog-form">
+      <LeadForm type="JOB" submitLabel="Отправить отклик" source={JOB_OPENING_LEAD_SOURCE} />
+    </div>
+  </div>
+</dialog>
+
+<dialog class="job-dialog" data-job-general-dialog aria-labelledby="job-general-application-title">
+  <div class="job-dialog-inner">
+    <button class="job-dialog-close" type="button" data-job-general-close aria-label="Закрыть форму">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 5 14 14M19 5 5 19" /></svg>
+    </button>
+    <div class="job-dialog-copy">
+      <img src="/brand/logo.png" alt="" width="64" height="64" />
+      <div>
+        <h2 class="job-dialog-general-title" id="job-general-application-title">Расскажите<br />о себе</h2>
+        <p>Если подходящей позиции пока нет, всё равно оставьте контакты. Мы вернёмся к вам, когда появится подходящая вакансия.</p>
+      </div>
+    </div>
+    <div class="job-dialog-form">
+      <LeadForm type="JOB" submitLabel="Отправить сообщение" source={JOB_GENERAL_LEAD_SOURCE} />
     </div>
   </div>
 </dialog>
 
 <script>
-  type JobApplicationDetail = { title?: string }
+  type JobApplicationDetail = { title?: string; restaurant?: string; address?: string }
 
-  const applicationDialog = document.querySelector<HTMLDialogElement>('[data-job-application-dialog]')
-  const applicationSubject = applicationDialog?.querySelector<HTMLInputElement>('input[name="subject"]')
+  const openingDialog = document.querySelector<HTMLDialogElement>('[data-job-opening-dialog]')
+  const generalDialog = document.querySelector<HTMLDialogElement>('[data-job-general-dialog]')
+  const openingForm = openingDialog?.querySelector<HTMLFormElement>('[data-lead-form]')
+  const openingTitle = openingDialog?.querySelector<HTMLElement>('[data-job-opening-title]')
+  const openingPlace = openingDialog?.querySelector<HTMLElement>('[data-job-opening-place]')
 
-  const openApplicationDialog = (title = '') => {
-    if (!applicationDialog) return
-    if (applicationSubject) applicationSubject.value = title
-    if (!applicationDialog.open) applicationDialog.showModal()
-    applicationDialog.querySelector<HTMLButtonElement>('[data-job-application-close]')?.focus()
+  const openOpeningDialog = (detail: JobApplicationDetail) => {
+    if (!openingDialog) return
+    const title = detail.title?.trim() || 'Вакансия'
+    const restaurant = detail.restaurant?.trim() || ''
+    const address = detail.address?.trim() || ''
+    if (openingTitle) openingTitle.textContent = title
+    if (openingPlace) {
+      openingPlace.textContent = [restaurant, address].filter(Boolean).join(' · ')
+      openingPlace.hidden = !openingPlace.textContent
+    }
+    if (openingForm) openingForm.dataset.leadMetadata = JSON.stringify({ vacancy: title, ...(restaurant ? { restaurant } : {}), ...(address ? { address } : {}) })
+    if (!openingDialog.open) openingDialog.showModal()
+    openingDialog.querySelector<HTMLButtonElement>('[data-job-opening-close]')?.focus()
   }
 
-  document.querySelectorAll<HTMLButtonElement>('[data-job-application-trigger]').forEach((trigger) => {
-    trigger.addEventListener('click', () => openApplicationDialog(trigger.dataset.jobTitle ?? ''))
+  document.querySelectorAll<HTMLButtonElement>('[data-job-opening-application-trigger]').forEach((trigger) => {
+    trigger.addEventListener('click', () => openOpeningDialog({ title: trigger.dataset.jobTitle, restaurant: trigger.dataset.jobRestaurant, address: trigger.dataset.jobAddress }))
   })
-
-  window.addEventListener('jobs:apply', (event) => {
-    const detail = (event as CustomEvent<JobApplicationDetail>).detail
-    openApplicationDialog(detail?.title ?? '')
+  document.querySelectorAll<HTMLButtonElement>('[data-job-general-contact-trigger]').forEach((trigger) => {
+    trigger.addEventListener('click', () => {
+      if (!generalDialog?.open) generalDialog?.showModal()
+      generalDialog?.querySelector<HTMLButtonElement>('[data-job-general-close]')?.focus()
+    })
   })
+  window.addEventListener('jobs:apply', (event) => openOpeningDialog((event as CustomEvent<JobApplicationDetail>).detail ?? {}))
 
-  applicationDialog?.querySelector('[data-job-application-close]')?.addEventListener('click', () => applicationDialog.close())
-  applicationDialog?.addEventListener('click', (event) => { if (event.target === applicationDialog) applicationDialog.close() })
+  const closableDialogs: Array<[HTMLDialogElement | null, string]> = [[openingDialog, '[data-job-opening-close]'], [generalDialog, '[data-job-general-close]']]
+  closableDialogs.forEach(([dialog, closeSelector]) => {
+    dialog?.querySelector(closeSelector)?.addEventListener('click', () => dialog.close())
+    dialog?.addEventListener('click', (event: MouseEvent) => { if (event.target === dialog) dialog.close() })
+  })
 </script>
 
 <style>
-  .job-application-dialog{width:min(1100px,calc(100vw - 48px));max-width:none;max-height:calc(100svh - 48px);margin:auto;padding:0;border:0;border-radius:var(--radius);background:#fcfbf8;color:var(--ink);box-shadow:0 28px 90px rgba(22,28,22,.32);overflow:hidden}.job-application-dialog::backdrop{background:rgba(25,31,25,.64);backdrop-filter:blur(8px)}.job-application-dialog[open]{animation:job-application-in .3s cubic-bezier(.22,1,.36,1)}.job-application-inner{display:grid;min-height:650px;grid-template-columns:minmax(310px,.85fr) minmax(0,1.15fr)}.job-application-close{position:absolute;z-index:3;top:19px;right:19px;display:grid;place-items:center;width:46px;height:46px;padding:0;border:1px solid rgba(35,30,27,.11);border-radius:var(--radius);background:rgba(252,251,248,.94);color:var(--ink);cursor:pointer;transition:background-color .2s ease,transform .2s ease}.job-application-close:hover{background:var(--lime);transform:rotate(4deg)}.job-application-close:focus-visible{outline:3px solid var(--lime);outline-offset:3px}.job-application-close svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-width:1.8}
-  .job-application-copy{display:flex;padding:clamp(38px,5vw,76px);background:var(--moss);color:#fff;flex-direction:column}.job-application-copy>span{font-family:'21Cent',serif;color:var(--lime);font-size:clamp(54px,6vw,90px);font-style:italic;line-height:.7}.job-application-copy>div{margin-top:auto}.job-application-copy h2{margin:0;color:#fff;font-size:clamp(52px,5.3vw,83px);line-height:.86}.job-application-copy p{max-width:390px;margin:26px 0 0;color:#d3ddd4;font-size:13px;line-height:1.68}.job-application-form{display:flex;align-items:center;padding:clamp(56px,6vw,92px)}.job-application-form :global(.lead-form){width:100%}.job-application-form :global(.lead-form button){display:flex!important;width:100%;min-height:58px!important;justify-self:stretch!important;justify-content:space-between!important;padding:0 10px 0 21px!important;background:var(--moss)!important}.job-application-form :global(.lead-form button b){display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:var(--lime);color:var(--moss)}
-  @keyframes job-application-in{from{opacity:0;transform:translateY(18px) scale(.985)}to{opacity:1;transform:none}}
-  @media(max-width:760px){.job-application-dialog{position:fixed;inset:auto 12px 12px;width:auto;max-height:calc(100svh - 24px);margin:0}.job-application-inner{display:block;min-height:0;max-height:calc(100svh - 24px);overflow:auto}.job-application-copy{min-height:310px;padding:34px 24px}.job-application-copy>span{font-size:54px}.job-application-copy h2{font-size:52px}.job-application-copy p{margin-top:20px;font-size:12px}.job-application-form{padding:34px 22px 28px}.job-application-close{top:14px;right:14px;width:42px;height:42px}}
-  @media(prefers-reduced-motion:reduce){.job-application-dialog[open]{animation:none}.job-application-close{transition:none}}
+  .job-dialog{width:min(1100px,calc(100vw - 48px));max-width:none;max-height:calc(100svh - 48px);margin:auto;padding:0;border:0;border-radius:var(--radius);background:#fcfbf8;color:var(--ink);box-shadow:0 28px 90px rgba(22,28,22,.32);overflow:hidden}.job-dialog::backdrop{background:rgba(25,31,25,.64);backdrop-filter:blur(8px)}.job-dialog[open]{animation:job-dialog-in .3s cubic-bezier(.22,1,.36,1)}.job-dialog-inner{display:grid;min-height:650px;grid-template-columns:minmax(310px,.85fr) minmax(0,1.15fr)}.job-dialog-close{position:absolute;z-index:3;top:19px;right:19px;display:grid;place-items:center;width:46px;height:46px;padding:0;border:1px solid rgba(35,30,27,.11);border-radius:var(--radius);background:rgba(252,251,248,.94);color:var(--ink);cursor:pointer;transition:background-color .2s ease,transform .2s ease}.job-dialog-close:hover{background:var(--lime);transform:rotate(4deg)}.job-dialog-close:focus-visible{outline:3px solid var(--lime);outline-offset:3px}.job-dialog-close svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-width:1.8}
+  .job-dialog-copy{display:flex;padding:clamp(38px,5vw,76px);background:var(--moss);color:#fff;flex-direction:column}.job-dialog-copy>img{width:64px;height:64px;object-fit:contain}.job-dialog-copy>div{margin-top:auto}.job-dialog-kicker{margin:0 0 15px!important;color:var(--lime)!important;font-size:10px!important;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.job-dialog-copy h2{margin:0;color:#fff;font-size:clamp(46px,4.7vw,74px);line-height:.88}.job-dialog-copy h2.job-dialog-general-title{font-size:clamp(40px,3.2vw,54px);letter-spacing:-.07em}.job-dialog-place{margin:18px 0 0!important;color:var(--lime)!important;font-size:12px!important;font-weight:800;line-height:1.45}.job-dialog-copy p:not(.job-dialog-kicker):not(.job-dialog-place){max-width:390px;margin:24px 0 0;color:#d3ddd4;font-size:13px;line-height:1.68}.job-dialog-form{display:flex;align-items:center;padding:clamp(56px,6vw,92px)}.job-dialog-form :global(.lead-form){width:100%}.job-dialog-form :global(.lead-form button){display:flex!important;width:100%;min-height:58px!important;justify-self:stretch!important;justify-content:space-between!important;padding:0 10px 0 21px!important;background:var(--moss)!important}.job-dialog-form :global(.lead-form button b){display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:var(--lime);color:var(--moss)}
+  @keyframes job-dialog-in{from{opacity:0;transform:translateY(18px) scale(.985)}to{opacity:1;transform:none}}
+  @media(max-width:760px){.job-dialog{position:fixed;inset:auto 12px 12px;width:auto;max-height:calc(100svh - 24px);margin:0}.job-dialog-inner{display:block;min-height:0;max-height:calc(100svh - 24px);overflow:auto}.job-dialog-copy{min-height:310px;padding:34px 24px}.job-dialog-copy>img{width:52px;height:52px}.job-dialog-copy h2{font-size:52px}.job-dialog-copy p:not(.job-dialog-kicker):not(.job-dialog-place){margin-top:20px;font-size:12px}.job-dialog-form{padding:34px 22px 28px}.job-dialog-close{top:14px;right:14px;width:42px;height:42px}}
+  @media(prefers-reduced-motion:reduce){.job-dialog[open]{animation:none}.job-dialog-close{transition:none}}
 </style>

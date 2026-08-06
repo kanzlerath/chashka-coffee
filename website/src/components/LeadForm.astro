@@ -5,10 +5,11 @@ interface Props {
   subjectLabel?: string
   subjectValue?: string
   source?: string
+  metadata?: Record<string, string>
 }
-const { type, submitLabel = 'Отправить заявку', subjectLabel, subjectValue, source } = Astro.props
+const { type, submitLabel = 'Отправить заявку', subjectLabel, subjectValue, source, metadata } = Astro.props
 ---
-<form class="lead-form" data-lead-form data-lead-type={type} data-lead-source={source} novalidate>
+<form class="lead-form" data-lead-form data-lead-type={type} data-lead-source={source} data-lead-metadata={JSON.stringify(metadata ?? {})} novalidate>
   <label>Ваше имя<input name="name" autocomplete="name" required placeholder="Как к вам обращаться" /></label>
   <label>Телефон<input name="phone" type="tel" autocomplete="tel" inputmode="tel" required placeholder="+7 (999) 000-00-00" /></label>
   <label>E-mail<input name="email" autocomplete="email" type="email" placeholder="name@mail.ru" /></label>
@@ -33,7 +34,14 @@ const { type, submitLabel = 'Отправить заявку', subjectLabel, sub
       const values = new FormData(form)
       const subject = String(values.get('subject') ?? '').trim()
       const source = form.dataset.leadSource?.trim()
-      const metadata = { ...(source ? { source } : {}), ...(subject ? { subject } : {}) }
+      let initialMetadata: Record<string, string> = {}
+      try {
+        const parsed = JSON.parse(form.dataset.leadMetadata ?? '{}')
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          initialMetadata = Object.fromEntries(Object.entries(parsed).filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].trim().length > 0))
+        }
+      } catch { /* A malformed optional data attribute must not block the form. */ }
+      const metadata = { ...initialMetadata, ...(source ? { source } : {}), ...(subject ? { subject } : {}) }
       const payload = {
         type: form.dataset.leadType,
         name: String(values.get('name') ?? '').trim(),
