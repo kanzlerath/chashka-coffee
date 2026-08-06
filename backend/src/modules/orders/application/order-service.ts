@@ -15,6 +15,7 @@ export class OrderService {
     clock: Clock
     repository: OrderRepository
     tokens: OrderTokens
+    onCreated?: (order: Order) => Promise<void>
   }) {}
 
   async quote(lines: OrderLineInput[]): Promise<OrderQuoteResponse> {
@@ -79,7 +80,7 @@ export class OrderService {
 
     const publicNumber = this.dependencies.tokens.publicNumber()
     const accessToken = this.dependencies.tokens.accessToken(input.idempotencyKey, publicNumber)
-    const order = await this.dependencies.repository.create({
+    const creation = await this.dependencies.repository.create({
       publicNumber,
       accessTokenHash: this.dependencies.tokens.hash(accessToken),
       idempotencyKey: input.idempotencyKey,
@@ -100,7 +101,14 @@ export class OrderService {
         position,
       })),
     })
-    return this.creationResult(order, input.idempotencyKey)
+    if (creation.created) {
+      try {
+        await this.dependencies.onCreated?.(creation.order)
+      } catch {
+        // Order creation is the primary operation; external notifications are best-effort.
+      }
+    }
+    return this.creationResult(creation.order, input.idempotencyKey)
   }
 
   async getByAccessToken(accessToken: string) {

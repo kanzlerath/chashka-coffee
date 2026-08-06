@@ -45,6 +45,8 @@ const envSchema = z.object({
   COOKIE_SECURE: booleanStringSchema,
   PREMIUMBONUS_API_TOKEN: optionalStringSchema,
   PREMIUMBONUS_API_URL: optionalUrlSchema,
+  TELEGRAM_BOT_TOKEN: optionalStringSchema,
+  TELEGRAM_BOT_USERNAME: optionalStringSchema,
   SPACES_REGION: optionalStringSchema,
   SPACES_BUCKET: optionalStringSchema,
   SPACES_ENDPOINT: optionalUrlSchema,

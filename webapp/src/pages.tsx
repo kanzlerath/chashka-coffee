@@ -52,24 +52,31 @@ import { StatisticsPage } from '@/features/analytics-admin'
 import { ActivityPage } from '@/features/workspace-admin'
 import { OrdersPage } from '@/features/orders-admin'
 import { CustomerDetailPage, CustomersPage } from '@/features/crm-admin'
+import { TelegramNotificationsPage } from '@/features/telegram-notifications-admin'
+import { SharedHeaderPage } from '@/features/site-settings-admin'
 
 const workspaceNavigation = [
   { to: '/', label: 'Обзор', icon: DashboardSquare01Icon },
   { to: '/orders', label: 'Заказы', icon: Coffee02Icon, permission: 'ORDERS_MANAGE' },
   { to: '/customers', label: 'Клиенты', icon: UserGroupIcon, permission: 'CUSTOMERS_READ' },
-  { to: '/restaurants', label: 'Рестораны', icon: RestaurantIcon, permission: 'CATALOG_MANAGE' },
-  { to: '/menus', label: 'Меню', icon: MenuRestaurantIcon, permission: 'CATALOG_MANAGE' },
 ] as const
 
-const siteNavigation = [
-  { to: '/homepage', label: 'Главная', icon: Home01Icon, permission: 'CONTENT_MANAGE' },
-  { to: '/pages', label: 'Страницы', icon: File01Icon, permission: 'CONTENT_MANAGE' },
+const catalogNavigation = [
+  { to: '/restaurants', label: 'Рестораны', icon: RestaurantIcon, permission: 'CATALOG_MANAGE' },
+  { to: '/menus', label: 'Меню', icon: MenuRestaurantIcon, permission: 'CATALOG_MANAGE' },
   { to: '/products/coffee', label: 'Кофе', icon: Coffee02Icon, permission: 'CATALOG_MANAGE' },
   { to: '/products/cakes', label: 'Торты', icon: CakeSliceIcon, permission: 'CATALOG_MANAGE' },
+] as const
+
+const pageNavigation = [
+  { to: '/homepage', label: 'Главная', icon: Home01Icon, permission: 'CONTENT_MANAGE' },
+  { to: '/pages', label: 'Страницы', icon: File01Icon, permission: 'CONTENT_MANAGE' },
+] as const
+
+const publicationNavigation = [
   { to: '/content/promotions', label: 'Акции', icon: Megaphone01Icon, permission: 'CONTENT_MANAGE' },
   { to: '/content/events', label: 'События', icon: Calendar03Icon, permission: 'CONTENT_MANAGE' },
   { to: '/content/journal', label: 'Журнал', icon: News01Icon, permission: 'CONTENT_MANAGE' },
-  { to: '/media', label: 'Медиатека', icon: Image01Icon, permission: 'MEDIA_MANAGE' },
   { to: '/jobs', label: 'Вакансии', icon: Briefcase01Icon, permission: 'JOBS_MANAGE' },
 ] as const
 
@@ -161,10 +168,10 @@ export function RootLayout() {
               </Link>
             </>
           ) : null}
-          {siteNavigation.some((item) => hasPermission(auth.user, item.permission)) ? (
+          {pageNavigation.some((item) => hasPermission(auth.user, item.permission)) ? (
             <>
-              <p className="admin-nav-label admin-nav-label-spaced">Сайт</p>
-              {siteNavigation.filter((item) => hasPermission(auth.user, item.permission)).map((item) => (
+              <p className="admin-nav-label admin-nav-label-spaced">Страницы</p>
+              {pageNavigation.filter((item) => hasPermission(auth.user, item.permission)).map((item) => (
                 <Link key={item.to} to={item.to} className="admin-nav-link" onClick={closeNavigation}>
                   <HugeiconsIcon icon={item.icon} size={18} strokeWidth={1.8} />
                   <span>{item.label}</span>
@@ -173,7 +180,39 @@ export function RootLayout() {
             </>
           ) : null}
 
-          <p className="admin-nav-label admin-nav-label-spaced">Система</p>
+          {catalogNavigation.some((item) => hasPermission(auth.user, item.permission)) ? <>
+            <p className="admin-nav-label admin-nav-label-spaced">Каталог</p>
+            {catalogNavigation.filter((item) => hasPermission(auth.user, item.permission)).map((item) => <Link key={item.to} to={item.to} className="admin-nav-link" onClick={closeNavigation}>
+              <HugeiconsIcon icon={item.icon} size={18} strokeWidth={1.8} />
+              <span>{item.label}</span>
+            </Link>)}
+          </> : null}
+
+          {publicationNavigation.some((item) => hasPermission(auth.user, item.permission)) ? <>
+            <p className="admin-nav-label admin-nav-label-spaced">Публикации</p>
+            {publicationNavigation.filter((item) => hasPermission(auth.user, item.permission)).map((item) => <Link key={item.to} to={item.to} className="admin-nav-link" onClick={closeNavigation}>
+              <HugeiconsIcon icon={item.icon} size={18} strokeWidth={1.8} />
+              <span>{item.label}</span>
+            </Link>)}
+          </> : null}
+
+          {hasPermission(auth.user, 'CONTENT_MANAGE') ? <>
+            <p className="admin-nav-label admin-nav-label-spaced">Общие блоки</p>
+            <Link to="/shared/header" className="admin-nav-link" onClick={closeNavigation}>
+              <HugeiconsIcon icon={Menu01Icon} size={18} strokeWidth={1.8} />
+              <span>Шапка и меню</span>
+            </Link>
+          </> : null}
+
+          {hasPermission(auth.user, 'MEDIA_MANAGE') ? <>
+            <p className="admin-nav-label admin-nav-label-spaced">Медиа</p>
+            <Link to="/media" className="admin-nav-link" onClick={closeNavigation}>
+              <HugeiconsIcon icon={Image01Icon} size={18} strokeWidth={1.8} />
+              <span>Медиатека</span>
+            </Link>
+          </> : null}
+
+          <p className="admin-nav-label admin-nav-label-spaced">Настройки</p>
           {hasPermission(auth.user, 'STAFF_MANAGE') || hasPermission(auth.user, 'AUDIT_READ') ? (
             <>
               {hasPermission(auth.user, 'STAFF_MANAGE') ? <Link to="/team" className="admin-nav-link" onClick={closeNavigation}>
@@ -183,6 +222,10 @@ export function RootLayout() {
               {hasPermission(auth.user, 'AUDIT_READ') ? <Link to="/activity" className="admin-nav-link" onClick={closeNavigation}>
                 <HugeiconsIcon icon={Clock01Icon} size={18} strokeWidth={1.8} />
                 <span>История</span>
+              </Link> : null}
+              {hasPermission(auth.user, 'STAFF_MANAGE') ? <Link to="/telegram" className="admin-nav-link" onClick={closeNavigation}>
+                <HugeiconsIcon icon={Settings01Icon} size={18} strokeWidth={1.8} />
+                <span>Telegram</span>
               </Link> : null}
             </>
           ) : null}
@@ -473,6 +516,22 @@ export function OrdersAdminRoute() {
   if (!auth.user) return <HomePage />
   if (!hasPermission(auth.user, 'ORDERS_MANAGE')) return <AccessDenied title="Заказы" description="Раздел доступен оператору заказов." />
   return <OrdersPage />
+}
+
+export function TelegramNotificationsAdminRoute() {
+  const auth = useAuth()
+  if (auth.isBootstrapping) return <LoadingState />
+  if (!auth.user) return <HomePage />
+  if (!hasPermission(auth.user, 'STAFF_MANAGE')) return <AccessDenied title="Telegram" description="Настройка уведомлений доступна суперадмину." />
+  return <TelegramNotificationsPage />
+}
+
+export function SharedHeaderAdminRoute() {
+  const auth = useAuth()
+  if (auth.isBootstrapping) return <LoadingState />
+  if (!auth.user) return <HomePage />
+  if (!hasPermission(auth.user, 'CONTENT_MANAGE')) return <AccessDenied title="Шапка и меню" description="Настройка общих блоков доступна редакторам сайта." />
+  return <SharedHeaderPage />
 }
 
 export function CustomersAdminRoute() {

@@ -209,7 +209,7 @@ function buildTimeline(customer: CrmCustomerDetail) {
   ].sort((left, right) => right.date.localeCompare(left.date))
 }
 
-const leadTypeLabel = { CONTACT: 'вопрос', RESERVATION: 'бронь', FRANCHISE: 'франшиза', BANQUET: 'банкет', JOB: 'вакансия', EVENT_REGISTRATION: 'событие' } as const
+const leadTypeLabel = { CONTACT: 'вопрос', RESERVATION: 'бронь', FRANCHISE: 'франшиза', BANQUET: 'банкет', CAKE: 'кондитерская', JOB: 'вакансия', EVENT_REGISTRATION: 'событие' } as const
 function money(kopecks: number) { return `${(kopecks / 100).toLocaleString('ru-RU')} ₽` }
 function shortDate(value: string) { return new Date(value).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' }) }
 function shortDateTime(value: string) { return new Date(value).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) }

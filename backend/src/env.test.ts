@@ -15,10 +15,23 @@ describe('loadEnv', () => {
     expect(env.COOKIE_SECURE).toBe(false)
     expect(env.CORS_ORIGINS).toEqual(['http://localhost:5173', 'http://localhost:8081'])
     expect(env.SPACES_REGION).toBeUndefined()
+    expect(env.TELEGRAM_BOT_TOKEN).toBeUndefined()
     expect(env.SPACES_UPLOAD_MAX_BYTES).toBe(10 * 1024 * 1024)
     expect(env.SPACES_UPLOAD_URL_TTL_SECONDS).toBe(900)
     expect(env.SPACES_DOWNLOAD_URL_TTL_SECONDS).toBe(300)
     expect(env.SPACES_PUBLIC_CACHE_CONTROL).toBe('public, max-age=31536000, immutable')
+  })
+
+  test('trims optional Telegram configuration', () => {
+    const env = loadEnv({
+      DATABASE_URL: 'postgresql://superuser:superpassword@localhost:54329/chashka_coffee',
+      JWT_SECRET: '12345678901234567890123456789012',
+      TELEGRAM_BOT_TOKEN: ' 123:secret ',
+      TELEGRAM_BOT_USERNAME: ' chashka_notifications_bot ',
+    })
+
+    expect(env.TELEGRAM_BOT_TOKEN).toBe('123:secret')
+    expect(env.TELEGRAM_BOT_USERNAME).toBe('chashka_notifications_bot')
   })
 
   test('requires complete DigitalOcean Spaces configuration when storage is enabled', () => {

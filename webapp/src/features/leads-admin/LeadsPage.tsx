@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useAuth } from '@/features/auth'
 
 const statusLabel: Record<LeadStatus, string> = { NEW: 'Новая', IN_PROGRESS: 'В работе', CLOSED: 'Закрыта' }
-const typeLabel: Record<Lead['type'], string> = { CONTACT: 'Общий вопрос', RESERVATION: 'Бронирование', FRANCHISE: 'Франшиза', BANQUET: 'Банкет', JOB: 'Вакансия', EVENT_REGISTRATION: 'Регистрация на событие' }
+const typeLabel: Record<Lead['type'], string> = { CONTACT: 'Общий вопрос', RESERVATION: 'Бронирование', FRANCHISE: 'Франшиза', BANQUET: 'Банкет', CAKE: 'Кондитерская', JOB: 'Вакансия', EVENT_REGISTRATION: 'Регистрация на событие' }
 
 const metadataLabel: Record<string, string> = { vacancy: 'Вакансия', restaurant: 'Заведение', address: 'Адрес', subject: 'Тема' }
 const displayType = (lead: Lead) => {

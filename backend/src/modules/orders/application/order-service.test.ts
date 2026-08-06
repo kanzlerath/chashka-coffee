@@ -32,7 +32,8 @@ describe('OrderService', () => {
 
   test('creates an immutable order once and returns the same access token on retry', async () => {
     const repository = fakeRepository([variant({ id: variantId })])
-    const service = createService(repository)
+    const notified: string[] = []
+    const service = createService(repository, async (order) => { notified.push(order.id) })
     const input = checkout()
 
     const first = await service.create(input, null)
@@ -43,6 +44,14 @@ describe('OrderService', () => {
     expect(repeated.order.id).toBe(first.order.id)
     expect(repeated.accessToken).toBe(first.accessToken)
     expect(repository.created).toHaveLength(1)
+    expect(notified).toEqual([first.order.id])
+  })
+
+  test('keeps a created order successful when notification delivery fails', async () => {
+    const repository = fakeRepository([variant({ id: variantId })])
+    const service = createService(repository, async () => { throw new Error('Telegram unavailable') })
+
+    await expect(service.create(checkout(), null)).resolves.toMatchObject({ order: { id: orderId } })
   })
 
   test('blocks preparation before payment and accepts the paid transition', async () => {
@@ -57,7 +66,7 @@ describe('OrderService', () => {
   })
 })
 
-function createService(repository: ReturnType<typeof fakeRepository>) {
+function createService(repository: ReturnType<typeof fakeRepository>, onCreated?: (order: Order) => Promise<void>) {
   return new OrderService({
     clock: { now: () => new Date('2026-08-04T10:00:00.000Z') },
     repository,
@@ -66,6 +75,7 @@ function createService(repository: ReturnType<typeof fakeRepository>) {
       accessToken: () => 'a'.repeat(43),
       hash: (token) => `hash:${token}`,
     },
+    onCreated,
   })
 }
 
@@ -121,7 +131,7 @@ function fakeRepository(variants: OrderableVariant[]) {
       created.push(input)
       const order = recordToOrder(input)
       orders.set(input.idempotencyKey, order)
-      return order
+      return { order, created: true }
     },
     async findByAccessTokenHash() { return null },
     async listByCustomerId() { return [...orders.values()] },

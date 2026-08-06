@@ -3,6 +3,7 @@ import {
   coffeeTasteSchema,
   contentBlockListSchema,
   managedPageKeySchema,
+  managedPageImageSchema,
   managedPageListResponseSchema,
   managedPageResponseSchema,
   upsertManagedPageRequestSchema,
@@ -26,6 +27,7 @@ type PageRecord = {
   heroImageUrl: string | null
   coffeeTastes: unknown | null
   appChoices: unknown | null
+  images: unknown
   blocks: unknown
   createdAt: Date
   updatedAt: Date
@@ -35,6 +37,7 @@ function dto(page: PageRecord): ManagedPage {
     ...page,
     coffeeTastes: page.coffeeTastes === null ? null : coffeeTasteSchema.array().parse(page.coffeeTastes),
     appChoices: page.appChoices === null ? null : appChoiceSchema.array().parse(page.appChoices),
+    images: managedPageImageSchema.array().parse(page.images),
     blocks: contentBlockListSchema.parse(page.blocks),
     createdAt: page.createdAt.toISOString(),
     updatedAt: page.updatedAt.toISOString(),
@@ -77,6 +80,7 @@ export function createManagedPagesModule({ db, requireAuth, requireAdmin }: { db
         heroImageUrl: input.heroImageUrl,
         coffeeTastes,
         appChoices,
+        images: input.images,
         blocks: input.blocks,
       },
     })

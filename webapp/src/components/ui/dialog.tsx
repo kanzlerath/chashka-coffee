@@ -77,7 +77,7 @@ function DialogContent({
               size="icon-sm"
             >
               <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
-              <Typography variant="srOnly">Close</Typography>
+              <Typography variant="srOnly">Закрыть</Typography>
             </Button>
           </DialogPrimitive.Close>
         )}

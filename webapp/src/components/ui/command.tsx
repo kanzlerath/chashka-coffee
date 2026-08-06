@@ -76,13 +76,13 @@ function CommandInput({
           <CommandPrimitive.Input
             data-slot="command-input"
             className={cn(
-              "w-full outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
+              "min-w-0 flex-1 px-1.5 outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
               className
             )}
             {...props}
           />
         </Typography>
-        <InputGroupAddon>
+        <InputGroupAddon align="inline-start">
           <HugeiconsIcon icon={SearchIcon} strokeWidth={2} className="size-4 shrink-0 opacity-50" />
         </InputGroupAddon>
       </InputGroup>

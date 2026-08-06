@@ -2,7 +2,7 @@ import { SearchIcon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 
 export function AdminListToolbar<T extends string>({
   query,
@@ -20,7 +20,10 @@ export function AdminListToolbar<T extends string>({
   placeholder?: string
 }) {
   return <div className="admin-list-toolbar">
-    <label className="admin-list-search"><HugeiconsIcon icon={SearchIcon} size={17} strokeWidth={1.8} /><Input aria-label="Поиск" placeholder={placeholder} value={query} onChange={(event) => onQueryChange(event.target.value)} /></label>
+    <InputGroup className="admin-list-search">
+      <InputGroupAddon align="inline-start"><HugeiconsIcon icon={SearchIcon} size={17} strokeWidth={1.8} /></InputGroupAddon>
+      <InputGroupInput aria-label="Поиск" placeholder={placeholder} value={query} onChange={(event) => onQueryChange(event.target.value)} />
+    </InputGroup>
     <select aria-label="Фильтр по статусу" value={status} onChange={(event) => onStatusChange(event.target.value as T)}>{statusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
   </div>
 }

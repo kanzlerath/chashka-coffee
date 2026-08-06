@@ -73,6 +73,7 @@ enum LeadType {
   RESERVATION
   FRANCHISE
   BANQUET
+  CAKE
   JOB
   EVENT_REGISTRATION
 }
@@ -138,6 +139,19 @@ enum NotificationDeliveryStatus {
   SENT
   FAILED
   SKIPPED
+}
+
+enum OperationalNotificationEvent {
+  COFFEE_ORDER
+  CAKE_REQUEST
+  FOOTER_INQUIRY
+  CONTACT_REQUEST
+  RESERVATION_REQUEST
+  BANQUET_REQUEST
+  FRANCHISE_REQUEST
+  JOB_APPLICATION
+  JOB_GENERAL_INQUIRY
+  EVENT_REGISTRATION
 }
 
 enum ManagedPageKey {
@@ -316,6 +330,7 @@ model ManagedPage {
   heroImageUrl    String?        @map("hero_image_url")
   coffeeTastes    Json?          @map("coffee_tastes")
   appChoices      Json?          @map("app_choices")
+  images          Json           @default("[]")
   blocks          Json           @default("[]")
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @updatedAt @map("updated_at")
@@ -444,6 +459,15 @@ model MediaAsset {
 
   @@index([createdAt], map: "media_assets_created_at_idx")
   @@map("media_assets")
+}
+
+model SiteSettings {
+  id             String   @id @default("global") @db.VarChar(32)
+  headerPreviews Json     @default("[]") @map("header_previews")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("site_settings")
 }
 
 model Lead {
@@ -603,6 +627,22 @@ model NotificationDelivery {
   @@index([customerId, createdAt], map: "notification_deliveries_customer_created_idx")
   @@index([pushSubscriptionId], map: "notification_deliveries_subscription_idx")
   @@map("notification_deliveries")
+}
+
+model TelegramRecipient {
+  id           String                         @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name         String                         @db.VarChar(120)
+  chatId       String                         @unique @map("chat_id") @db.VarChar(24)
+  username     String?                        @db.VarChar(64)
+  eventTypes   OperationalNotificationEvent[] @map("event_types")
+  isActive     Boolean                        @default(true) @map("is_active")
+  lastSentAt   DateTime?                      @map("last_sent_at")
+  lastError    String?                        @map("last_error") @db.VarChar(500)
+  createdAt    DateTime                       @default(now()) @map("created_at")
+  updatedAt    DateTime                       @updatedAt @map("updated_at")
+
+  @@index([isActive], map: "telegram_recipients_active_idx")
+  @@map("telegram_recipients")
 }
 
 model JobOpening {

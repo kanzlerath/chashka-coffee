@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { managedPageKeySchema, managedPageListResponseSchema, managedPageResponseSchema, upsertManagedPageRequestSchema, type AppChoice, type CoffeeTaste, type ManagedPage, type ManagedPageKey, type UpsertManagedPageRequest } from '@chashka-coffee/contracts'
+import { managedPageKeySchema, managedPageListResponseSchema, managedPageResponseSchema, upsertManagedPageRequestSchema, type AppChoice, type CoffeeTaste, type ManagedPage, type ManagedPageImage, type ManagedPageKey, type UpsertManagedPageRequest } from '@chashka-coffee/contracts'
 import { Link } from '@tanstack/react-router'
 
 import { AdminDraftRecovery, AdminField, AdminFormIntro, AdminPageHeader } from '@/components/admin'
@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { BlockEditor } from '@/features/content-admin'
 import { useAuth } from '@/features/auth'
+import { AdminImageField } from '@/features/media-admin'
 import { useEditorDraft } from '@/hooks/use-editor-draft'
 
 const labels: Record<ManagedPageKey, string> = { HOME: 'Главная', COFFEE: 'Кофе', RESTAURANTS: 'Рестораны', DELIVERY: 'Доставка', APP: 'Приложение', LOYALTY: 'Лояльность', CERTIFICATES: 'Сертификаты', BAKERY: 'Кондитерская', FRANCHISE: 'Франшиза', JOBS: 'Вакансии', CONTACTS: 'Контакты', ABOUT: 'О нас', BANQUETS: 'Банкеты', PROMOTIONS: 'Акции' }
@@ -25,6 +26,17 @@ const heroDefaults: Partial<Record<ManagedPageKey, Pick<UpsertManagedPageRequest
   JOBS: { heroTitle: 'Работа\nсо вкусом к людям', heroDescription: 'Ищем внимательных людей, которым важны гости, команда и хорошо сделанная работа.', heroImageUrl: '/images/home-hero-v1.png' },
   BANQUETS: { heroTitle: 'Соберём\nваш повод', heroDescription: 'Семейный праздник, важный ужин или встреча команды — выберите место, а мы поможем с деталями.', heroImageUrl: '/images/restaurants-hero.png' },
 }
+
+const pageImageDefaults: Partial<Record<ManagedPageKey, ManagedPageImage[]>> = {
+  HOME: [{ id: 'menu-tile', label: 'Плитка «Завтраки»', imageUrl: '/images/home-breakfast.png', imageAlt: 'Завтраки' }],
+  ABOUT: [{ id: 'craft', label: 'Блок «Зерно, кухня и кондитерская»', imageUrl: '/images/home-morning-v2.png', imageAlt: 'Кофе собственной обжарки' }],
+  DELIVERY: [{ id: 'app-order-screen', label: 'Экран приложения в блоке заказа', imageUrl: '/images/app/order-screen.webp', imageAlt: 'Экран заказа в приложении Чашка кофе' }],
+  JOBS: [{ id: 'team', label: 'Блок о команде', imageUrl: '/images/stock/jobs-team.jpg', imageAlt: 'Команда бариста за стойкой' }],
+  BANQUETS: [{ id: 'gathering', label: 'История о событии', imageUrl: '/images/stock/banquets-gathering.jpg', imageAlt: 'Гости за праздничным столом' }],
+  FRANCHISE: [{ id: 'roastery', label: 'Блок о собственной обжарке', imageUrl: '/images/stock/franchise-roastery.jpg', imageAlt: 'Обжарка кофе Чашки кофе' }],
+}
+
+const mergedPageImages = (key: ManagedPageKey, saved: ManagedPageImage[] | undefined) => (pageImageDefaults[key] ?? []).map((fallback) => saved?.find((image) => image.id === fallback.id) ?? fallback)
 
 const defaultCoffeeTastes: CoffeeTaste[] = [
   { title: 'Абрикос', description: 'сочная сладость и мягкая кислотность', imageUrl: '/images/coffee-taste-apricot-v1.webp' },
@@ -65,6 +77,7 @@ function pageDraft(key: ManagedPageKey, page?: ManagedPage): UpsertManagedPageRe
     heroImageUrl: page?.heroImageUrl ?? hero.heroImageUrl,
     coffeeTastes: key === 'COFFEE' ? page?.coffeeTastes ?? defaultCoffeeTastes : null,
     appChoices: key === 'APP' ? page?.appChoices ?? defaultAppChoices : null,
+    images: mergedPageImages(key, page?.images),
     blocks: page?.blocks ?? [],
   }
 }
@@ -110,12 +123,16 @@ export function ManagedPagesPage({ mode = 'list', pageKey }: { mode?: 'list' | '
         <AdminField label="Название раздела" required hint="Используется в админке и метаданных страницы"><Input required value={draft.title} onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} /></AdminField>
         {heroDefaults[parsedKey] ? <section className="admin-form-subsection admin-form-stack">
           <div><h3 className="admin-field-heading">Первый экран</h3><p className="admin-field-hint">Изображение, заголовок и описание меняются без перестройки вёрстки.</p></div>
-          <AdminField label="Изображение" required hint="Ссылка из медиатеки вида /images/… или полный адрес https://…"><Input required value={draft.heroImageUrl ?? ''} onChange={(event) => setDraft((current) => ({ ...current, heroImageUrl: event.target.value || null }))} /></AdminField>
+          <AdminField label="Изображение" required hint="Выберите готовую фотографию или загрузите и кадрируйте новую."><AdminImageField required value={draft.heroImageUrl ?? null} onChange={(heroImageUrl) => setDraft((current) => ({ ...current, heroImageUrl }))} /></AdminField>
           <AdminField label="Заголовок" required hint="Переносы строк сохраняются"><Textarea required value={draft.heroTitle ?? ''} onChange={(event) => setDraft((current) => ({ ...current, heroTitle: event.target.value || null }))} /></AdminField>
           <AdminField label="Описание" required><Textarea required value={draft.heroDescription ?? ''} onChange={(event) => setDraft((current) => ({ ...current, heroDescription: event.target.value || null }))} /></AdminField>
         </section> : null}
         {parsedKey === 'COFFEE' ? <CoffeeTasteEditor tastes={draft.coffeeTastes ?? defaultCoffeeTastes} onChange={(coffeeTastes) => setDraft((current) => ({ ...current, coffeeTastes }))} /> : null}
         {parsedKey === 'APP' ? <AppChoiceEditor choices={draft.appChoices ?? defaultAppChoices} onChange={(appChoices) => setDraft((current) => ({ ...current, appChoices }))} /> : null}
+        {draft.images?.length ? <section className="admin-form-subsection admin-form-stack">
+          <div><h3 className="admin-field-heading">Фотографии секций</h3><p className="admin-field-hint">Кадры из постоянных блоков этой страницы. SVG-иллюстрации сюда не входят.</p></div>
+          {draft.images.map((image, index) => <AdminField key={image.id} label={image.label}><AdminImageField required value={image.imageUrl} onChange={(imageUrl) => imageUrl && setDraft((current) => ({ ...current, images: current.images?.map((item, itemIndex) => itemIndex === index ? { ...item, imageUrl } : item) }))} /><Input aria-label={`Описание: ${image.label}`} placeholder="Описание фотографии" value={image.imageAlt} onChange={(event) => setDraft((current) => ({ ...current, images: current.images?.map((item, itemIndex) => itemIndex === index ? { ...item, imageAlt: event.target.value } : item) }))} /></AdminField>)}
+        </section> : null}
         <BlockEditor blocks={draft.blocks} onChange={(blocks) => setDraft((current) => ({ ...current, blocks }))} />
         {save.isError ? <p className="admin-state-message admin-state-error">Не удалось сохранить страницу. Проверьте обязательные поля блоков.</p> : null}
         <div className="admin-form-actions"><Button disabled={save.isPending} size="lg" type="submit">{save.isPending ? 'Сохраняем…' : 'Сохранить страницу'}</Button><Button asChild variant="outline"><Link to="/pages">Отмена</Link></Button></div>
@@ -143,7 +160,7 @@ function AppChoiceEditor({ choices, onChange }: { choices: AppChoice[]; onChange
           <AdminField label="Название вкладки" required><Input required value={choice.label} onChange={(event) => update(index, { ...choice, label: event.target.value })} /></AdminField>
           <AdminField label="Заголовок" required><Input required value={choice.title} onChange={(event) => update(index, { ...choice, title: event.target.value })} /></AdminField>
           <AdminField label="Описание" required><Textarea required value={choice.description} onChange={(event) => update(index, { ...choice, description: event.target.value })} /></AdminField>
-          <AdminField label="Скриншот" required hint="Ссылка из медиатеки вида /images/… или полный адрес https://…"><Input required value={choice.imageUrl} onChange={(event) => update(index, { ...choice, imageUrl: event.target.value })} /></AdminField>
+          <AdminField label="Скриншот" required hint="Выберите готовое изображение или загрузите новое."><AdminImageField compact required value={choice.imageUrl} onChange={(imageUrl) => imageUrl && update(index, { ...choice, imageUrl })} /></AdminField>
           <AdminField label="Описание изображения" required hint="Коротко опишите, что видно на экране"><Input required value={choice.imageAlt} onChange={(event) => update(index, { ...choice, imageAlt: event.target.value })} /></AdminField>
         </div>
         <div className="admin-gallery-image-actions">
@@ -182,7 +199,7 @@ function CoffeeTasteEditor({ tastes, onChange }: { tastes: CoffeeTaste[]; onChan
         <div className="admin-gallery-image-fields">
           <AdminField label="Заголовок" required><Input required value={taste.title} onChange={(event) => update(index, { ...taste, title: event.target.value })} /></AdminField>
           <AdminField label="Описание" required><Input required value={taste.description} onChange={(event) => update(index, { ...taste, description: event.target.value })} /></AdminField>
-          <AdminField label="Изображение" required><Input required value={taste.imageUrl} onChange={(event) => update(index, { ...taste, imageUrl: event.target.value })} /></AdminField>
+          <AdminField label="Изображение" required><AdminImageField compact required value={taste.imageUrl} onChange={(imageUrl) => imageUrl && update(index, { ...taste, imageUrl })} /></AdminField>
         </div>
         <div className="admin-gallery-image-actions">
           <Button aria-label="Переместить вкус выше" disabled={index === 0} size="sm" type="button" variant="ghost" onClick={() => move(index, -1)}>↑</Button>

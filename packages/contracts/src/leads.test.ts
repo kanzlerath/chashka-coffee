@@ -15,4 +15,15 @@ describe('lead contracts', () => {
 
     expect(result.metadata).toEqual({ source: FOOTER_QUESTION_LEAD_SOURCE })
   })
+
+  test('accepts a confectionery order request as its own operational lead type', () => {
+    expect(createLeadRequestSchema.parse({
+      type: 'CAKE',
+      name: 'Мария',
+      phone: '+7 913 000-00-00',
+      email: null,
+      message: 'Торт на 12 гостей к субботе',
+      metadata: { source: 'bakery_order_request', subject: 'День рождения' },
+    }).type).toBe('CAKE')
+  })
 })

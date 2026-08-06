@@ -25,6 +25,14 @@ export const appChoiceSchema = z.object({
 }).strict()
 export type AppChoice = z.infer<typeof appChoiceSchema>
 
+export const managedPageImageSchema = z.object({
+  id: z.string().trim().min(1).max(80),
+  label: z.string().trim().min(1).max(120),
+  imageUrl: z.string().trim().min(1).max(2_048).refine((value) => value.startsWith('/') || /^https?:\/\//.test(value), 'Expected an absolute URL or a site-relative path'),
+  imageAlt: z.string().trim().max(240),
+}).strict()
+export type ManagedPageImage = z.infer<typeof managedPageImageSchema>
+
 const nullableHeroText = (max: number) => z.string().trim().min(1).max(max).nullable()
 const nullableHeroUrl = z.string().trim().min(1).max(2_048).refine((value) => value.startsWith('/') || /^https?:\/\//.test(value), 'Expected an absolute URL or a site-relative path').nullable()
 
@@ -37,6 +45,7 @@ export const managedPageSchema = z.object({
   heroImageUrl: nullableHeroUrl,
   coffeeTastes: z.array(coffeeTasteSchema).min(1).max(12).nullable(),
   appChoices: z.array(appChoiceSchema).min(1).max(6).nullable(),
+  images: z.array(managedPageImageSchema).max(24),
   blocks: contentBlockListSchema,
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -48,6 +57,7 @@ export const upsertManagedPageRequestSchema = managedPageSchema.omit({ id: true,
   heroImageUrl: nullableHeroUrl.optional(),
   coffeeTastes: z.array(coffeeTasteSchema).min(1).max(12).nullable().optional(),
   appChoices: z.array(appChoiceSchema).min(1).max(6).nullable().optional(),
+  images: z.array(managedPageImageSchema).max(24).optional(),
 }).strict()
 export type UpsertManagedPageRequest = z.infer<typeof upsertManagedPageRequestSchema>
 export const managedPageListResponseSchema = z.object({ pages: z.array(managedPageSchema) })

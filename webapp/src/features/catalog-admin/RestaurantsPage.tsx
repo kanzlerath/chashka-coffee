@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/features/auth'
+import { AdminImageField, AdminImageListField } from '@/features/media-admin'
 import { formatRussianPhone } from '@/lib/contact-fields'
 import { nullableDraftText } from '@/lib/form-drafts'
 import { useEditorDraft } from '@/hooks/use-editor-draft'
@@ -152,7 +153,7 @@ export function RestaurantsPage({ mode = 'list', restaurantId }: { mode?: 'list'
         <AdminField label="Телефон" required hint="Показывается посетителям и используется для кнопки «Позвонить»."><Input required type="tel" inputMode="tel" pattern="\\+7 \\(\\d{3}\\) \\d{3}-\\d{2}-\\d{2}" placeholder="+7 (383) 123-20-20" value={draft.phone} onChange={(event) => change('phone', formatRussianPhone(event.target.value))} /></AdminField>
         <label className="admin-check-row"><input checked={draft.coffeePickupEnabled} type="checkbox" onChange={(event) => change('coffeePickupEnabled', event.target.checked)} /><span><strong>Выдавать онлайн-заказы кофе</strong><small>Точка появится в списке самовывоза при оформлении заказа.</small></span></label>
         <AdminField label="Короткое описание" hint="Два-три предложения об атмосфере, кухне или особенностях точки."><Textarea placeholder="Светлый городской ресторан для завтраков, встреч и неспешных ужинов." value={draft.description ?? ''} onChange={(event) => change('description', nullableDraftText(event.target.value))} /></AdminField>
-        <AdminField label="Фотография ресторана" hint="Вставьте прямую ссылку на загруженное изображение из медиатеки."><Input type="url" placeholder="https://…" value={draft.coverImageUrl ?? ''} onChange={(event) => change('coverImageUrl', nullableDraftText(event.target.value))} /></AdminField>
+        <AdminField label="Фотография ресторана" hint="Показывается в каталоге и в первом экране страницы ресторана."><AdminImageField value={draft.coverImageUrl ?? null} onChange={(coverImageUrl) => change('coverImageUrl', coverImageUrl)} /></AdminField>
         <details className="admin-advanced-fields"><summary>Технические настройки</summary><div className="pt-4"><AdminField label="Адрес страницы" hint="Можно не заполнять — адрес создастся автоматически из названия."><Input value={draft.slug} placeholder="krasny-prospekt" onChange={(event) => change('slug', event.target.value)} /></AdminField></div></details>
         </> : null}
         {editorTab === 'about' ? <>
@@ -174,7 +175,7 @@ export function RestaurantsPage({ mode = 'list', restaurantId }: { mode?: 'list'
         </> : null}
         {editorTab === 'media' ? <>
         <AdminFormIntro>Обложка используется в первом экране, а галерея — в отдельном слайдере ниже. Добавляйте по одной прямой ссылке на фотографию в строке.</AdminFormIntro>
-        <AdminField label="Фотографии галереи" hint="До 12 ссылок из медиатеки, по одной в строке. Порядок строк станет порядком фотографий."><Textarea className="min-h-44" placeholder={'https://…/restaurant-1.webp\nhttps://…/restaurant-2.webp'} value={draft.galleryUrls.join('\n')} onChange={(event) => change('galleryUrls', event.target.value.split('\n'))} /></AdminField>
+        <AdminField label="Фотографии галереи" hint="До 12 фотографий; порядок можно менять."><AdminImageListField value={draft.galleryUrls} onChange={(galleryUrls) => change('galleryUrls', galleryUrls)} /></AdminField>
         <AdminField label="PDF меню" hint="Прямая публичная ссылка на PDF-файл для кнопки скачивания."><Input type="url" placeholder="https://…/menu.pdf" value={draft.menuPdfUrl ?? ''} onChange={(event) => change('menuPdfUrl', nullableDraftText(event.target.value))} /></AdminField>
         </> : null}
         {editorTab === 'map' ? <>

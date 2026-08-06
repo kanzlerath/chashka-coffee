@@ -197,11 +197,11 @@ export function createPrismaOrderRepository(db: DbClient): OrderRepository {
             include: includeItems,
           })
         })
-        return toOrder(order as OrderRecord)
+        return { order: toOrder(order as OrderRecord), created: true }
       } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
           const existing = await db.order.findUnique({ where: { idempotencyKey: input.idempotencyKey }, include: includeItems })
-          if (existing) return toOrder(existing as OrderRecord)
+          if (existing) return { order: toOrder(existing as OrderRecord), created: false }
         }
         throw error
       }

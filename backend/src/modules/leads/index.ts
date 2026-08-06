@@ -16,6 +16,7 @@ import { z } from 'zod'
 import type { DbClient } from '../../db'
 import { AppError, validationErrorHook } from '../../http/errors'
 import type { AuthHttpEnv } from '../auth'
+import type { OperationalNotifications } from '../operational-notifications'
 
 const idParams = z.object({ id: z.uuid() })
 const errorSchema = z.object({ error: z.object({ code: z.string(), message: z.string() }) })
@@ -23,7 +24,7 @@ const errorContent = { 'application/json': { schema: errorSchema } }
 
 type DatabaseLead = {
   id: string
-  type: 'CONTACT' | 'RESERVATION' | 'FRANCHISE' | 'BANQUET' | 'JOB' | 'EVENT_REGISTRATION'
+  type: 'CONTACT' | 'RESERVATION' | 'FRANCHISE' | 'BANQUET' | 'CAKE' | 'JOB' | 'EVENT_REGISTRATION'
   status: 'NEW' | 'IN_PROGRESS' | 'CLOSED'
   name: string
   phone: string | null
@@ -55,7 +56,7 @@ function readMetadata(value: unknown): Record<string, string> | null {
   return entries.length ? Object.fromEntries(entries) : null
 }
 
-export function createLeadsModule({ db, requireAuth, requireLeadAccess }: { db: DbClient; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireLeadAccess: MiddlewareHandler<AuthHttpEnv> }) {
+export function createLeadsModule({ db, requireAuth, requireLeadAccess, notifications }: { db: DbClient; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireLeadAccess: MiddlewareHandler<AuthHttpEnv>; notifications?: OperationalNotifications }) {
   const routes = new OpenAPIHono({ defaultHook: validationErrorHook })
   const adminRoutes = new OpenAPIHono<AuthHttpEnv>({ defaultHook: validationErrorHook })
   adminRoutes.use('/leads', requireAuth, requireLeadAccess)
@@ -88,7 +89,9 @@ export function createLeadsModule({ db, requireAuth, requireLeadAccess }: { db: 
       ? await db.customer.findUnique({ where: { phone: normalizedPhone.data }, select: { id: true } })
       : null
     const lead = await db.lead.create({ data: { ...data, payload: metadata ?? undefined, crmCustomerId: customer?.id } })
-    return c.json({ lead: dto(lead) }, 201)
+    const response = dto(lead)
+    await notifications?.notifyLead(response)
+    return c.json({ lead: response }, 201)
   })
   adminRoutes.openapi(list, async (c) => {
     const { type, status } = c.req.valid('query')
@@ -115,7 +118,7 @@ export function createLeadsModule({ db, requireAuth, requireLeadAccess }: { db: 
 function leadTypesFor(user: AuthHttpEnv['Variables']['user']) {
   const types: DatabaseLead['type'][] = []
   if (hasPermission(user, 'LEADS_MANAGE')) {
-    types.push('CONTACT', 'RESERVATION', 'FRANCHISE', 'BANQUET', 'EVENT_REGISTRATION')
+    types.push('CONTACT', 'RESERVATION', 'FRANCHISE', 'BANQUET', 'CAKE', 'EVENT_REGISTRATION')
   }
   if (hasPermission(user, 'JOB_APPLICATIONS_MANAGE')) types.push('JOB')
   return types
