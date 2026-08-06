@@ -37,7 +37,7 @@ const levels = [
 
       <div class="loyalty-pass" aria-hidden="true">
         <div class="loyalty-pass-top">
-          <span>ЧК</span>
+          <img class="loyalty-card-logo" src="/brand/logo.png" alt="" />
           <small>DI Bonus</small>
         </div>
         <strong>3%</strong>
@@ -92,7 +92,7 @@ const levels = [
       <div class="daily-intro">
         <h2 id="daily-title">Одна карта.<br />Каждый день.</h2>
         <div class="daily-card" aria-hidden="true">
-          <span>ЧК</span>
+          <img class="daily-card-logo" src="/brand/logo.png" alt="" />
           <strong>1 240</strong>
           <small>бонусов на балансе</small>
         </div>
@@ -165,7 +165,7 @@ const levels = [
   .loyalty-pass:before{position:absolute;top:-42%;right:-12%;width:65%;aspect-ratio:1;border:1px solid rgba(189,214,90,.28);border-radius:50%;box-shadow:0 0 0 35px rgba(189,214,90,.06),0 0 0 70px rgba(189,214,90,.035);content:''}
   .loyalty-pass-top,.loyalty-pass-bottom{display:flex;position:relative;z-index:1;align-items:center}
   .loyalty-pass-top{justify-content:space-between}
-  .loyalty-pass-top span{font-size:22px;font-weight:800;letter-spacing:-.15em}
+  .loyalty-card-logo{display:block;width:38px;height:38px;object-fit:contain}
   .loyalty-pass-top small{color:#c9d8ce;font-size:9px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
   .loyalty-pass>strong{display:block;position:relative;z-index:1;margin-top:clamp(38px,4.8vw,70px);color:var(--lime);font-size:clamp(68px,7vw,106px);line-height:.66;letter-spacing:-.1em}
   .loyalty-pass-bottom{margin-top:21px;gap:7px}
@@ -209,7 +209,7 @@ const levels = [
   .daily-intro h2{margin:0;font-size:clamp(48px,5.2vw,83px);line-height:.85}
   .daily-card{position:relative;width:min(100%,395px);min-height:220px;margin-top:auto;padding:31px 34px;overflow:hidden;border-radius:var(--radius);background:#dfe8d2;color:var(--moss);transform:rotate(-4deg)}
   .daily-card:after{position:absolute;right:-27px;bottom:-47px;width:165px;aspect-ratio:1;border:32px solid rgba(115,143,54,.18);border-radius:50%;content:''}
-  .daily-card>span{font-size:19px;font-weight:800;letter-spacing:-.15em}
+  .daily-card-logo{display:block;width:38px;height:38px;object-fit:contain}
   .daily-card>strong{display:block;margin-top:52px;font-size:56px;line-height:.8;letter-spacing:-.09em}
   .daily-card>small{display:block;margin-top:12px;color:#60705e;font-size:10px}
   .daily-flow{align-self:center;border-top:1px solid var(--line)}
@@ -242,7 +242,7 @@ const levels = [
     .loyalty-hero>img{object-position:63% center}
     .loyalty-hero-shade{background:linear-gradient(180deg,rgba(247,243,236,.98) 0%,rgba(247,243,236,.82) 52%,rgba(21,42,32,.18) 100%)}
     .loyalty-hero-copy{min-height:auto;padding:54px 24px 0;justify-content:flex-start}
-    .loyalty-hero h1{font-size:clamp(53px,15vw,76px)}
+    .loyalty-hero h1{font-size:clamp(48px,12vw,62px)}
     .loyalty-hero-copy>p{font-size:13px}
     .loyalty-pass{right:22px;bottom:45px;width:min(78vw,360px)}
     .welcome-scene,.daily-scene,.app-scene{grid-template-columns:1fr}
@@ -250,7 +250,7 @@ const levels = [
     .bonus-ticket{min-height:310px;padding:38px 39px}
     .level-scene{padding:70px 24px}
     .level-scene>header{grid-template-columns:1fr;gap:23px}
-    .level-scene h2{font-size:clamp(45px,12vw,66px)}
+    .level-scene h2{font-size:clamp(40px,10.5vw,56px)}
     .level-track{display:flex;height:auto;margin-top:60px;padding-left:36px;flex-direction:column;gap:0}
     .level-track svg{display:none}
     .level-track:before{position:absolute;top:7px;bottom:12px;left:10px;border-left:1px dashed rgba(189,214,90,.55);content:''}
@@ -269,15 +269,16 @@ const levels = [
   }
 
   @media(max-width:520px){
-    .loyalty-actions{align-items:stretch;flex-direction:column}
-    .loyalty-button{width:100%}
+    .loyalty-hero .loyalty-actions{flex-wrap:nowrap;gap:8px}
+    .loyalty-hero .loyalty-button{min-width:0;flex:1;padding:0 10px;font-size:11px;white-space:nowrap}
     .loyalty-pass{right:18px;bottom:34px;width:calc(100% - 36px)}
     .loyalty-pass>strong{margin-top:43px}
     .bonus-ticket{width:calc(100% - 18px)}
     .bonus-ticket>strong{font-size:114px}
     .bonus-ticket>p{font-size:34px}
     .daily-flow article{grid-template-columns:1fr}
-    .daily-intro h2,.welcome-copy h2,.app-copy h2{font-size:49px}
+    .daily-intro h2{font-size:43px}
+    .welcome-copy h2,.app-copy h2{font-size:49px}
     .app-visual{min-height:330px}
   }
 
