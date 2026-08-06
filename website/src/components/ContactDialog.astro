@@ -9,7 +9,7 @@ import LeadForm from './LeadForm.astro'
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 5 14 14M19 5 5 19" /></svg>
     </button>
     <div class="contact-dialog-copy">
-      <p>На связи</p>
+      <img src="/brand/logo.png" alt="" width="64" height="64" />
       <h2 id="contact-dialog-title">Есть вопрос<br />или идея?</h2>
       <span>Напишите нам — ответим или передадим предложение нужной команде.</span>
     </div>
@@ -47,29 +47,23 @@ import LeadForm from './LeadForm.astro'
 </script>
 
 <style>
-  .contact-dialog{width:min(920px,calc(100vw - 48px));max-width:none;max-height:calc(100svh - 48px);margin:auto;padding:0;border:0;border-radius:var(--radius);background:#f5f1e9;color:#1f3b2e;box-shadow:0 28px 90px rgba(16,27,20,.3);overflow:hidden}
-  .contact-dialog::backdrop{background:rgba(20,31,24,.62);backdrop-filter:blur(7px)}
-  .contact-dialog[open]{animation:contact-dialog-in .32s cubic-bezier(.22,1,.36,1)}
-  @keyframes contact-dialog-in{from{opacity:0;transform:translateY(20px) scale(.985)}to{opacity:1;transform:none}}
-  .contact-dialog-inner{position:relative;display:grid;grid-template-columns:minmax(280px,.78fr) minmax(420px,1.22fr);min-height:520px}
-  .contact-dialog-copy{display:flex;justify-content:flex-end;padding:clamp(38px,5vw,64px);flex-direction:column;background:#1f3b2e;color:#fff}
-  .contact-dialog-copy p{margin:0 0 auto;color:#bddb3d;font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
-  .contact-dialog-copy h2{margin:50px 0 22px;color:#fff;font-size:clamp(42px,4vw,60px);line-height:.84;letter-spacing:-.085em}
-  .contact-dialog-copy span{max-width:310px;color:#dce7de;font-size:13px;line-height:1.55}
-  .contact-dialog-form{display:grid;align-items:center;padding:clamp(38px,5vw,68px)}
-  .contact-dialog-close{position:absolute;z-index:2;top:18px;right:18px;display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid rgba(31,59,46,.14);border-radius:var(--radius);background:rgba(245,241,233,.94);color:#1f3b2e;cursor:pointer;transition:background-color .2s ease,transform .2s ease}
-  .contact-dialog-close:hover{background:#bddb3d;transform:rotate(4deg)}
-  .contact-dialog-close:focus-visible{outline:3px solid #bddb3d;outline-offset:3px}
-  .contact-dialog-close svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-width:1.8}
-  .contact-dialog-form :global(.lead-form button){min-width:156px;justify-content:space-between;background:#1f3b2e;color:#fff;transition:background-color .2s ease,transform .2s ease}
-  .contact-dialog-form :global(.lead-form button:hover){background:#315b45;transform:translateY(-2px)}
-  .contact-dialog-form :global(.lead-form input:focus),.contact-dialog-form :global(.lead-form textarea:focus){outline:3px solid rgba(189,219,61,.55);outline-offset:1px;border-color:#79942d}
+  .contact-dialog{width:min(1100px,calc(100vw - 48px));max-width:none;max-height:calc(100svh - 48px);margin:auto;padding:0;border:0;border-radius:var(--radius);background:#fcfbf8;color:var(--ink);box-shadow:0 28px 90px rgba(22,28,22,.32);overflow:hidden}
+  .contact-dialog::backdrop{background:rgba(25,31,25,.64);backdrop-filter:blur(8px)}
+  .contact-dialog[open]{animation:contact-dialog-in .3s cubic-bezier(.22,1,.36,1)}
+  @keyframes contact-dialog-in{from{opacity:0;transform:translateY(18px) scale(.985)}to{opacity:1;transform:none}}
+  .contact-dialog-inner{position:relative;display:grid;min-height:650px;grid-template-columns:minmax(310px,.85fr) minmax(0,1.15fr)}
+  .contact-dialog-copy{display:flex;padding:clamp(38px,5vw,76px);background:var(--moss);color:#fff;flex-direction:column}.contact-dialog-copy>img{width:64px;height:64px;object-fit:contain}
+  .contact-dialog-copy h2{margin:auto 0 0;color:#fff;font-size:clamp(46px,4.7vw,74px);line-height:.88;letter-spacing:-.08em}.contact-dialog-copy span{max-width:390px;margin-top:24px;color:#d3ddd4;font-size:13px;line-height:1.68}
+  .contact-dialog-form{display:flex;align-items:center;padding:clamp(56px,6vw,92px)}.contact-dialog-form :global(.lead-form){width:100%}
+  .contact-dialog-close{position:absolute;z-index:2;top:19px;right:19px;display:grid;place-items:center;width:46px;height:46px;padding:0;border:1px solid rgba(35,30,27,.11);border-radius:var(--radius);background:rgba(252,251,248,.94);color:var(--ink);cursor:pointer;transition:background-color .2s ease,transform .2s ease}
+  .contact-dialog-close:hover{background:var(--lime);transform:rotate(4deg)}.contact-dialog-close:focus-visible{outline:3px solid var(--lime);outline-offset:3px}.contact-dialog-close svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-width:1.8}
+  .contact-dialog-form :global(.lead-form button){display:flex!important;width:100%;min-height:58px!important;justify-content:space-between!important;padding:0 10px 0 21px!important;background:var(--moss)!important;color:#fff;transition:background-color .2s ease,transform .2s ease}.contact-dialog-form :global(.lead-form button b){display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:var(--lime);color:var(--moss)}
+  .contact-dialog-form :global(.lead-form button:hover){background:#315b45!important;transform:translateY(-2px)}.contact-dialog-form :global(.lead-form input:focus),.contact-dialog-form :global(.lead-form textarea:focus){outline:3px solid rgba(189,219,61,.55);outline-offset:1px;border-color:#79942d}
   @media(max-width:720px){
-    .contact-dialog{position:fixed;inset:auto 12px 12px;width:auto;max-height:calc(100svh - 24px);margin:0;overflow:auto;overscroll-behavior:contain}
-    .contact-dialog-inner{grid-template-columns:1fr;min-height:0}
-    .contact-dialog-copy{min-height:235px;padding:30px 24px}
-    .contact-dialog-copy p{margin-bottom:42px}.contact-dialog-copy h2{margin:0 0 16px;font-size:43px}.contact-dialog-copy span{max-width:285px;font-size:12px}
-    .contact-dialog-form{padding:28px 20px 30px}
+    .contact-dialog{position:fixed;inset:auto 12px 12px;width:auto;max-height:calc(100svh - 24px);margin:0}
+    .contact-dialog-inner{display:block;min-height:0;max-height:calc(100svh - 24px);overflow:auto}
+    .contact-dialog-copy{min-height:310px;padding:34px 24px}.contact-dialog-copy>img{width:52px;height:52px}.contact-dialog-copy h2{margin:auto 0 0;font-size:52px}.contact-dialog-copy span{max-width:285px;margin-top:20px;font-size:12px}
+    .contact-dialog-form{padding:34px 22px 28px}
     .contact-dialog-close{top:14px;right:14px;width:42px;height:42px}
   }
   @media(prefers-reduced-motion:reduce){.contact-dialog[open]{animation:none}.contact-dialog-close,.contact-dialog-form :global(.lead-form button){transition:none}}
