@@ -28,8 +28,8 @@ const paperRules = [
         <h1 id="certificate-title">{heroTitle.split(/\r?\n/).map((line) => <span>{line}</span>)}</h1>
         <p>{heroDescription}</p>
         <div class="certificate-actions">
-          <a class="certificate-button certificate-button-dark" href="/restaurants">Где купить</a>
-          <a class="certificate-button certificate-button-light" href="/certificate-rules">Правила сертификатов</a>
+          <a class="button" href="/restaurants">Где купить</a>
+          <a class="button" href="/certificate-rules">Правила сертификатов</a>
         </div>
       </div>
 
@@ -95,7 +95,6 @@ const paperRules = [
     <section class="use-scene" aria-labelledby="use-title">
       <header>
         <h2 id="use-title">Подарили.<br />Пришли.<br />Выбрали.</h2>
-        <p>Главные условия бумажного сертификата — коротко и без мелкого шрифта.</p>
       </header>
 
       <div class="use-flow">
@@ -126,7 +125,6 @@ const paperRules = [
       </div>
       <div class="ending-mark" aria-hidden="true">
         <img src="/brand/logo.png" alt="" />
-        <i>для хорошего дня</i>
       </div>
     </section>
 
@@ -144,6 +142,7 @@ const paperRules = [
   .certificate-hero h1{max-width:810px;margin:0;color:var(--ink);font-size:clamp(58px,6.4vw,106px);line-height:.82;letter-spacing:-.105em}.certificate-hero h1 span{display:block}
   .certificate-hero-copy>p{max-width:520px;margin:29px 0 0;color:#4e423b;font-size:15px;line-height:1.65}
   .certificate-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:31px}
+  .certificate-hero .button{padding:0 24px}
   .certificate-button{display:inline-flex;min-height:50px;padding:0 24px;border:1px solid transparent;border-radius:var(--radius);align-items:center;justify-content:center;font-size:12px;font-weight:800;transition:background-color .22s ease,color .22s ease,border-color .22s ease,box-shadow .22s ease,transform .22s ease}
   .certificate-button:hover{box-shadow:0 10px 22px rgba(31,59,46,.15);transform:translateY(-2px)}
   .certificate-button:focus-visible{outline:3px solid rgba(189,214,90,.9);outline-offset:3px}
@@ -248,10 +247,13 @@ const paperRules = [
     .certificate-button{width:100%}
     .paper-object{right:17px;bottom:-13%;width:calc(100% - 82px)}
     .formats-body>article{min-height:520px}
-    .paper-miniature{width:255px}
-    .paper-miniature>span{font-size:31px}
-    .paper-miniature>strong{font-size:45px}
-    .plastic-format>img{width:118%;margin-right:-14%;margin-bottom:-9%}
+    .paper-format{grid-template-rows:auto auto;row-gap:38px}
+    .paper-miniature{width:min(100%,255px);margin:0 auto;align-self:start}
+    .paper-miniature>span{font-size:clamp(25px,7.4vw,29px)}
+    .paper-miniature>strong{max-width:100%;font-size:clamp(33px,10.4vw,41px);letter-spacing:-.04em}
+    .formats-body>.plastic-format{overflow:visible;padding-bottom:58px}
+    .plastic-format{grid-template-rows:auto auto;row-gap:30px}
+    .plastic-format>img{align-self:start;width:100%;margin:0}
     .use-flow article{grid-template-columns:1fr}
     .values-copy h2,.certificate-ending h2{font-size:49px}
   }
