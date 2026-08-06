@@ -57,6 +57,8 @@ Keep an explicit username and password in Prisma connection URLs even on local n
 
 DigitalOcean Spaces env is optional. Leave `SPACES_*` blank until the product needs uploads, media, exports, or downloads. When storage is active, configure the complete Spaces group in `backend/.env` and follow [../docs/STORAGE.md](../docs/STORAGE.md).
 
+Operational Telegram notifications are optional. Set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_BOT_USERNAME` only on the backend, then connect recipients in the super-admin `/telegram` screen. The bot uses `getUpdates`, so it must not have a webhook configured. Setup, event routing, best-effort delivery, and diagnostics are documented in [../docs/TELEGRAM_NOTIFICATIONS.md](../docs/TELEGRAM_NOTIFICATIONS.md).
+
 ## Runtime Entrypoints
 
 The backend is one workspace with one Prisma schema and one Dockerfile, but it has separate runtime entrypoints:

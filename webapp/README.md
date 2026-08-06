@@ -43,9 +43,10 @@ Create `webapp/.env` when needed:
 
 ```bash
 VITE_API_URL=http://localhost:3000
+VITE_PUBLIC_SITE_URL=http://localhost:4321
 ```
 
-`VITE_API_URL` is build-time config. In production it must be a concrete backend origin such as `https://api.example.com`; if it changes, redeploy the App Platform Static Site so the built bundle stops using the old URL.
+`VITE_API_URL` and `VITE_PUBLIC_SITE_URL` are build-time config. In production they must point to the backend and public website origins; if either changes, redeploy the App Platform Static Site so API calls and previews of site-relative images keep using the correct hosts.
 
 ## Admin information architecture
 

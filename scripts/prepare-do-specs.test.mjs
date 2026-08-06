@@ -5,6 +5,7 @@ import { describe, expect, test } from 'bun:test';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const backendSpecPath = resolve(repoRoot, '.scratch/deploy/backend-app.yaml');
+const webappSpecPath = resolve(repoRoot, '.scratch/deploy/webapp-static-app.yaml');
 const websiteSpecPath = resolve(repoRoot, '.scratch/deploy/website-static-app.yaml');
 
 describe('prepare-do-specs', () => {
@@ -120,7 +121,20 @@ describe('prepare-do-specs', () => {
     const spec = readFileSync(websiteSpecPath, 'utf8');
     expect(spec).toContain(`- key: PUBLIC_API_URL
         value: "https://api.example.com"`);
+    expect(spec).toContain(`- key: PUBLIC_SITE_URL
+        value: "https://website.example.com"`);
     expect(spec).not.toContain('REPLACE_WITH_');
+  });
+
+  test('gives the webapp the public website origin and allows both browser surfaces through backend CORS', () => {
+    const webappResult = runPrepareSpecs({}, { target: 'webapp' });
+    const backendResult = runPrepareSpecs();
+
+    expect(webappResult.status).toBe(0);
+    expect(backendResult.status).toBe(0);
+    expect(readFileSync(webappSpecPath, 'utf8')).toContain(`- key: VITE_PUBLIC_SITE_URL
+        value: "https://website.example.com"`);
+    expect(readFileSync(backendSpecPath, 'utf8')).toContain('value: "https://webapp.example.com,https://website.example.com"');
   });
 });
 
@@ -145,6 +159,7 @@ function runPrepareSpecs(extraEnv = {}, { skipReleaseGitCheck = true, target = '
       JWT_SECRET: 'abcdefghijklmnopqrstuvwxyz123456',
       DO_BACKEND_URL: 'https://api.example.com',
       DO_WEBAPP_URL: 'https://webapp.example.com',
+      DO_WEBSITE_URL: 'https://website.example.com',
       ...extraEnv,
     },
   });

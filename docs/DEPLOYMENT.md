@@ -60,6 +60,15 @@ SPACES_DOWNLOAD_URL_TTL_SECONDS=300
 SPACES_PUBLIC_CACHE_CONTROL="public, max-age=31536000, immutable"
 ```
 
+Optional backend-only Telegram notification settings:
+
+```dotenv
+TELEGRAM_BOT_TOKEN=<bot-token>
+TELEGRAM_BOT_USERNAME=<bot-username-without-at-sign>
+```
+
+Keep the token in the deployment secret store. The bot must not have a webhook because the admin connection flow uses `getUpdates`; see [TELEGRAM_NOTIFICATIONS.md](TELEGRAM_NOTIFICATIONS.md).
+
 ## DigitalOcean App Platform
 
 Prerequisites:
@@ -108,8 +117,11 @@ export DO_GITHUB_REPO=owner/repo
 export DO_PROJECT_SLUG=project-slug
 export DO_GIT_BRANCH=main
 export DO_APP_REGION=fra
+export DO_WEBSITE_URL=https://website.example.com
 export JWT_SECRET="$(openssl rand -hex 32)"
 ```
+
+`DO_WEBSITE_URL` is the stable public website origin used for canonical links and admin image previews. It may be a planned custom domain before DNS is switched, but it must be the final HTTPS origin without a path. `backend-final` also adds both `DO_WEBAPP_URL` and `DO_WEBSITE_URL` to `CORS_ORIGINS`, because the staff app and public account/checkout flows call the API from different browser origins.
 
 Optional API sizing overrides for an installed project:
 
@@ -134,7 +146,7 @@ bun run deploy:do:specs webapp
 doctl apps spec validate .scratch/deploy/webapp-static-app.yaml
 doctl apps create --spec .scratch/deploy/webapp-static-app.yaml
 
-# 3. After the webapp URL exists, update backend CORS and create website if active.
+# 3. After the webapp URL exists, update backend CORS and create the website.
 export DO_WEBAPP_URL=https://<webapp-default-ingress>
 bun run deploy:do:specs backend-final
 doctl apps spec validate .scratch/deploy/backend-app.yaml
@@ -235,13 +247,13 @@ Required component shape:
 - Source directory/build context: repository root.
 - Build command: `bun install --frozen-lockfile && bun run build:webapp`.
 - Output directory: `webapp/dist`.
-- Build-time env: `VITE_API_URL=https://api.example.com`.
+- Build-time env: `VITE_API_URL=https://api.example.com` and `VITE_PUBLIC_SITE_URL=https://website.example.com`.
 - Index document: `index.html`.
 - Catch-all document: `index.html`, because the React app uses client-side routing.
 
 App Platform Static Sites are served through DigitalOcean's global CDN by default. Do not disable the CDN cache unless the product needs a specific behavior that the built-in CDN cannot provide.
 
-`VITE_API_URL` is embedded at build time. If it is empty, the browser app can call its own static-site origin at `/api/*` instead of the backend. After changing `VITE_API_URL`, redeploy the static site; runtime env changes alone do not rewrite the already built bundle.
+Both variables are embedded at build time. `VITE_API_URL` points authenticated requests at the backend; `VITE_PUBLIC_SITE_URL` resolves site-relative media paths inside admin previews. After changing either origin, redeploy the static site; runtime env changes alone do not rewrite the already built bundle.
 
 ## Website Static Site
 
@@ -259,11 +271,11 @@ Required component shape (static build):
 - Build command: `bun install --frozen-lockfile && bun run build:website`.
 - Output directory: `website/dist`.
 - Index document: `index.html`.
-- Build-time env: `PUBLIC_API_URL=https://api.example.com` for prerendered public content and browser API calls, plus `PUBLIC_WEBAPP_URL=https://webapp.example.com` for links into the staff app.
+- Build-time env: `PUBLIC_API_URL=https://api.example.com` for prerendered public content and browser API calls, `PUBLIC_WEBAPP_URL=https://webapp.example.com` for links into the staff app, and `PUBLIC_SITE_URL=https://website.example.com` for canonical and Open Graph URLs.
 
 Keep website independent from authenticated browser-app flows unless the product explicitly needs shared API data.
 
-`PUBLIC_API_URL` and `PUBLIC_WEBAPP_URL` are build-time public config. The website build reads published journal, event, promotion, product, restaurant, and managed-page data from `PUBLIC_API_URL`; if it points at the wrong origin, the generated static site cannot contain those detail routes. Redeploy the website after either URL or published static content changes.
+These are build-time public settings. The website build reads published journal, event, promotion, product, restaurant, managed-page, and shared-header data from `PUBLIC_API_URL`; if it points at the wrong origin, the generated static site cannot contain the current routes and shared content. `PUBLIC_SITE_URL` must match the public origin so canonical and social-preview URLs are not generated against localhost or a temporary ingress. Redeploy the website after any build-time URL or published static content changes.
 
 ## Managed PostgreSQL
 
@@ -347,13 +359,15 @@ After deployment:
 ## Failure Modes This Template Guards Against
 
 - `GitHub user not authenticated`: App Platform GitHub integration was not connected or did not have repository access before `doctl apps create`.
-- Empty secrets or URLs in generated specs: `JWT_SECRET`, `CORS_ORIGINS`, `VITE_API_URL`, `PUBLIC_API_URL`, and `PUBLIC_WEBAPP_URL` must be concrete before deployment.
+- Empty secrets or URLs in generated specs: `JWT_SECRET`, `CORS_ORIGINS`, `VITE_API_URL`, `VITE_PUBLIC_SITE_URL`, `PUBLIC_API_URL`, `PUBLIC_WEBAPP_URL`, and `PUBLIC_SITE_URL` must be concrete before deployment.
 - Dirty or ambiguous release source: deployment tooling must stop when the worktree has uncommitted/untracked files, the checkout branch differs from `DO_GIT_BRANCH`, or the branch is not pushed and in sync.
 - Backend crash on startup: empty, placeholder, or obviously weak `JWT_SECRET` is rejected by env validation, so the spec generator must fail before App Platform deploys it.
 - Broken browser auth CORS: production CORS must use exact HTTPS origins, not wildcard or empty values.
 - Webapp calling its own `/api/*`: missing `VITE_API_URL` at static build time makes the bundle use the wrong origin.
+- Broken admin image previews: missing `VITE_PUBLIC_SITE_URL` makes site-relative media resolve against the staff-app origin.
 - Missing journal detail pages: missing `PUBLIC_API_URL` at website build time prevents published API content from becoming static routes.
 - Empty website links: missing `PUBLIC_WEBAPP_URL` at build time can bake invalid public links into website output.
+- Wrong canonical URLs: missing `PUBLIC_SITE_URL` can bake localhost or a temporary ingress into SEO metadata.
 - Stale remote build dependencies: static site build commands run `bun install --frozen-lockfile` before `bun run build:*`.
 - Frozen backend install failures: `backend/Dockerfile` copies all workspace manifests before `bun install --frozen-lockfile`.
 - Wrong App Platform port: backend specs set both `http_port: 8080` and `PORT=8080`.
