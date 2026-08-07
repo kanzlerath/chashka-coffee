@@ -41,6 +41,12 @@ The first Caddy start lets it issue certificates and expose the API before the
 Astro static build requests published API data. Caddy serves an empty static
 directory for only that initial build window.
 
+If the interactive restaurant map is enabled, set
+`PUBLIC_YANDEX_MAPS_API_KEY` in `deploy/vps/.env` before the website build.
+This is a browser key, so restrict it in Yandex Maps by HTTP Referer to the
+public dev and production website hosts. It is embedded in static HTML during
+the build; rebuilding the website is required after changing it.
+
 Create the first administrator only after migrations have completed:
 
 ```bash
