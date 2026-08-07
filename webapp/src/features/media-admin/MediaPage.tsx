@@ -11,7 +11,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/in
 import { Typography } from '@/components/ui/typography'
 import { useAuth } from '@/features/auth'
 
-import { resolveAdminImagePreview, supportedTypes, uploadMediaFile } from './media-utils'
+import { isVideoMedia, resolveAdminImagePreview, supportedMediaTypes, uploadMediaFile } from './media-utils'
 
 const formatBytes = (value: number) => value >= 1_048_576 ? `${(value / 1_048_576).toFixed(1)} МБ` : `${Math.max(1, Math.round(value / 1_024))} КБ`
 const formatDate = (value: string) => new Intl.DateTimeFormat('ru', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(value))
@@ -21,7 +21,7 @@ export function MediaPage() {
   const queryClient = useQueryClient()
   const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState('')
-  const [type, setType] = useState<'ALL' | 'image/jpeg' | 'image/png' | 'image/webp' | 'image/avif'>('ALL')
+  const [type, setType] = useState<'ALL' | 'image/jpeg' | 'image/png' | 'image/webp' | 'image/avif' | 'video/mp4'>('ALL')
   const [uploading, setUploading] = useState<{ done: number; total: number } | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const assets = useQuery({ queryKey: ['admin', 'media'], queryFn: () => api.request('/api/admin/media', mediaAssetListResponseSchema) })
@@ -31,8 +31,8 @@ export function MediaPage() {
   }, [assets.data, query, type])
 
   const uploadFiles = async (files: File[]) => {
-    const supported = files.filter((file) => supportedTypes.has(file.type))
-    setUploadError(supported.length === files.length ? null : 'Некоторые файлы пропущены: поддерживаются JPEG, PNG, WebP и AVIF.')
+    const supported = files.filter((file) => supportedMediaTypes.has(file.type))
+    setUploadError(supported.length === files.length ? null : 'Некоторые файлы пропущены: поддерживаются JPEG, PNG, WebP, AVIF и MP4.')
     if (!supported.length) return
     setUploading({ done: 0, total: supported.length })
     try {
@@ -42,7 +42,7 @@ export function MediaPage() {
       }
       await queryClient.invalidateQueries({ queryKey: ['admin', 'media'] })
     } catch (error) {
-      setUploadError(error instanceof Error ? error.message : 'Не удалось загрузить фотографии.')
+      setUploadError(error instanceof Error ? error.message : 'Не удалось загрузить медиафайлы.')
     } finally {
       setUploading(null)
       if (inputRef.current) inputRef.current.value = ''
@@ -50,18 +50,18 @@ export function MediaPage() {
   }
 
   return <section className="admin-page admin-media-page">
-    <AdminPageHeader eyebrow="Медиа" title="Медиатека" description="Все загруженные фотографии в одном месте. Из редакторов их можно выбирать повторно или подготовить отдельный кадр." actions={<><Input ref={inputRef} accept="image/jpeg,image/png,image/webp,image/avif" className="sr-only" disabled={Boolean(uploading)} multiple type="file" onChange={(event) => void uploadFiles([...event.target.files ?? []])} /><Button type="button" onClick={() => inputRef.current?.click()} disabled={Boolean(uploading)}><HugeiconsIcon icon={Upload01Icon} size={17} strokeWidth={1.8} />{uploading ? `${uploading.done} из ${uploading.total}` : 'Загрузить фотографии'}</Button></>} />
+    <AdminPageHeader eyebrow="Медиа" title="Медиатека" description="Фотографии и MP4-видео для сайта. Из редакторов их можно выбирать повторно; для первого экрана добавляйте отдельный постер." actions={<><Input ref={inputRef} accept="image/jpeg,image/png,image/webp,image/avif,video/mp4" className="sr-only" disabled={Boolean(uploading)} multiple type="file" onChange={(event) => void uploadFiles([...event.target.files ?? []])} /><Button type="button" onClick={() => inputRef.current?.click()} disabled={Boolean(uploading)}><HugeiconsIcon icon={Upload01Icon} size={17} strokeWidth={1.8} />{uploading ? `${uploading.done} из ${uploading.total}` : 'Загрузить медиа'}</Button></>} />
 
     <div className="admin-media-toolbar">
       <InputGroup><InputGroupAddon align="inline-start"><HugeiconsIcon icon={SearchIcon} size={17} strokeWidth={1.8} /></InputGroupAddon><InputGroupInput aria-label="Поиск по медиатеке" placeholder="Название файла…" value={query} onChange={(event) => setQuery(event.target.value)} /></InputGroup>
-      <select aria-label="Формат файла" value={type} onChange={(event) => setType(event.target.value as typeof type)}><option value="ALL">Все форматы</option><option value="image/jpeg">JPEG</option><option value="image/png">PNG</option><option value="image/webp">WebP</option><option value="image/avif">AVIF</option></select>
+      <select aria-label="Формат файла" value={type} onChange={(event) => setType(event.target.value as typeof type)}><option value="ALL">Все форматы</option><option value="image/jpeg">JPEG</option><option value="image/png">PNG</option><option value="image/webp">WebP</option><option value="image/avif">AVIF</option><option value="video/mp4">MP4-видео</option></select>
       <Typography variant="bodySm" tone="muted">{visible.length} из {assets.data?.assets.length ?? 0}</Typography>
     </div>
 
     {uploadError ? <Typography className="admin-state-message admin-state-error" variant="bodySm">{uploadError}</Typography> : null}
     {assets.isPending ? <Typography className="admin-state-message" variant="bodySm">Загружаем медиатеку…</Typography> : null}
     {assets.isError ? <Typography className="admin-state-message admin-state-error" variant="bodySm">Не удалось загрузить медиатеку.</Typography> : null}
-    {!assets.isPending && !assets.isError && visible.length === 0 ? <div className="admin-media-empty"><Typography variant="bodySmMedium">{assets.data?.assets.length ? 'Файлы не найдены' : 'Медиатека пока пуста'}</Typography><Typography variant="bodySm" tone="muted">{assets.data?.assets.length ? 'Измените поиск или фильтр формата.' : 'Загрузите фотографии сюда или прямо из редактора страницы.'}</Typography></div> : null}
-    <div className="admin-media-grid">{visible.map((asset) => <figure key={asset.id} className="admin-media-tile"><img src={resolveAdminImagePreview(asset.publicUrl)} alt="" loading="lazy" /><Typography as="figcaption" variant="caption"><Typography title={asset.filename} variant="bodySmMedium">{asset.filename}</Typography><Typography as="small" variant="caption" tone="muted">{formatBytes(asset.byteSize)} · {formatDate(asset.createdAt)}</Typography><Button size="xs" type="button" variant="outline" onClick={() => void navigator.clipboard.writeText(asset.publicUrl)}>Скопировать ссылку</Button></Typography></figure>)}</div>
+    {!assets.isPending && !assets.isError && visible.length === 0 ? <div className="admin-media-empty"><Typography variant="bodySmMedium">{assets.data?.assets.length ? 'Файлы не найдены' : 'Медиатека пока пуста'}</Typography><Typography variant="bodySm" tone="muted">{assets.data?.assets.length ? 'Измените поиск или фильтр формата.' : 'Загрузите фотографию или MP4-видео сюда либо прямо из редактора.'}</Typography></div> : null}
+    <div className="admin-media-grid">{visible.map((asset) => <figure key={asset.id} className="admin-media-tile">{isVideoMedia(asset.contentType) ? <video controls muted playsInline preload="metadata" src={resolveAdminImagePreview(asset.publicUrl)} /> : <img src={resolveAdminImagePreview(asset.publicUrl)} alt="" loading="lazy" />}<Typography as="figcaption" variant="caption"><Typography title={asset.filename} variant="bodySmMedium">{asset.filename}</Typography><Typography as="small" variant="caption" tone="muted">{isVideoMedia(asset.contentType) ? 'MP4 · ' : ''}{formatBytes(asset.byteSize)} · {formatDate(asset.createdAt)}</Typography><Button size="xs" type="button" variant="outline" onClick={() => void navigator.clipboard.writeText(asset.publicUrl)}>Скопировать ссылку</Button></Typography></figure>)}</div>
   </section>
 }

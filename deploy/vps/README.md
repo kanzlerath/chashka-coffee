@@ -17,8 +17,9 @@ the repository-root `docker-compose.yml`, which is local-development-only.
   are queued in PostgreSQL, merged during a short debounce window, and built
   into a new release directory. Caddy follows the `current` symlink only after
   the build finishes successfully, so visitors never receive a half-built site.
-- `api` writes admin-uploaded media to `/srv/uploads`, which is a persistent
-  bind mount from `UPLOADS_DIR`; Caddy serves those files at `/uploads/...`.
+- `api` writes admin-uploaded images and MP4 videos to `/srv/uploads`, which is
+  a persistent bind mount from `UPLOADS_DIR`; Caddy serves those files at
+  `/uploads/...`.
 
 ## First start
 
@@ -102,5 +103,6 @@ independent backup.
 
 Media URLs are stored as site-relative `/uploads/...` paths, so switching a
 tested dev stack to the production domain does not require rewriting media
-records. The `uploads` directory contains public images only; keep it in the
-same external backup as PostgreSQL.
+records. The `uploads` directory contains public images and videos; keep it in
+the same external backup as PostgreSQL. Video files are publicly accessible,
+and the admin library accepts browser-ready MP4 only.

@@ -4,22 +4,26 @@ Use this document when a product needs uploads, images, media, generated files, 
 
 ## Current VPS Media Path
 
-The deployed VPS stores public editorial images directly on its persistent
-disk. The browser sends one authenticated `multipart/form-data` request to the
-backend; it validates the size and real JPEG/PNG/WebP/AVIF signature, writes
-the file below `MEDIA_UPLOADS_DIR`, and persists a site-relative
+The deployed VPS stores public editorial images and MP4 videos directly on its
+persistent disk. The browser sends one authenticated `multipart/form-data`
+request to the backend; it validates the file size and real JPEG/PNG/WebP/AVIF
+or MP4 container signature, writes the file below `MEDIA_UPLOADS_DIR`, and
+persists a site-relative
 `/uploads/<key>` URL. Caddy serves that directory read-only.
 
 ```bash
 MEDIA_UPLOADS_DIR=/srv/uploads
 MEDIA_UPLOAD_MAX_BYTES=10485760
+MEDIA_VIDEO_UPLOAD_MAX_BYTES=104857600
 ```
 
 In the VPS Compose stack, `/srv/uploads` is a bind mount from
 `UPLOADS_DIR=/srv/chashka-coffee/uploads`. The API container needs write access
 to it; Caddy receives it read-only. Treat all files there as public and keep a
 daily external backup of the directory together with PostgreSQL. Immutable
-generated keys make long browser cache headers safe. This path is suitable for
+generated keys make long browser cache headers safe. The media library accepts
+JPEG, PNG, WebP, AVIF, and MP4; videos are not transcoded, so prepare
+browser-compatible H.264/AAC MP4 files before upload. This path is suitable for
 one VPS and moderate media volume; move to object storage before introducing
 multiple API servers, private files, or large media processing.
 

@@ -12,6 +12,16 @@ const imageTypes = {
   'image/avif': { extension: 'avif', matches: (bytes: Uint8Array) => readAscii(bytes, 4, 4) === 'ftyp' && ['avif', 'avis'].some((brand) => readAscii(bytes, 8, 4) === brand || containsAscii(bytes, brand)) },
 } as const
 
+const videoTypes = {
+  'video/mp4': {
+    extension: 'mp4',
+    matches: (bytes: Uint8Array) => readAscii(bytes, 4, 4) === 'ftyp' && mp4Brands.some((brand) => readAscii(bytes, 8, 4) === brand || containsAscii(bytes, brand)),
+  },
+} as const
+
+const mediaTypes = { ...imageTypes, ...videoTypes }
+const mp4Brands = ['isom', 'iso2', 'iso5', 'iso6', 'avc1', 'mp41', 'mp42', 'mp4v', 'M4V ', 'dash']
+
 export type LocalMediaConfig = {
   uploadsDir: string
   uploadMaxBytes: number
@@ -19,6 +29,11 @@ export type LocalMediaConfig = {
 
 export type ValidatedImageUpload = {
   contentType: keyof typeof imageTypes
+  extension: string
+}
+
+export type ValidatedMediaUpload = {
+  contentType: keyof typeof mediaTypes
   extension: string
 }
 
@@ -65,23 +80,32 @@ export function localMediaConfigFromEnv(env: AppEnv): LocalMediaConfig | null {
   }
 }
 
-export async function validateImageUpload(file: File, maxBytes: number): Promise<ValidatedImageUpload> {
+export async function validateMediaUpload(file: File, maxBytes: number): Promise<ValidatedMediaUpload> {
   if (!Number.isInteger(file.size) || file.size <= 0 || file.size > maxBytes) {
     throw new AppError(400, 'VALIDATION_ERROR', 'Upload size is outside the allowed range', { maxBytes })
   }
 
   const bytes = new Uint8Array(await file.slice(0, 64).arrayBuffer())
-  const contentType = (Object.entries(imageTypes) as Array<[keyof typeof imageTypes, (typeof imageTypes)[keyof typeof imageTypes]]>)
+  const contentType = (Object.entries(mediaTypes) as Array<[keyof typeof mediaTypes, (typeof mediaTypes)[keyof typeof mediaTypes]]>)
     .find(([, type]) => type.matches(bytes))?.[0]
 
   if (!contentType) {
-    throw new AppError(400, 'VALIDATION_ERROR', 'Uploaded file is not a supported image')
+    throw new AppError(400, 'VALIDATION_ERROR', 'Uploaded file is not a supported image or video')
   }
 
   return {
     contentType,
-    extension: imageTypes[contentType].extension,
+    extension: mediaTypes[contentType].extension,
   }
+}
+
+export async function validateImageUpload(file: File, maxBytes: number): Promise<ValidatedImageUpload> {
+  const media = await validateMediaUpload(file, maxBytes)
+  if (!(media.contentType in imageTypes)) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Uploaded file is not a supported image')
+  }
+
+  return { contentType: media.contentType as keyof typeof imageTypes, extension: media.extension }
 }
 
 export function filenameWithExtension(filename: string, extension: string) {

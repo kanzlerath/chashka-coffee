@@ -25,6 +25,7 @@ maybeDescribe('auth API integration', () => {
     COOKIE_SECURE: false,
     MEDIA_UPLOADS_DIR: mediaUploadsDirectory,
     MEDIA_UPLOAD_MAX_BYTES: 1024,
+    MEDIA_VIDEO_UPLOAD_MAX_BYTES: 2048,
     WEBSITE_BUILD_DEBOUNCE_SECONDS: 45,
     WEBSITE_BUILD_POLL_SECONDS: 10,
     WEBSITE_BUILD_RETRY_SECONDS: 300,
@@ -131,7 +132,7 @@ maybeDescribe('auth API integration', () => {
     expect(revokedRefresh.status).toBe(401)
   })
 
-  test('stores a validated image in local media storage and returns a site-relative URL', async () => {
+  test('stores validated image and video uploads in local media storage with site-relative URLs', async () => {
     await createUser('media@example.com', 'password123', 'Редактор медиа', ['CONTENT_MANAGER'])
     const login = await app.request('/api/auth/token/login', {
       method: 'POST',
@@ -168,6 +169,27 @@ maybeDescribe('auth API integration', () => {
       body: oversizedForm,
     })
     expect(oversized.status).toBe(400)
+
+    const videoForm = new FormData()
+    const videoBytes = new Uint8Array([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d, 0x00, 0x00, 0x02, 0x00, 0x69, 0x73, 0x6f, 0x6d])
+    videoForm.set('file', new File([videoBytes], 'morning.mov', { type: 'video/mp4' }))
+
+    const videoResponse = await app.request('/api/admin/media/uploads', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: videoForm,
+    })
+    const videoBody = await videoResponse.json()
+
+    expect(videoResponse.status).toBe(201)
+    expect(videoBody.asset).toMatchObject({
+      publicUrl: expect.stringMatching(/^\/uploads\/media\//),
+      filename: 'morning.mov',
+      contentType: 'video/mp4',
+      status: 'READY',
+    })
+    expect(videoBody.asset.objectKey).toEndWith('.mp4')
+    expect(await readFile(join(mediaUploadsDirectory, videoBody.asset.objectKey))).toEqual(Buffer.from(videoBytes))
   })
 
   test('allows only one concurrent refresh rotation for the same token', async () => {

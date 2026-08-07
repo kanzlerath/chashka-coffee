@@ -27,7 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/features/auth'
-import { AdminImageField } from '@/features/media-admin'
+import { AdminImageField, AdminVideoField } from '@/features/media-admin'
 import { nullableDraftText } from '@/lib/form-drafts'
 
 const emptySlide: UpsertHomepageSlideRequest = {
@@ -136,7 +136,7 @@ function SlideForm({ draft, onChange, onSave, onRemove, saving, deleting, error 
   const change = <K extends keyof UpsertHomepageSlideRequest>(key: K, value: UpsertHomepageSlideRequest[K]) => onChange({ ...draft, [key]: value })
   return <form className="admin-form-stack admin-form-subsection" onSubmit={(event) => { event.preventDefault(); onSave() }}>
     <div className="admin-form-grid-2"><AdminField label="Тип"><select value={draft.mediaType} onChange={(event) => change('mediaType', event.target.value as UpsertHomepageSlideRequest['mediaType'])}><option value="IMAGE">Изображение</option><option value="VIDEO">Видео</option></select></AdminField><AdminField label="Порядок"><Input min={0} onChange={(event) => change('position', Number(event.target.value))} type="number" value={draft.position} /></AdminField></div>
-    {draft.mediaType === 'VIDEO' ? <AdminField label="URL видео"><Input onChange={(event) => change('mediaUrl', event.target.value)} placeholder="https://…/video.mp4" required value={draft.mediaUrl} /></AdminField> : <AdminField label="Фотография слайда" required><AdminImageField required value={draft.mediaUrl || null} onChange={(mediaUrl) => mediaUrl && change('mediaUrl', mediaUrl)} /></AdminField>}
+    {draft.mediaType === 'VIDEO' ? <AdminField label="Видео" hint="Загрузите MP4 в медиатеку или выберите уже загруженное видео."><AdminVideoField required value={draft.mediaUrl || null} onChange={(mediaUrl) => mediaUrl && change('mediaUrl', mediaUrl)} /></AdminField> : <AdminField label="Фотография слайда" required><AdminImageField required value={draft.mediaUrl || null} onChange={(mediaUrl) => mediaUrl && change('mediaUrl', mediaUrl)} /></AdminField>}
     {draft.mediaType === 'VIDEO' ? <AdminField label="Постер для видео"><AdminImageField value={draft.posterUrl ?? null} onChange={(posterUrl) => change('posterUrl', posterUrl)} /></AdminField> : null}
     <div className="admin-form-grid-2"><AdminField label="Над заголовком"><Input onChange={(event) => change('eyebrow', nullable(event.target.value))} value={draft.eyebrow ?? ''} /></AdminField><AdminField label="Секунды на слайд"><Input max={30} min={3} onChange={(event) => change('durationSeconds', Number(event.target.value))} type="number" value={draft.durationSeconds} /></AdminField></div>
     <AdminField label="Заголовок (первая строка — 21 Cent, вторая — основной шрифт)"><Textarea onChange={(event) => change('title', event.target.value)} required value={draft.title} /></AdminField>

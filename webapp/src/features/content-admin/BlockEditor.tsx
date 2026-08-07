@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Typography } from '@/components/ui/typography'
 import { nullableDraftText } from '@/lib/form-drafts'
-import { AdminImageField } from '@/features/media-admin'
+import { AdminImageField, AdminVideoField } from '@/features/media-admin'
 import { ContentPreview } from './ContentPreview'
 import { RichTextEditor } from './RichTextEditor'
 
@@ -176,7 +176,7 @@ function BlockFields({ block, onChange }: { block: ContentBlock; onChange: (bloc
     <TextSettings textSize={block.textSize ?? 'NORMAL'} onTextSize={(textSize) => onChange({ ...block, textSize })} />
     <div className="grid gap-3"><Field label="Цитата"><RichTextEditor ariaLabel="Текст цитаты" compact value={block.text} onChange={(text) => onChange({ ...block, text })} /></Field><Field label="Автор"><Input value={block.attribution ?? ''} onChange={(event) => onChange({ ...block, attribution: event.target.value || null })} /></Field></div>
   </div>
-  if (block.type === 'VIDEO') return <div className="admin-block-fields"><PresentationPicker label="Подача видео" hint="Широкая подача, спокойный отступ или затемнённый кинорежим." value={block.layout ?? 'WIDE'} options={videoLayouts} onChange={(layout) => onChange({ ...block, layout })} /><div className="grid gap-3"><Field label="Видео"><Input value={block.videoUrl} onChange={(event) => onChange({ ...block, videoUrl: event.target.value })} /></Field><Field label="Обложка"><AdminImageField value={block.posterUrl ?? null} onChange={(posterUrl) => onChange({ ...block, posterUrl })} /></Field><Field label="Заголовок"><Input value={block.title ?? ''} onChange={(event) => onChange({ ...block, title: event.target.value || null })} /></Field></div></div>
+  if (block.type === 'VIDEO') return <div className="admin-block-fields"><PresentationPicker label="Подача видео" hint="Широкая подача, спокойный отступ или затемнённый кинорежим." value={block.layout ?? 'WIDE'} options={videoLayouts} onChange={(layout) => onChange({ ...block, layout })} /><div className="grid gap-3"><Field label="Видео"><AdminVideoField required value={block.videoUrl} onChange={(videoUrl) => videoUrl && onChange({ ...block, videoUrl })} /></Field><Field label="Обложка"><AdminImageField value={block.posterUrl ?? null} onChange={(posterUrl) => onChange({ ...block, posterUrl })} /></Field><Field label="Заголовок"><Input value={block.title ?? ''} onChange={(event) => onChange({ ...block, title: event.target.value || null })} /></Field></div></div>
   return <div className="admin-block-fields">
     <PresentationPicker label="Цвет призыва" hint="Миниатюра показывает итоговый контраст блока и кнопки." value={block.style ?? 'ACCENT'} options={ctaStyles} onChange={(style) => onChange({ ...block, style })} />
     <TextSettings headingLevel={block.titleLevel ?? 'H2'} textSize={block.textSize ?? 'NORMAL'} onHeadingLevel={(titleLevel) => onChange({ ...block, titleLevel })} onTextSize={(textSize) => onChange({ ...block, textSize })} />
