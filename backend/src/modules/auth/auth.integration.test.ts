@@ -25,6 +25,9 @@ maybeDescribe('auth API integration', () => {
     COOKIE_SECURE: false,
     MEDIA_UPLOADS_DIR: mediaUploadsDirectory,
     MEDIA_UPLOAD_MAX_BYTES: 1024,
+    WEBSITE_BUILD_DEBOUNCE_SECONDS: 45,
+    WEBSITE_BUILD_POLL_SECONDS: 10,
+    WEBSITE_BUILD_RETRY_SECONDS: 300,
     SPACES_UPLOAD_MAX_BYTES: 10 * 1024 * 1024,
     SPACES_UPLOAD_URL_TTL_SECONDS: 900,
     SPACES_DOWNLOAD_URL_TTL_SECONDS: 300,
@@ -43,6 +46,7 @@ maybeDescribe('auth API integration', () => {
     await prisma.jobOpening.deleteMany()
     await prisma.lead.deleteMany()
     await prisma.mediaAsset.deleteMany()
+    await prisma.websiteBuildState.deleteMany()
     await prisma.product.deleteMany()
     await prisma.restaurant.deleteMany()
     await prisma.menu.deleteMany()
@@ -827,6 +831,12 @@ maybeDescribe('auth API integration', () => {
     const publicPage = await app.request('/api/pages/APP')
     expect(publicPage.status).toBe(200)
     expect((await publicPage.json()).page.appChoices).toEqual(appChoices)
+
+    expect(await prisma.websiteBuildState.findUnique({ where: { id: 'global' } })).toMatchObject({
+      requestedVersion: 1,
+      completedVersion: 0,
+      status: 'QUEUED',
+    })
   })
 
   async function loginForMeGuard(email: string) {

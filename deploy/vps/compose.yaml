@@ -66,7 +66,7 @@ services:
       - "443:443"
     volumes:
       - ${APP_DIR:?APP_DIR is required}/deploy/vps/Caddyfile:/etc/caddy/Caddyfile:ro
-      - ${APP_DIR:?APP_DIR is required}/website/dist:/srv/website:ro
+      - ${WEBSITE_RELEASES_DIR:?WEBSITE_RELEASES_DIR is required}:/srv/website:ro
       - ${APP_DIR:?APP_DIR is required}/webapp/dist:/srv/webapp:ro
       - ${UPLOADS_DIR:?UPLOADS_DIR is required}:/srv/uploads:ro
       - caddy_data:/data
@@ -80,10 +80,31 @@ services:
       PUBLIC_API_URL: ${PUBLIC_API_URL:?PUBLIC_API_URL is required}
       PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:?PUBLIC_SITE_URL is required}
       PUBLIC_WEBAPP_URL: ${PUBLIC_WEBAPP_URL:?PUBLIC_WEBAPP_URL is required}
-    command: ["/bin/sh", "-ec", "bun install --frozen-lockfile && bun run build:website"]
+      WEBSITE_RELEASES_DIR: /srv/website
+    command: ["/bin/sh", "-ec", "bun install --frozen-lockfile && bun deploy/vps/scripts/build-website-release.mjs"]
     volumes:
       - ${APP_DIR:?APP_DIR is required}:/app
+      - ${WEBSITE_RELEASES_DIR:?WEBSITE_RELEASES_DIR is required}:/srv/website
     profiles: ["build"]
+
+  website-builder:
+    image: oven/bun:1.3.14
+    restart: unless-stopped
+    working_dir: /app
+    env_file: ${BACKEND_ENV_FILE:-.env}
+    environment:
+      NODE_ENV: production
+      PUBLIC_API_URL: ${PUBLIC_API_URL:?PUBLIC_API_URL is required}
+      PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:?PUBLIC_SITE_URL is required}
+      PUBLIC_WEBAPP_URL: ${PUBLIC_WEBAPP_URL:?PUBLIC_WEBAPP_URL is required}
+      WEBSITE_RELEASES_DIR: /srv/website
+    command: ["/bin/sh", "-ec", "bun install --frozen-lockfile && bun run --cwd backend start:website-builder"]
+    volumes:
+      - ${APP_DIR:?APP_DIR is required}:/app
+      - ${WEBSITE_RELEASES_DIR:?WEBSITE_RELEASES_DIR is required}:/srv/website
+    depends_on:
+      api:
+        condition: service_healthy
 
   webapp-build:
     image: oven/bun:1.3.14

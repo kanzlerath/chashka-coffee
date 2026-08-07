@@ -14,6 +14,7 @@ import { z } from 'zod'
 import type { DbClient } from '../../db'
 import { AppError, validationErrorHook } from '../../http/errors'
 import type { AuthHttpEnv } from '../auth'
+import { needsPublishedResponse, requestPublicWebsiteBuild, responsePublishesPublicContent, shouldRequestPublicWebsiteBuild } from '../../website-build/queue'
 
 const searchQuerySchema = z.object({ q: z.string().trim().min(2).max(120) })
 const activityQuerySchema = z.object({ limit: z.coerce.number().int().min(1).max(100).default(50) })
@@ -179,6 +180,13 @@ export function createWorkspaceModule({
     await next()
     if (!classification || c.res.status >= 400) return
     const actor = c.var.user
+    if (await shouldQueueWebsiteBuild(classification, c.res)) {
+      try {
+        await requestPublicWebsiteBuild(db)
+      } catch (error) {
+        console.error('Failed to queue public website build', error)
+      }
+    }
     try {
       await db.adminAuditEvent.create({
         data: {
@@ -196,6 +204,16 @@ export function createWorkspaceModule({
   }
 
   return { adminRoutes, auditMiddleware }
+}
+
+async function shouldQueueWebsiteBuild(classification: NonNullable<ReturnType<typeof classifyAdminMutation>>, response: Response) {
+  if (!shouldRequestPublicWebsiteBuild(classification.resource)) return false
+  if (classification.action === 'DELETE' || !needsPublishedResponse(classification.resource)) return true
+  try {
+    return responsePublishesPublicContent(await response.clone().json())
+  } catch {
+    return true
+  }
 }
 
 function assertPermission(user: AuthHttpEnv['Variables']['user'], permission: StaffPermission) {

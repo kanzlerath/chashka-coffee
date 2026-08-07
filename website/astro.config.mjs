@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import { resolve } from 'node:path';
 
 // https://astro.build/config
 //
@@ -32,4 +33,7 @@ import { defineConfig } from 'astro/config';
 //      freshness instead.
 export default defineConfig({
   site: process.env.PUBLIC_SITE_URL,
+  outDir: process.env.WEBSITE_BUILD_OUT_DIR
+    ? resolve(process.env.WEBSITE_BUILD_OUT_DIR)
+    : undefined,
 });

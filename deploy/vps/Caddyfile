@@ -15,7 +15,7 @@
 		file_server
 	}
 
-	root * /srv/website
+	root * /srv/website/current
 	try_files {path} {path}/index.html
 	file_server
 }

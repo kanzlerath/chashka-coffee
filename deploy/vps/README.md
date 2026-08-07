@@ -10,8 +10,13 @@ the repository-root `docker-compose.yml`, which is local-development-only.
 - `api` is reachable only through Caddy at `API_HOST`.
 - `caddy` publishes ports 80 and 443, owns TLS certificates, and serves the
   built website and admin app.
-- `website-build` and `webapp-build` are one-shot Bun containers. They write
-  static output to the repository clone, which Caddy mounts read-only.
+- `website-build` and `webapp-build` are one-shot Bun containers. The website
+  build writes a versioned release; the admin build writes static output to the
+  repository clone, which Caddy mounts read-only.
+- `website-builder` is a private long-running worker. Public-content changes
+  are queued in PostgreSQL, merged during a short debounce window, and built
+  into a new release directory. Caddy follows the `current` symlink only after
+  the build finishes successfully, so visitors never receive a half-built site.
 - `api` writes admin-uploaded media to `/srv/uploads`, which is a persistent
   bind mount from `UPLOADS_DIR`; Caddy serves those files at `/uploads/...`.
 
@@ -23,12 +28,13 @@ propagated and after replacing every placeholder in `deploy/vps/.env`:
 ```bash
 cd /srv/chashka-coffee/app
 cp deploy/vps/.env.example deploy/vps/.env
-mkdir -p /srv/chashka-coffee/uploads website/dist webapp/dist
+mkdir -p /srv/chashka-coffee/uploads /srv/chashka-coffee/website-releases webapp/dist
 docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml up -d postgres api
 docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml run --rm migrate
 docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml up -d caddy
 docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml run --rm website-build
 docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml run --rm webapp-build
+docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml up -d website-builder
 ```
 
 The first Caddy start lets it issue certificates and expose the API before the
@@ -57,11 +63,18 @@ docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml run --rm mi
 docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml up -d api
 docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml run --rm website-build
 docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml run --rm webapp-build
+docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml up -d --force-recreate website-builder
 ```
 
-Rebuild the website after published static content changes, because Astro reads
-that content during its build. Rebuild the appropriate frontend whenever a
-`PUBLIC_*` or `VITE_*` URL changes.
+`website-builder` rebuilds the public Astro site automatically after changes to
+catalog, restaurant/menu, page, homepage, content, job, or shared-site data.
+Several changes made within `WEBSITE_BUILD_DEBOUNCE_SECONDS` become one build;
+if content changes while a build is running, one follow-up build is queued. A
+failed build leaves the previously published release live and retries after
+`WEBSITE_BUILD_RETRY_SECONDS`.
+
+Run `website-build` only after a code deployment or a changed `PUBLIC_*` URL.
+Rebuild the appropriate frontend whenever a `PUBLIC_*` or `VITE_*` URL changes.
 
 ## Backups
 
