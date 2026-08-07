@@ -18,11 +18,11 @@ import PageShell from '../layouts/PageShell.astro'
         <fieldset class="checkout-fieldset"><legend><span>03</span>Контакты</legend>
           <label>Имя<input name="name" autocomplete="name" maxlength="180" required placeholder="Как к вам обращаться" /></label>
           <label>Телефон<input name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="+7 (999) 000-00-00" /></label>
-          <label>E-mail <small>необязательно</small><input name="email" type="email" autocomplete="email" maxlength="320" placeholder="name@example.com" /></label>
+          <label>E-mail <small>для фискального чека</small><input name="email" type="email" autocomplete="email" maxlength="320" required placeholder="name@example.com" /></label>
           <label>Комментарий <small>необязательно</small><textarea name="comment" maxlength="1000" placeholder="Например, позвонить, когда заказ будет готов"></textarea></label>
         </fieldset>
         <label class="checkout-consent"><input name="privacy" type="checkbox" required /><span>Согласен с <a href="/privacy" target="_blank">политикой конфиденциальности</a> и обработкой данных для оформления заказа.</span></label>
-        <div class="checkout-payment-note"><strong>Оплата появится следующим шагом</strong><p>Сейчас заказ сохранится со статусом «Ожидает оплаты» и не уйдёт в приготовление.</p></div>
+        <div class="checkout-payment-note"><strong>Безопасная оплата через ЮKassa</strong><p>После подтверждения заказа откроется платёжная страница. Ресторан увидит заказ только после успешной оплаты.</p></div>
         <p class="checkout-error" data-checkout-error role="alert" hidden></p>
         <button class="checkout-submit" type="submit">Подтвердить заказ</button>
       </div>
@@ -140,21 +140,22 @@ import PageShell from '../layouts/PageShell.astro'
         customer: {
           name: String(data.get('name') ?? ''),
           phone: String(data.get('phone') ?? ''),
-          email: String(data.get('email') ?? '').trim() || null,
+          email: String(data.get('email') ?? '').trim(),
         },
         comment: String(data.get('comment') ?? '').trim() || null,
         privacyAccepted: data.get('privacy') === 'on',
         idempotencyKey,
       })
+      const payment = await storeApi.startPayment(result.accessToken)
       clearCart()
       sessionStorage.removeItem('chashka_checkout_idempotency')
-      location.assign(`/order?token=${encodeURIComponent(result.accessToken)}`)
+      location.assign(payment.payment.confirmationUrl)
     } catch (error) {
       const message = error instanceof StoreApiError && error.code === 'CONFLICT'
         ? error.message
         : error instanceof Error && error.name === 'ZodError'
           ? 'Проверьте имя, телефон, e-mail и выбранную точку.'
-          : 'Не удалось сохранить заказ. Проверьте соединение и попробуйте ещё раз.'
+        : 'Не удалось открыть оплату. Заказ сохранён: повторите попытку этой же кнопкой.'
       showError(message)
       submit?.removeAttribute('disabled')
       if (submit) submit.textContent = 'Подтвердить заказ'

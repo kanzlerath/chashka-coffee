@@ -15,7 +15,6 @@ export class OrderService {
     clock: Clock
     repository: OrderRepository
     tokens: OrderTokens
-    onCreated?: (order: Order) => Promise<void>
   }) {}
 
   async quote(lines: OrderLineInput[]): Promise<OrderQuoteResponse> {
@@ -101,13 +100,6 @@ export class OrderService {
         position,
       })),
     })
-    if (creation.created) {
-      try {
-        await this.dependencies.onCreated?.(creation.order)
-      } catch {
-        // Order creation is the primary operation; external notifications are best-effort.
-      }
-    }
     return this.creationResult(creation.order, input.idempotencyKey)
   }
 
@@ -125,17 +117,25 @@ export class OrderService {
     return this.dependencies.repository.listAll()
   }
 
+  async getById(id: string) {
+    const order = await this.dependencies.repository.findById(id)
+    if (!order) throw new OrderFailure('order_not_found', 'Заказ не найден.')
+    return order
+  }
+
   async updateStatus(id: string, nextStatus: OrderStatus) {
     const order = await this.dependencies.repository.findById(id)
     if (!order) throw new OrderFailure('order_not_found', 'Заказ не найден.')
+    if (nextStatus === 'PAID') {
+      throw new OrderFailure('invalid_status_transition', 'Оплату может подтвердить только ЮKassa.')
+    }
+    if (nextStatus === 'CANCELLED') {
+      throw new OrderFailure('invalid_status_transition', 'Отмена будет доступна вместе с безопасным возвратом оплаты.')
+    }
     if (!canTransitionOrder(order.status, nextStatus)) {
       throw new OrderFailure('invalid_status_transition', 'Недопустимый переход статуса заказа.')
     }
-    const updated = await this.dependencies.repository.updateStatus(
-      id,
-      nextStatus,
-      nextStatus === 'PAID' ? 'PAID' : undefined,
-    )
+    const updated = await this.dependencies.repository.updateStatus(id, nextStatus)
     if (!updated) throw new OrderFailure('order_not_found', 'Заказ не найден.')
     return updated
   }

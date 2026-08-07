@@ -3,11 +3,13 @@ import { afterAll, beforeEach, describe, expect, test } from 'bun:test'
 import { createApp } from '../../app'
 import { createPrisma } from '../../db'
 import type { AppEnv } from '../../env'
+import type { YooKassaGateway, YooKassaPayment } from './application/payment-ports'
 
 const databaseUrl = process.env.TEST_DATABASE_URL
 const maybeDescribe = databaseUrl ? describe : describe.skip
 
 maybeDescribe('online coffee order API integration', () => {
+  const yooKassa = createFakeYooKassa()
   const env: AppEnv = {
     PORT: 3000,
     DATABASE_URL: databaseUrl!,
@@ -24,13 +26,18 @@ maybeDescribe('online coffee order API integration', () => {
     SPACES_UPLOAD_URL_TTL_SECONDS: 900,
     SPACES_DOWNLOAD_URL_TTL_SECONDS: 300,
     SPACES_PUBLIC_CACHE_CONTROL: 'public, max-age=31536000, immutable',
+    YOOKASSA_SHOP_ID: 'test-shop',
+    YOOKASSA_SECRET_KEY: 'test-secret',
+    YOOKASSA_RETURN_URL: 'http://localhost:4321/order',
+    YOOKASSA_TEST_MODE: true,
   }
   const prisma = createPrisma(databaseUrl!)
-  const app = createApp({ env, prisma })
+  const app = createApp({ env, prisma, yooKassaGateway: yooKassa.gateway })
   let variantId = ''
   let restaurantId = ''
 
   beforeEach(async () => {
+    yooKassa.reset()
     await prisma.orderItem.deleteMany()
     await prisma.order.deleteMany()
     await prisma.customerConsent.deleteMany()
@@ -92,7 +99,7 @@ maybeDescribe('online coffee order API integration', () => {
     const input = {
       lines: [{ variantId, quantity: 2 }],
       pickupRestaurantId: restaurantId,
-      customer: { name: 'Анна', phone: '+7 913 123-45-67', email: null },
+      customer: { name: 'Анна', phone: '+7 913 123-45-67', email: 'anna@example.com' },
       comment: 'Позвоните, когда заказ будет готов',
       privacyAccepted: true,
       idempotencyKey: crypto.randomUUID(),
@@ -109,7 +116,7 @@ maybeDescribe('online coffee order API integration', () => {
     expect(repeatedBody.accessToken).toBe(createdBody.accessToken)
     expect(await prisma.order.count()).toBe(1)
     const crmCustomer = await prisma.customer.findUnique({ where: { phone: '79131234567' } })
-    expect(crmCustomer).toMatchObject({ name: 'Анна', email: null, status: 'ACTIVE' })
+    expect(crmCustomer).toMatchObject({ name: 'Анна', email: 'anna@example.com', status: 'ACTIVE' })
     expect(crmCustomer).not.toBeNull()
     expect(await prisma.order.findUnique({ where: { id: createdBody.order.id }, select: { crmCustomerId: true } })).toEqual({ crmCustomerId: crmCustomer!.id })
 
@@ -130,7 +137,7 @@ maybeDescribe('online coffee order API integration', () => {
     const invalid = {
       lines: [{ variantId, quantity: 1, unitPriceKopecks: 1 }],
       pickupRestaurantId: restaurantId,
-      customer: { name: 'Анна', phone: '79131234567', email: null },
+      customer: { name: 'Анна', phone: '79131234567', email: 'anna@example.com' },
       comment: null,
       privacyAccepted: true,
       idempotencyKey: crypto.randomUUID(),
@@ -142,6 +149,42 @@ maybeDescribe('online coffee order API integration', () => {
     expect(disabled.status).toBe(409)
     expect((await disabled.json()).error.message).toContain('не принимает')
   })
+
+  test('creates one YooKassa payment and marks the order paid only after a verified webhook', async () => {
+    const created = await app.request('/api/store/orders', json({
+      lines: [{ variantId, quantity: 1 }],
+      pickupRestaurantId: restaurantId,
+      customer: { name: 'Анна', phone: '+7 913 123-45-67', email: 'anna@example.com' },
+      comment: null,
+      privacyAccepted: true,
+      idempotencyKey: crypto.randomUUID(),
+    }))
+    const createdBody = await created.json()
+
+    const paymentUrl = `/api/store/orders/${createdBody.accessToken}/payment`
+    const first = await app.request(paymentUrl, { method: 'POST' })
+    const repeated = await app.request(paymentUrl, { method: 'POST' })
+    expect(first.status).toBe(200)
+    expect(repeated.status).toBe(200)
+    expect((await repeated.json()).payment.confirmationUrl).toBe('https://yookassa.test/confirm/payment-1')
+    expect(yooKassa.createCalls).toBe(1)
+    expect(await prisma.orderPayment.count()).toBe(1)
+
+    const beforeWebhook = await prisma.order.findUniqueOrThrow({ where: { id: createdBody.order.id } })
+    expect(beforeWebhook).toMatchObject({ status: 'AWAITING_PAYMENT', paymentStatus: 'PENDING' })
+
+    yooKassa.status = 'succeeded'
+    const webhook = await app.request('/api/payments/yookassa/webhook', json({
+      type: 'notification',
+      event: 'payment.succeeded',
+      object: { id: 'payment-1' },
+    }))
+    expect(webhook.status).toBe(200)
+    expect(yooKassa.getCalls).toBe(1)
+
+    const afterWebhook = await prisma.order.findUniqueOrThrow({ where: { id: createdBody.order.id } })
+    expect(afterWebhook).toMatchObject({ status: 'PAID', paymentStatus: 'PAID' })
+  })
 })
 
 function json(body: unknown) {
@@ -149,5 +192,49 @@ function json(body: unknown) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+  }
+}
+
+function createFakeYooKassa() {
+  let payment: YooKassaPayment | null = null
+  let status: YooKassaPayment['status'] = 'pending'
+  let createCalls = 0
+  let getCalls = 0
+  const gateway: YooKassaGateway = {
+    async createPayment(input) {
+      createCalls += 1
+      payment = {
+        id: 'payment-1',
+        status,
+        amountKopecks: input.amountKopecks,
+        currency: 'RUB',
+        confirmationUrl: 'https://yookassa.test/confirm/payment-1',
+        metadataOrderId: input.orderId,
+        test: true,
+        receiptRegistration: 'pending',
+      }
+      return payment
+    },
+    async getPayment() {
+      getCalls += 1
+      if (!payment) throw new Error('Payment was not created')
+      return { ...payment, status, receiptRegistration: status === 'succeeded' ? 'succeeded' : 'pending' }
+    },
+    async createClosingReceipt() {
+      return { id: 'receipt-1', status: 'pending' }
+    },
+  }
+  return {
+    gateway,
+    get status() { return status },
+    set status(value: YooKassaPayment['status']) { status = value },
+    get createCalls() { return createCalls },
+    get getCalls() { return getCalls },
+    reset() {
+      payment = null
+      status = 'pending'
+      createCalls = 0
+      getCalls = 0
+    },
   }
 }

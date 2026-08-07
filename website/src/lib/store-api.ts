@@ -6,6 +6,7 @@ import {
   orderQuoteResponseSchema,
   orderResponseSchema,
   pickupLocationListResponseSchema,
+  startOrderPaymentResponseSchema,
 } from '@chashka-coffee/contracts'
 
 const apiOrigin = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
@@ -52,5 +53,8 @@ export const storeApi = {
   },
   async getOrder(accessToken: string) {
     return orderResponseSchema.parse(await request(`/api/store/orders/${encodeURIComponent(accessToken)}`))
+  },
+  async startPayment(accessToken: string) {
+    return startOrderPaymentResponseSchema.parse(await request(`/api/store/orders/${encodeURIComponent(accessToken)}/payment`, { method: 'POST' }))
   },
 }

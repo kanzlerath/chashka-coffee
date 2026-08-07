@@ -32,6 +32,10 @@ describe('online coffee order contracts', () => {
 
     expect(parsed.customer).toEqual({ name: 'Анна', phone: '79131234567', email: 'anna@example.com' })
     expect(() => createOrderRequestSchema.parse({ ...parsed, privacyAccepted: false })).toThrow()
+    expect(() => createOrderRequestSchema.parse({
+      ...parsed,
+      customer: { ...parsed.customer, email: null },
+    })).toThrow()
   })
 
   test('rejects impossible quantities and unknown operational statuses', () => {

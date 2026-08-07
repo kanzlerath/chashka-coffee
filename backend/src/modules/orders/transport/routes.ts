@@ -8,6 +8,7 @@ import {
   orderQuoteResponseSchema,
   orderResponseSchema,
   pickupLocationListResponseSchema,
+  startOrderPaymentResponseSchema,
   updateOrderStatusRequestSchema,
 } from '@chashka-coffee/contracts'
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi'
@@ -20,7 +21,9 @@ import { AppError, validationErrorHook } from '../../../http/errors'
 import type { AuthHttpEnv } from '../../auth'
 import { customerSessionCookieName } from '../../customer-account'
 import type { OrderService } from '../application/order-service'
+import type { PaymentService } from '../application/payment-service'
 import { OrderFailure } from '../domain/errors'
+import { PaymentFailure } from '../domain/payment-errors'
 
 const errorSchema = z.object({ error: z.object({ code: z.string(), message: z.string(), details: z.unknown().optional() }) })
 const errorContent = { 'application/json': { schema: errorSchema } }
@@ -28,12 +31,14 @@ const errorContent = { 'application/json': { schema: errorSchema } }
 export function createOrderRoutes({
   env,
   service,
+  paymentService,
   requireAuth,
   requireOrderAccess,
   resolveCustomerId,
 }: {
   env: AppEnv
   service: OrderService
+  paymentService: PaymentService | null
   requireAuth: MiddlewareHandler<AuthHttpEnv>
   requireOrderAccess: MiddlewareHandler<AuthHttpEnv>
   resolveCustomerId: (sessionToken: string | undefined) => Promise<string | null>
@@ -41,6 +46,7 @@ export function createOrderRoutes({
   const storeRoutes = new OpenAPIHono({ defaultHook: validationErrorHook })
   const customerRoutes = new OpenAPIHono({ defaultHook: validationErrorHook })
   const adminRoutes = new OpenAPIHono<AuthHttpEnv>({ defaultHook: validationErrorHook })
+  const paymentRoutes = new OpenAPIHono({ defaultHook: validationErrorHook })
   adminRoutes.use('/orders', requireAuth, requireOrderAccess)
   adminRoutes.use('/orders/*', requireAuth, requireOrderAccess)
 
@@ -69,6 +75,15 @@ export function createOrderRoutes({
       404: { content: errorContent, description: 'Order not found' },
     },
   })
+  const startPayment = createRoute({
+    method: 'post', path: '/orders/{accessToken}/payment',
+    request: { params: z.object({ accessToken: orderAccessTokenSchema }) },
+    responses: {
+      200: { content: { 'application/json': { schema: startOrderPaymentResponseSchema } }, description: 'Reusable YooKassa redirect payment' },
+      409: { content: errorContent, description: 'Order cannot be paid' },
+      503: { content: errorContent, description: 'YooKassa is not configured' },
+    },
+  })
   const customerOrders = createRoute({
     method: 'get', path: '/orders',
     responses: {
@@ -92,6 +107,16 @@ export function createOrderRoutes({
       409: { content: errorContent, description: 'Invalid status transition' },
     },
   })
+  const webhookNotificationSchema = z.object({
+    type: z.literal('notification'),
+    event: z.enum(['payment.succeeded', 'payment.canceled']),
+    object: z.object({ id: z.string().min(1) }).passthrough(),
+  }).passthrough()
+  const webhook = createRoute({
+    method: 'post', path: '/webhook',
+    request: { body: { content: { 'application/json': { schema: webhookNotificationSchema } } } },
+    responses: { 200: { content: { 'application/json': { schema: z.object({ ok: z.literal(true) }) } }, description: 'Notification accepted' } },
+  })
 
   storeRoutes.openapi(pickupLocations, async (c) => c.json({ locations: await service.listPickupLocations() }, 200))
   storeRoutes.openapi(quote, async (c) => c.json(await service.quote(c.req.valid('json').lines), 200))
@@ -107,6 +132,13 @@ export function createOrderRoutes({
     c.header('Cache-Control', 'no-store')
     return c.json({ order }, 200)
   })
+  storeRoutes.openapi(startPayment, async (c) => {
+    assertTrustedOrigin(c, env)
+    if (!paymentService) throw new AppError(503, 'SERVICE_UNAVAILABLE', 'Оплата ЮKassa пока не настроена.')
+    const response = await executePayment(() => paymentService.start(c.req.valid('param').accessToken))
+    c.header('Cache-Control', 'no-store')
+    return c.json(response, 200)
+  })
   customerRoutes.openapi(customerOrders, async (c) => {
     const customerId = await resolveCustomerId(getCookie(c, customerSessionCookieName))
     if (!customerId) throw new AppError(401, 'UNAUTHORIZED', 'Войдите в аккаунт, чтобы увидеть заказы.')
@@ -115,11 +147,48 @@ export function createOrderRoutes({
   })
   adminRoutes.openapi(adminList, async (c) => c.json({ orders: await service.listAdminOrders() }, 200))
   adminRoutes.openapi(adminUpdate, async (c) => {
-    const order = await executeOrder(() => service.updateStatus(c.req.valid('param').id, c.req.valid('json').status))
+    const { id } = c.req.valid('param')
+    const { status } = c.req.valid('json')
+    const order = status === 'COMPLETED'
+      ? await executePayment(() => requirePaymentService(paymentService).complete(id))
+      : await executeOrder(() => service.updateStatus(id, status))
     return c.json({ order }, 200)
   })
+  paymentRoutes.openapi(webhook, async (c) => {
+    if (!paymentService) throw new AppError(503, 'SERVICE_UNAVAILABLE', 'Оплата ЮKassa пока не настроена.')
+    const notification = c.req.valid('json')
+    await executePayment(() => paymentService.handleNotification({
+      event: notification.event,
+      paymentId: notification.object.id,
+    }))
+    return c.json({ ok: true as const }, 200)
+  })
 
-  return { storeRoutes, customerRoutes, adminRoutes }
+  return { storeRoutes, customerRoutes, adminRoutes, paymentRoutes }
+}
+
+function requirePaymentService(service: PaymentService | null) {
+  if (!service) throw new AppError(503, 'SERVICE_UNAVAILABLE', 'Оплата ЮKassa пока не настроена.')
+  return service
+}
+
+async function executePayment<T>(operation: () => Promise<T>) {
+  try {
+    return await operation()
+  } catch (error) {
+    if (error instanceof OrderFailure) return executeOrder(() => Promise.reject(error))
+    if (!(error instanceof PaymentFailure)) throw error
+    switch (error.code) {
+      case 'payment_not_configured':
+        throw new AppError(503, 'SERVICE_UNAVAILABLE', error.message)
+      case 'payment_not_available':
+      case 'payment_verification_failed':
+        throw new AppError(502, 'UPSTREAM_ERROR', error.message, error.details)
+      case 'payment_already_completed':
+      case 'closing_receipt_required':
+        throw new AppError(409, 'CONFLICT', error.message, error.details)
+    }
+  }
 }
 
 function assertTrustedOrigin(c: Context, env: AppEnv) {

@@ -36,6 +36,25 @@ describe('loadEnv', () => {
     expect(env.TELEGRAM_BOT_USERNAME).toBe('chashka_notifications_bot')
   })
 
+  test('requires complete YooKassa configuration and parses test mode', () => {
+    const base = {
+      DATABASE_URL: 'postgresql://superuser:superpassword@localhost:54329/chashka_coffee',
+      JWT_SECRET: '12345678901234567890123456789012',
+    }
+    expect(() => loadEnv({ ...base, YOOKASSA_SHOP_ID: '123456' })).toThrow('YOOKASSA_SECRET_KEY')
+
+    const env = loadEnv({
+      ...base,
+      YOOKASSA_SHOP_ID: ' 123456 ',
+      YOOKASSA_SECRET_KEY: ' test_secret ',
+      YOOKASSA_RETURN_URL: 'https://dev.example.com/order',
+      YOOKASSA_TEST_MODE: 'true',
+    })
+    expect(env.YOOKASSA_SHOP_ID).toBe('123456')
+    expect(env.YOOKASSA_SECRET_KEY).toBe('test_secret')
+    expect(env.YOOKASSA_TEST_MODE).toBe(true)
+  })
+
   test('parses the local media directory and upload limit', () => {
     const env = loadEnv({
       DATABASE_URL: 'postgresql://superuser:superpassword@localhost:54329/chashka_coffee',

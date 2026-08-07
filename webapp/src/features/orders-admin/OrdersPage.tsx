@@ -23,10 +23,10 @@ const statusLabel: Record<OrderStatus, string> = {
 }
 
 const nextStatuses: Record<OrderStatus, readonly OrderStatus[]> = {
-  AWAITING_PAYMENT: ['PAID', 'CANCELLED'],
-  PAID: ['PREPARING', 'CANCELLED'],
-  PREPARING: ['READY_FOR_PICKUP', 'CANCELLED'],
-  READY_FOR_PICKUP: ['COMPLETED', 'CANCELLED'],
+  AWAITING_PAYMENT: [],
+  PAID: ['PREPARING'],
+  PREPARING: ['READY_FOR_PICKUP'],
+  READY_FOR_PICKUP: ['COMPLETED'],
   COMPLETED: [],
   CANCELLED: [],
 }
@@ -85,7 +85,7 @@ function OrderRow({ order, open, pending, onToggle, onStatus }: { order: Order; 
     </button>
     {open ? <CardContent className="grid gap-6 border-t bg-muted/20 p-6 lg:grid-cols-[1fr_320px]">
       <div><h2 className="mb-3 text-sm font-semibold">Состав заказа</h2><div className="divide-y">{order.items.map((item) => <div className="flex items-center justify-between gap-4 py-3" key={item.id}><span><strong className="block text-sm">{item.productName}</strong><small className="text-xs text-muted-foreground">{item.variantLabel} · {item.quantity} шт.</small></span><b className="text-sm">{money(item.totalKopecks)}</b></div>)}</div>{order.comment ? <div className="mt-5 rounded-lg border p-3"><small className="text-muted-foreground">Комментарий гостя</small><p className="mt-1 text-sm">{order.comment}</p></div> : null}</div>
-      <aside className="grid content-start gap-4"><div><small className="text-muted-foreground">Контакты</small><p className="mt-1 text-sm font-medium">{order.customer.phone}{order.customer.email ? ` · ${order.customer.email}` : ''}</p></div><div><small className="text-muted-foreground">Оплата</small><p className="mt-1 text-sm font-medium">{order.paymentStatus === 'PAID' ? 'Оплачено' : 'Ожидается'}</p></div><div className="flex flex-wrap gap-2">{nextStatuses[order.status].map((next) => <Button disabled={pending} key={next} size="sm" variant={next === 'CANCELLED' ? 'outline' : 'default'} onClick={() => onStatus(next)}>{next === 'CANCELLED' ? 'Отменить' : statusLabel[next]}</Button>)}</div>{nextStatuses[order.status].length === 0 ? <p className="text-xs text-muted-foreground">Заказ завершён, дальнейших действий нет.</p> : null}</aside>
+      <aside className="grid content-start gap-4"><div><small className="text-muted-foreground">Контакты</small><p className="mt-1 text-sm font-medium">{order.customer.phone}{order.customer.email ? ` · ${order.customer.email}` : ''}</p></div><div><small className="text-muted-foreground">Оплата</small><p className="mt-1 text-sm font-medium">{paymentLabel(order)}</p></div><div className="flex flex-wrap gap-2">{nextStatuses[order.status].map((next) => <Button disabled={pending} key={next} size="sm" onClick={() => onStatus(next)}>{statusLabel[next]}</Button>)}</div>{nextStatuses[order.status].length === 0 ? <p className="text-xs text-muted-foreground">{order.status === 'AWAITING_PAYMENT' ? 'Статус изменится автоматически после оплаты.' : 'Дальнейших действий сейчас нет.'}</p> : null}</aside>
     </CardContent> : null}
   </Card>
 }
@@ -94,3 +94,4 @@ function count(orders: Order[] | undefined, status: OrderStatus) { return orders
 function money(kopecks: number) { return `${(kopecks / 100).toLocaleString('ru-RU')} ₽` }
 function shortLocation(value: string) { return value.replace(/^Чашка кофе\s*[—-]\s*/i, '') }
 function statusTone(status: OrderStatus) { return status === 'CANCELLED' ? 'archived' : status === 'COMPLETED' ? 'published' : status === 'AWAITING_PAYMENT' ? 'draft' : 'scheduled' }
+function paymentLabel(order: Order) { return order.paymentStatus === 'PAID' ? 'Оплачено' : order.paymentStatus === 'FAILED' ? 'Не прошла — покупатель может повторить' : 'Ожидается' }

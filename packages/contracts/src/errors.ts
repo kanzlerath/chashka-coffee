@@ -14,6 +14,8 @@ export const apiErrorCodeSchema = z.enum([
   'TOO_MANY_ATTEMPTS',
   'TOO_MANY_REQUESTS',
   'VALIDATION_ERROR',
+  'SERVICE_UNAVAILABLE',
+  'UPSTREAM_ERROR',
   'INTERNAL_ERROR',
 ])
 

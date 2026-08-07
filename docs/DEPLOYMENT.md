@@ -69,6 +69,17 @@ TELEGRAM_BOT_USERNAME=<bot-username-without-at-sign>
 
 Keep the token in the deployment secret store. The bot must not have a webhook because the admin connection flow uses `getUpdates`; see [TELEGRAM_NOTIFICATIONS.md](TELEGRAM_NOTIFICATIONS.md).
 
+YooKassa test or production shop settings are backend-only:
+
+```dotenv
+YOOKASSA_SHOP_ID=<shop-id>
+YOOKASSA_SECRET_KEY=<secret-key>
+YOOKASSA_RETURN_URL=https://website.example.com/order
+YOOKASSA_TEST_MODE=true
+```
+
+Configure `payment.succeeded` and `payment.canceled` notifications to `https://api.example.com/api/payments/yookassa/webhook`. Use `YOOKASSA_TEST_MODE=false` only together with production shop credentials and after the production receipt/refund runbook is complete; see [ONLINE_COFFEE_ORDERS.md](ONLINE_COFFEE_ORDERS.md).
+
 ## DigitalOcean App Platform
 
 Prerequisites:

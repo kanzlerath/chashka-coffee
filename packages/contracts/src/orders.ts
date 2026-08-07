@@ -77,10 +77,14 @@ export const orderCustomerSchema = z.object({
 }).strict()
 export type OrderCustomer = z.infer<typeof orderCustomerSchema>
 
+const checkoutOrderCustomerSchema = orderCustomerSchema.extend({
+  email: z.email().max(320),
+})
+
 export const createOrderRequestSchema = z.object({
   lines: z.array(orderLineInputSchema).min(1).max(50),
   pickupRestaurantId: uuidSchema,
-  customer: orderCustomerSchema,
+  customer: checkoutOrderCustomerSchema,
   comment: z.string().trim().max(1_000).nullable(),
   privacyAccepted: z.literal(true),
   idempotencyKey: uuidSchema,
@@ -114,6 +118,14 @@ export const createOrderResponseSchema = z.object({
   order: orderSchema,
   accessToken: orderAccessTokenSchema,
 }).strict()
+export const startOrderPaymentResponseSchema = z.object({
+  order: orderSchema,
+  payment: z.object({
+    status: z.literal('PENDING'),
+    confirmationUrl: z.url(),
+  }).strict(),
+}).strict()
+export type StartOrderPaymentResponse = z.infer<typeof startOrderPaymentResponseSchema>
 export const orderResponseSchema = z.object({ order: orderSchema }).strict()
 export const customerOrderListResponseSchema = z.object({ orders: z.array(orderSchema) }).strict()
 export const adminOrderListResponseSchema = z.object({ orders: z.array(orderSchema) }).strict()

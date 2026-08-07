@@ -4,9 +4,9 @@ import type { DbClient } from '../../../db'
 import { Prisma } from '../../../generated/prisma/client'
 import type { CreateOrderRecord, OrderRepository } from '../application/ports'
 
-const includeItems = { items: { orderBy: { position: 'asc' as const } } }
+export const includeOrderItems = { items: { orderBy: { position: 'asc' as const } } }
 
-type OrderRecord = {
+export type OrderRecord = {
   id: string
   publicNumber: string
   status: OrderStatus
@@ -38,7 +38,7 @@ type OrderRecord = {
   }>
 }
 
-function toOrder(record: OrderRecord): Order {
+export function toOrder(record: OrderRecord): Order {
   return {
     id: record.id,
     publicNumber: record.publicNumber,
@@ -145,12 +145,12 @@ export function createPrismaOrderRepository(db: DbClient): OrderRepository {
     },
 
     async findByIdempotencyKey(key) {
-      const order = await db.order.findUnique({ where: { idempotencyKey: key }, include: includeItems })
+      const order = await db.order.findUnique({ where: { idempotencyKey: key }, include: includeOrderItems })
       return order ? toOrder(order as OrderRecord) : null
     },
 
     async findById(id) {
-      const order = await db.order.findUnique({ where: { id }, include: includeItems })
+      const order = await db.order.findUnique({ where: { id }, include: includeOrderItems })
       return order ? toOrder(order as OrderRecord) : null
     },
 
@@ -194,13 +194,13 @@ export function createPrismaOrderRepository(db: DbClient): OrderRepository {
               comment: input.comment,
               items: { create: input.items },
             },
-            include: includeItems,
+            include: includeOrderItems,
           })
         })
         return { order: toOrder(order as OrderRecord), created: true }
       } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-          const existing = await db.order.findUnique({ where: { idempotencyKey: input.idempotencyKey }, include: includeItems })
+          const existing = await db.order.findUnique({ where: { idempotencyKey: input.idempotencyKey }, include: includeOrderItems })
           if (existing) return { order: toOrder(existing as OrderRecord), created: false }
         }
         throw error
@@ -208,21 +208,21 @@ export function createPrismaOrderRepository(db: DbClient): OrderRepository {
     },
 
     async findByAccessTokenHash(hash) {
-      const order = await db.order.findUnique({ where: { accessTokenHash: hash }, include: includeItems })
+      const order = await db.order.findUnique({ where: { accessTokenHash: hash }, include: includeOrderItems })
       return order ? toOrder(order as OrderRecord) : null
     },
 
     async listByCustomerId(customerId) {
       const orders = await db.order.findMany({
         where: { customerId },
-        include: includeItems,
+        include: includeOrderItems,
         orderBy: { createdAt: 'desc' },
       })
       return orders.map((order) => toOrder(order as OrderRecord))
     },
 
     async listAll() {
-      const orders = await db.order.findMany({ include: includeItems, orderBy: { createdAt: 'desc' } })
+      const orders = await db.order.findMany({ include: includeOrderItems, orderBy: { createdAt: 'desc' } })
       return orders.map((order) => toOrder(order as OrderRecord))
     },
 
@@ -231,7 +231,7 @@ export function createPrismaOrderRepository(db: DbClient): OrderRepository {
         const order = await db.order.update({
           where: { id },
           data: { status, ...(paymentStatus ? { paymentStatus } : {}) },
-          include: includeItems,
+          include: includeOrderItems,
         })
         return toOrder(order as OrderRecord)
       } catch (error) {

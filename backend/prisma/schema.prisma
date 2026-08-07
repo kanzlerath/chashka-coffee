@@ -99,6 +99,20 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum OrderPaymentAttemptStatus {
+  CREATING
+  PENDING
+  SUCCEEDED
+  CANCELED
+}
+
+enum OrderReceiptStatus {
+  CREATING
+  PENDING
+  SUCCEEDED
+  CANCELED
+}
+
 enum CustomerStatus {
   ACTIVE
   ARCHIVED
@@ -654,16 +668,16 @@ model NotificationDelivery {
 }
 
 model TelegramRecipient {
-  id           String                         @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  name         String                         @db.VarChar(120)
-  chatId       String                         @unique @map("chat_id") @db.VarChar(24)
-  username     String?                        @db.VarChar(64)
-  eventTypes   OperationalNotificationEvent[] @map("event_types")
-  isActive     Boolean                        @default(true) @map("is_active")
-  lastSentAt   DateTime?                      @map("last_sent_at")
-  lastError    String?                        @map("last_error") @db.VarChar(500)
-  createdAt    DateTime                       @default(now()) @map("created_at")
-  updatedAt    DateTime                       @updatedAt @map("updated_at")
+  id         String                         @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name       String                         @db.VarChar(120)
+  chatId     String                         @unique @map("chat_id") @db.VarChar(24)
+  username   String?                        @db.VarChar(64)
+  eventTypes OperationalNotificationEvent[] @map("event_types")
+  isActive   Boolean                        @default(true) @map("is_active")
+  lastSentAt DateTime?                      @map("last_sent_at")
+  lastError  String?                        @map("last_error") @db.VarChar(500)
+  createdAt  DateTime                       @default(now()) @map("created_at")
+  updatedAt  DateTime                       @updatedAt @map("updated_at")
 
   @@index([isActive], map: "telegram_recipients_active_idx")
   @@map("telegram_recipients")
@@ -729,39 +743,75 @@ model Restaurant {
 }
 
 model Order {
-  id                      String           @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  publicNumber            String           @unique @map("public_number") @db.VarChar(32)
-  accessTokenHash         String           @unique @map("access_token_hash") @db.VarChar(64)
-  idempotencyKey          String           @unique @map("idempotency_key") @db.Uuid
-  customerId              String?          @map("customer_id") @db.Uuid
-  crmCustomerId           String?          @map("crm_customer_id") @db.Uuid
-  pickupRestaurantId      String?          @map("pickup_restaurant_id") @db.Uuid
-  status                  OrderStatus      @default(AWAITING_PAYMENT)
-  paymentStatus           PaymentStatus    @default(PENDING) @map("payment_status")
-  customerName            String           @map("customer_name") @db.VarChar(180)
-  customerPhone           String           @map("customer_phone") @db.VarChar(20)
-  customerEmail           String?          @map("customer_email") @db.VarChar(320)
-  pickupSlug              String           @map("pickup_slug") @db.VarChar(120)
-  pickupName              String           @map("pickup_name") @db.VarChar(180)
-  pickupCity              String           @map("pickup_city") @db.VarChar(100)
-  pickupAddress           String           @map("pickup_address") @db.VarChar(300)
-  pickupPhone             String           @map("pickup_phone") @db.VarChar(40)
-  pickupOpeningHoursLabel String           @map("pickup_opening_hours_label") @db.VarChar(180)
-  itemCount               Int              @map("item_count")
-  totalKopecks            Int              @map("total_kopecks")
+  id                      String               @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  publicNumber            String               @unique @map("public_number") @db.VarChar(32)
+  accessTokenHash         String               @unique @map("access_token_hash") @db.VarChar(64)
+  idempotencyKey          String               @unique @map("idempotency_key") @db.Uuid
+  customerId              String?              @map("customer_id") @db.Uuid
+  crmCustomerId           String?              @map("crm_customer_id") @db.Uuid
+  pickupRestaurantId      String?              @map("pickup_restaurant_id") @db.Uuid
+  status                  OrderStatus          @default(AWAITING_PAYMENT)
+  paymentStatus           PaymentStatus        @default(PENDING) @map("payment_status")
+  customerName            String               @map("customer_name") @db.VarChar(180)
+  customerPhone           String               @map("customer_phone") @db.VarChar(20)
+  customerEmail           String?              @map("customer_email") @db.VarChar(320)
+  pickupSlug              String               @map("pickup_slug") @db.VarChar(120)
+  pickupName              String               @map("pickup_name") @db.VarChar(180)
+  pickupCity              String               @map("pickup_city") @db.VarChar(100)
+  pickupAddress           String               @map("pickup_address") @db.VarChar(300)
+  pickupPhone             String               @map("pickup_phone") @db.VarChar(40)
+  pickupOpeningHoursLabel String               @map("pickup_opening_hours_label") @db.VarChar(180)
+  itemCount               Int                  @map("item_count")
+  totalKopecks            Int                  @map("total_kopecks")
   comment                 String?
-  createdAt               DateTime         @default(now()) @map("created_at")
-  updatedAt               DateTime         @updatedAt @map("updated_at")
-  customer                CustomerAccount? @relation(fields: [customerId], references: [id], onDelete: SetNull, map: "orders_customer_id_fkey")
-  crmCustomer             Customer?        @relation(fields: [crmCustomerId], references: [id], onDelete: SetNull, map: "orders_crm_customer_id_fkey")
-  pickupRestaurant        Restaurant?      @relation(fields: [pickupRestaurantId], references: [id], onDelete: SetNull, map: "orders_pickup_restaurant_id_fkey")
+  createdAt               DateTime             @default(now()) @map("created_at")
+  updatedAt               DateTime             @updatedAt @map("updated_at")
+  customer                CustomerAccount?     @relation(fields: [customerId], references: [id], onDelete: SetNull, map: "orders_customer_id_fkey")
+  crmCustomer             Customer?            @relation(fields: [crmCustomerId], references: [id], onDelete: SetNull, map: "orders_crm_customer_id_fkey")
+  pickupRestaurant        Restaurant?          @relation(fields: [pickupRestaurantId], references: [id], onDelete: SetNull, map: "orders_pickup_restaurant_id_fkey")
   items                   OrderItem[]
+  payments                OrderPayment[]
+  closingReceipt          OrderClosingReceipt?
 
   @@index([createdAt], map: "orders_created_at_idx")
   @@index([customerId, createdAt], map: "orders_customer_created_at_idx")
   @@index([crmCustomerId, createdAt], map: "orders_crm_customer_created_at_idx")
   @@index([pickupRestaurantId, status, createdAt], map: "orders_pickup_status_created_at_idx")
   @@map("orders")
+}
+
+model OrderPayment {
+  id                  String                    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  orderId             String                    @map("order_id") @db.Uuid
+  activeOrderId       String?                   @unique(map: "order_payments_active_order_id_key") @map("active_order_id") @db.Uuid
+  providerPaymentId   String?                   @unique(map: "order_payments_provider_payment_id_key") @map("provider_payment_id") @db.VarChar(64)
+  idempotencyKey      String                    @unique(map: "order_payments_idempotency_key_key") @map("idempotency_key") @db.Uuid
+  status              OrderPaymentAttemptStatus @default(CREATING)
+  amountKopecks       Int                       @map("amount_kopecks")
+  confirmationUrl     String?                   @map("confirmation_url")
+  receiptRegistration String?                   @map("receipt_registration") @db.VarChar(32)
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @updatedAt @map("updated_at")
+  order               Order                     @relation(fields: [orderId], references: [id], onDelete: Cascade, map: "order_payments_order_id_fkey")
+  closingReceipt      OrderClosingReceipt?
+
+  @@index([orderId, createdAt], map: "order_payments_order_created_at_idx")
+  @@map("order_payments")
+}
+
+model OrderClosingReceipt {
+  id                String             @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  orderId           String             @unique(map: "order_closing_receipts_order_id_key") @map("order_id") @db.Uuid
+  paymentAttemptId  String             @unique(map: "order_closing_receipts_payment_attempt_id_key") @map("payment_attempt_id") @db.Uuid
+  providerReceiptId String?            @unique(map: "order_closing_receipts_provider_receipt_id_key") @map("provider_receipt_id") @db.VarChar(64)
+  idempotencyKey    String             @unique(map: "order_closing_receipts_idempotency_key_key") @map("idempotency_key") @db.Uuid
+  status            OrderReceiptStatus @default(CREATING)
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  order             Order              @relation(fields: [orderId], references: [id], onDelete: Cascade, map: "order_closing_receipts_order_id_fkey")
+  paymentAttempt    OrderPayment       @relation(fields: [paymentAttemptId], references: [id], onDelete: Cascade, map: "order_closing_receipts_payment_attempt_id_fkey")
+
+  @@map("order_closing_receipts")
 }
 
 model OrderItem {

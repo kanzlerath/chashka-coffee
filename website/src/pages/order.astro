@@ -15,6 +15,7 @@ import PageShell from '../layouts/PageShell.astro'
         <aside>
           <section><p>Самовывоз</p><h2 data-order-pickup-name>—</h2><span data-order-pickup-address>—</span><small data-order-pickup-hours>—</small></section>
           <section><p>Получатель</p><h2 data-order-customer>—</h2><span data-order-phone>—</span></section>
+          <button type="button" data-order-pay hidden>Перейти к оплате</button>
           <button type="button" data-order-refresh>Обновить статус</button>
         </aside>
       </div>
@@ -30,10 +31,13 @@ import PageShell from '../layouts/PageShell.astro'
   const receipt = document.querySelector<HTMLElement>('[data-order-receipt]')
   const errorView = document.querySelector<HTMLElement>('[data-order-error]')
   const refresh = document.querySelector<HTMLButtonElement>('[data-order-refresh]')
+  const pay = document.querySelector<HTMLButtonElement>('[data-order-pay]')
   const token = new URLSearchParams(location.search).get('token') ?? ''
+  const returnedFromPayment = new URLSearchParams(location.search).get('payment_return') === '1'
+  let paymentPollsLeft = returnedFromPayment ? 10 : 0
   const money = (kopecks: number) => `${(kopecks / 100).toLocaleString('ru-RU')} ₽`
   const statuses: Record<OrderStatus, { title: string; copy: string }> = {
-    AWAITING_PAYMENT: { title: 'Ожидает оплаты', copy: 'Заказ сохранён, но ещё не передан в ресторан. Оплата будет подключена следующим этапом.' },
+    AWAITING_PAYMENT: { title: 'Ожидает оплаты', copy: 'Заказ сохранён, но ещё не передан в ресторан. Можно вернуться к оплате безопасно — второй заказ не создастся.' },
     PAID: { title: 'Заказ оплачен', copy: 'Ресторан получил заказ и скоро начнёт его собирать.' },
     PREPARING: { title: 'Собираем заказ', copy: 'Кофе готовят к выдаче в выбранной точке.' },
     READY_FOR_PICKUP: { title: 'Можно забирать', copy: 'Покажите номер заказа сотруднику ресторана.' },
@@ -57,6 +61,7 @@ import PageShell from '../layouts/PageShell.astro'
     setText('[data-order-pickup-hours]', order.pickupLocation.openingHoursLabel)
     setText('[data-order-customer]', order.customer.name)
     setText('[data-order-phone]', order.customer.phone)
+    if (pay) pay.hidden = order.status !== 'AWAITING_PAYMENT'
     const lines = document.querySelector<HTMLElement>('[data-order-lines]')
     lines?.replaceChildren()
     for (const item of order.items) {
@@ -72,6 +77,11 @@ import PageShell from '../layouts/PageShell.astro'
     loading?.setAttribute('hidden', '')
     errorView?.setAttribute('hidden', '')
     receipt?.removeAttribute('hidden')
+    if (paymentPollsLeft > 0 && order.status === 'AWAITING_PAYMENT') {
+      paymentPollsLeft -= 1
+      setText('[data-order-status-copy]', 'ЮKassa возвращает подтверждение. Проверяем оплату автоматически…')
+      window.setTimeout(() => void load(), 3000)
+    }
   }
 
   async function load() {
@@ -90,10 +100,23 @@ import PageShell from '../layouts/PageShell.astro'
   }
 
   refresh?.addEventListener('click', () => void load())
+  pay?.addEventListener('click', async () => {
+    if (!token || !pay) return
+    pay.disabled = true
+    pay.textContent = 'Открываем ЮKassa…'
+    try {
+      const result = await storeApi.startPayment(token)
+      location.assign(result.payment.confirmationUrl)
+    } catch {
+      pay.disabled = false
+      pay.textContent = 'Повторить оплату'
+      setText('[data-order-status-copy]', 'Не удалось открыть платёжную страницу. Проверьте соединение и попробуйте ещё раз.')
+    }
+  })
   void load()
 </script>
 
 <style is:global>
-  .order-page{min-height:650px;padding:clamp(50px,6vw,90px) 0 clamp(90px,10vw,150px);color:#1f3b2e}.order-loading{display:flex;min-height:520px;align-items:center;justify-content:center;gap:14px;color:#716a63;font-size:11px}.order-loading[hidden],.order-receipt[hidden],.order-error[hidden]{display:none}.order-loading span{width:27px;height:27px;border:2px solid #d8dfd0;border-top-color:#78912f;border-radius:50%;animation:order-spin .8s linear infinite}.order-receipt{overflow:hidden;border-radius:var(--radius);background:#f1ede6}.order-receipt>header{display:flex;min-height:380px;padding:clamp(44px,6vw,90px);align-items:flex-end;justify-content:space-between;gap:40px;background:#1f3b2e;color:#fff}.order-receipt>header p{margin:0 0 18px;color:#bdd65a;font-size:10px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.order-receipt h1{max-width:850px;margin:0;color:#fff;font-size:clamp(58px,7.5vw,112px);line-height:.82;letter-spacing:-.085em}.order-receipt>header>div>span{display:block;max-width:520px;margin-top:26px;color:#dce5df;font-size:12px;line-height:1.6}.order-mark{display:grid;flex:0 0 auto;width:96px;height:96px;border:1px solid rgba(255,255,255,.28);border-radius:50%;place-items:center}.order-mark span{color:#bdd65a;font-size:20px;font-weight:900}.order-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(340px,.75fr)}.order-composition{padding:clamp(40px,5vw,72px);border-right:1px solid #d8d2c9}.order-composition h2,.order-grid aside h2{margin:0;font-size:30px;letter-spacing:-.05em}.order-composition>div{margin-top:28px}.order-composition>div>div{display:flex;padding:18px 0;align-items:center;justify-content:space-between;gap:24px;border-top:1px solid #d8d2c9}.order-composition span{display:grid;gap:6px}.order-composition strong{font-size:15px}.order-composition small{color:#777069;font-size:10px}.order-composition b{font-size:15px}.order-composition footer{display:flex;margin-top:22px;padding-top:24px;border-top:2px solid #1f3b2e;align-items:end;justify-content:space-between}.order-composition footer span{color:#6f6962;font-size:11px}.order-composition footer strong{font-size:34px}.order-grid aside{display:flex;padding:clamp(40px,5vw,64px);flex-direction:column}.order-grid aside section{padding:0 0 30px}.order-grid aside section+section{padding-top:30px;border-top:1px solid #d8d2c9}.order-grid aside p{margin:0 0 12px;color:#78912f;font-size:9px;font-weight:850;letter-spacing:.11em;text-transform:uppercase}.order-grid aside span,.order-grid aside small{display:block;margin-top:10px;color:#69635c;font-size:11px;line-height:1.5}.order-grid aside button{min-height:48px;margin-top:auto;border:1px solid #cfc8be;border-radius:15px;background:transparent;color:#1f3b2e;cursor:pointer;font-size:10px;font-weight:800}.order-grid aside button:hover{background:#e5eadc}.order-error{padding:clamp(65px,8vw,120px);border-radius:var(--radius);background:#f1ede6}.order-error>p{margin:0;color:#78912f;font-size:10px;font-weight:850;text-transform:uppercase}.order-error h1{margin:18px 0;font-size:clamp(52px,7vw,100px);line-height:.86;letter-spacing:-.08em}.order-error>span{display:block;max-width:480px;color:#716a63;font-size:12px;line-height:1.6}.order-error a{display:inline-flex;min-height:50px;margin-top:28px;padding:0 22px;border-radius:15px;align-items:center;background:#1f3b2e;color:#fff;font-size:10px;font-weight:800;text-decoration:none}@keyframes order-spin{to{transform:rotate(360deg)}}
+  .order-page{min-height:650px;padding:clamp(50px,6vw,90px) 0 clamp(90px,10vw,150px);color:#1f3b2e}.order-loading{display:flex;min-height:520px;align-items:center;justify-content:center;gap:14px;color:#716a63;font-size:11px}.order-loading[hidden],.order-receipt[hidden],.order-error[hidden],.order-grid aside button[hidden]{display:none}.order-loading span{width:27px;height:27px;border:2px solid #d8dfd0;border-top-color:#78912f;border-radius:50%;animation:order-spin .8s linear infinite}.order-receipt{overflow:hidden;border-radius:var(--radius);background:#f1ede6}.order-receipt>header{display:flex;min-height:380px;padding:clamp(44px,6vw,90px);align-items:flex-end;justify-content:space-between;gap:40px;background:#1f3b2e;color:#fff}.order-receipt>header p{margin:0 0 18px;color:#bdd65a;font-size:10px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.order-receipt h1{max-width:850px;margin:0;color:#fff;font-size:clamp(58px,7.5vw,112px);line-height:.82;letter-spacing:-.085em}.order-receipt>header>div>span{display:block;max-width:520px;margin-top:26px;color:#dce5df;font-size:12px;line-height:1.6}.order-mark{display:grid;flex:0 0 auto;width:96px;height:96px;border:1px solid rgba(255,255,255,.28);border-radius:50%;place-items:center}.order-mark span{color:#bdd65a;font-size:20px;font-weight:900}.order-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(340px,.75fr)}.order-composition{padding:clamp(40px,5vw,72px);border-right:1px solid #d8d2c9}.order-composition h2,.order-grid aside h2{margin:0;font-size:30px;letter-spacing:-.05em}.order-composition>div{margin-top:28px}.order-composition>div>div{display:flex;padding:18px 0;align-items:center;justify-content:space-between;gap:24px;border-top:1px solid #d8d2c9}.order-composition span{display:grid;gap:6px}.order-composition strong{font-size:15px}.order-composition small{color:#777069;font-size:10px}.order-composition b{font-size:15px}.order-composition footer{display:flex;margin-top:22px;padding-top:24px;border-top:2px solid #1f3b2e;align-items:end;justify-content:space-between}.order-composition footer span{color:#6f6962;font-size:11px}.order-composition footer strong{font-size:34px}.order-grid aside{display:flex;padding:clamp(40px,5vw,64px);flex-direction:column}.order-grid aside section{padding:0 0 30px}.order-grid aside section+section{padding-top:30px;border-top:1px solid #d8d2c9}.order-grid aside p{margin:0 0 12px;color:#78912f;font-size:9px;font-weight:850;letter-spacing:.11em;text-transform:uppercase}.order-grid aside span,.order-grid aside small{display:block;margin-top:10px;color:#69635c;font-size:11px;line-height:1.5}.order-grid aside button{min-height:48px;margin-top:10px;border:1px solid #cfc8be;border-radius:15px;background:transparent;color:#1f3b2e;cursor:pointer;font-size:10px;font-weight:800}.order-grid aside button[data-order-pay]{margin-top:auto;border-color:#1f3b2e;background:#1f3b2e;color:#fff}.order-grid aside button:hover{background:#e5eadc}.order-grid aside button[data-order-pay]:hover{background:#294d3b}.order-grid aside button:disabled{cursor:wait;opacity:.6}.order-error{padding:clamp(65px,8vw,120px);border-radius:var(--radius);background:#f1ede6}.order-error>p{margin:0;color:#78912f;font-size:10px;font-weight:850;text-transform:uppercase}.order-error h1{margin:18px 0;font-size:clamp(52px,7vw,100px);line-height:.86;letter-spacing:-.08em}.order-error>span{display:block;max-width:480px;color:#716a63;font-size:12px;line-height:1.6}.order-error a{display:inline-flex;min-height:50px;margin-top:28px;padding:0 22px;border-radius:15px;align-items:center;background:#1f3b2e;color:#fff;font-size:10px;font-weight:800;text-decoration:none}@keyframes order-spin{to{transform:rotate(360deg)}}
   @media(max-width:850px){.order-page{padding:20px 12px 90px}.order-receipt>header{min-height:480px;padding:48px 26px;align-items:flex-start;flex-direction:column-reverse;justify-content:flex-end}.order-receipt h1{font-size:58px}.order-mark{width:66px;height:66px}.order-grid{grid-template-columns:1fr}.order-composition{padding:42px 24px;border-right:0;border-bottom:1px solid #d8d2c9}.order-grid aside{min-height:420px;padding:42px 24px}.order-error{padding:70px 25px}}@media(prefers-reduced-motion:reduce){.order-loading span{animation-duration:.01ms}}
 </style>

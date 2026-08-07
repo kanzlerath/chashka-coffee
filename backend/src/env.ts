@@ -47,6 +47,10 @@ const envSchema = z.object({
   PREMIUMBONUS_API_URL: optionalUrlSchema,
   TELEGRAM_BOT_TOKEN: optionalStringSchema,
   TELEGRAM_BOT_USERNAME: optionalStringSchema,
+  YOOKASSA_SHOP_ID: optionalStringSchema,
+  YOOKASSA_SECRET_KEY: optionalStringSchema,
+  YOOKASSA_RETURN_URL: optionalUrlSchema,
+  YOOKASSA_TEST_MODE: booleanStringSchema,
   MEDIA_UPLOADS_DIR: optionalStringSchema,
   MEDIA_UPLOAD_MAX_BYTES: z.coerce.number().int().positive().default(10 * 1024 * 1024),
   WEBSITE_BUILD_DEBOUNCE_SECONDS: z.coerce.number().int().min(0).max(10 * 60).default(45),
@@ -66,9 +70,11 @@ const envSchema = z.object({
   validateJwtSecret(env, ctx)
   validateCorsOrigins(env, ctx)
   validateStorageEnv(env, ctx)
+  validateYooKassaEnv(env, ctx)
 })
 
-export type AppEnv = z.infer<typeof envSchema>
+type ParsedAppEnv = z.infer<typeof envSchema>
+export type AppEnv = Omit<ParsedAppEnv, 'YOOKASSA_TEST_MODE'> & { YOOKASSA_TEST_MODE?: boolean }
 
 export function loadEnv(source: Record<string, string | undefined>) {
   return envSchema.parse(source)
@@ -176,6 +182,20 @@ function validateStorageEnv(env: z.infer<typeof envSchema>, ctx: z.RefinementCtx
         code: 'custom',
         path: [key],
         message: `${key} is required when DigitalOcean Spaces storage is configured`,
+      })
+    }
+  }
+}
+
+function validateYooKassaEnv(env: z.infer<typeof envSchema>, ctx: z.RefinementCtx) {
+  const keys = ['YOOKASSA_SHOP_ID', 'YOOKASSA_SECRET_KEY', 'YOOKASSA_RETURN_URL'] as const
+  if (!keys.some((key) => env[key] !== undefined)) return
+  for (const key of keys) {
+    if (env[key] === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [key],
+        message: `${key} is required when YooKassa is configured`,
       })
     }
   }

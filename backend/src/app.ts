@@ -17,7 +17,7 @@ import { createManagedPagesModule } from './modules/managed-pages'
 import { createAnalyticsModule } from './modules/analytics'
 import { createWorkspaceModule } from './modules/workspace'
 import { createCustomerAccountModule, type PremiumBonusGateway } from './modules/customer-account'
-import { createOrdersModule } from './modules/orders'
+import { createOrdersModule, type YooKassaGateway } from './modules/orders'
 import { createCrmModule } from './modules/crm'
 import { createOperationalNotificationsModule } from './modules/operational-notifications'
 import { createSiteSettingsModule } from './modules/site-settings'
@@ -26,9 +26,10 @@ type CreateAppOptions = {
   env: AppEnv
   prisma: DbClient
   premiumBonusGateway?: PremiumBonusGateway
+  yooKassaGateway?: YooKassaGateway
 }
 
-export function createApp({ env, prisma, premiumBonusGateway }: CreateAppOptions) {
+export function createApp({ env, prisma, premiumBonusGateway, yooKassaGateway }: CreateAppOptions) {
   const auth = createAuthModule({ db: prisma, env })
   const catalog = createCatalogModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('CATALOG_MANAGE') })
   const content = createContentModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('CONTENT_MANAGE') })
@@ -43,7 +44,7 @@ export function createApp({ env, prisma, premiumBonusGateway }: CreateAppOptions
   const analytics = createAnalyticsModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('ANALYTICS_READ') })
   const workspace = createWorkspaceModule({ db: prisma, requireAuth: auth.requireAuth })
   const customerAccount = createCustomerAccountModule({ db: prisma, env, gateway: premiumBonusGateway })
-  const orders = createOrdersModule({ db: prisma, env, requireAuth: auth.requireAuth, requireOrderAccess: auth.requirePermission('ORDERS_MANAGE'), resolveCustomerId: customerAccount.resolveCustomerId, notifications: notifications.service })
+  const orders = createOrdersModule({ db: prisma, env, requireAuth: auth.requireAuth, requireOrderAccess: auth.requirePermission('ORDERS_MANAGE'), resolveCustomerId: customerAccount.resolveCustomerId, notifications: notifications.service, yooKassaGateway })
   const crm = createCrmModule({ db: prisma, requireAuth: auth.requireAuth, requireCustomerRead: auth.requirePermission('CUSTOMERS_READ') })
   const app = new OpenAPIHono<AuthHttpEnv>({
     defaultHook: validationErrorHook,
@@ -80,6 +81,7 @@ export function createApp({ env, prisma, premiumBonusGateway }: CreateAppOptions
   app.route('/api/customer', customerAccount.routes)
   app.route('/api/customer', orders.customerRoutes)
   app.route('/api/store', orders.storeRoutes)
+  app.route('/api/payments/yookassa', orders.paymentRoutes)
   app.use('/api/admin/*', auth.requireAuth, workspace.auditMiddleware)
   app.route('/api/admin', auth.adminRoutes)
   app.route('/api/restaurants', catalog.routes)

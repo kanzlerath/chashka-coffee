@@ -32,8 +32,7 @@ describe('OrderService', () => {
 
   test('creates an immutable order once and returns the same access token on retry', async () => {
     const repository = fakeRepository([variant({ id: variantId })])
-    const notified: string[] = []
-    const service = createService(repository, async (order) => { notified.push(order.id) })
+    const service = createService(repository)
     const input = checkout()
 
     const first = await service.create(input, null)
@@ -44,29 +43,20 @@ describe('OrderService', () => {
     expect(repeated.order.id).toBe(first.order.id)
     expect(repeated.accessToken).toBe(first.accessToken)
     expect(repository.created).toHaveLength(1)
-    expect(notified).toEqual([first.order.id])
   })
 
-  test('keeps a created order successful when notification delivery fails', async () => {
-    const repository = fakeRepository([variant({ id: variantId })])
-    const service = createService(repository, async () => { throw new Error('Telegram unavailable') })
-
-    await expect(service.create(checkout(), null)).resolves.toMatchObject({ order: { id: orderId } })
-  })
-
-  test('blocks preparation before payment and accepts the paid transition', async () => {
+  test('blocks preparation and manual payment before a verified provider event', async () => {
     const repository = fakeRepository([variant({ id: variantId })])
     const service = createService(repository)
     const created = await service.create(checkout(), null)
 
     await expect(service.updateStatus(created.order.id, 'PREPARING')).rejects.toBeInstanceOf(OrderFailure)
-    const paid = await service.updateStatus(created.order.id, 'PAID')
-    expect(paid.status).toBe('PAID')
-    expect(paid.paymentStatus).toBe('PAID')
+    await expect(service.updateStatus(created.order.id, 'PAID')).rejects.toThrow('только ЮKassa')
+    await expect(service.updateStatus(created.order.id, 'CANCELLED')).rejects.toThrow('возвратом')
   })
 })
 
-function createService(repository: ReturnType<typeof fakeRepository>, onCreated?: (order: Order) => Promise<void>) {
+function createService(repository: ReturnType<typeof fakeRepository>) {
   return new OrderService({
     clock: { now: () => new Date('2026-08-04T10:00:00.000Z') },
     repository,
@@ -75,7 +65,6 @@ function createService(repository: ReturnType<typeof fakeRepository>, onCreated?
       accessToken: () => 'a'.repeat(43),
       hash: (token) => `hash:${token}`,
     },
-    onCreated,
   })
 }
 
@@ -83,7 +72,7 @@ function checkout(): CreateOrderRequest {
   return {
     lines: [{ variantId, quantity: 1 }],
     pickupRestaurantId: restaurantId,
-    customer: { name: 'Анна', phone: '79131234567', email: null },
+    customer: { name: 'Анна', phone: '79131234567', email: 'anna@example.com' },
     comment: null,
     privacyAccepted: true,
     idempotencyKey,
