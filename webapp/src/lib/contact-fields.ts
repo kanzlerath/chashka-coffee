@@ -1,5 +1,7 @@
 const RUSSIAN_PHONE_DIGITS = 11
 
+export const russianPhonePattern = String.raw`\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}`
+
 export function formatRussianPhone(value: string) {
   const digits = value.replace(/\D/g, '')
   if (!digits) return ''

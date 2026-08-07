@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/features/auth'
 import { AdminImageField, AdminImageListField } from '@/features/media-admin'
-import { formatRussianPhone } from '@/lib/contact-fields'
+import { formatRussianPhone, russianPhonePattern } from '@/lib/contact-fields'
 import { nullableDraftText } from '@/lib/form-drafts'
 import { useEditorDraft } from '@/hooks/use-editor-draft'
 import { toPublicSlug } from '@/lib/slugify'
@@ -150,7 +150,7 @@ export function RestaurantsPage({ mode = 'list', restaurantId }: { mode?: 'list'
         <AdminField label="Название ресторана" required hint="Например: Чашка кофе на Красном проспекте"><Input required placeholder="Чашка кофе на…" value={draft.name} onChange={(event) => change('name', event.target.value)} /></AdminField>
         <div className="grid gap-4 sm:grid-cols-2"><AdminField label="Тип ресторана" required hint="Выберите, где находится точка."><select value={draft.format} onChange={(event) => { const value = event.target.value as UpsertRestaurantRequest['format']; change('format', value); change('area', value === 'AIRPORT' ? 'AIRPORT' : 'CITY') }}><option value="CITY">В городе</option><option value="AIRPORT">В аэропорту</option></select></AdminField><AdminField label="Город" required><Input required placeholder="Новосибирск" value={draft.city} onChange={(event) => change('city', event.target.value)} /></AdminField></div>
         <AdminField label="Адрес" required hint="Полный адрес, который можно скопировать в навигатор."><Input required placeholder="Красный проспект, 25" value={draft.address} onChange={(event) => change('address', event.target.value)} /></AdminField>
-        <AdminField label="Телефон" required hint="Показывается посетителям и используется для кнопки «Позвонить»."><Input required type="tel" inputMode="tel" pattern="\\+7 \\(\\d{3}\\) \\d{3}-\\d{2}-\\d{2}" placeholder="+7 (383) 123-20-20" value={draft.phone} onChange={(event) => change('phone', formatRussianPhone(event.target.value))} /></AdminField>
+        <AdminField label="Телефон" required hint="Показывается посетителям и используется для кнопки «Позвонить»."><Input required type="tel" inputMode="tel" pattern={russianPhonePattern} title="Введите полный номер, например +7 (383) 123-20-20" placeholder="+7 (383) 123-20-20" value={draft.phone} onChange={(event) => change('phone', formatRussianPhone(event.target.value))} /></AdminField>
         <label className="admin-check-row"><input checked={draft.coffeePickupEnabled} type="checkbox" onChange={(event) => change('coffeePickupEnabled', event.target.checked)} /><span><strong>Выдавать онлайн-заказы кофе</strong><small>Точка появится в списке самовывоза при оформлении заказа.</small></span></label>
         <AdminField label="Короткое описание" hint="Два-три предложения об атмосфере, кухне или особенностях точки."><Textarea placeholder="Светлый городской ресторан для завтраков, встреч и неспешных ужинов." value={draft.description ?? ''} onChange={(event) => change('description', nullableDraftText(event.target.value))} /></AdminField>
         <AdminField label="Фотография ресторана" hint="Показывается в каталоге и в первом экране страницы ресторана."><AdminImageField value={draft.coverImageUrl ?? null} onChange={(coverImageUrl) => change('coverImageUrl', coverImageUrl)} /></AdminField>
