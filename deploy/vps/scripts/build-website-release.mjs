@@ -4,9 +4,12 @@ import { publishWebsiteRelease } from './website-release.mjs'
 
 const releasesDir = process.env.WEBSITE_RELEASES_DIR
 if (!releasesDir) throw new Error('WEBSITE_RELEASES_DIR is required')
+const stagingDir = process.env.WEBSITE_BUILD_STAGING_DIR
+if (!stagingDir) throw new Error('WEBSITE_BUILD_STAGING_DIR is required')
 
 const release = await publishWebsiteRelease({
   releasesDir,
+  stagingDir,
   build: async (outDir) => {
     const exitCode = await run('bun', ['run', 'build:website'], {
       ...process.env,

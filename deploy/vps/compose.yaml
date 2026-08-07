@@ -81,6 +81,7 @@ services:
       PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:?PUBLIC_SITE_URL is required}
       PUBLIC_WEBAPP_URL: ${PUBLIC_WEBAPP_URL:?PUBLIC_WEBAPP_URL is required}
       WEBSITE_RELEASES_DIR: /srv/website
+      WEBSITE_BUILD_STAGING_DIR: /app/website/.release-staging
     command: ["/bin/sh", "-ec", "bun install --frozen-lockfile && bun deploy/vps/scripts/build-website-release.mjs"]
     volumes:
       - ${APP_DIR:?APP_DIR is required}:/app
@@ -98,6 +99,7 @@ services:
       PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:?PUBLIC_SITE_URL is required}
       PUBLIC_WEBAPP_URL: ${PUBLIC_WEBAPP_URL:?PUBLIC_WEBAPP_URL is required}
       WEBSITE_RELEASES_DIR: /srv/website
+      WEBSITE_BUILD_STAGING_DIR: /app/website/.release-staging
     command: ["/bin/sh", "-ec", "bun install --frozen-lockfile && bun run --cwd backend start:website-builder"]
     volumes:
       - ${APP_DIR:?APP_DIR is required}:/app
