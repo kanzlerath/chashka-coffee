@@ -1,6 +1,4 @@
 import {
-  createMediaUploadRequestSchema,
-  mediaAssetResponseSchema,
   mediaUploadResponseSchema,
 } from '@chashka-coffee/contracts'
 
@@ -13,9 +11,7 @@ export const resolveAdminImagePreview = (url: string) => url.startsWith('/') ? `
 
 export async function uploadMediaFile(api: AuthContextValue['api'], file: File) {
   if (!supportedTypes.has(file.type)) throw new Error('Поддерживаются JPEG, PNG, WebP и AVIF.')
-  const request = createMediaUploadRequestSchema.parse({ filename: file.name, contentType: file.type, byteSize: file.size })
-  const { asset, upload } = await api.request('/api/admin/media/uploads', mediaUploadResponseSchema, { method: 'POST', body: request })
-  const response = await fetch(upload.uploadUrl, { method: upload.method, headers: upload.headers, body: file })
-  if (!response.ok) throw new Error('Не удалось загрузить файл в хранилище.')
-  return api.request(`/api/admin/media/${asset.id}/confirm`, mediaAssetResponseSchema, { method: 'POST' })
+  const formData = new FormData()
+  formData.set('file', file)
+  return api.request('/api/admin/media/uploads', mediaUploadResponseSchema, { method: 'POST', body: formData })
 }

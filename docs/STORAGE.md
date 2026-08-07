@@ -2,6 +2,27 @@
 
 Use this document when a product needs uploads, images, media, generated files, or downloadable assets.
 
+## Current VPS Media Path
+
+The deployed VPS stores public editorial images directly on its persistent
+disk. The browser sends one authenticated `multipart/form-data` request to the
+backend; it validates the size and real JPEG/PNG/WebP/AVIF signature, writes
+the file below `MEDIA_UPLOADS_DIR`, and persists a site-relative
+`/uploads/<key>` URL. Caddy serves that directory read-only.
+
+```bash
+MEDIA_UPLOADS_DIR=/srv/uploads
+MEDIA_UPLOAD_MAX_BYTES=10485760
+```
+
+In the VPS Compose stack, `/srv/uploads` is a bind mount from
+`UPLOADS_DIR=/srv/chashka-coffee/uploads`. The API container needs write access
+to it; Caddy receives it read-only. Treat all files there as public and keep a
+daily external backup of the directory together with PostgreSQL. Immutable
+generated keys make long browser cache headers safe. This path is suitable for
+one VPS and moderate media volume; move to object storage before introducing
+multiple API servers, private files, or large media processing.
+
 The supported DigitalOcean-first storage path is:
 
 - DigitalOcean Spaces Standard Storage for persistent objects.

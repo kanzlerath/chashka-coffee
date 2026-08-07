@@ -47,6 +47,8 @@ const envSchema = z.object({
   PREMIUMBONUS_API_URL: optionalUrlSchema,
   TELEGRAM_BOT_TOKEN: optionalStringSchema,
   TELEGRAM_BOT_USERNAME: optionalStringSchema,
+  MEDIA_UPLOADS_DIR: optionalStringSchema,
+  MEDIA_UPLOAD_MAX_BYTES: z.coerce.number().int().positive().default(10 * 1024 * 1024),
   SPACES_REGION: optionalStringSchema,
   SPACES_BUCKET: optionalStringSchema,
   SPACES_ENDPOINT: optionalUrlSchema,

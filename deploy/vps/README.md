@@ -12,6 +12,8 @@ the repository-root `docker-compose.yml`, which is local-development-only.
   built website and admin app.
 - `website-build` and `webapp-build` are one-shot Bun containers. They write
   static output to the repository clone, which Caddy mounts read-only.
+- `api` writes admin-uploaded media to `/srv/uploads`, which is a persistent
+  bind mount from `UPLOADS_DIR`; Caddy serves those files at `/uploads/...`.
 
 ## First start
 
@@ -68,7 +70,7 @@ daily backups outside this VPS and verify restoration before using the setup
 for production. Docker volumes or snapshots on the same VPS are not an
 independent backup.
 
-The current media upload feature still expects S3-compatible storage. The
-uploads mount and Caddy route are ready for direct-to-VPS uploads, but the
-backend and admin flow need a separate implementation before that feature is
-enabled without S3.
+Media URLs are stored as site-relative `/uploads/...` paths, so switching a
+tested dev stack to the production domain does not require rewriting media
+records. The `uploads` directory contains public images only; keep it in the
+same external backup as PostgreSQL.

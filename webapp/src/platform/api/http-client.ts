@@ -41,7 +41,8 @@ export class HttpClient {
 
   async raw(path: string, options: HttpRequestOptions = {}): Promise<Response> {
     const headers = new Headers(options.headers)
-    if (options.body !== undefined) {
+    const body = serializeRequestBody(options.body)
+    if (body !== undefined && !(body instanceof FormData)) {
       headers.set('Content-Type', 'application/json')
     }
 
@@ -49,7 +50,7 @@ export class HttpClient {
       method: options.method ?? 'GET',
       credentials: options.credentials ?? 'include',
       headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body,
     })
 
     if (!response.ok) {
@@ -58,6 +59,12 @@ export class HttpClient {
 
     return response
   }
+}
+
+function serializeRequestBody(body: unknown): BodyInit | undefined {
+  if (body === undefined) return undefined
+  if (body instanceof FormData) return body
+  return JSON.stringify(body)
 }
 
 async function toApiError(response: Response) {

@@ -25,6 +25,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+    volumes:
+      - ${UPLOADS_DIR:?UPLOADS_DIR is required}:/srv/uploads
     depends_on:
       postgres:
         condition: service_healthy

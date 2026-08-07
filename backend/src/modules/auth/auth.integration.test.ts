@@ -1,4 +1,7 @@
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test'
+import { mkdir, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import type { UserRole } from '@chashka-coffee/contracts'
 
 import { createApp } from '../../app'
@@ -7,6 +10,7 @@ import type { AppEnv } from '../../env'
 import { hashPassword } from './infrastructure/passwords'
 
 const databaseUrl = process.env.TEST_DATABASE_URL
+const mediaUploadsDirectory = join(tmpdir(), `chashka-coffee-media-${process.pid}`)
 
 const maybeDescribe = databaseUrl ? describe : describe.skip
 
@@ -19,6 +23,8 @@ maybeDescribe('auth API integration', () => {
     ACCESS_TOKEN_TTL_SECONDS: 60,
     REFRESH_TOKEN_TTL_DAYS: 30,
     COOKIE_SECURE: false,
+    MEDIA_UPLOADS_DIR: mediaUploadsDirectory,
+    MEDIA_UPLOAD_MAX_BYTES: 1024,
     SPACES_UPLOAD_MAX_BYTES: 10 * 1024 * 1024,
     SPACES_UPLOAD_URL_TTL_SECONDS: 900,
     SPACES_DOWNLOAD_URL_TTL_SECONDS: 300,
@@ -28,6 +34,8 @@ maybeDescribe('auth API integration', () => {
   const app = createApp({ env, prisma })
 
   beforeEach(async () => {
+    await rm(mediaUploadsDirectory, { recursive: true, force: true })
+    await mkdir(mediaUploadsDirectory, { recursive: true })
     await prisma.adminAuditEvent.deleteMany()
     await prisma.pageView.deleteMany()
     await prisma.managedPage.deleteMany()
@@ -44,6 +52,7 @@ maybeDescribe('auth API integration', () => {
 
   afterAll(async () => {
     await prisma.$disconnect()
+    await rm(mediaUploadsDirectory, { recursive: true, force: true })
   })
 
   test('logs in, reads me, refreshes, and logs out', async () => {
@@ -116,6 +125,45 @@ maybeDescribe('auth API integration', () => {
       body: JSON.stringify({ refreshToken: refreshBody.refreshToken }),
     })
     expect(revokedRefresh.status).toBe(401)
+  })
+
+  test('stores a validated image in local media storage and returns a site-relative URL', async () => {
+    await createUser('media@example.com', 'password123', 'Редактор медиа', ['CONTENT_MANAGER'])
+    const login = await app.request('/api/auth/token/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'media@example.com', password: 'password123' }),
+    })
+    const { accessToken } = await login.json()
+    const form = new FormData()
+    const imageBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00])
+    form.set('file', new File([imageBytes], 'latte.jpg', { type: 'image/png' }))
+
+    const response = await app.request('/api/admin/media/uploads', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: form,
+    })
+    const body = await response.json()
+
+    expect(response.status).toBe(201)
+    expect(body.asset).toMatchObject({
+      publicUrl: expect.stringMatching(/^\/uploads\/media\//),
+      filename: 'latte.jpg',
+      contentType: 'image/png',
+      status: 'READY',
+    })
+    expect(body.asset.objectKey).toEndWith('.png')
+    expect(await readFile(join(mediaUploadsDirectory, body.asset.objectKey))).toEqual(Buffer.from(imageBytes))
+
+    const oversizedForm = new FormData()
+    oversizedForm.set('file', new File([new Uint8Array(2_048)], 'too-large.png', { type: 'image/png' }))
+    const oversized = await app.request('/api/admin/media/uploads', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: oversizedForm,
+    })
+    expect(oversized.status).toBe(400)
   })
 
   test('allows only one concurrent refresh rotation for the same token', async () => {

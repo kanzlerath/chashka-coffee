@@ -11,7 +11,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/in
 import { Typography } from '@/components/ui/typography'
 import { useAuth } from '@/features/auth'
 
-import { supportedTypes, uploadMediaFile } from './media-utils'
+import { resolveAdminImagePreview, supportedTypes, uploadMediaFile } from './media-utils'
 
 const formatBytes = (value: number) => value >= 1_048_576 ? `${(value / 1_048_576).toFixed(1)} МБ` : `${Math.max(1, Math.round(value / 1_024))} КБ`
 const formatDate = (value: string) => new Intl.DateTimeFormat('ru', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(value))
@@ -62,6 +62,6 @@ export function MediaPage() {
     {assets.isPending ? <Typography className="admin-state-message" variant="bodySm">Загружаем медиатеку…</Typography> : null}
     {assets.isError ? <Typography className="admin-state-message admin-state-error" variant="bodySm">Не удалось загрузить медиатеку.</Typography> : null}
     {!assets.isPending && !assets.isError && visible.length === 0 ? <div className="admin-media-empty"><Typography variant="bodySmMedium">{assets.data?.assets.length ? 'Файлы не найдены' : 'Медиатека пока пуста'}</Typography><Typography variant="bodySm" tone="muted">{assets.data?.assets.length ? 'Измените поиск или фильтр формата.' : 'Загрузите фотографии сюда или прямо из редактора страницы.'}</Typography></div> : null}
-    <div className="admin-media-grid">{visible.map((asset) => <figure key={asset.id} className="admin-media-tile"><img src={asset.publicUrl} alt="" loading="lazy" /><Typography as="figcaption" variant="caption"><Typography title={asset.filename} variant="bodySmMedium">{asset.filename}</Typography><Typography as="small" variant="caption" tone="muted">{formatBytes(asset.byteSize)} · {formatDate(asset.createdAt)}</Typography><Button size="xs" type="button" variant="outline" onClick={() => void navigator.clipboard.writeText(asset.publicUrl)}>Скопировать ссылку</Button></Typography></figure>)}</div>
+    <div className="admin-media-grid">{visible.map((asset) => <figure key={asset.id} className="admin-media-tile"><img src={resolveAdminImagePreview(asset.publicUrl)} alt="" loading="lazy" /><Typography as="figcaption" variant="caption"><Typography title={asset.filename} variant="bodySmMedium">{asset.filename}</Typography><Typography as="small" variant="caption" tone="muted">{formatBytes(asset.byteSize)} · {formatDate(asset.createdAt)}</Typography><Button size="xs" type="button" variant="outline" onClick={() => void navigator.clipboard.writeText(asset.publicUrl)}>Скопировать ссылку</Button></Typography></figure>)}</div>
   </section>
 }

@@ -16,6 +16,8 @@ describe('loadEnv', () => {
     expect(env.CORS_ORIGINS).toEqual(['http://localhost:5173', 'http://localhost:8081'])
     expect(env.SPACES_REGION).toBeUndefined()
     expect(env.TELEGRAM_BOT_TOKEN).toBeUndefined()
+    expect(env.MEDIA_UPLOADS_DIR).toBeUndefined()
+    expect(env.MEDIA_UPLOAD_MAX_BYTES).toBe(10 * 1024 * 1024)
     expect(env.SPACES_UPLOAD_MAX_BYTES).toBe(10 * 1024 * 1024)
     expect(env.SPACES_UPLOAD_URL_TTL_SECONDS).toBe(900)
     expect(env.SPACES_DOWNLOAD_URL_TTL_SECONDS).toBe(300)
@@ -32,6 +34,18 @@ describe('loadEnv', () => {
 
     expect(env.TELEGRAM_BOT_TOKEN).toBe('123:secret')
     expect(env.TELEGRAM_BOT_USERNAME).toBe('chashka_notifications_bot')
+  })
+
+  test('parses the local media directory and upload limit', () => {
+    const env = loadEnv({
+      DATABASE_URL: 'postgresql://superuser:superpassword@localhost:54329/chashka_coffee',
+      JWT_SECRET: '12345678901234567890123456789012',
+      MEDIA_UPLOADS_DIR: ' /srv/uploads ',
+      MEDIA_UPLOAD_MAX_BYTES: '5242880',
+    })
+
+    expect(env.MEDIA_UPLOADS_DIR).toBe('/srv/uploads')
+    expect(env.MEDIA_UPLOAD_MAX_BYTES).toBe(5 * 1024 * 1024)
   })
 
   test('requires complete DigitalOcean Spaces configuration when storage is enabled', () => {
