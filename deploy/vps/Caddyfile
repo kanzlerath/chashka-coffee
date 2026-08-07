@@ -1,0 +1,36 @@
+{
+	email {$ACME_EMAIL}
+}
+
+{$WEBSITE_HOST} {
+	encode zstd gzip
+	header {
+		X-Robots-Tag "noindex, nofollow, noarchive"
+		-Server
+	}
+
+	handle_path /uploads/* {
+		root * /srv/uploads
+		file_server
+	}
+
+	root * /srv/website
+	try_files {path} {path}/index.html
+	file_server
+}
+
+{$WEBAPP_HOST} {
+	encode zstd gzip
+	header {
+		X-Robots-Tag "noindex, nofollow, noarchive"
+		-Server
+	}
+
+	root * /srv/webapp
+	try_files {path} /index.html
+	file_server
+}
+
+{$API_HOST} {
+	reverse_proxy api:3000
+}
