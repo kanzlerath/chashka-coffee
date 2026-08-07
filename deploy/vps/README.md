@@ -70,13 +70,18 @@ Deploy only a committed, pushed revision:
 ```bash
 cd /srv/chashka-coffee/app
 git pull --ff-only origin main
-docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml build api
+docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml build api migrate
 docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml run --rm migrate
 docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml up -d api
 docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml run --rm website-build
 docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml run --rm webapp-build
 docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml up -d --force-recreate website-builder
 ```
+
+`api` and `migrate` are separate Compose services. Rebuild both before running
+migrations; otherwise `migrate` can use an older image and report success
+without applying migrations added by the new revision. Recreate `api` only
+after `prisma migrate deploy` completes successfully.
 
 `website-builder` rebuilds the public Astro site automatically after changes to
 catalog, restaurant/menu, page, homepage, content, job, or shared-site data.

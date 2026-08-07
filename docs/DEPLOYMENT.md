@@ -78,7 +78,7 @@ YOOKASSA_RETURN_URL=https://website.example.com/order
 YOOKASSA_TEST_MODE=true
 ```
 
-Configure `payment.succeeded` and `payment.canceled` notifications to `https://api.example.com/api/payments/yookassa/webhook`. Use `YOOKASSA_TEST_MODE=false` only together with production shop credentials and after the production receipt/refund runbook is complete; see [ONLINE_COFFEE_ORDERS.md](ONLINE_COFFEE_ORDERS.md).
+Configure `payment.succeeded` and `payment.canceled` notifications to `https://api.example.com/api/payments/yookassa/webhook`. YooKassa expects HTTP `200` and retries other responses for 24 hours. The backend verifies every notification by reading the current payment from YooKassa before changing the order. Use `YOOKASSA_TEST_MODE=false` only together with production shop credentials and after the production receipt/refund runbook is complete; see [ONLINE_COFFEE_ORDERS.md](ONLINE_COFFEE_ORDERS.md).
 
 ## DigitalOcean App Platform
 

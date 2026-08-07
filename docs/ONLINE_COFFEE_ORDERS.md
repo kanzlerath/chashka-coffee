@@ -51,4 +51,22 @@ YOOKASSA_TEST_MODE=true
 2. Добавьте HTTP-уведомления `payment.succeeded` и `payment.canceled` на `https://api-dev.chashkacoffee.ru/api/payments/yookassa/webhook`.
 3. Проведите оплату тестовой картой и проверьте: заказ стал `PAID`, первый чек появился в истории ЮKassa, а после `COMPLETED` появился чек зачёта предоплаты.
 
+## Webhook и восстановление статуса
+
+- YooKassa ожидает от webhook ответ HTTP `200`. При другом ответе она повторяет доставку уведомления в течение 24 часов.
+- Backend не доверяет содержимому уведомления само по себе: по `object.id` он повторно получает платёж из API YooKassa и сверяет магазин, режим тестирования, заказ, сумму, валюту и итоговый статус.
+- Если платёж и чек успешны в YooKassa, а заказ остался `AWAITING_PAYMENT`, сначала проверьте точный URL webhook и историю его доставки. Возврат покупателя на сайт не заменяет webhook.
+- Для восстановления уже оплаченного тестового заказа можно повторно передать уведомление с реальным идентификатором платежа. Это безопасно только как ручная диагностика: backend всё равно проверит платёж через API YooKassa.
+
+```bash
+curl --fail-with-body \
+  -X POST https://api-dev.chashkacoffee.ru/api/payments/yookassa/webhook \
+  -H 'Content-Type: application/json' \
+  --data '{"type":"notification","event":"payment.succeeded","object":{"id":"<yookassa-payment-id>"}}'
+```
+
+Успешный ответ: `{"ok":true}`. Не передавайте в переписке `Cookie`, секрет магазина и полный приватный URL заказа с `accessToken`; для диагностики достаточно HTTP-статуса, тела ошибки и идентификатора платежа.
+
 Перед боевым запуском нужно отдельно реализовать возвраты, чеки возврата, мониторинг статусов чеков и сверку платежей.
+
+Документация провайдера: [HTTP-уведомления YooKassa](https://yookassa.ru/developers/using-api/webhooks).
