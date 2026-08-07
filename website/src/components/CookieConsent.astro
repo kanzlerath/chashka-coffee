@@ -1,0 +1,188 @@
+---
+interface Props {
+  analyticsUrl: string
+  yandexMetrikaId?: string
+}
+
+const { analyticsUrl, yandexMetrikaId = '' } = Astro.props
+---
+
+<aside
+  class="cookie-consent"
+  data-cookie-consent
+  data-analytics-url={analyticsUrl}
+  data-yandex-metrika-id={yandexMetrikaId}
+  aria-labelledby="cookie-consent-title"
+  hidden
+>
+  <div class="cookie-consent-mark" aria-hidden="true">
+    <span></span><span></span><span></span>
+  </div>
+  <div class="cookie-consent-copy">
+    <h2 id="cookie-consent-title">Можно немного cookies?</h2>
+    <span>Они помогают нам видеть, какие страницы полезны, и делать сайт удобнее. Без согласия аналитика не включится.</span>
+    <a href="/privacy">Как мы используем данные</a>
+  </div>
+  <div class="cookie-consent-actions">
+    <button type="button" data-cookie-consent-accept>Разрешить аналитику</button>
+    <button type="button" data-cookie-consent-deny>Только необходимые</button>
+  </div>
+</aside>
+
+<script>
+  import { readAnalyticsConsent, writeAnalyticsConsent, type AnalyticsConsent } from '../lib/analytics-consent'
+
+  type YandexMetrika = {
+    (...args: unknown[]): void
+    a?: unknown[][]
+    l?: number
+  }
+
+  declare global {
+    interface Window {
+      ym?: YandexMetrika
+    }
+  }
+
+  const banner = document.querySelector<HTMLElement>('[data-cookie-consent]')
+
+  if (banner) {
+    const analyticsUrl = banner.dataset.analyticsUrl ?? ''
+    const yandexMetrikaId = Number.parseInt(banner.dataset.yandexMetrikaId ?? '', 10)
+    let firstPartyAnalyticsStarted = false
+    let yandexMetrikaStarted = false
+
+    const sendFirstPartyPageView = () => {
+      if (firstPartyAnalyticsStarted || !analyticsUrl) return
+      firstPartyAnalyticsStarted = true
+
+      try {
+        const storageKey = 'chashka_visitor_id'
+        let visitorId = localStorage.getItem(storageKey)
+        if (!visitorId) {
+          visitorId = crypto.randomUUID()
+          localStorage.setItem(storageKey, visitorId)
+        }
+
+        const width = window.innerWidth
+        const referrerUrl = document.referrer ? new URL(document.referrer) : null
+        const payload = JSON.stringify({
+          path: location.pathname,
+          visitorId,
+          referrer: referrerUrl ? referrerUrl.origin + referrerUrl.pathname : null,
+          device: width < 768 ? 'MOBILE' : width < 1100 ? 'TABLET' : 'DESKTOP',
+        })
+
+        void fetch(analyticsUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+          keepalive: true,
+        }).catch(() => {})
+      } catch {
+        // Analytics must never affect the public page.
+      }
+    }
+
+    const startYandexMetrika = () => {
+      if (yandexMetrikaStarted || !Number.isSafeInteger(yandexMetrikaId) || yandexMetrikaId <= 0) return
+      yandexMetrikaStarted = true
+
+      const ym: YandexMetrika = window.ym ?? function (...args: unknown[]) {
+        (ym.a ??= []).push(args)
+      }
+      ym.l = Date.now()
+      window.ym = ym
+
+      if (!document.querySelector('script[data-yandex-metrika]')) {
+        const script = document.createElement('script')
+        script.async = true
+        script.src = 'https://mc.yandex.ru/metrika/tag.js'
+        script.dataset.yandexMetrika = 'true'
+        document.head.append(script)
+      }
+
+      ym(yandexMetrikaId, 'init', {
+        clickmap: true,
+        trackLinks: true,
+        accurateTrackBounce: true,
+        webvisor: false,
+      })
+    }
+
+    const startAnalytics = () => {
+      sendFirstPartyPageView()
+      startYandexMetrika()
+    }
+
+    const stopAnalytics = () => {
+      localStorage.removeItem('chashka_visitor_id')
+
+      if (yandexMetrikaStarted && window.ym && Number.isSafeInteger(yandexMetrikaId)) {
+        window.ym(yandexMetrikaId, 'destruct')
+        yandexMetrikaStarted = false
+      }
+
+      for (const cookie of document.cookie.split(';')) {
+        const name = cookie.split('=')[0]?.trim()
+        if (name?.startsWith('_ym_')) {
+          document.cookie = `${name}=; Max-Age=0; Path=/; SameSite=Lax`
+        }
+      }
+    }
+
+    const showBanner = () => {
+      banner.hidden = false
+      requestAnimationFrame(() => banner.classList.add('is-visible'))
+    }
+
+    const hideBanner = () => {
+      banner.classList.remove('is-visible')
+      window.setTimeout(() => { banner.hidden = true }, 240)
+    }
+
+    const choose = (status: AnalyticsConsent) => {
+      try {
+        writeAnalyticsConsent(localStorage, status)
+      } catch {
+        // The choice still applies to the current page when storage is unavailable.
+      }
+
+      if (status === 'granted') startAnalytics()
+      else stopAnalytics()
+      hideBanner()
+    }
+
+    banner.querySelector('[data-cookie-consent-accept]')?.addEventListener('click', () => choose('granted'))
+    banner.querySelector('[data-cookie-consent-deny]')?.addEventListener('click', () => choose('denied'))
+    document.querySelectorAll('[data-cookie-settings]').forEach((trigger) => {
+      trigger.addEventListener('click', showBanner)
+    })
+
+    let storedConsent: AnalyticsConsent | null = null
+    try {
+      storedConsent = readAnalyticsConsent(localStorage)
+    } catch {
+      // Private browsing can make localStorage unavailable.
+    }
+
+    if (storedConsent === 'granted') startAnalytics()
+    else if (storedConsent === null) showBanner()
+  }
+</script>
+
+<style>
+  .cookie-consent{position:fixed;z-index:100;right:clamp(16px,3vw,42px);bottom:clamp(16px,3vw,42px);display:grid;width:min(660px,calc(100vw - 32px));grid-template-columns:74px minmax(0,1fr);gap:20px;padding:22px;border:1px solid rgba(35,30,27,.1);border-radius:var(--radius);background:rgba(252,251,248,.97);box-shadow:0 26px 70px rgba(35,30,27,.18);color:var(--ink);opacity:0;transform:translateY(18px) scale(.985);transition:opacity .24s ease,transform .24s cubic-bezier(.22,1,.36,1);backdrop-filter:blur(18px)}
+  .cookie-consent[hidden]{display:none}.cookie-consent.is-visible{opacity:1;transform:none}
+  .cookie-consent-mark{position:relative;width:74px;height:74px;border-radius:50%;background:var(--moss);box-shadow:inset -8px -9px 0 rgba(0,0,0,.08)}
+  .cookie-consent-mark:after{content:'';position:absolute;top:-2px;right:-3px;width:30px;height:30px;border-radius:50%;background:var(--paper);box-shadow:-17px -6px 0 -6px var(--paper),5px 16px 0 -7px var(--paper)}
+  .cookie-consent-mark span{position:absolute;width:7px;height:7px;border-radius:50%;background:var(--lime)}
+  .cookie-consent-mark span:nth-child(1){top:21px;left:19px}.cookie-consent-mark span:nth-child(2){right:20px;bottom:18px}.cookie-consent-mark span:nth-child(3){bottom:17px;left:24px}
+  .cookie-consent-copy{min-width:0}
+  .cookie-consent-copy h2{margin:0;font-size:clamp(22px,2.4vw,31px);line-height:.98;letter-spacing:-.065em}.cookie-consent-copy>span{display:block;max-width:470px;margin-top:10px;color:var(--muted);font-size:12px;line-height:1.55;text-wrap:pretty}
+  .cookie-consent-copy a{display:inline-block;margin-top:8px;color:var(--moss);font-size:10px;font-weight:750;text-underline-offset:3px}
+  .cookie-consent-actions{display:flex;grid-column:2;flex-wrap:wrap;gap:8px;margin-top:2px}.cookie-consent-actions button{min-height:43px;padding:0 16px;border:1px solid var(--moss);border-radius:var(--radius);cursor:pointer;font-size:10px;font-weight:800;transition:background-color .18s ease,color .18s ease,transform .18s ease}
+  .cookie-consent-actions button:first-child{background:var(--moss);color:#fff}.cookie-consent-actions button:last-child{background:transparent;color:var(--moss)}.cookie-consent-actions button:hover{transform:translateY(-1px)}.cookie-consent-actions button:first-child:hover{background:#294b3a}.cookie-consent-actions button:last-child:hover{background:var(--moss-soft)}.cookie-consent-actions button:focus-visible,.cookie-consent-copy a:focus-visible{outline:3px solid rgba(189,214,90,.9);outline-offset:3px}
+  @media(max-width:600px){.cookie-consent{right:12px;bottom:12px;width:calc(100vw - 24px);grid-template-columns:48px minmax(0,1fr);gap:13px;padding:17px}.cookie-consent-mark{width:48px;height:48px}.cookie-consent-mark:after{width:21px;height:21px;box-shadow:-12px -5px 0 -5px var(--paper),4px 11px 0 -6px var(--paper)}.cookie-consent-mark span{width:5px;height:5px}.cookie-consent-mark span:nth-child(1){top:14px;left:12px}.cookie-consent-mark span:nth-child(2){right:13px;bottom:11px}.cookie-consent-mark span:nth-child(3){bottom:11px;left:16px}.cookie-consent-copy h2{font-size:22px}.cookie-consent-copy>span{font-size:11px}.cookie-consent-actions{grid-column:1/-1;display:grid;grid-template-columns:1fr}.cookie-consent-actions button{width:100%;min-height:46px}}
+  @media(prefers-reduced-motion:reduce){.cookie-consent,.cookie-consent-actions button{transition:none}}
+</style>

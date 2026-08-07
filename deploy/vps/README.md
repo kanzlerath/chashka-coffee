@@ -47,6 +47,12 @@ This is a browser key, so restrict it in Yandex Maps by HTTP Referer to the
 public dev and production website hosts. It is embedded in static HTML during
 the build; rebuilding the website is required after changing it.
 
+For Yandex Metrika, create a counter for the public website and set its numeric
+ID as `PUBLIC_YANDEX_METRIKA_ID` in `deploy/vps/.env`. This value is public and
+is embedded in the static website. The Metrika script and the existing
+first-party page-view request start only after the visitor grants analytics
+consent. Run `website-build` after adding or changing the counter ID.
+
 Create the first administrator only after migrations have completed:
 
 ```bash

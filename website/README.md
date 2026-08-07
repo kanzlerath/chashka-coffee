@@ -65,10 +65,11 @@ Set these build-time variables for the public site before a production build:
 - `PUBLIC_API_URL` — externally reachable API URL used while Astro generates the public catalogue pages.
 - `PUBLIC_SITE_URL` — canonical public website URL, for example `https://chashkacoffee.ru`. It is used for canonical and Open Graph links.
 - `PUBLIC_YANDEX_MAPS_API_KEY` — browser API key for the interactive restaurant map, restricted by HTTP Referer.
+- `PUBLIC_YANDEX_METRIKA_ID` — public numeric Yandex Metrika counter ID. Leave it empty to keep Metrika disabled.
 
 New published restaurants, menu pages, promotions, events, journal materials and vacancies are read from the API during each static build. Publish or change content in the admin panel, then rebuild/redeploy the website to generate its URL in the static output.
 
-The shared page layout also sends anonymous page-view events to `PUBLIC_API_URL` in the visitor's browser. The event contains only the page path, an anonymous browser UUID, referrer origin/path, and device class; see [../docs/ANALYTICS.md](../docs/ANALYTICS.md). Because this request happens after the static page loads, an unavailable analytics API does not block the website.
+After a visitor grants analytics consent, the shared page layout sends anonymous page-view events to `PUBLIC_API_URL` and starts Yandex Metrika when `PUBLIC_YANDEX_METRIKA_ID` is configured. The first-party event contains only the page path, an anonymous browser UUID, referrer origin/path, and device class; see [../docs/ANALYTICS.md](../docs/ANALYTICS.md). An unavailable analytics service does not block the website.
 
 When the website has only fully prerendered output and no server islands or runtime-rendered routes, the build output in `website/dist` is fully static. Production deployment uses DigitalOcean App Platform Static Sites from the full Git monorepo branch with `bun install --frozen-lockfile && bun run build:website` and `website/dist` by default. Generate the concrete spec with `bun run deploy:do:specs website`; App Platform builds from Git, not from local `dist`. If website links to the browser app, `PUBLIC_WEBAPP_URL` must be a concrete build-time URL and the website must be redeployed after it changes. Follow the shared runbook in [../docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md). If the user explicitly chooses Yandex Cloud, deploy the built `website/dist` output through Yandex Object Storage static website hosting plus Cloud CDN by following [../docs/YANDEX_CLOUD.md](../docs/YANDEX_CLOUD.md).
 
