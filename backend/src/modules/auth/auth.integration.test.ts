@@ -160,7 +160,35 @@ maybeDescribe('auth API integration', () => {
       status: 'READY',
     })
     expect(body.asset.objectKey).toEndWith('.png')
+    expect(body.alreadyExists).toBe(false)
     expect(await readFile(join(mediaUploadsDirectory, body.asset.objectKey))).toEqual(Buffer.from(imageBytes))
+
+    const duplicateForm = new FormData()
+    duplicateForm.set('file', new File([imageBytes], 'latte.jpg', { type: 'image/png' }))
+    const duplicate = await app.request('/api/admin/media/uploads', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: duplicateForm,
+    })
+    const duplicateBody = await duplicate.json()
+
+    expect(duplicate.status).toBe(200)
+    expect(duplicateBody).toMatchObject({ asset: { id: body.asset.id }, alreadyExists: true })
+    expect(await prisma.mediaAsset.count({ where: { filename: 'latte.jpg' } })).toBe(1)
+
+    const storedImage = await prisma.mediaAsset.findUniqueOrThrow({ where: { id: body.asset.id } })
+    await prisma.contentEntry.create({ data: { type: 'ARTICLE', slug: 'media-reference', title: 'Файл из медиатеки', imageUrl: storedImage.publicUrl } })
+    const usedFile = await app.request(`/api/admin/media/${storedImage.id}`, {
+      method: 'DELETE', headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    expect(usedFile.status).toBe(409)
+    await prisma.contentEntry.delete({ where: { slug: 'media-reference' } })
+
+    const removedFile = await app.request(`/api/admin/media/${storedImage.id}`, {
+      method: 'DELETE', headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    expect(removedFile.status).toBe(200)
+    expect(await Bun.file(join(mediaUploadsDirectory, storedImage.objectKey)).exists()).toBe(false)
 
     const oversizedForm = new FormData()
     oversizedForm.set('file', new File([new Uint8Array(2_048)], 'too-large.png', { type: 'image/png' }))

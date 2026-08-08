@@ -25,6 +25,16 @@ describe('LocalMediaStorage', () => {
     expect(() => storage.destinationForKey('../outside.png')).toThrow(AppError)
   })
 
+  test('compares an upload with an existing stored file by its contents', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'chashka-media-'))
+    temporaryDirectories.push(directory)
+    const storage = new LocalMediaStorage({ uploadsDir: directory, uploadMaxBytes: 1024 })
+    await storage.write('media/2026/08/coffee.png', new File([pngBytes], 'coffee.png', { type: 'image/png' }))
+
+    await expect(storage.hasSameContents('media/2026/08/coffee.png', new File([pngBytes], 'coffee.png', { type: 'image/png' }))).resolves.toBe(true)
+    await expect(storage.hasSameContents('media/2026/08/coffee.png', new File([new Uint8Array([...pngBytes, 1])], 'coffee.png', { type: 'image/png' }))).resolves.toBe(false)
+  })
+
   test('accepts supported image signatures and forces the detected extension', async () => {
     await expect(validateImageUpload(new File([pngBytes], 'coffee.jpg', { type: 'image/png' }), 1024)).resolves.toEqual({ contentType: 'image/png', extension: 'png' })
     expect(filenameWithExtension('coffee.jpg', 'png')).toBe('coffee.png')

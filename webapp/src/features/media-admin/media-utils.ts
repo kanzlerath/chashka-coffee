@@ -1,4 +1,5 @@
 import {
+  mediaAssetDeleteResponseSchema,
   mediaUploadResponseSchema,
 } from '@chashka-coffee/contracts'
 
@@ -19,4 +20,8 @@ export async function uploadMediaFile(api: AuthContextValue['api'], file: File) 
   const formData = new FormData()
   formData.set('file', file)
   return api.request('/api/admin/media/uploads', mediaUploadResponseSchema, { method: 'POST', body: formData })
+}
+
+export function deleteMediaFile(api: AuthContextValue['api'], id: string) {
+  return api.request(`/api/admin/media/${id}`, mediaAssetDeleteResponseSchema, { method: 'DELETE' })
 }

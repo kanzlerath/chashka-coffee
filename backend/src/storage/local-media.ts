@@ -65,6 +65,17 @@ export class LocalMediaStorage {
     await rm(this.destinationForKey(key), { force: true })
   }
 
+  async hasSameContents(key: string, file: File) {
+    const existing = Bun.file(this.destinationForKey(key))
+    if (!(await existing.exists()) || existing.size !== file.size) return false
+
+    const [existingHash, fileHash] = await Promise.all([
+      sha256(await existing.arrayBuffer()),
+      sha256(await file.arrayBuffer()),
+    ])
+    return existingHash === fileHash
+  }
+
   destinationForKey(key: string) {
     const safeKey = assertSafeObjectKey(key)
     const destination = resolve(this.rootDirectory, safeKey)
@@ -128,4 +139,9 @@ function readAscii(bytes: Uint8Array, offset: number, length: number) {
 function containsAscii(bytes: Uint8Array, value: string) {
   const haystack = String.fromCharCode(...bytes)
   return haystack.includes(value)
+}
+
+async function sha256(value: ArrayBuffer) {
+  const digest = await crypto.subtle.digest('SHA-256', value)
+  return Buffer.from(digest).toString('hex')
 }
