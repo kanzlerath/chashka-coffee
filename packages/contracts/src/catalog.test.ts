@@ -1,13 +1,39 @@
 import { describe, expect, test } from 'bun:test'
 
 import {
+  adminRestaurantSchema,
+  menuItemSchema,
   restaurantMenuResponseSchema,
   restaurantDetailResponseSchema,
+  resolveYandexMapCoordinatesRequestSchema,
+  resolveYandexMapCoordinatesResponseSchema,
+  upsertMenuItemRequestSchema,
   upsertRestaurantScheduleExceptionRequestSchema,
   restaurantSummarySchema,
 } from './catalog'
 
 describe('restaurant catalog contracts', () => {
+  test('validates the Yandex Maps coordinate resolver contract', () => {
+    expect(resolveYandexMapCoordinatesRequestSchema.parse({ url: 'https://yandex.ru/maps/-/CTSaE0Pb' })).toEqual({
+      url: 'https://yandex.ru/maps/-/CTSaE0Pb',
+    })
+    expect(resolveYandexMapCoordinatesResponseSchema.parse({ latitude: 55.048636, longitude: 82.942771 })).toEqual({
+      latitude: 55.048636,
+      longitude: 82.942771,
+    })
+    expect(() => resolveYandexMapCoordinatesRequestSchema.parse({ url: 'not-a-link' })).toThrow()
+  })
+
+  test('accepts site-relative media library URLs for every catalog image field', () => {
+    const uploadUrl = '/uploads/media/2026/08/chashka-kofe.webp'
+
+    expect(restaurantSummarySchema.shape.coverImageUrl.parse(uploadUrl)).toBe(uploadUrl)
+    expect(adminRestaurantSchema.shape.coverImageUrl.parse(uploadUrl)).toBe(uploadUrl)
+    expect(upsertMenuItemRequestSchema.shape.imageUrl.parse(uploadUrl)).toBe(uploadUrl)
+    expect(menuItemSchema.shape.imageUrl.parse(uploadUrl)).toBe(uploadUrl)
+    expect(() => upsertMenuItemRequestSchema.shape.imageUrl.parse('javascript:alert(1)')).toThrow()
+  })
+
   test('accepts the restaurant data needed for the public directory', () => {
     const restaurant = restaurantSummarySchema.parse({
       id: '018f8d94-1f4f-7000-8000-000000000001',

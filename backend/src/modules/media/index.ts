@@ -17,7 +17,7 @@ export function createMediaModule({ db, env, requireAuth, requireAdmin }: { db: 
   const storage = storageConfig ? new LocalMediaStorage(storageConfig) : null
   routes.use('/media', requireAuth, requireAdmin)
   routes.use('/media/*', requireAuth, requireAdmin)
-  const uploadMaxBytes = Math.max(env.MEDIA_UPLOAD_MAX_BYTES, env.MEDIA_VIDEO_UPLOAD_MAX_BYTES)
+  const uploadMaxBytes = Math.max(env.MEDIA_UPLOAD_MAX_BYTES, env.MEDIA_VIDEO_UPLOAD_MAX_BYTES, env.MEDIA_DOCUMENT_UPLOAD_MAX_BYTES)
   routes.use('/media/uploads', bodyLimit({ maxSize: uploadMaxBytes, onError: (c) => c.json({ error: { code: 'VALIDATION_ERROR', message: 'Upload size is outside the allowed range', details: { maxBytes: uploadMaxBytes } } }, 400) }))
   const list = createRoute({ method: 'get', path: '/media', responses: { 200: { content: { 'application/json': { schema: mediaAssetListResponseSchema } }, description: 'Ready media assets' } } })
   const upload = createRoute({ method: 'post', path: '/media/uploads', responses: { 201: { content: { 'application/json': { schema: mediaUploadResponseSchema } }, description: 'Saved public media upload' } } })
@@ -28,7 +28,11 @@ export function createMediaModule({ db, env, requireAuth, requireAdmin }: { db: 
     if (!(file instanceof File)) throw new AppError(400, 'VALIDATION_ERROR', 'Media file is required')
 
     const media = await validateMediaUpload(file, uploadMaxBytes)
-    const maxBytes = media.contentType === 'video/mp4' ? env.MEDIA_VIDEO_UPLOAD_MAX_BYTES : storageConfig!.uploadMaxBytes
+    const maxBytes = media.contentType === 'video/mp4'
+      ? env.MEDIA_VIDEO_UPLOAD_MAX_BYTES
+      : media.contentType === 'application/pdf'
+        ? env.MEDIA_DOCUMENT_UPLOAD_MAX_BYTES
+        : storageConfig!.uploadMaxBytes
     if (file.size > maxBytes) {
       throw new AppError(400, 'VALIDATION_ERROR', 'Upload size is outside the allowed range', { maxBytes })
     }

@@ -19,6 +19,7 @@ describe('loadEnv', () => {
     expect(env.MEDIA_UPLOADS_DIR).toBeUndefined()
     expect(env.MEDIA_UPLOAD_MAX_BYTES).toBe(10 * 1024 * 1024)
     expect(env.MEDIA_VIDEO_UPLOAD_MAX_BYTES).toBe(100 * 1024 * 1024)
+    expect(env.MEDIA_DOCUMENT_UPLOAD_MAX_BYTES).toBe(20 * 1024 * 1024)
     expect(env.SPACES_UPLOAD_MAX_BYTES).toBe(10 * 1024 * 1024)
     expect(env.SPACES_UPLOAD_URL_TTL_SECONDS).toBe(900)
     expect(env.SPACES_DOWNLOAD_URL_TTL_SECONDS).toBe(300)
@@ -63,11 +64,13 @@ describe('loadEnv', () => {
       MEDIA_UPLOADS_DIR: ' /srv/uploads ',
       MEDIA_UPLOAD_MAX_BYTES: '5242880',
       MEDIA_VIDEO_UPLOAD_MAX_BYTES: '52428800',
+      MEDIA_DOCUMENT_UPLOAD_MAX_BYTES: '10485760',
     })
 
     expect(env.MEDIA_UPLOADS_DIR).toBe('/srv/uploads')
     expect(env.MEDIA_UPLOAD_MAX_BYTES).toBe(5 * 1024 * 1024)
     expect(env.MEDIA_VIDEO_UPLOAD_MAX_BYTES).toBe(50 * 1024 * 1024)
+    expect(env.MEDIA_DOCUMENT_UPLOAD_MAX_BYTES).toBe(10 * 1024 * 1024)
   })
 
   test('requires complete DigitalOcean Spaces configuration when storage is enabled', () => {

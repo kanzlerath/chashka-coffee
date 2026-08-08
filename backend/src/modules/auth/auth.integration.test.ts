@@ -26,6 +26,7 @@ maybeDescribe('auth API integration', () => {
     MEDIA_UPLOADS_DIR: mediaUploadsDirectory,
     MEDIA_UPLOAD_MAX_BYTES: 1024,
     MEDIA_VIDEO_UPLOAD_MAX_BYTES: 2048,
+    MEDIA_DOCUMENT_UPLOAD_MAX_BYTES: 2048,
     WEBSITE_BUILD_DEBOUNCE_SECONDS: 45,
     WEBSITE_BUILD_POLL_SECONDS: 10,
     WEBSITE_BUILD_RETRY_SECONDS: 300,
@@ -190,6 +191,27 @@ maybeDescribe('auth API integration', () => {
     })
     expect(videoBody.asset.objectKey).toEndWith('.mp4')
     expect(await readFile(join(mediaUploadsDirectory, videoBody.asset.objectKey))).toEqual(Buffer.from(videoBytes))
+
+    const pdfForm = new FormData()
+    const pdfBytes = new TextEncoder().encode('%PDF-1.7\n')
+    pdfForm.set('file', new File([pdfBytes], 'restaurant-menu.doc', { type: 'application/pdf' }))
+
+    const pdfResponse = await app.request('/api/admin/media/uploads', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: pdfForm,
+    })
+    const pdfBody = await pdfResponse.json()
+
+    expect(pdfResponse.status).toBe(201)
+    expect(pdfBody.asset).toMatchObject({
+      publicUrl: expect.stringMatching(/^\/uploads\/media\//),
+      filename: 'restaurant-menu.doc',
+      contentType: 'application/pdf',
+      status: 'READY',
+    })
+    expect(pdfBody.asset.objectKey).toEndWith('.pdf')
+    expect(await readFile(join(mediaUploadsDirectory, pdfBody.asset.objectKey))).toEqual(Buffer.from(pdfBytes))
   })
 
   test('allows only one concurrent refresh rotation for the same token', async () => {

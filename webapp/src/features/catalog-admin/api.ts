@@ -9,6 +9,7 @@ import {
   type UpsertMenuRequest, type UpsertMenuCategoryRequest, type UpsertMenuItemRequest,
   upsertRestaurantRequestSchema,
   restaurantScheduleExceptionListResponseSchema, restaurantScheduleExceptionResponseSchema, upsertRestaurantScheduleExceptionRequestSchema,
+  resolveYandexMapCoordinatesRequestSchema, resolveYandexMapCoordinatesResponseSchema,
   type UpsertRestaurantRequest,
   type UpsertRestaurantMenuItemOverrideRequest,
   type UpsertRestaurantScheduleExceptionRequest,
@@ -40,6 +41,12 @@ export class CatalogAdminApi {
 
   deleteRestaurant(id: string) {
     return this.auth.request(`/api/admin/restaurants/${id}`, operationSuccessResponseSchema, { method: 'DELETE' })
+  }
+
+  resolveYandexMapCoordinates(url: string) {
+    return this.auth.request('/api/admin/restaurants/resolve-yandex-map', resolveYandexMapCoordinatesResponseSchema, {
+      method: 'POST', body: resolveYandexMapCoordinatesRequestSchema.parse({ url }),
+    })
   }
 
   assignRestaurantMenu(id: string, menuId: string | null) {

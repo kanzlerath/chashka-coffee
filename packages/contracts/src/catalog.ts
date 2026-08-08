@@ -7,6 +7,7 @@ const slugSchema = z
   .min(1)
   .max(120)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+const publicUrl = z.string().trim().min(1).max(2_048).refine((value) => value.startsWith('/') || /^https?:\/\//.test(value), 'Expected an absolute URL or a site-relative path')
 
 export const restaurantFormatSchema = z.enum(['CITY', 'PARK', 'AIRPORT', 'APART_HOTEL'])
 export type RestaurantFormat = z.infer<typeof restaurantFormatSchema>
@@ -41,7 +42,7 @@ export const restaurantSummarySchema = z.object({
   phone: z.string().trim().min(1).max(40),
   openingHoursLabel: z.string().trim().min(1).max(180),
   hasMenu: z.boolean(),
-  coverImageUrl: z.url().nullable(),
+  coverImageUrl: publicUrl.nullable(),
   latitude: z.number().min(-90).max(90).nullable().optional(),
   longitude: z.number().min(-180).max(180).nullable().optional(),
 })
@@ -60,8 +61,18 @@ export type RestaurantListResponse = z.infer<typeof restaurantListResponseSchema
 
 const nullableText = (max: number) => z.string().trim().max(max).nullable()
 const nullableUrl = z.url().nullable()
-const publicUrl = z.string().trim().min(1).max(2_048).refine((value) => value.startsWith('/') || /^https?:\/\//.test(value), 'Expected an absolute URL or a site-relative path')
 const nullableTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable()
+
+export const resolveYandexMapCoordinatesRequestSchema = z.object({
+  url: z.url().max(2_048),
+}).strict()
+export type ResolveYandexMapCoordinatesRequest = z.infer<typeof resolveYandexMapCoordinatesRequestSchema>
+
+export const resolveYandexMapCoordinatesResponseSchema = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+})
+export type ResolveYandexMapCoordinatesResponse = z.infer<typeof resolveYandexMapCoordinatesResponseSchema>
 
 export const restaurantOpeningHoursEntrySchema = z.object({
   dayOfWeek: z.number().int().min(0).max(6),
@@ -125,7 +136,7 @@ export const adminRestaurantSchema = z.object({
   aboutTitle: nullableText(180),
   aboutText: nullableText(8_000),
   visitAmenities: z.array(restaurantVisitAmenitySchema).max(6),
-  coverImageUrl: nullableUrl,
+  coverImageUrl: publicUrl.nullable(),
   latitude: z.number().min(-90).max(90).nullable(),
   longitude: z.number().min(-180).max(180).nullable(),
   yandexMapsUrl: nullableUrl,
@@ -212,7 +223,7 @@ export const upsertMenuItemRequestSchema = z.object({
   fats: z.number().nonnegative().nullable(),
   carbohydrates: z.number().nonnegative().nullable(),
   isVegetarian: z.boolean(), isSpicy: z.boolean(), isLactoseFree: z.boolean(), isGlutenFree: z.boolean(), isLight: z.boolean(),
-  marketingBadge: marketingBadgeSchema.nullable(), imageUrl: nullableUrl, position: z.number().int().nonnegative(),
+  marketingBadge: marketingBadgeSchema.nullable(), imageUrl: publicUrl.nullable(), position: z.number().int().nonnegative(),
 }).strict()
 export type UpsertMenuItemRequest = z.infer<typeof upsertMenuItemRequestSchema>
 
@@ -239,7 +250,7 @@ export const adminMenuDetailResponseSchema = z.object({
       isGlutenFree: z.boolean(),
       isLight: z.boolean(),
       marketingBadge: marketingBadgeSchema.nullable(),
-      imageUrl: nullableUrl,
+      imageUrl: publicUrl.nullable(),
       position: z.number().int().nonnegative(),
     })),
   })),
@@ -262,7 +273,7 @@ export const menuItemSchema = z.object({
   allergens: z.array(z.string().trim().min(1).max(80)).max(20),
   dietaryMarks: z.array(dietaryMarkSchema).max(5),
   marketingBadge: marketingBadgeSchema.nullable(),
-  imageUrl: z.url().nullable(),
+  imageUrl: publicUrl.nullable(),
 })
 export type MenuItem = z.infer<typeof menuItemSchema>
 

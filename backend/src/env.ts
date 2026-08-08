@@ -54,6 +54,7 @@ const envSchema = z.object({
   MEDIA_UPLOADS_DIR: optionalStringSchema,
   MEDIA_UPLOAD_MAX_BYTES: z.coerce.number().int().positive().default(10 * 1024 * 1024),
   MEDIA_VIDEO_UPLOAD_MAX_BYTES: z.coerce.number().int().positive().default(100 * 1024 * 1024),
+  MEDIA_DOCUMENT_UPLOAD_MAX_BYTES: z.coerce.number().int().positive().default(20 * 1024 * 1024),
   WEBSITE_BUILD_DEBOUNCE_SECONDS: z.coerce.number().int().min(0).max(10 * 60).default(45),
   WEBSITE_BUILD_POLL_SECONDS: z.coerce.number().int().min(1).max(5 * 60).default(10),
   WEBSITE_BUILD_RETRY_SECONDS: z.coerce.number().int().min(10).max(60 * 60).default(5 * 60),

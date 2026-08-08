@@ -19,7 +19,14 @@ const videoTypes = {
   },
 } as const
 
-const mediaTypes = { ...imageTypes, ...videoTypes }
+const documentTypes = {
+  'application/pdf': {
+    extension: 'pdf',
+    matches: (bytes: Uint8Array) => readAscii(bytes, 0, 5) === '%PDF-',
+  },
+} as const
+
+const mediaTypes = { ...imageTypes, ...videoTypes, ...documentTypes }
 const mp4Brands = ['isom', 'iso2', 'iso5', 'iso6', 'avc1', 'mp41', 'mp42', 'mp4v', 'M4V ', 'dash']
 
 export type LocalMediaConfig = {

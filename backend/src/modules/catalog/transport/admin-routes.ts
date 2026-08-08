@@ -18,6 +18,8 @@ import {
   restaurantScheduleExceptionListResponseSchema,
   restaurantScheduleExceptionResponseSchema,
   upsertRestaurantScheduleExceptionRequestSchema,
+  resolveYandexMapCoordinatesRequestSchema,
+  resolveYandexMapCoordinatesResponseSchema,
 } from '@chashka-coffee/contracts'
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi'
 import type { MiddlewareHandler } from 'hono'
@@ -26,6 +28,7 @@ import { z } from 'zod'
 import { AppError, validationErrorHook } from '../../../http/errors'
 import type { AuthHttpEnv } from '../../auth'
 import type { CatalogService } from '../application/catalog-service'
+import { resolveYandexMapCoordinates } from '../application/yandex-map-coordinates'
 import { executeCatalog } from './errors'
 
 const errorContent = { 'application/json': { schema: apiErrorSchema } }
@@ -57,6 +60,16 @@ const updateRoute = createRoute({
     200: { content: { 'application/json': { schema: adminRestaurantResponseSchema } }, description: 'Restaurant updated' },
     409: { content: errorContent, description: 'Restaurant slug already exists' },
     404: { content: errorContent, description: 'Restaurant not found' },
+  },
+})
+
+const resolveYandexMapCoordinatesRoute = createRoute({
+  method: 'post',
+  path: '/restaurants/resolve-yandex-map',
+  request: { body: { content: { 'application/json': { schema: resolveYandexMapCoordinatesRequestSchema } } } },
+  responses: {
+    200: { content: { 'application/json': { schema: resolveYandexMapCoordinatesResponseSchema } }, description: 'Coordinates extracted from a Yandex Maps link' },
+    400: { content: errorContent, description: 'Unsupported link or coordinates not found' },
   },
 })
 
@@ -95,6 +108,7 @@ export function createCatalogAdminRoutes({ service, requireAuth, requireAdmin }:
 
   routes.openapi(listRoute, async (c) => c.json({ restaurants: await service.listAdminRestaurants() }, 200))
   routes.openapi(createRouteDefinition, async (c) => executeCatalog(async () => c.json({ restaurant: await service.createRestaurant(c.req.valid('json')) }, 201)))
+  routes.openapi(resolveYandexMapCoordinatesRoute, async (c) => c.json(await resolveYandexMapCoordinates(c.req.valid('json').url), 200))
   routes.openapi(updateRoute, async (c) => executeCatalog(async () => {
     const restaurant = await service.updateRestaurant(c.req.valid('param').id, c.req.valid('json'))
     if (!restaurant) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found')

@@ -689,6 +689,7 @@
   .admin-media-tile { overflow: hidden; border: 1px solid var(--border); border-radius: var(--admin-surface-radius); background: var(--card); box-shadow: none; }
   .admin-media-tile img, .admin-media-tile video { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; background: var(--muted); transition: transform 220ms ease; }
   .admin-media-tile:hover img, .admin-media-tile:hover video { transform: scale(1.035); }
+  .admin-media-document, .admin-file-preview, .admin-document-picker-item > span { display: grid; width: 100%; aspect-ratio: 1; place-items: center; background: #f1e3dd; color: #8d3122; font-size: 1rem; font-weight: 800; letter-spacing: .08em; text-decoration: none; }
   .admin-media-tile figcaption { display: grid; gap: .35rem; padding: .72rem; }
   .admin-media-tile figcaption p { overflow: hidden; margin: 0; font-size: .78rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
   .admin-media-tile figcaption small { color: var(--muted-foreground); font-size: .65rem; }
@@ -726,6 +727,7 @@
   .admin-media-picker-item { display: grid; min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: .75rem; background: var(--card); padding: 0; color: var(--foreground); cursor: pointer; text-align: left; }
   .admin-media-picker-item[data-selected] { border-color: var(--primary); box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 20%, transparent); }
   .admin-media-picker-item img, .admin-media-picker-item video { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; background: var(--muted); }
+  .admin-document-picker-item > span { font-size: .85rem; }
   .admin-media-picker-item span { overflow: hidden; padding: .55rem .6rem; font-size: .67rem; font-weight: 640; text-overflow: ellipsis; white-space: nowrap; }
   .admin-media-picker-empty { display: grid; min-height: 13rem; place-items: center; align-content: center; gap: .35rem; border: 1px dashed var(--border); border-radius: .8rem; color: var(--muted-foreground); text-align: center; }
   .admin-media-picker-empty strong { color: var(--foreground); font-size: .85rem; }

@@ -42,6 +42,12 @@ describe('LocalMediaStorage', () => {
     await expect(validateMediaUpload(new File([mp4Bytes], 'coffee.mov', { type: 'video/mp4' }), 1024)).resolves.toEqual({ contentType: 'video/mp4', extension: 'mp4' })
     await expect(validateMediaUpload(new File([new TextEncoder().encode('not a video')], 'coffee.mp4', { type: 'video/mp4' }), 1024)).rejects.toThrow('not a supported image or video')
   })
+
+  test('accepts a PDF signature and forces the document extension', async () => {
+    const pdfBytes = new TextEncoder().encode('%PDF-1.7\n')
+
+    await expect(validateMediaUpload(new File([pdfBytes], 'menu.doc', { type: 'application/pdf' }), 1024)).resolves.toEqual({ contentType: 'application/pdf', extension: 'pdf' })
+  })
 })
 
 const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00])

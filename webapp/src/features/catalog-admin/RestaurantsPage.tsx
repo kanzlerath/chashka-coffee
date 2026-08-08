@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/features/auth'
-import { AdminImageField, AdminImageListField } from '@/features/media-admin'
+import { AdminImageField, AdminImageListField, AdminPdfField } from '@/features/media-admin'
 import { formatRussianPhone, russianPhonePattern } from '@/lib/contact-fields'
 import { nullableDraftText } from '@/lib/form-drafts'
 import { useEditorDraft } from '@/hooks/use-editor-draft'
@@ -81,6 +81,10 @@ export function RestaurantsPage({ mode = 'list', restaurantId }: { mode?: 'list'
         await navigate({ to: '/restaurants/$restaurantId', params: { restaurantId: result.restaurant.id } })
       }
     },
+  })
+  const resolveYandexCoordinates = useMutation({
+    mutationFn: () => api.resolveYandexMapCoordinates(draft.yandexMapsUrl ?? ''),
+    onSuccess: ({ latitude, longitude }) => setDraft((current) => ({ ...current, latitude, longitude })),
   })
   const assignMenu = useMutation({
     mutationFn: (menuId: string | null) => api.assignRestaurantMenu(selected!.id, menuId),
@@ -176,11 +180,11 @@ export function RestaurantsPage({ mode = 'list', restaurantId }: { mode?: 'list'
         {editorTab === 'media' ? <>
         <AdminFormIntro>Обложка используется в первом экране, а галерея — в отдельном слайдере ниже. Добавляйте по одной прямой ссылке на фотографию в строке.</AdminFormIntro>
         <AdminField label="Фотографии галереи" hint="До 12 фотографий; порядок можно менять."><AdminImageListField value={draft.galleryUrls} onChange={(galleryUrls) => change('galleryUrls', galleryUrls)} /></AdminField>
-        <AdminField label="PDF меню" hint="Прямая публичная ссылка на PDF-файл для кнопки скачивания."><Input type="url" placeholder="https://…/menu.pdf" value={draft.menuPdfUrl ?? ''} onChange={(event) => change('menuPdfUrl', nullableDraftText(event.target.value))} /></AdminField>
+        <AdminField label="PDF меню" hint="Загрузите PDF в хранилище или выберите уже загруженный файл."><AdminPdfField value={draft.menuPdfUrl ?? null} onChange={(menuPdfUrl) => change('menuPdfUrl', menuPdfUrl)} /></AdminField>
         </> : null}
         {editorTab === 'map' ? <>
-        <AdminFormIntro>Добавьте ссылки на готовые карточки ресторана. Координаты нужны для собственной карты сайта.</AdminFormIntro>
-        <div className="grid gap-4 sm:grid-cols-2"><AdminField label="Яндекс Карты" hint="Ссылка из кнопки «Поделиться» в Яндекс Картах."><Input type="url" placeholder="https://yandex.ru/maps/…" value={draft.yandexMapsUrl ?? ''} onChange={(event) => change('yandexMapsUrl', nullableDraftText(event.target.value))} /></AdminField><AdminField label="2ГИС" hint="Ссылка на карточку ресторана в 2ГИС."><Input type="url" placeholder="https://2gis.ru/…" value={draft.twoGisUrl ?? ''} onChange={(event) => change('twoGisUrl', nullableDraftText(event.target.value))} /></AdminField></div>
+        <AdminFormIntro>Добавьте ссылки на готовые карточки ресторана. Вставьте ссылку Яндекс Карт — координаты для карты сайта подставятся автоматически.</AdminFormIntro>
+        <div className="grid gap-4 sm:grid-cols-2"><AdminField label="Яндекс Карты" hint="Подойдут ссылка из кнопки «Поделиться» и короткая ссылка yandex.ru/maps/-/…"><div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]"><Input type="url" placeholder="https://yandex.ru/maps/…" value={draft.yandexMapsUrl ?? ''} onChange={(event) => { resolveYandexCoordinates.reset(); change('yandexMapsUrl', nullableDraftText(event.target.value)) }} /><Button type="button" variant="secondary" disabled={!draft.yandexMapsUrl?.trim() || resolveYandexCoordinates.isPending} onClick={() => resolveYandexCoordinates.mutate()}>{resolveYandexCoordinates.isPending ? 'Определяем…' : 'Подставить координаты'}</Button></div>{resolveYandexCoordinates.isSuccess ? <p className="text-sm text-muted-foreground">Координаты подставлены. Сохраните ресторан, чтобы опубликовать изменения.</p> : null}{resolveYandexCoordinates.isError ? <p className="text-sm text-destructive">{resolveYandexCoordinates.error instanceof ApiRequestError ? resolveYandexCoordinates.error.message : 'Не удалось получить координаты. Проверьте ссылку и повторите попытку.'}</p> : null}</AdminField><AdminField label="2ГИС" hint="Ссылка на карточку ресторана в 2ГИС."><Input type="url" placeholder="https://2gis.ru/…" value={draft.twoGisUrl ?? ''} onChange={(event) => change('twoGisUrl', nullableDraftText(event.target.value))} /></AdminField></div>
         <details className="admin-advanced-fields"><summary>Координаты для карты</summary><div className="grid gap-4 pt-4 sm:grid-cols-2"><AdminField label="Широта"><Input type="number" step="any" placeholder="55.0302" value={draft.latitude ?? ''} onChange={(event) => change('latitude', event.target.value === '' ? null : Number(event.target.value))} /></AdminField><AdminField label="Долгота"><Input type="number" step="any" placeholder="82.9204" value={draft.longitude ?? ''} onChange={(event) => change('longitude', event.target.value === '' ? null : Number(event.target.value))} /></AdminField></div></details>
         </> : null}
         {editorTab === 'schedule' ? <>
