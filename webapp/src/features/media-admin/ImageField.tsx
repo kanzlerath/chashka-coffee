@@ -11,9 +11,10 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/in
 import { Typography } from '@/components/ui/typography'
 import { useAuth } from '@/features/auth'
 
-import { resolveAdminImagePreview, uploadMediaFile } from './media-utils'
+import { resolveAdminImagePreview, supportedImageTypes, uploadMediaFile } from './media-utils'
 
 type CropAspect = 'ORIGINAL' | '16:9' | '4:3' | '1:1' | '4:5'
+const mediaPickerPageSize = 18
 
 const aspectValue: Record<Exclude<CropAspect, 'ORIGINAL'>, number> = {
   '16:9': 16 / 9,
@@ -80,6 +81,7 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect }: { open: bool
   const [focusX, setFocusX] = useState(50)
   const [focusY, setFocusY] = useState(50)
   const [prepareError, setPrepareError] = useState<string | null>(null)
+  const [visibleCount, setVisibleCount] = useState(mediaPickerPageSize)
   const assets = useQuery({ queryKey: ['admin', 'media'], queryFn: () => api.request('/api/admin/media', mediaAssetListResponseSchema), enabled: open })
   const resetPicker = () => {
     setFile(null)
@@ -104,8 +106,13 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect }: { open: bool
 
   const visibleAssets = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('ru')
-    return assets.data?.assets.filter((asset) => !normalized || asset.filename.toLocaleLowerCase('ru').includes(normalized)) ?? []
+    return assets.data?.assets.filter((asset) => supportedImageTypes.has(asset.contentType) && (!normalized || asset.filename.toLocaleLowerCase('ru').includes(normalized))) ?? []
   }, [assets.data, query])
+  const displayedAssets = visibleAssets.slice(0, visibleCount)
+
+  useEffect(() => {
+    setVisibleCount(mediaPickerPageSize)
+  }, [open, query])
 
   const submitCrop = async () => {
     if (!file) return
@@ -147,7 +154,8 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect }: { open: bool
         {assets.isPending ? <Typography className="admin-state-message" variant="bodySm">Загружаем медиатеку…</Typography> : null}
         {assets.isError ? <Typography className="admin-state-message admin-state-error" variant="bodySm">Не удалось загрузить медиатеку.</Typography> : null}
         {!assets.isPending && !assets.isError && visibleAssets.length === 0 ? <div className="admin-media-picker-empty"><Typography variant="bodySmMedium">{query ? 'Ничего не найдено' : 'Медиатека пока пуста'}</Typography><Typography variant="bodySm" tone="muted">{query ? 'Попробуйте другое название.' : 'Загрузите первую фотографию — она сразу появится во всех редакторах.'}</Typography></div> : null}
-        <div className="admin-media-picker-grid">{visibleAssets.map((asset) => <button className="admin-media-picker-item" data-selected={asset.publicUrl === value || undefined} key={asset.id} type="button" onClick={() => { onSelect(asset.publicUrl); onOpenChange(false) }}><img src={resolveAdminImagePreview(asset.publicUrl)} alt="" loading="lazy" /><Typography title={asset.filename} variant="caption">{asset.filename}</Typography></button>)}</div>
+        <div className="admin-media-picker-grid">{displayedAssets.map((asset) => <button className="admin-media-picker-item" data-selected={asset.publicUrl === value || undefined} key={asset.id} type="button" onClick={() => { onSelect(asset.publicUrl); onOpenChange(false) }}><img src={resolveAdminImagePreview(asset.publicUrl)} alt="" decoding="async" fetchPriority="low" loading="lazy" /><Typography title={asset.filename} variant="caption">{asset.filename}</Typography></button>)}</div>
+        {visibleAssets.length > displayedAssets.length ? <Button className="justify-self-center" type="button" variant="outline" onClick={() => setVisibleCount((count) => count + mediaPickerPageSize)}>Показать ещё · {visibleAssets.length - displayedAssets.length}</Button> : null}
       </>}
     </DialogContent>
   </Dialog>
