@@ -210,11 +210,11 @@ const yandexMapsApiKey = import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY ?? ''
         <img src="/images/menu-track.svg" alt="" aria-hidden="true" />
       </a>
       {restaurant.menuPdfUrl
-        ? <a class="resource-card resource-pdf" href={restaurant.menuPdfUrl} target="_blank" rel="noreferrer" download={`${restaurant.slug}-menu.pdf`}>
-            <span>Версия для скачивания</span><strong>Меню<br />в PDF</strong><b>Скачать ↓</b><i aria-hidden="true">PDF</i>
+        ? <a class="resource-card resource-pdf" href={restaurant.menuPdfUrl} target="_blank" rel="noreferrer">
+            <strong>Меню<br />в PDF</strong>
           </a>
         : <div class="resource-card resource-pdf is-disabled" aria-disabled="true">
-            <span>Версия для скачивания</span><strong>Меню<br />в PDF</strong><b>Файл появится после загрузки</b><i aria-hidden="true">PDF</i>
+            <strong>Меню<br />в PDF</strong>
           </div>}
       <a class="resource-card resource-yandex" href={yandexMapsUrl} target="_blank" rel="noreferrer" aria-label="Открыть ресторан в Яндекс Картах">
         <strong>Яндекс<br />Карты</strong>
@@ -381,8 +381,8 @@ const yandexMapsApiKey = import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY ?? ''
   .resource-menu strong{margin-top:0;color:#fff;font-size:clamp(46px,5vw,82px)}
   .resource-menu img{position:absolute;z-index:0;right:-9%;bottom:-31%;width:min(72%,590px);pointer-events:none;transition:transform .4s cubic-bezier(.22,1,.36,1)}
   .resource-menu:hover img{transform:translateY(-9px) scale(1.02)}
-  .resource-pdf{grid-column:span 5;background:#eee4d8}.resource-pdf i{position:absolute;right:8%;bottom:-.2em;color:#d9c5ad;font-size:clamp(94px,10vw,180px);font-style:normal;font-weight:800;letter-spacing:-.12em;line-height:1}
-  .resource-pdf.is-disabled{color:#716b63}.resource-pdf.is-disabled b{max-width:190px;line-height:1.4}
+  .resource-pdf{grid-column:span 5;background:#eee4d8}.resource-pdf strong{margin-top:0}
+  .resource-pdf.is-disabled{color:#716b63}
   .resource-yandex{grid-column:span 3;background:#f4cd4d}
   .resource-2gis{grid-column:span 2;background:#78c966}
   .resource-yandex strong,.resource-2gis strong{margin-top:0;font-size:clamp(26px,2.5vw,40px)}
@@ -439,7 +439,7 @@ const yandexMapsApiKey = import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY ?? ''
     .resource-card strong,.resource-yandex strong,.resource-2gis strong{font-size:clamp(17px,4.6vw,20px);line-height:.9}
     .resource-pdf strong{margin-top:0}
     .resource-card>span,.resource-card>b{display:none}
-    .resource-pdf i{right:-7%;bottom:-.15em;font-size:68px}.resource-yandex img,.resource-2gis img{right:-28%;bottom:-28%;width:145%;opacity:.1}
+    .resource-yandex img,.resource-2gis img{right:-28%;bottom:-28%;width:145%;opacity:.1}
   }
   @media(prefers-reduced-motion:reduce){
     .detail-button,.restaurant-hero figure img,a.fact-card,.fact-contact img,.gallery-slide,.gallery-thumbnails button,.resource-card,.resource-menu img,.resource-yandex img,.resource-2gis img{transition:none}
