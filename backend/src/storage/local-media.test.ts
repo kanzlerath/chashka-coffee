@@ -2,6 +2,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, test } from 'bun:test'
+import sharp from 'sharp'
 
 import { AppError } from '../http/errors'
 import { filenameWithExtension, LocalMediaStorage, validateImageUpload, validateMediaUpload } from './local-media'
@@ -33,6 +34,25 @@ describe('LocalMediaStorage', () => {
 
     await expect(storage.hasSameContents('media/2026/08/coffee.png', new File([pngBytes], 'coffee.png', { type: 'image/png' }))).resolves.toBe(true)
     await expect(storage.hasSameContents('media/2026/08/coffee.png', new File([new Uint8Array([...pngBytes, 1])], 'coffee.png', { type: 'image/png' }))).resolves.toBe(false)
+  })
+
+  test('creates a compact WebP thumbnail beside an image and removes it with the original', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'chashka-media-'))
+    temporaryDirectories.push(directory)
+    const storage = new LocalMediaStorage({ uploadsDir: directory, uploadMaxBytes: 1024 * 1024 })
+    const key = 'media/2026/08/coffee.jpg'
+    const imageBytes = await sharp({ create: { width: 1_200, height: 800, channels: 3, background: '#80583e' } }).jpeg().toBuffer()
+
+    await storage.write(key, new File([imageBytes], 'coffee.jpg', { type: 'image/jpeg' }))
+    const thumbnailKey = await storage.createThumbnail(key)
+
+    expect(thumbnailKey).toBe('media/2026/08/coffee.thumbnail.webp')
+    expect(await storage.thumbnailExists(key)).toBe(true)
+    await expect(sharp(storage.destinationForKey(thumbnailKey)).metadata()).resolves.toMatchObject({ format: 'webp', width: 320, height: 320 })
+
+    await storage.remove(key)
+    expect(await Bun.file(storage.destinationForKey(key)).exists()).toBe(false)
+    expect(await Bun.file(storage.destinationForKey(thumbnailKey)).exists()).toBe(false)
   })
 
   test('accepts supported image signatures and forces the detected extension', async () => {

@@ -84,6 +84,14 @@ migrations; otherwise `migrate` can use an older image and report success
 without applying migrations added by the new revision. Recreate `api` only
 after `prisma migrate deploy` completes successfully.
 
+After the first release that includes media thumbnails, run this once before
+opening the media picker. It is safe to repeat: files that already have a
+thumbnail are skipped.
+
+```bash
+docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml run --rm api bun run media:thumbnails:backfill
+```
+
 `website-builder` rebuilds the public Astro site automatically after changes to
 catalog, restaurant/menu, page, homepage, content, job, or shared-site data.
 Several changes made within `WEBSITE_BUILD_DEBOUNCE_SECONDS` become one build;

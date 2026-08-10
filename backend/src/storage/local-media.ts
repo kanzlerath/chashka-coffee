@@ -1,5 +1,6 @@
 import { mkdir, rm } from 'node:fs/promises'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
+import sharp from 'sharp'
 
 import type { AppEnv } from '../env'
 import { AppError } from '../http/errors'
@@ -28,6 +29,7 @@ const documentTypes = {
 
 const mediaTypes = { ...imageTypes, ...videoTypes, ...documentTypes }
 const mp4Brands = ['isom', 'iso2', 'iso5', 'iso6', 'avc1', 'mp41', 'mp42', 'mp4v', 'M4V ', 'dash']
+const thumbnailWidth = 320
 
 export type LocalMediaConfig = {
   uploadsDir: string
@@ -62,7 +64,10 @@ export class LocalMediaStorage {
   }
 
   async remove(key: string) {
-    await rm(this.destinationForKey(key), { force: true })
+    await Promise.all([
+      rm(this.destinationForKey(key), { force: true }),
+      rm(this.destinationForKey(thumbnailObjectKey(key)), { force: true }),
+    ])
   }
 
   async hasSameContents(key: string, file: File) {
@@ -74,6 +79,24 @@ export class LocalMediaStorage {
       sha256(await file.arrayBuffer()),
     ])
     return existingHash === fileHash
+  }
+
+  async thumbnailExists(key: string) {
+    return Bun.file(this.destinationForKey(thumbnailObjectKey(key))).exists()
+  }
+
+  async createThumbnail(key: string) {
+    const source = this.destinationForKey(key)
+    const destination = this.destinationForKey(thumbnailObjectKey(key))
+    if (await Bun.file(destination).exists()) return thumbnailObjectKey(key)
+
+    await mkdir(dirname(destination), { recursive: true })
+    await sharp(source, { limitInputPixels: 40_000_000 })
+      .rotate()
+      .resize(thumbnailWidth, thumbnailWidth, { fit: 'cover', position: 'attention', withoutEnlargement: true })
+      .webp({ quality: 72 })
+      .toFile(destination)
+    return thumbnailObjectKey(key)
   }
 
   destinationForKey(key: string) {
@@ -129,6 +152,17 @@ export async function validateImageUpload(file: File, maxBytes: number): Promise
 export function filenameWithExtension(filename: string, extension: string) {
   const baseName = filename.trim().replace(/\.[^.]*$/, '') || 'image'
   return `${baseName}.${extension}`
+}
+
+export function isImageContentType(contentType: string): contentType is keyof typeof imageTypes {
+  return contentType in imageTypes
+}
+
+export function thumbnailObjectKey(key: string) {
+  const safeKey = assertSafeObjectKey(key)
+  const extensionIndex = safeKey.lastIndexOf('.')
+  const baseKey = extensionIndex > safeKey.lastIndexOf('/') ? safeKey.slice(0, extensionIndex) : safeKey
+  return `${baseKey}.thumbnail.webp`
 }
 
 function readAscii(bytes: Uint8Array, offset: number, length: number) {

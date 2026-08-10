@@ -7,12 +7,19 @@ import { z } from 'zod'
 import type { DbClient } from '../../db'
 import type { AppEnv } from '../../env'
 import { AppError, validationErrorHook } from '../../http/errors'
-import { filenameWithExtension, localMediaConfigFromEnv, LocalMediaStorage, validateMediaUpload } from '../../storage/local-media'
+import { filenameWithExtension, isImageContentType, localMediaConfigFromEnv, LocalMediaStorage, thumbnailObjectKey, validateMediaUpload } from '../../storage/local-media'
 import { createStorageObjectKey } from '../../storage/service'
 import type { AuthHttpEnv } from '../auth'
 import { findMediaAssetReferences } from './references'
 
-const asset = (value: { id: string; objectKey: string; publicUrl: string; filename: string; contentType: string; byteSize: number; status: 'PENDING' | 'READY'; createdAt: Date; updatedAt: Date }) => ({ ...value, createdAt: value.createdAt.toISOString(), updatedAt: value.updatedAt.toISOString() })
+const asset = async (storage: LocalMediaStorage | null, value: { id: string; objectKey: string; publicUrl: string; filename: string; contentType: string; byteSize: number; status: 'PENDING' | 'READY'; createdAt: Date; updatedAt: Date }) => ({
+  ...value,
+  thumbnailUrl: storage && isImageContentType(value.contentType) && await storage.thumbnailExists(value.objectKey)
+    ? `/uploads/${thumbnailObjectKey(value.objectKey)}`
+    : null,
+  createdAt: value.createdAt.toISOString(),
+  updatedAt: value.updatedAt.toISOString(),
+})
 export function createMediaModule({ db, env, requireAuth, requireAdmin }: { db: DbClient; env: AppEnv; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireAdmin: MiddlewareHandler<AuthHttpEnv> }) {
   const routes = new OpenAPIHono<AuthHttpEnv>({ defaultHook: validationErrorHook })
   const storageConfig = localMediaConfigFromEnv(env)
@@ -25,7 +32,10 @@ export function createMediaModule({ db, env, requireAuth, requireAdmin }: { db: 
   const assetParams = z.object({ id: z.uuid() })
   const upload = createRoute({ method: 'post', path: '/media/uploads', responses: { 200: { content: { 'application/json': { schema: mediaUploadResponseSchema } }, description: 'Existing matching media asset' }, 201: { content: { 'application/json': { schema: mediaUploadResponseSchema } }, description: 'Saved public media upload' } } })
   const remove = createRoute({ method: 'delete', path: '/media/{id}', request: { params: assetParams }, responses: { 200: { content: { 'application/json': { schema: mediaAssetDeleteResponseSchema } }, description: 'Deleted media asset' }, 404: { description: 'Media asset not found' }, 409: { description: 'Media asset is in use' } } })
-  routes.openapi(list, async (c) => c.json({ assets: (await db.mediaAsset.findMany({ where: { status: 'READY' }, orderBy: { createdAt: 'desc' } })).map(asset) }, 200))
+  routes.openapi(list, async (c) => {
+    const assets = await db.mediaAsset.findMany({ where: { status: 'READY' }, orderBy: { createdAt: 'desc' } })
+    return c.json({ assets: await Promise.all(assets.map((value) => asset(storage, value))) }, 200)
+  })
   routes.openapi(upload, async (c) => {
     if (!storage) throw new AppError(503, 'INTERNAL_ERROR', 'Media storage is not configured')
     const file = (await c.req.parseBody()).file
@@ -46,7 +56,8 @@ export function createMediaModule({ db, env, requireAuth, requireAdmin }: { db: 
     })
     for (const matchingAsset of matchingAssets) {
       if (await storage.hasSameContents(matchingAsset.objectKey, file)) {
-        return c.json({ asset: asset(matchingAsset), alreadyExists: true }, 200)
+        await ensureThumbnail(storage, matchingAsset.objectKey, matchingAsset.contentType)
+        return c.json({ asset: await asset(storage, matchingAsset), alreadyExists: true }, 200)
       }
     }
     const key = createStorageObjectKey({ namespace: 'media', filename: filenameWithExtension(file.name, media.extension) })
@@ -54,7 +65,8 @@ export function createMediaModule({ db, env, requireAuth, requireAdmin }: { db: 
     await storage.write(key, file)
     try {
       const created = await db.mediaAsset.create({ data: { objectKey: key, publicUrl: `/uploads/${key}`, filename: file.name, contentType: media.contentType, byteSize: file.size, status: 'READY' } })
-      return c.json({ asset: asset(created), alreadyExists: false }, 201)
+      await ensureThumbnail(storage, key, media.contentType)
+      return c.json({ asset: await asset(storage, created), alreadyExists: false }, 201)
     } catch (error) {
       await storage.remove(key).catch(() => undefined)
       throw error
@@ -80,4 +92,14 @@ export function createMediaModule({ db, env, requireAuth, requireAdmin }: { db: 
     return c.json({ success: true as const }, 200)
   })
   return routes
+}
+
+async function ensureThumbnail(storage: LocalMediaStorage, objectKey: string, contentType: string) {
+  if (!isImageContentType(contentType)) return
+
+  try {
+    await storage.createThumbnail(objectKey)
+  } catch (error) {
+    console.error(`Unable to create media thumbnail for ${objectKey}`, error)
+  }
 }

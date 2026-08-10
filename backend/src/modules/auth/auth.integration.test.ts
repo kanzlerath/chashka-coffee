@@ -3,6 +3,7 @@ import { mkdir, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { UserRole } from '@chashka-coffee/contracts'
+import sharp from 'sharp'
 
 import { createApp } from '../../app'
 import { createPrisma } from '../../db'
@@ -142,7 +143,7 @@ maybeDescribe('auth API integration', () => {
     })
     const { accessToken } = await login.json()
     const form = new FormData()
-    const imageBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00])
+    const imageBytes = await sharp({ create: { width: 64, height: 48, channels: 3, background: '#80583e' } }).png().toBuffer()
     form.set('file', new File([imageBytes], 'latte.jpg', { type: 'image/png' }))
 
     const response = await app.request('/api/admin/media/uploads', {
@@ -155,6 +156,7 @@ maybeDescribe('auth API integration', () => {
     expect(response.status).toBe(201)
     expect(body.asset).toMatchObject({
       publicUrl: expect.stringMatching(/^\/uploads\/media\//),
+      thumbnailUrl: expect.stringMatching(/^\/uploads\/media\/.*\.thumbnail\.webp$/),
       filename: 'latte.jpg',
       contentType: 'image/png',
       status: 'READY',
@@ -162,6 +164,7 @@ maybeDescribe('auth API integration', () => {
     expect(body.asset.objectKey).toEndWith('.png')
     expect(body.alreadyExists).toBe(false)
     expect(await readFile(join(mediaUploadsDirectory, body.asset.objectKey))).toEqual(Buffer.from(imageBytes))
+    expect(await Bun.file(join(mediaUploadsDirectory, body.asset.thumbnailUrl.replace('/uploads/', ''))).exists()).toBe(true)
 
     const duplicateForm = new FormData()
     duplicateForm.set('file', new File([imageBytes], 'latte.jpg', { type: 'image/png' }))
@@ -189,6 +192,7 @@ maybeDescribe('auth API integration', () => {
     })
     expect(removedFile.status).toBe(200)
     expect(await Bun.file(join(mediaUploadsDirectory, storedImage.objectKey)).exists()).toBe(false)
+    expect(await Bun.file(join(mediaUploadsDirectory, body.asset.thumbnailUrl.replace('/uploads/', ''))).exists()).toBe(false)
 
     const oversizedForm = new FormData()
     oversizedForm.set('file', new File([new Uint8Array(2_048)], 'too-large.png', { type: 'image/png' }))
@@ -213,6 +217,7 @@ maybeDescribe('auth API integration', () => {
     expect(videoResponse.status).toBe(201)
     expect(videoBody.asset).toMatchObject({
       publicUrl: expect.stringMatching(/^\/uploads\/media\//),
+      thumbnailUrl: null,
       filename: 'morning.mov',
       contentType: 'video/mp4',
       status: 'READY',
@@ -234,6 +239,7 @@ maybeDescribe('auth API integration', () => {
     expect(pdfResponse.status).toBe(201)
     expect(pdfBody.asset).toMatchObject({
       publicUrl: expect.stringMatching(/^\/uploads\/media\//),
+      thumbnailUrl: null,
       filename: 'restaurant-menu.doc',
       contentType: 'application/pdf',
       status: 'READY',

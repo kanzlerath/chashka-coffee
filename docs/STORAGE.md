@@ -8,8 +8,10 @@ The deployed VPS stores public editorial images, MP4 videos, and PDF documents d
 persistent disk. The browser sends one authenticated `multipart/form-data`
 request to the backend; it validates the file size and real JPEG/PNG/WebP/AVIF
 or MP4/PDF signature, writes the file below `MEDIA_UPLOADS_DIR`, and
-persists a site-relative
-`/uploads/<key>` URL. Caddy serves that directory read-only.
+persists a site-relative `/uploads/<key>` URL. For each readable image it also
+generates a 320×320 WebP thumbnail beside the original; the admin media picker
+uses this small variant, while the public site continues to use the selected
+original. Caddy serves that directory read-only.
 
 ```bash
 MEDIA_UPLOADS_DIR=/srv/uploads
