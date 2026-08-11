@@ -7,7 +7,7 @@ const { eventSlug, eventTitle } = Astro.props as { eventSlug: string; eventTitle
   <label>E-mail<input name="email" autocomplete="email" type="email" /></label>
   <label>Количество гостей<input name="guests" type="number" min="1" max="20" value="1" required /></label>
   <label class="wide">Комментарий<textarea name="message" placeholder="Вопрос или важная деталь"></textarea></label>
-  <label class="consent"><input name="consent" type="checkbox" required /><span>Согласен на обработку персональных данных.</span></label>
+  <label class="consent"><input name="privacyAccepted" type="checkbox" required /><span>Даю <a href="/consent" target="_blank">согласие на обработку персональных данных</a> и ознакомлен(а) с <a href="/privacy" target="_blank">политикой</a>.</span></label>
   <button type="submit">Записаться</button><p aria-live="polite"></p>
 </form>
 <script>
@@ -24,7 +24,7 @@ const { eventSlug, eventTitle } = Astro.props as { eventSlug: string; eventTitle
     const values = new FormData(form)
     const button = form.querySelector<HTMLButtonElement>('button')
     const status = form.querySelector<HTMLParagraphElement>('p[aria-live]')
-    const payload = { type:'EVENT_REGISTRATION', name:String(values.get('name') ?? '').trim(), phone:String(values.get('phone') ?? '').trim() || null, email:String(values.get('email') ?? '').trim() || null, message:String(values.get('message') ?? '').trim() || null, metadata:{ eventSlug:form.dataset.eventSlug ?? '', eventTitle:form.dataset.eventTitle ?? '', guests:String(values.get('guests') ?? '1') } }
+    const payload = { type:'EVENT_REGISTRATION', name:String(values.get('name') ?? '').trim(), phone:String(values.get('phone') ?? '').trim() || null, email:String(values.get('email') ?? '').trim() || null, message:String(values.get('message') ?? '').trim() || null, metadata:{ eventSlug:form.dataset.eventSlug ?? '', eventTitle:form.dataset.eventTitle ?? '', guests:String(values.get('guests') ?? '1') }, privacyAccepted:values.get('privacyAccepted') === 'on' }
     if (button) button.disabled = true
     if (status) status.textContent = 'Отправляем…'
     try {
@@ -42,5 +42,5 @@ const { eventSlug, eventTitle } = Astro.props as { eventSlug: string; eventTitle
   })
 </script>
 <style>
-  .event-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}.event-form label{display:grid;gap:7px;color:#dce6dd;font-size:10px;font-weight:700}.event-form input,.event-form textarea{width:100%;min-height:50px;padding:14px 16px;border:1px solid rgba(255,255,255,.2);border-radius:var(--radius);background:#fff;color:var(--ink);outline:0}.event-form textarea{min-height:105px;resize:vertical}.event-form .wide,.event-form .consent,.event-form button,.event-form>p{grid-column:1/-1}.event-form .consent{display:flex;align-items:center;gap:10px}.event-form .consent input{width:18px;min-height:18px}.event-form button{min-height:52px;border:0;border-radius:var(--radius);background:var(--lime);color:var(--moss);font-weight:800;cursor:pointer}.event-form>p{min-height:20px;margin:0;color:#fff;font-size:12px}@media(max-width:650px){.event-form{grid-template-columns:1fr}.event-form .wide,.event-form .consent,.event-form button,.event-form>p{grid-column:1}}
+  .event-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}.event-form label{display:grid;gap:7px;color:#dce6dd;font-size:10px;font-weight:700}.event-form input,.event-form textarea{width:100%;min-height:50px;padding:14px 16px;border:1px solid rgba(255,255,255,.2);border-radius:var(--radius);background:#fff;color:var(--ink);outline:0}.event-form textarea{min-height:105px;resize:vertical}.event-form .wide,.event-form .consent,.event-form button,.event-form>p{grid-column:1/-1}.event-form .consent{display:flex;align-items:flex-start;gap:10px;line-height:1.5}.event-form .consent input{flex:0 0 auto;width:18px;min-height:18px;margin-top:1px;padding:0;accent-color:var(--lime)}.event-form .consent a{color:inherit;text-underline-offset:2px}.event-form button{min-height:52px;border:0;border-radius:var(--radius);background:var(--lime);color:var(--moss);font-weight:800;cursor:pointer}.event-form>p{min-height:20px;margin:0;color:#fff;font-size:12px}@media(max-width:650px){.event-form{grid-template-columns:1fr}.event-form .wide,.event-form .consent,.event-form button,.event-form>p{grid-column:1}}
 </style>

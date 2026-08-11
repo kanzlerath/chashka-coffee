@@ -102,6 +102,17 @@ failed build leaves the previously published release live and retries after
 Run `website-build` only after a code deployment or a changed `PUBLIC_*` URL.
 Rebuild the appropriate frontend whenever a `PUBLIC_*` or `VITE_*` URL changes.
 
+The first-party website analytics retention period is 365 days. Run the cleanup
+task daily from the repository clone on the VPS (manually or from the host
+scheduler):
+
+```bash
+docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml run --rm api bun run start:cron -- analytics:cleanup
+```
+
+The task only deletes `page_views` older than the retention cutoff. It does not
+delete leads, customers, orders, or Yandex Metrika data.
+
 ## Backups
 
 PostgreSQL and `/srv/chashka-coffee/uploads` are the persistent data. Keep

@@ -24,11 +24,17 @@ const expectedSectionRoutes = [
 ]
 
 const expectedLegalRoutes = [
+  '/advertising-consent',
   '/certificate-rules',
   '/consent',
+  '/cookies',
+  '/data-request',
+  '/legal',
   '/loyalty-rules',
+  '/offer',
   '/privacy',
   '/promotion-rules',
+  '/requisites',
   '/terms',
 ]
 

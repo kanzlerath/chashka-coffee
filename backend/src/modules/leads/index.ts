@@ -18,6 +18,8 @@ import { AppError, validationErrorHook } from '../../http/errors'
 import type { AuthHttpEnv } from '../auth'
 import type { OperationalNotifications } from '../operational-notifications'
 
+const PRIVACY_CONSENT_VERSION = '2026-08-11'
+
 const idParams = z.object({ id: z.uuid() })
 const errorSchema = z.object({ error: z.object({ code: z.string(), message: z.string() }) })
 const errorContent = { 'application/json': { schema: errorSchema } }
@@ -83,12 +85,17 @@ export function createLeadsModule({ db, requireAuth, requireLeadAccess, notifica
 
   routes.openapi(submit, async (c) => {
     const input = c.req.valid('json')
-    const { metadata, ...data } = input
+    const { metadata, privacyAccepted: _privacyAccepted, ...data } = input
+    const consentMetadata = {
+      ...(metadata ?? {}),
+      privacyConsentVersion: PRIVACY_CONSENT_VERSION,
+      privacyConsentAcceptedAt: new Date().toISOString(),
+    }
     const normalizedPhone = input.phone ? customerPhoneSchema.safeParse(input.phone) : null
     const customer = normalizedPhone?.success
       ? await db.customer.findUnique({ where: { phone: normalizedPhone.data }, select: { id: true } })
       : null
-    const lead = await db.lead.create({ data: { ...data, payload: metadata ?? undefined, crmCustomerId: customer?.id } })
+    const lead = await db.lead.create({ data: { ...data, payload: consentMetadata, crmCustomerId: customer?.id } })
     const response = dto(lead)
     await notifications?.notifyLead(response)
     return c.json({ lead: response }, 201)

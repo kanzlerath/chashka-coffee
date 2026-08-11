@@ -54,9 +54,15 @@ export const footerGroups: FooterGroup[] = [
 ]
 
 export const footerLegalLinks: FooterLink[] = [
+  { label: 'Все документы', href: '/legal' },
+  { label: 'Реквизиты', href: '/requisites' },
   { label: 'Конфиденциальность', href: '/privacy' },
   { label: 'Согласие на обработку данных', href: '/consent' },
+  { label: 'Согласие на рекламу', href: '/advertising-consent' },
+  { label: 'Cookies и аналитика', href: '/cookies' },
+  { label: 'Обращения по данным', href: '/data-request' },
   { label: 'Условия использования', href: '/terms' },
+  { label: 'Оферта магазина', href: '/offer' },
   { label: 'Правила лояльности', href: '/loyalty-rules' },
   { label: 'Правила сертификатов', href: '/certificate-rules' },
   { label: 'Правила акций', href: '/promotion-rules' },

@@ -11,6 +11,7 @@ describe('lead contracts', () => {
       email: null,
       message: 'Есть идея для летнего меню',
       metadata: { source: FOOTER_QUESTION_LEAD_SOURCE },
+      privacyAccepted: true,
     })
 
     expect(result.metadata).toEqual({ source: FOOTER_QUESTION_LEAD_SOURCE })
@@ -24,6 +25,22 @@ describe('lead contracts', () => {
       email: null,
       message: 'Торт на 12 гостей к субботе',
       metadata: { source: 'bakery_order_request', subject: 'День рождения' },
+      privacyAccepted: true,
     }).type).toBe('CAKE')
+  })
+
+  test('requires a separate explicit personal-data consent for every public lead', () => {
+    const request = {
+      type: 'CONTACT' as const,
+      name: 'Анна',
+      phone: '+7 913 000-00-00',
+      email: null,
+      message: 'Перезвоните мне',
+      metadata: null,
+    }
+
+    expect(() => createLeadRequestSchema.parse(request)).toThrow()
+    expect(() => createLeadRequestSchema.parse({ ...request, privacyAccepted: false })).toThrow()
+    expect(createLeadRequestSchema.parse({ ...request, privacyAccepted: true }).privacyAccepted).toBeTrue()
   })
 })

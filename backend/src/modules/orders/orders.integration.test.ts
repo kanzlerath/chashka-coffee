@@ -145,7 +145,7 @@ maybeDescribe('online coffee order API integration', () => {
     expect(await prisma.order.findUnique({ where: { id: createdBody.order.id }, select: { crmCustomerId: true } })).toEqual({ crmCustomerId: crmCustomer!.id })
 
     const lead = await app.request('/api/leads', json({
-      type: 'CONTACT', name: 'Анна', phone: '+7 (913) 123-45-67', email: null, message: 'Вопрос по заказу', metadata: null,
+      type: 'CONTACT', name: 'Анна', phone: '+7 (913) 123-45-67', email: null, message: 'Вопрос по заказу', metadata: null, privacyAccepted: true,
     }))
     expect(lead.status).toBe(201)
     const leadId = (await lead.json()).lead.id

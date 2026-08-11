@@ -30,6 +30,7 @@ bun run --cwd backend test:integration
 bun run --cwd backend start:api
 bun run --cwd backend start:worker
 bun run --cwd backend start:cron -- noop
+bun run --cwd backend start:cron -- analytics:cleanup
 bun run --cwd backend smoke:docker
 bun run --cwd backend prisma:validate
 bun run --cwd backend prisma:generate
@@ -65,7 +66,7 @@ The backend is one workspace with one Prisma schema and one Dockerfile, but it h
 
 - API: `bun run start:api`, backed by `src/index.ts`.
 - Worker: `bun run start:worker`, backed by `src/worker.ts`. It is intentionally empty until a real long-running background handler is added, and deployment generation refuses to deploy this placeholder command as an App Platform worker.
-- Cron: `bun run start:cron -- <task>`, backed by `src/cron.ts`. Current local validation tasks are `noop` and `db:ping`.
+- Cron: `bun run start:cron -- <task>`, backed by `src/cron.ts`. Available tasks are `noop`, `db:ping`, and `analytics:cleanup`. The cleanup task removes first-party page-view records older than 365 days.
 
 All entrypoints use `src/runtime.ts` for env loading, Prisma creation, and cleanup, so backend services can be shared without duplicating Prisma schema or database setup.
 

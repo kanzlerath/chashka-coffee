@@ -44,7 +44,7 @@
 
 ## Обязательные служебные маршруты
 
-- `/privacy`, `/consent`, `/terms`, `/loyalty-rules`, `/certificate-rules`, `/promotion-rules`;
+- `/legal`, `/requisites`, `/terms`, `/privacy`, `/consent`, `/advertising-consent`, `/cookies`, `/data-request`, `/offer`, `/loyalty-rules`, `/certificate-rules`, `/promotion-rules`;
 - `/404`, `/maintenance`, `/form/success`;
 - серверная общая ошибка `500`.
 

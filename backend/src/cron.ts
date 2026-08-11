@@ -2,6 +2,8 @@ import { createBackendRuntime, type BackendRuntime } from './runtime'
 
 type CronTask = (runtime: BackendRuntime) => Promise<void>
 
+export const ANALYTICS_RETENTION_DAYS = 365
+
 const cronTasks = {
   noop: async () => {
     console.log('Cron noop task completed.')
@@ -9,6 +11,11 @@ const cronTasks = {
   'db:ping': async ({ prisma }) => {
     await prisma.$queryRaw`SELECT 1`
     console.log('Cron db:ping task completed.')
+  },
+  'analytics:cleanup': async ({ prisma }) => {
+    const cutoff = new Date(Date.now() - ANALYTICS_RETENTION_DAYS * 86_400_000)
+    const result = await prisma.pageView.deleteMany({ where: { createdAt: { lt: cutoff } } })
+    console.log(`Cron analytics:cleanup removed ${result.count} page views older than ${ANALYTICS_RETENTION_DAYS} days.`)
   },
 } satisfies Record<string, CronTask>
 

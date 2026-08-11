@@ -19,6 +19,7 @@ export const createLeadRequestSchema = z.object({
   email: z.email().max(320).nullable(),
   message: nullableText(4_000),
   metadata: leadMetadataSchema.nullable().optional(),
+  privacyAccepted: z.literal(true),
 }).strict()
 export type CreateLeadRequest = z.infer<typeof createLeadRequestSchema>
 
