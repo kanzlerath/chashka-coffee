@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import {
   ActivityAdminRoute,
   AppPage,
+  CakeImportAdminRoute,
   ContentArticleCreateAdminRoute,
   ContentArticleEditAdminRoute,
   ContentEventCreateAdminRoute,
@@ -83,6 +84,7 @@ const coffeeRoute = route('/products/coffee', ProductsCoffeeAdminRoute)
 const coffeeCreateRoute = route('/products/coffee/new', ProductCoffeeCreateAdminRoute)
 const coffeeEditRoute = route('/products/coffee/$productId', ProductCoffeeEditAdminRoute)
 const cakesRoute = route('/products/cakes', ProductsCakesAdminRoute)
+const cakeImportRoute = route('/products/cakes/import', CakeImportAdminRoute)
 const cakeCreateRoute = route('/products/cakes/new', ProductCakeCreateAdminRoute)
 const cakeEditRoute = route('/products/cakes/$productId', ProductCakeEditAdminRoute)
 
@@ -110,7 +112,7 @@ const routeTree = rootRoute.addChildren([
   indexRoute, appRoute, activityRoute, statisticsRoute, ordersRoute, customersRoute, customerDetailRoute, restaurantsRoute, restaurantCreateRoute, restaurantEditRoute,
   menusRoute, menuCreateRoute, menuImportRoute, menuDetailRoute, menuCategoryCreateRoute, menuItemCreateRoute, menuItemEditRoute,
   teamRoute, teamCreateRoute, teamEditRoute, telegramRoute, sharedHeaderRoute,
-  productsLegacyRoute, coffeeRoute, coffeeCreateRoute, coffeeEditRoute, cakesRoute, cakeCreateRoute, cakeEditRoute,
+  productsLegacyRoute, coffeeRoute, coffeeCreateRoute, coffeeEditRoute, cakesRoute, cakeImportRoute, cakeCreateRoute, cakeEditRoute,
   contentLegacyRoute, promotionsRoute, promotionCreateRoute, promotionEditRoute, eventsRoute, eventCreateRoute, eventEditRoute, journalRoute, articleCreateRoute, articleEditRoute,
   homepageRoute, leadsRoute, mediaRoute, jobsRoute, jobCreateRoute, jobEditRoute, pagesRoute, pageEditRoute,
 ])

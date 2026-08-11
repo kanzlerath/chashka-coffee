@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { upsertProductRequestSchema } from './products'
+import { importCakeProductsRequestSchema, upsertProductRequestSchema } from './products'
 
 describe('product catalog contracts', () => {
   test('models coffee with selectable weight variants and editorial details', () => {
@@ -56,5 +56,15 @@ describe('product catalog contracts', () => {
     })
 
     expect(parsed.category).toBeUndefined()
+  })
+
+  test('accepts only new cake drafts in an atomic import', () => {
+    const cake = {
+      type: 'CAKE', status: 'DRAFT', publishAt: null, slug: 'medovik', name: 'Медовик', category: 'Торты', subtitle: null, description: null,
+      ingredients: null, origin: null, roastLevel: null, tastingNotes: [], imageUrl: null, galleryUrls: [], details: [], blocks: [], isFeatured: false, position: 10,
+      variants: [{ label: '1 кг', weightGrams: 1000, priceKopecks: 250000, position: 10, isAvailable: true }],
+    }
+    expect(importCakeProductsRequestSchema.parse({ products: [cake] }).products).toHaveLength(1)
+    expect(() => importCakeProductsRequestSchema.parse({ products: [cake, cake] })).toThrow()
   })
 })

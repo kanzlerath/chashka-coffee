@@ -6,9 +6,11 @@ import {
   productResponseSchema,
   productTypeSchema,
   productVariantInputSchema,
+  importCakeProductsRequestSchema,
   upsertProductRequestSchema,
   type Product,
   type UpsertProductRequest,
+  type ImportCakeProductsRequest,
 } from '@chashka-coffee/contracts'
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi'
 import type { MiddlewareHandler } from 'hono'
@@ -114,6 +116,7 @@ export function createProductsModule({ db, requireAuth, requireAdmin }: { db: Db
   const publicDetail = createRoute({ method: 'get', path: '/{slug}', request: { params: slugParams }, responses: { 200: { content: { 'application/json': { schema: productResponseSchema } }, description: 'Published product' }, 404: { content: errorContent, description: 'Product not found' } } })
   const adminList = createRoute({ method: 'get', path: '/products', request: { query: z.object({ type: productTypeSchema.optional() }) }, responses: { 200: { content: { 'application/json': { schema: productListResponseSchema } }, description: 'Products' } } })
   const create = createRoute({ method: 'post', path: '/products', request: { body: { content: { 'application/json': { schema: upsertProductRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: productResponseSchema } }, description: 'Product created' }, 409: { content: errorContent, description: 'Product slug conflict' } } })
+  const importCakes = createRoute({ method: 'post', path: '/products/import-cakes', request: { body: { content: { 'application/json': { schema: importCakeProductsRequestSchema } } } }, responses: { 201: { content: { 'application/json': { schema: productListResponseSchema } }, description: 'Cake products imported atomically' }, 409: { content: errorContent, description: 'Product slug conflict' } } })
   const update = createRoute({ method: 'put', path: '/products/{id}', request: { params: idParams, body: { content: { 'application/json': { schema: upsertProductRequestSchema } } } }, responses: { 200: { content: { 'application/json': { schema: productResponseSchema } }, description: 'Product updated' }, 404: { content: errorContent, description: 'Product not found' }, 409: { content: errorContent, description: 'Product slug conflict' } } })
   const copy = createRoute({ method: 'post', path: '/products/{id}/copy', request: { params: idParams }, responses: { 201: { content: { 'application/json': { schema: productResponseSchema } }, description: 'Product copied' }, 404: { content: errorContent, description: 'Product not found' }, 409: { content: errorContent, description: 'Product copy conflict' } } })
   const remove = createRoute({ method: 'delete', path: '/products/{id}', request: { params: idParams }, responses: { 200: { content: { 'application/json': { schema: productDeleteResponseSchema } }, description: 'Product deleted' }, 404: { content: errorContent, description: 'Product not found' } } })
@@ -140,6 +143,23 @@ export function createProductsModule({ db, requireAuth, requireAdmin }: { db: Db
       const slug = await availableProductSlug(db, input.product.slug)
       const product = await db.product.create({ data: { ...input.product, slug, variants: { create: input.variants } }, include: includeVariants })
       return c.json({ product: dto(product as ProductRecord) }, 201)
+    } catch (error) {
+      return productWriteError(error)
+    }
+  })
+  adminRoutes.openapi(importCakes, async (c) => {
+    const input = c.req.valid('json') as ImportCakeProductsRequest
+    try {
+      const products = await db.$transaction(async (transaction) => {
+        const slugs = input.products.map((product) => product.slug)
+        const occupied = await transaction.product.findMany({ where: { slug: { in: slugs } }, select: { slug: true } })
+        if (occupied.length) throw new AppError(409, 'CONFLICT', `Адрес уже занят: ${occupied.map((product) => product.slug).join(', ')}`)
+        return Promise.all(input.products.map(async (product) => {
+          const inputData = data(product)
+          return transaction.product.create({ data: { ...inputData.product, variants: { create: inputData.variants } }, include: includeVariants })
+        }))
+      })
+      return c.json({ products: products.map((product) => dto(product as ProductRecord)) }, 201)
     } catch (error) {
       return productWriteError(error)
     }

@@ -46,7 +46,7 @@ import { JobsPage } from '@/features/jobs-admin'
 import { LeadsPage } from '@/features/leads-admin'
 import { MediaPage } from '@/features/media-admin'
 import { ManagedPagesPage } from '@/features/pages-admin'
-import { ProductsPage } from '@/features/products-admin'
+import { CakeImportPage, ProductsPage } from '@/features/products-admin'
 import { TeamPage } from '@/features/staff-admin'
 import { StatisticsPage } from '@/features/analytics-admin'
 import { ActivityPage } from '@/features/workspace-admin'
@@ -606,6 +606,13 @@ export function ProductCoffeeEditAdminRoute() { return <AdminProducts type="COFF
 export function ProductsCakesAdminRoute() { return <AdminProducts type="CAKE" mode="list" /> }
 export function ProductCakeCreateAdminRoute() { return <AdminProducts type="CAKE" mode="create" /> }
 export function ProductCakeEditAdminRoute() { return <AdminProducts type="CAKE" mode="edit" /> }
+export function CakeImportAdminRoute() {
+  const auth = useAuth()
+  if (auth.isBootstrapping) return <LoadingState />
+  if (!auth.user) return <HomePage />
+  if (!hasPermission(auth.user, 'CATALOG_MANAGE')) return <AccessDenied title="Импорт тортов" description="Каталог доступен ответственному за меню." />
+  return <CakeImportPage />
+}
 
 function AdminProducts({ type, mode }: { type: 'COFFEE' | 'CAKE'; mode: 'list' | 'create' | 'edit' }) {
   const auth = useAuth()

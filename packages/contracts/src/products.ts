@@ -50,6 +50,21 @@ export const upsertProductRequestSchema = z.object({
 }).strict()
 export type UpsertProductRequest = z.infer<typeof upsertProductRequestSchema>
 
+export const importCakeProductsRequestSchema = z.object({
+  products: z.array(upsertProductRequestSchema.extend({
+    type: z.literal('CAKE'),
+    status: z.literal('DRAFT'),
+    publishAt: z.null(),
+  }).strict()).min(1).max(500),
+}).strict().superRefine(({ products }, ctx) => {
+  const seen = new Set<string>()
+  products.forEach((product, index) => {
+    if (seen.has(product.slug)) ctx.addIssue({ code: 'custom', path: ['products', index, 'slug'], message: 'Duplicate product slug' })
+    seen.add(product.slug)
+  })
+})
+export type ImportCakeProductsRequest = z.infer<typeof importCakeProductsRequestSchema>
+
 export const productSchema = z.object({
   id: uuid,
   ...productFields,

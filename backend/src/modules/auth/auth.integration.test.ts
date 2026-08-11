@@ -750,6 +750,17 @@ maybeDescribe('auth API integration', () => {
     expect(copiedProductBody.product.variants[0].id).not.toBe(firstBody.product.variants[0].id)
     expect(copiedProductBody.product.blocks).toMatchObject([{ type: 'TEXT', title: 'Как заваривать' }])
 
+    const importedCakes = await app.request('/api/admin/products/import-cakes', {
+      method: 'POST', headers, body: JSON.stringify({
+        products: [{
+          ...productPayload, type: 'CAKE', publishAt: null, slug: 'napoleon', name: 'Наполеон', category: 'Торты',
+          variants: [{ label: '1 кг', weightGrams: 1000, priceKopecks: 220000, position: 10, isAvailable: true }, { label: '2 кг', weightGrams: 2000, priceKopecks: 400000, position: 20, isAvailable: true }],
+        }],
+      }),
+    })
+    expect(importedCakes.status).toBe(201)
+    expect(await importedCakes.json()).toMatchObject({ products: [{ type: 'CAKE', slug: 'napoleon', variants: [{ label: '1 кг' }, { label: '2 кг' }] }] })
+
     const copiedProductAgain = await app.request(`/api/admin/products/${firstBody.product.id}/copy`, { method: 'POST', headers })
     expect(await copiedProductAgain.json()).toMatchObject({ product: { name: 'Эфиопия Гуджи — копия 2', slug: 'ethiopia-guji-copy-2' } })
 
