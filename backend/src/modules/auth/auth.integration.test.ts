@@ -798,6 +798,18 @@ maybeDescribe('auth API integration', () => {
       isVegetarian: true, isSpicy: false, isLactoseFree: false, isGlutenFree: false, isLight: false,
       marketingBadge: 'NEW', imageUrl: null, position: 10,
     }
+    const importedMenu = await app.request('/api/admin/menus/import', {
+      method: 'POST', headers, body: JSON.stringify({
+        menu: { slug: 'imported-menu', name: 'Импортированное меню', description: null },
+        categories: [{ slug: 'coffee', name: 'Кофе', position: 10, items: [{ ...itemPayload, slug: 'cappuccino', name: 'Капучино' }] }],
+      }),
+    })
+    const importedMenuBody = await importedMenu.json()
+    expect(importedMenu.status).toBe(201)
+    expect(importedMenuBody.menu).toMatchObject({ slug: 'imported-menu', categoryCount: 1, restaurantCount: 0 })
+    const importedDetail = await app.request(`/api/admin/menus/${importedMenuBody.menu.id}/detail`, { headers })
+    expect(await importedDetail.json()).toMatchObject({ categories: [{ slug: 'coffee', items: [{ slug: 'cappuccino', name: 'Капучино' }] }] })
+
     const item = await app.request(`/api/admin/categories/${categoryBody.id}/items`, {
       method: 'POST', headers, body: JSON.stringify(itemPayload),
     })

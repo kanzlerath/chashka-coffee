@@ -8,6 +8,7 @@ import {
   resolveYandexMapCoordinatesRequestSchema,
   resolveYandexMapCoordinatesResponseSchema,
   upsertMenuItemRequestSchema,
+  importMenuRequestSchema,
   upsertRestaurantScheduleExceptionRequestSchema,
   restaurantSummarySchema,
 } from './catalog'
@@ -32,6 +33,21 @@ describe('restaurant catalog contracts', () => {
     expect(upsertMenuItemRequestSchema.shape.imageUrl.parse(uploadUrl)).toBe(uploadUrl)
     expect(menuItemSchema.shape.imageUrl.parse(uploadUrl)).toBe(uploadUrl)
     expect(() => upsertMenuItemRequestSchema.shape.imageUrl.parse('javascript:alert(1)')).toThrow()
+  })
+
+  test('validates a complete menu import as one bounded request', () => {
+    const item = {
+      slug: 'cappuccino', name: 'Капучино', description: null, ingredients: null,
+      weightGrams: 300, measurementUnit: 'MILLILITER', priceKopecks: 39000,
+      calories: null, proteins: null, fats: null, carbohydrates: null,
+      isVegetarian: true, isSpicy: false, isLactoseFree: false, isGlutenFree: false, isLight: false,
+      marketingBadge: null, imageUrl: '/uploads/media/cappuccino.webp', position: 10,
+    }
+    expect(importMenuRequestSchema.parse({
+      menu: { slug: 'main-menu', name: 'Основное меню', description: null },
+      categories: [{ slug: 'coffee', name: 'Кофе', position: 10, items: [item] }],
+    })).toMatchObject({ categories: [{ items: [item] }] })
+    expect(() => importMenuRequestSchema.parse({ menu: { slug: 'main-menu', name: 'Основное меню', description: null }, categories: [] })).toThrow()
   })
 
   test('accepts the restaurant data needed for the public directory', () => {

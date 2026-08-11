@@ -227,6 +227,16 @@ export const upsertMenuItemRequestSchema = z.object({
 }).strict()
 export type UpsertMenuItemRequest = z.infer<typeof upsertMenuItemRequestSchema>
 
+export const importMenuCategoryRequestSchema = upsertMenuCategoryRequestSchema.extend({
+  items: z.array(upsertMenuItemRequestSchema).min(1).max(500),
+}).strict()
+export type ImportMenuCategoryRequest = z.infer<typeof importMenuCategoryRequestSchema>
+export const importMenuRequestSchema = z.object({
+  menu: upsertMenuRequestSchema,
+  categories: z.array(importMenuCategoryRequestSchema).min(1).max(100),
+}).strict()
+export type ImportMenuRequest = z.infer<typeof importMenuRequestSchema>
+
 export const adminMenuDetailResponseSchema = z.object({
   menu: adminMenuSchema,
   categories: z.array(z.object({

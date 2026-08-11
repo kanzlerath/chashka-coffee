@@ -6,7 +6,8 @@ import {
   operationSuccessResponseSchema,
   adminMenuListResponseSchema, adminMenuDetailResponseSchema, adminMenuResponseSchema, createdIdResponseSchema,
   upsertMenuRequestSchema, upsertMenuCategoryRequestSchema, upsertMenuItemRequestSchema,
-  type UpsertMenuRequest, type UpsertMenuCategoryRequest, type UpsertMenuItemRequest,
+  importMenuRequestSchema,
+  type ImportMenuRequest, type UpsertMenuRequest, type UpsertMenuCategoryRequest, type UpsertMenuItemRequest,
   upsertRestaurantRequestSchema,
   restaurantScheduleExceptionListResponseSchema, restaurantScheduleExceptionResponseSchema, upsertRestaurantScheduleExceptionRequestSchema,
   resolveYandexMapCoordinatesRequestSchema, resolveYandexMapCoordinatesResponseSchema,
@@ -66,6 +67,7 @@ export class CatalogAdminApi {
   listMenus() { return this.auth.request('/api/admin/menus', adminMenuListResponseSchema) }
   getMenu(id: string) { return this.auth.request(`/api/admin/menus/${id}/detail`, adminMenuDetailResponseSchema) }
   createMenu(input: UpsertMenuRequest) { return this.auth.request('/api/admin/menus', adminMenuResponseSchema, { method: 'POST', body: upsertMenuRequestSchema.parse(input) }) }
+  importMenu(input: ImportMenuRequest) { return this.auth.request('/api/admin/menus/import', adminMenuResponseSchema, { method: 'POST', body: importMenuRequestSchema.parse(input) }) }
   copyMenu(id: string) { return this.auth.request(`/api/admin/menus/${id}/copy`, adminMenuResponseSchema, { method: 'POST' }) }
   deleteMenu(id: string) { return this.auth.request(`/api/admin/menus/${id}`, operationSuccessResponseSchema, { method: 'DELETE' }) }
   createCategory(menuId: string, input: UpsertMenuCategoryRequest) { return this.auth.request(`/api/admin/menus/${menuId}/categories`, createdIdResponseSchema, { method: 'POST', body: upsertMenuCategoryRequestSchema.parse(input) }) }

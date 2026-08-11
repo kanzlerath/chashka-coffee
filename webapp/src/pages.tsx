@@ -39,7 +39,7 @@ import {
 } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
 import { AuthForm, useAuth } from '@/features/auth'
-import { MenuPage, RestaurantsPage } from '@/features/catalog-admin'
+import { MenuImportPage, MenuPage, RestaurantsPage } from '@/features/catalog-admin'
 import { ContentPage } from '@/features/content-admin'
 import { HomepagePage } from '@/features/homepage-admin'
 import { JobsPage } from '@/features/jobs-admin'
@@ -473,6 +473,14 @@ export function MenuDetailAdminRoute() { return <AuthenticatedMenu mode="detail"
 export function MenuCategoryCreateAdminRoute() { return <AuthenticatedMenu mode="create-category" /> }
 export function MenuItemCreateAdminRoute() { return <AuthenticatedMenu mode="create-item" /> }
 export function MenuItemEditAdminRoute() { return <AuthenticatedMenu mode="edit-item" /> }
+
+export function MenuImportAdminRoute() {
+  const auth = useAuth()
+  if (auth.isBootstrapping) return <LoadingState />
+  if (!auth.user) return <HomePage />
+  if (!hasPermission(auth.user, 'CATALOG_MANAGE')) return <AccessDenied title="Импорт меню" description="Раздел доступен ответственному за меню." />
+  return <MenuImportPage />
+}
 
 function AuthenticatedMenu({ mode }: { mode: 'create-menu' | 'detail' | 'create-category' | 'create-item' | 'edit-item' }) {
   const auth = useAuth()

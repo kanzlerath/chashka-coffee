@@ -592,6 +592,25 @@
   .admin-menu-item-row strong { display: block; font-size: .82rem; }
   .admin-menu-item-row small { display: block; margin-top: .15rem; color: var(--muted-foreground); font-size: .7rem; }
   .admin-menu-item-row b { font-size: .76rem; white-space: nowrap; }
+  .admin-menu-import-page { max-width: 64rem; }
+  .admin-menu-import-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: var(--admin-row-radius); overflow: hidden; }
+  .admin-menu-import-summary span { display: grid; gap: .15rem; border-right: 1px solid var(--border); color: var(--muted-foreground); padding: .8rem .9rem; font-size: .72rem; }
+  .admin-menu-import-summary span:last-child { border-right: 0; }
+  .admin-menu-import-summary strong { color: var(--foreground); font-size: 1.25rem; line-height: 1; letter-spacing: -.04em; }
+  .admin-menu-import-summary .is-error strong { color: var(--destructive); }
+  .admin-menu-import-errors { border-left: 2px solid var(--destructive); color: var(--muted-foreground); padding: .2rem 0 .2rem .8rem; font-size: .78rem; line-height: 1.5; }
+  .admin-menu-import-errors strong { color: var(--destructive); }
+  .admin-menu-import-errors ul { display: grid; gap: .2rem; margin: .5rem 0 0; padding-left: 1.15rem; }
+  .admin-menu-import-errors p { margin: .5rem 0 0; }
+  .admin-menu-import-sample { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .35rem .75rem; border-top: 1px solid var(--border); padding-top: .8rem; }
+  .admin-menu-import-sample > div { min-width: 0; border-bottom: 1px solid color-mix(in oklab, var(--border) 72%, transparent); padding: .38rem 0; }
+  .admin-menu-import-sample span, .admin-menu-import-sample strong, .admin-menu-import-sample small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .admin-menu-import-sample span { color: #6f902b; font-size: .62rem; font-weight: 760; letter-spacing: .06em; text-transform: uppercase; }
+  .admin-menu-import-sample strong { margin-top: .1rem; font-size: .8rem; }
+  .admin-menu-import-sample small { margin-top: .1rem; color: var(--muted-foreground); font-size: .68rem; }
+  .admin-menu-import-progress { display: grid; gap: .5rem; border: 1px solid var(--border); border-radius: var(--admin-row-radius); padding: .75rem .85rem; }
+  .admin-menu-import-progress > div { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; font-size: .78rem; }
+  .admin-menu-import-progress span { color: var(--muted-foreground); font-size: .72rem; }
   .admin-row-action { color: var(--muted-foreground); font-size: .72rem; font-weight: 650; }
   .admin-flag-grid { display: flex; flex-wrap: wrap; gap: .55rem 1rem; }
 
@@ -821,6 +840,10 @@
     .admin-dashboard-summary-heading [data-slot="button"] { width: 100%; }
     .admin-period-switch { width: 100%; overflow-x: auto; }
     .admin-menu-category > header { align-items: stretch; flex-direction: column; }
+    .admin-menu-import-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .admin-menu-import-summary span:nth-child(2) { border-right: 0; }
+    .admin-menu-import-summary span:nth-child(-n + 2) { border-bottom: 1px solid var(--border); }
+    .admin-menu-import-sample { grid-template-columns: 1fr; }
   }
 }
 

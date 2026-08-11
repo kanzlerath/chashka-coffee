@@ -29,6 +29,7 @@ import {
   MenuCategoryCreateAdminRoute,
   MenuCreateAdminRoute,
   MenuDetailAdminRoute,
+  MenuImportAdminRoute,
   MenuItemCreateAdminRoute,
   MenuItemEditAdminRoute,
   ProductCakeCreateAdminRoute,
@@ -65,6 +66,7 @@ const restaurantEditRoute = route('/restaurants/$restaurantId', RestaurantEditAd
 
 const menusRoute = route('/menus', MenuAdminRoute)
 const menuCreateRoute = route('/menus/new', MenuCreateAdminRoute)
+const menuImportRoute = route('/menus/import', MenuImportAdminRoute)
 const menuDetailRoute = route('/menus/$menuId', MenuDetailAdminRoute)
 const menuCategoryCreateRoute = route('/menus/$menuId/categories/new', MenuCategoryCreateAdminRoute)
 const menuItemCreateRoute = route('/menus/$menuId/categories/$categoryId/items/new', MenuItemCreateAdminRoute)
@@ -106,7 +108,7 @@ const pageEditRoute = route('/pages/$pageKey', ManagedPageEditAdminRoute)
 
 const routeTree = rootRoute.addChildren([
   indexRoute, appRoute, activityRoute, statisticsRoute, ordersRoute, customersRoute, customerDetailRoute, restaurantsRoute, restaurantCreateRoute, restaurantEditRoute,
-  menusRoute, menuCreateRoute, menuDetailRoute, menuCategoryCreateRoute, menuItemCreateRoute, menuItemEditRoute,
+  menusRoute, menuCreateRoute, menuImportRoute, menuDetailRoute, menuCategoryCreateRoute, menuItemCreateRoute, menuItemEditRoute,
   teamRoute, teamCreateRoute, teamEditRoute, telegramRoute, sharedHeaderRoute,
   productsLegacyRoute, coffeeRoute, coffeeCreateRoute, coffeeEditRoute, cakesRoute, cakeCreateRoute, cakeEditRoute,
   contentLegacyRoute, promotionsRoute, promotionCreateRoute, promotionEditRoute, eventsRoute, eventCreateRoute, eventEditRoute, journalRoute, articleCreateRoute, articleEditRoute,

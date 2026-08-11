@@ -15,6 +15,7 @@ import type {
   UpsertMenuRequest,
   UpsertMenuCategoryRequest,
   UpsertMenuItemRequest,
+  ImportMenuRequest,
   UpsertRestaurantMenuItemOverrideRequest,
 } from '@chashka-coffee/contracts'
 import { Prisma } from '../../../generated/prisma/client'
@@ -360,6 +361,22 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
 
     async createMenu(input) {
       const menu = await db.menu.create({ data: input, include: { _count: { select: { categories: true, restaurants: true } } } })
+      return toAdminMenu(menu)
+    },
+
+    async importMenu(input: ImportMenuRequest) {
+      const menu = await db.$transaction((transaction) => transaction.menu.create({
+        data: {
+          ...input.menu,
+          categories: {
+            create: input.categories.map(({ items, ...category }) => ({
+              ...category,
+              items: { create: items },
+            })),
+          },
+        },
+        include: { _count: { select: { categories: true, restaurants: true } } },
+      }))
       return toAdminMenu(menu)
     },
 
