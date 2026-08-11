@@ -14,7 +14,6 @@ import { useAuth } from '@/features/auth'
 import { resolveAdminImagePreview, supportedImageTypes, uploadMediaFile } from './media-utils'
 
 type CropAspect = 'ORIGINAL' | 'CARD' | '16:9' | '4:3' | '1:1' | '4:5' | '9:16'
-const mediaPickerPageSize = 18
 
 const aspectValue: Record<Exclude<CropAspect, 'ORIGINAL'>, number> = {
   CARD: 1 / 0.86,
@@ -83,7 +82,6 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect, allowUploadCro
   const [focusX, setFocusX] = useState(50)
   const [focusY, setFocusY] = useState(50)
   const [prepareError, setPrepareError] = useState<string | null>(null)
-  const [visibleCount, setVisibleCount] = useState(mediaPickerPageSize)
   const assets = useQuery({ queryKey: ['admin', 'media'], queryFn: () => api.request('/api/admin/media', mediaAssetListResponseSchema), enabled: open })
   const resetPicker = () => {
     setFile(null)
@@ -110,12 +108,6 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect, allowUploadCro
     const normalized = query.trim().toLocaleLowerCase('ru')
     return assets.data?.assets.filter((asset) => supportedImageTypes.has(asset.contentType) && (!normalized || asset.filename.toLocaleLowerCase('ru').includes(normalized))) ?? []
   }, [assets.data, query])
-  const displayedAssets = visibleAssets.slice(0, visibleCount)
-
-  useEffect(() => {
-    setVisibleCount(mediaPickerPageSize)
-  }, [open, query])
-
   const submitCrop = async () => {
     if (!file) return
     setPrepareError(null)
@@ -128,7 +120,7 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect, allowUploadCro
   }
 
   return <Dialog open={open} onOpenChange={handleOpenChange}>
-    <DialogContent className="admin-media-picker-dialog">
+    <DialogContent className={`admin-media-picker-dialog${file ? '' : ' admin-media-picker-dialog--library'}`}>
       <DialogHeader>
         <DialogTitle>{file ? 'Подготовить фотографию' : 'Выбрать фотографию'}</DialogTitle>
         <DialogDescription>{file ? 'Оставьте оригинал или подготовьте отдельный кадр для этого места.' : allowUploadCrop ? 'Найдите загруженный файл или добавьте новый. SVG здесь намеренно не показываются.' : 'Выберите или загрузите исходную фотографию. Точку центра для первого экрана можно будет поставить следующим шагом.'}</DialogDescription>
@@ -147,7 +139,7 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect, allowUploadCro
         </div>
         {upload.isError || prepareError ? <Typography className="admin-state-message admin-state-error" variant="bodySm">{prepareError ?? (upload.error instanceof Error ? upload.error.message : 'Не удалось загрузить фотографию.')}</Typography> : null}
         <DialogFooter><Button type="button" variant="outline" onClick={() => setFile(null)}>Назад</Button><Button disabled={upload.isPending} type="button" onClick={() => void submitCrop()}>{upload.isPending ? 'Загружаем…' : aspect === 'ORIGINAL' ? 'Загрузить оригинал' : 'Создать кадр и выбрать'}</Button></DialogFooter>
-      </div> : <>
+      </div> : <div className="admin-media-picker-library">
         <div className="admin-media-picker-tools">
           <InputGroup><InputGroupAddon align="inline-start"><HugeiconsIcon icon={SearchIcon} size={17} strokeWidth={1.8} /></InputGroupAddon><InputGroupInput autoFocus aria-label="Поиск по медиатеке" placeholder="Название файла…" value={query} onChange={(event) => setQuery(event.target.value)} /></InputGroup>
           <Input ref={fileInput} accept="image/jpeg,image/png,image/webp,image/avif" className="sr-only" type="file" onChange={(event) => { const next = event.target.files?.[0]; if (next) { if (allowUploadCrop) setFile(next); else upload.mutate(next) }; event.currentTarget.value = '' }} />
@@ -157,9 +149,8 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect, allowUploadCro
         {assets.isPending ? <Typography className="admin-state-message" variant="bodySm">Загружаем медиатеку…</Typography> : null}
         {assets.isError ? <Typography className="admin-state-message admin-state-error" variant="bodySm">Не удалось загрузить медиатеку.</Typography> : null}
         {!assets.isPending && !assets.isError && visibleAssets.length === 0 ? <div className="admin-media-picker-empty"><Typography variant="bodySmMedium">{query ? 'Ничего не найдено' : 'Медиатека пока пуста'}</Typography><Typography variant="bodySm" tone="muted">{query ? 'Попробуйте другое название.' : 'Загрузите первую фотографию — она сразу появится во всех редакторах.'}</Typography></div> : null}
-        <div className="admin-media-picker-grid">{displayedAssets.map((asset) => <button className="admin-media-picker-item" data-selected={asset.publicUrl === value || undefined} key={asset.id} type="button" onClick={() => { onSelect(asset.publicUrl); onOpenChange(false) }}><img src={resolveAdminImagePreview(asset.thumbnailUrl ?? asset.publicUrl)} alt="" decoding="async" fetchPriority="low" loading="lazy" /><Typography title={asset.filename} variant="caption">{asset.filename}</Typography></button>)}</div>
-        {visibleAssets.length > displayedAssets.length ? <Button className="justify-self-center" type="button" variant="outline" onClick={() => setVisibleCount((count) => count + mediaPickerPageSize)}>Показать ещё · {visibleAssets.length - displayedAssets.length}</Button> : null}
-      </>}
+        <div className="admin-media-picker-grid">{visibleAssets.map((asset) => <button className="admin-media-picker-item" data-selected={asset.publicUrl === value || undefined} key={asset.id} type="button" onClick={() => { onSelect(asset.publicUrl); onOpenChange(false) }}><img src={resolveAdminImagePreview(asset.thumbnailUrl ?? asset.publicUrl)} alt="" decoding="async" fetchPriority="low" loading="lazy" /><Typography title={asset.filename} variant="caption">{asset.filename}</Typography></button>)}</div>
+      </div>}
     </DialogContent>
   </Dialog>
 }
