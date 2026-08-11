@@ -766,6 +766,17 @@
   .admin-crop-controls input[type="range"] { width: 100%; accent-color: var(--primary); }
   .admin-crop-axis { display: grid; gap: .8rem; border-top: 1px solid var(--border); padding-top: .9rem; }
   .admin-crop-workspace [data-slot="dialog-footer"], .admin-crop-workspace > .admin-state-message { grid-column: 1 / -1; }
+  .admin-card-crop-dialog { grid-template-rows: auto minmax(0, 1fr); }
+  .admin-card-crop-workspace { grid-template-columns: minmax(0, 1fr) minmax(14rem, 18rem); min-height: 0; align-items: center; padding: .25rem; }
+  .admin-card-crop-card { display: grid; width: min(100%, 28rem); justify-self: center; overflow: hidden; border: 1px solid var(--border); border-radius: 1rem; background: var(--card); box-shadow: 0 1rem 2.5rem rgba(35,30,27,.1); }
+  .admin-card-crop-image { position: relative; width: 100%; min-height: 0; border-radius: 0; }
+  .admin-card-crop-image img { position: absolute; display: block; max-width: none; max-height: none; min-height: 0; object-fit: fill; transition: width 140ms ease, height 140ms ease, top 140ms ease, left 140ms ease; }
+  .admin-card-crop-copy { display: grid; gap: .25rem; padding: .9rem 1rem 1rem; }
+  .admin-card-crop-copy > :first-child { color: var(--muted-foreground); font-size: .62rem; font-weight: 760; letter-spacing: .08em; text-transform: uppercase; }
+  .admin-card-crop-copy > :nth-child(2) { color: var(--foreground); }
+  .admin-card-crop-copy > span { width: 38%; height: .45rem; margin-top: .35rem; border-radius: 999px; background: var(--muted); }
+  .admin-crop-range-ends { display: flex; justify-content: space-between; color: var(--muted-foreground); }
+  .admin-crop-range-ends [data-slot="typography"] { font-size: .62rem; }
 
   .admin-auth-shell { min-height: 100svh; background: radial-gradient(circle at 18% 85%, color-mix(in oklab, var(--accent) 22%, transparent), transparent 23rem), var(--background); }
   .admin-login-page { display: grid; width: min(100% - 2.5rem, 1040px); min-height: 100svh; grid-template-columns: minmax(0, 1fr) minmax(20rem, 25rem); align-items: center; gap: clamp(2.5rem, 8vw, 8rem); margin: 0 auto; padding: 3rem 0; }
@@ -822,6 +833,8 @@
     .admin-media-picker-tools { grid-template-columns: 1fr; }
     .admin-crop-workspace { grid-template-columns: 1fr; }
     .admin-crop-preview { min-height: 16rem; }
+    .admin-card-crop-workspace { align-items: start; overflow: auto; }
+    .admin-card-crop-image { min-height: 0; }
     .admin-lead-row { grid-template-columns: 1fr; gap: .7rem; }
     .admin-lead-row label { max-width: 12rem; }
     .admin-login-page { grid-template-columns: 1fr; gap: 2.5rem; padding: 2rem 0; }

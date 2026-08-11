@@ -162,6 +162,43 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect }: { open: bool
   </Dialog>
 }
 
+function cardCropBox(width: number, height: number, focusX: number, focusY: number, zoom: number) {
+  let cropWidth = width
+  let cropHeight = cropWidth / aspectValue.CARD
+  if (cropHeight > height) {
+    cropHeight = height
+    cropWidth = cropHeight * aspectValue.CARD
+  }
+  cropWidth /= zoom
+  cropHeight /= zoom
+  const roundedWidth = Math.min(width, Math.round(cropWidth))
+  const roundedHeight = Math.min(height, Math.round(cropHeight))
+  return {
+    left: Math.min(width - roundedWidth, Math.max(0, Math.round((width - cropWidth) * (focusX / 100)))),
+    top: Math.min(height - roundedHeight, Math.max(0, Math.round((height - cropHeight) * (focusY / 100)))),
+    width: roundedWidth,
+    height: roundedHeight,
+  }
+}
+
+function CardCropPreview({ src, focusX, focusY, zoom }: { src: string; focusX: number; focusY: number; zoom: number }) {
+  const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null)
+  const crop = dimensions ? cardCropBox(dimensions.width, dimensions.height, focusX, focusY, zoom) : null
+  const imageStyle = crop && dimensions ? {
+    width: `${(dimensions.width / crop.width) * 100}%`,
+    height: `${(dimensions.height / crop.height) * 100}%`,
+    left: `-${(crop.left / crop.width) * 100}%`,
+    top: `-${(crop.top / crop.height) * 100}%`,
+  } : undefined
+
+  return <article className="admin-card-crop-card" aria-label="Предпросмотр карточки на сайте">
+    <div className="admin-crop-preview admin-card-crop-image" data-aspect="CARD">
+      <img src={src} alt="Предпросмотр кадра для карточки" style={imageStyle} onLoad={(event) => setDimensions({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />
+    </div>
+    <div className="admin-card-crop-copy"><Typography variant="caption">Так увидит гость</Typography><Typography variant="bodySmMedium">Карточка товара</Typography><span /></div>
+  </article>
+}
+
 function MediaCardCropDialog({ open, value, onOpenChange, onSelect }: { open: boolean; value: string | null; onOpenChange: (open: boolean) => void; onSelect: (url: string) => void }) {
   const { api } = useAuth()
   const queryClient = useQueryClient()
@@ -189,17 +226,17 @@ function MediaCardCropDialog({ open, value, onOpenChange, onSelect }: { open: bo
   }
 
   return <Dialog open={open} onOpenChange={close}>
-    <DialogContent className="admin-media-picker-dialog">
+    <DialogContent className="admin-media-picker-dialog admin-card-crop-dialog">
       <DialogHeader><DialogTitle>Кадр для карточки</DialogTitle><DialogDescription>Выберите, какая часть фотографии попадёт в карточки меню, кофе и тортов. Исходный файл останется без изменений.</DialogDescription></DialogHeader>
       {assets.isPending ? <Typography className="admin-state-message" variant="bodySm">Ищем фотографию в медиатеке…</Typography> : null}
       {assets.isError ? <Typography className="admin-state-message admin-state-error" variant="bodySm">Не удалось загрузить медиатеку.</Typography> : null}
       {!assets.isPending && !assets.isError && !source ? <Typography className="admin-state-message admin-state-error" variant="bodySm">Этого файла нет в медиатеке. Замените фото на файл из медиатеки, чтобы настроить кадр.</Typography> : null}
-      {source ? <div className="admin-crop-workspace">
-        <div className="admin-crop-preview" data-aspect="CARD"><img src={resolveAdminImagePreview(source.publicUrl)} alt="Предпросмотр карточки" style={{ objectPosition: `${focusX}% ${focusY}%`, transform: `scale(${zoom})`, transformOrigin: `${focusX}% ${focusY}%` }} /></div>
+      {source ? <div className="admin-crop-workspace admin-card-crop-workspace">
+        <CardCropPreview src={resolveAdminImagePreview(source.publicUrl)} focusX={focusX} focusY={focusY} zoom={zoom} />
         <div className="admin-crop-controls">
-          <Typography variant="bodySm" tone="muted">Пропорция совпадает с публичными карточками.</Typography>
+          <Typography variant="bodySm" tone="muted">Предпросмотр обновляется сразу и совпадает с карточкой на сайте.</Typography>
           <label><Typography variant="label">Приближение · {zoom.toFixed(1)}×</Typography><input min="1" max="2" step="0.05" type="range" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} /></label>
-          <div className="admin-crop-axis"><label><Typography variant="label">Фокус по горизонтали</Typography><input min="0" max="100" type="range" value={focusX} onChange={(event) => setFocusX(Number(event.target.value))} /></label><label><Typography variant="label">Фокус по вертикали</Typography><input min="0" max="100" type="range" value={focusY} onChange={(event) => setFocusY(Number(event.target.value))} /></label></div>
+          <div className="admin-crop-axis"><label><Typography variant="label">Фокус по горизонтали</Typography><input min="0" max="100" type="range" value={focusX} onChange={(event) => setFocusX(Number(event.target.value))} /><div className="admin-crop-range-ends"><Typography variant="caption">Влево</Typography><Typography variant="caption">Вправо</Typography></div></label><label><Typography variant="label">Фокус по вертикали</Typography><input min="0" max="100" type="range" value={focusY} onChange={(event) => setFocusY(Number(event.target.value))} /><div className="admin-crop-range-ends"><Typography variant="caption">Вверх</Typography><Typography variant="caption">Вниз</Typography></div></label></div>
         </div>
         {crop.isError ? <Typography className="admin-state-message admin-state-error" variant="bodySm">{crop.error instanceof Error ? crop.error.message : 'Не удалось создать кадр.'}</Typography> : null}
         <DialogFooter><Button type="button" variant="outline" onClick={() => close(false)}>Отмена</Button><Button disabled={crop.isPending} type="button" onClick={() => crop.mutate()}>{crop.isPending ? 'Создаём кадр…' : 'Применить к карточке'}</Button></DialogFooter>
