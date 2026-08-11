@@ -742,7 +742,8 @@
 
   .admin-media-picker-dialog { width: min(68rem, calc(100vw - 2rem)); max-width: none !important; max-height: min(52rem, calc(100svh - 2rem)); grid-template-rows: auto auto minmax(0, 1fr); overflow: hidden; }
   .admin-media-picker-dialog--library { grid-template-rows: auto minmax(0, 1fr); }
-  .admin-media-picker-library { display: grid; min-height: 0; grid-template-rows: auto auto minmax(0, 1fr); gap: .8rem; }
+  .admin-media-picker-library { display: grid; min-height: 0; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: .8rem; }
+  .admin-media-picker-status:empty { display: none; }
   .admin-media-picker-tools { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .55rem; }
   .admin-media-picker-grid { display: grid; min-height: 0; grid-template-columns: repeat(5, minmax(0, 1fr)); align-content: start; gap: .55rem; overflow-y: auto; overscroll-behavior: contain; padding: .1rem; }
   .admin-media-picker-item { display: grid; min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: .75rem; background: var(--card); padding: 0; color: var(--foreground); cursor: pointer; text-align: left; }
