@@ -15,12 +15,18 @@ export type LegalDocumentEntry = {
 }
 
 export type LegalSection = {
-  id: string
   heading: string
-  paragraphs: string[]
-  bullets?: string[]
-  note?: string
-  links?: Array<{ label: string; href: string; external?: boolean }>
+  clauses: Array<{
+    number?: string
+    text: string
+    bullets?: string[]
+    links?: Array<{ label: string; href: string; external?: boolean }>
+  }>
+  tables?: Array<{
+    caption?: string
+    headers: string[]
+    rows: string[][]
+  }>
 }
 
 export const legalDocuments: LegalDocumentEntry[] = [
@@ -35,8 +41,8 @@ export const legalDocuments: LegalDocumentEntry[] = [
   },
   {
     number: '02',
-    title: 'Условия использования сайта',
-    shortTitle: 'Условия сайта',
+    title: 'Пользовательское соглашение',
+    shortTitle: 'Пользовательское соглашение',
     href: '/terms',
     category: 'Основное',
     summary: 'Правила работы публичного сайта, личного кабинета и внешних сервисов.',
@@ -107,7 +113,7 @@ export const legalDocuments: LegalDocumentEntry[] = [
   },
   {
     number: '10',
-    title: 'Правила подарочных сертификатов',
+    title: 'Правила использования подарочных сертификатов',
     shortTitle: 'Сертификаты',
     href: '/certificate-rules',
     category: 'Покупки и программы',
@@ -116,7 +122,7 @@ export const legalDocuments: LegalDocumentEntry[] = [
   },
   {
     number: '11',
-    title: 'Общие правила акций',
+    title: 'Правила проведения акций',
     shortTitle: 'Акции',
     href: '/promotion-rules',
     category: 'Покупки и программы',

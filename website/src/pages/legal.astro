@@ -1,46 +1,27 @@
 ---
 import PageShell from '../layouts/PageShell.astro'
-import { LEGAL_EFFECTIVE_DATE, LEGAL_SUPPORT_EMAIL, legalDocuments, type LegalDocumentCategory } from '../lib/legal-documents'
-
-const categories: LegalDocumentCategory[] = ['Основное', 'Персональные данные', 'Покупки и программы']
+import { legalDocuments } from '../lib/legal-documents'
 ---
 
-<PageShell title="Документы" description="Правила, условия и сведения об организациях Чашки кофе." active="about">
-  <header class="legal-index-hero">
-    <div><p>Правила и реквизиты</p><h1>Всё важное — без мелкого шрифта.</h1></div>
-    <aside><span>Актуальная редакция</span><strong>{LEGAL_EFFECTIVE_DATE}</strong><a href={`mailto:${LEGAL_SUPPORT_EMAIL}`}>{LEGAL_SUPPORT_EMAIL}</a></aside>
-  </header>
-
-  <section class="legal-index-intro" aria-labelledby="legal-index-title">
-    <p>Юридический раздел</p>
-    <div><h2 id="legal-index-title">Документы сайта «Чашка кофе»</h2><span>Здесь собраны условия использования сайта, покупки кофе, обработки данных, сертификатов и внешней программы лояльности. Документы сгруппированы по реальному пользовательскому сценарию.</span></div>
-  </section>
-
-  <section class="legal-index-list" aria-label="Список документов">
-    {categories.map((category) => (
-      <section>
-        <h2>{category}</h2>
-        <div>{legalDocuments.filter((document) => document.category === category).map((document) => (
-          <a href={document.href}>
-            <span>{document.number}</span>
-            <div><strong>{document.title}</strong><p>{document.summary}</p></div>
-            <i aria-hidden="true">↗</i>
-          </a>
-        ))}</div>
-      </section>
-    ))}
-  </section>
-
-  <section class="legal-index-contact">
-    <p>Не нашли ответ?</p><h2>Напишите — разберёмся по существу.</h2><a href={`mailto:${LEGAL_SUPPORT_EMAIL}`}>{LEGAL_SUPPORT_EMAIL}<span aria-hidden="true">↗</span></a>
-  </section>
+<PageShell title="Правила и реквизиты" description="Правила, условия и сведения об организациях Чашки кофе." active="about">
+  <main class="legal-index">
+    <h1>Правила и реквизиты</h1>
+    <nav aria-label="Список юридических документов">
+      {legalDocuments.map((document) => (
+        <a href={document.href}><span>{document.title}</span><span aria-hidden="true">→</span></a>
+      ))}
+    </nav>
+  </main>
 </PageShell>
 
 <style>
-  .legal-index-hero{display:grid;min-height:clamp(620px,62vw,820px);padding:clamp(42px,6.6vw,110px);grid-template-columns:minmax(0,1.25fr) minmax(260px,.4fr);gap:clamp(48px,9vw,150px);align-items:end;border-radius:var(--radius);background:var(--moss);color:#fff;overflow:hidden}.legal-index-hero>div>p{margin:0 0 25px;color:var(--lime);font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.legal-index-hero h1{max-width:930px;margin:0;color:#fff;font-size:clamp(58px,7.5vw,124px);line-height:.82;letter-spacing:-.1em}.legal-index-hero aside{display:grid;padding-top:20px;border-top:1px solid rgba(255,255,255,.2);gap:8px}.legal-index-hero aside span{color:#9eb0a4;font-size:8px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.legal-index-hero aside strong{font-size:13px}.legal-index-hero aside a{margin-top:17px;color:var(--lime);font-size:10px;font-weight:750;text-underline-offset:3px}
-  .legal-index-intro{display:grid;padding:clamp(84px,10vw,155px) var(--content-gutter);grid-template-columns:minmax(150px,.35fr) minmax(0,1fr);gap:clamp(40px,8vw,130px)}.legal-index-intro>p{margin:8px 0 0;color:#6f902b;font-size:9px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.legal-index-intro h2{max-width:800px;margin:0;color:var(--moss);font-size:clamp(42px,5.5vw,86px)}.legal-index-intro span{display:block;max-width:680px;margin-top:28px;color:var(--muted);font-size:15px;line-height:1.7}
-  .legal-index-list{padding:0 var(--content-gutter) clamp(100px,12vw,180px)}.legal-index-list>section{display:grid;padding:48px 0 72px;grid-template-columns:minmax(190px,.4fr) minmax(0,1fr);gap:clamp(40px,8vw,120px);border-top:1px solid var(--line)}.legal-index-list h2{margin:2px 0 0;color:#6f902b;font-size:11px;letter-spacing:.06em;text-transform:uppercase}.legal-index-list>section>div{display:grid}.legal-index-list a{display:grid;min-height:112px;padding:23px 4px;grid-template-columns:45px 1fr auto;align-items:center;gap:18px;border-bottom:1px solid var(--line);color:var(--moss);text-decoration:none;transition:padding .2s ease,color .2s ease}.legal-index-list a:first-child{border-top:1px solid var(--line)}.legal-index-list a>span{align-self:start;padding-top:5px;color:#78942f;font-size:9px;font-weight:850}.legal-index-list a strong{display:block;font-size:clamp(19px,2.1vw,28px);line-height:1.05;letter-spacing:-.045em}.legal-index-list a p{max-width:620px;margin:10px 0 0;color:var(--muted);font-size:11px;line-height:1.55}.legal-index-list a i{font-size:20px;font-style:normal}.legal-index-list a:hover{padding-right:15px;padding-left:15px;color:#6f902b}
-  .legal-index-contact{display:grid;margin:0 0 14px;padding:clamp(60px,8vw,118px);grid-template-columns:minmax(140px,.3fr) minmax(0,1fr);gap:clamp(32px,8vw,120px);border-radius:var(--radius);background:var(--lime);color:var(--moss)}.legal-index-contact>p{margin:8px 0 0;font-size:9px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.legal-index-contact h2{max-width:800px;margin:0;font-size:clamp(42px,5vw,78px)}.legal-index-contact a{display:inline-flex;grid-column:2;margin-top:10px;align-items:center;gap:14px;color:var(--moss);font-size:12px;font-weight:850;text-underline-offset:4px}.legal-index-contact a span{font-size:18px}
-  @media(max-width:820px){.legal-index-hero{min-height:690px;margin:0 var(--mobile-gutter);padding:44px 24px;grid-template-columns:1fr;align-content:end}.legal-index-hero h1{font-size:clamp(54px,15vw,76px)}.legal-index-intro{grid-template-columns:1fr;padding:76px var(--mobile-gutter);gap:24px}.legal-index-list{padding-right:var(--mobile-gutter);padding-left:var(--mobile-gutter)}.legal-index-list>section{grid-template-columns:1fr;gap:30px}.legal-index-list a{grid-template-columns:35px 1fr auto}.legal-index-contact{margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter);padding:55px 24px;grid-template-columns:1fr;gap:19px}.legal-index-contact a{grid-column:1}.legal-index-contact h2{font-size:42px}}
-  @media(prefers-reduced-motion:reduce){.legal-index-list a{transition:none}}
+  .legal-index{width:min(100% - (var(--content-gutter) * 2),960px);margin:0 auto;padding:clamp(72px,8vw,118px) 0 clamp(100px,11vw,160px)}
+  .legal-index h1{max-width:880px;margin:0 0 clamp(42px,5vw,68px);color:var(--moss);font-size:clamp(48px,6vw,82px);line-height:.96;letter-spacing:-.07em}
+  .legal-index nav{display:grid;border-top:1px solid var(--line)}
+  .legal-index a{display:grid;min-height:76px;padding:17px 18px;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:24px;border-bottom:1px solid var(--line);color:var(--ink);font-size:14px;font-weight:650;line-height:1.45;text-decoration:none;transition:background-color .18s ease,color .18s ease}
+  .legal-index a:hover{background:var(--moss-soft);color:var(--moss)}
+  .legal-index a:focus-visible{outline:3px solid var(--lime);outline-offset:2px}
+  .legal-index a span:last-child{color:#6f902b;font-size:19px}
+  @media(max-width:700px){.legal-index{width:auto;margin:0 var(--mobile-gutter);padding-top:56px}.legal-index h1{font-size:46px}.legal-index a{min-height:70px;padding:15px 4px;font-size:13px}}
+  @media(prefers-reduced-motion:reduce){.legal-index a{transition:none}}
 </style>
