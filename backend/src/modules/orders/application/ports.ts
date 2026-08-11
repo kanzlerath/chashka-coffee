@@ -1,4 +1,4 @@
-import type { Order, OrderCustomer, OrderStatus, PaymentStatus, PickupLocation } from '@chashka-coffee/contracts'
+import type { Order, OrderCustomer, OrderStatus, PaymentStatus, PickupLocation, PickupLocationWithCoordinates } from '@chashka-coffee/contracts'
 
 export type OrderableVariant = {
   id: string
@@ -38,7 +38,7 @@ export type CreateOrderRecord = {
 
 export type OrderRepository = {
   findVariants(ids: string[]): Promise<OrderableVariant[]>
-  listPickupLocations(): Promise<PickupLocation[]>
+  listPickupLocations(): Promise<PickupLocationWithCoordinates[]>
   findPickupLocation(id: string): Promise<PickupLocation | null>
   findByIdempotencyKey(key: string): Promise<Order | null>
   findById(id: string): Promise<Order | null>

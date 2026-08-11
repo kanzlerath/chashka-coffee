@@ -83,6 +83,8 @@ maybeDescribe('online coffee order API integration', () => {
         city: 'Новосибирск',
         address: 'Красный проспект, 25',
         phone: '+7 383 000-00-00',
+        latitude: 55.03,
+        longitude: 82.92,
         coffeePickupEnabled: true,
         openingHours: {
           create: Array.from({ length: 7 }, (_, dayOfWeek) => ({
@@ -112,7 +114,7 @@ maybeDescribe('online coffee order API integration', () => {
   test('quotes, creates idempotently, and reads an order through its private token', async () => {
     const locations = await app.request('/api/store/pickup-locations')
     expect(locations.status).toBe(200)
-    expect((await locations.json()).locations).toHaveLength(1)
+    expect((await locations.json()).locations).toMatchObject([{ latitude: 55.03, longitude: 82.92 }])
 
     const quote = await app.request('/api/store/quote', json({ lines: [{ variantId, quantity: 2 }] }))
     expect(quote.status).toBe(200)

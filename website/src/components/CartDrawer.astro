@@ -28,7 +28,7 @@
   const total = dialog?.querySelector<HTMLElement>('[data-cart-total]')
   const money = (kopecks: number) => `${(kopecks / 100).toLocaleString('ru-RU')} ₽`
   const removalDelayMs = 5_000
-  let pendingRemoval: { variantId: string; expiresAt: number; intervalId: number } | null = null
+  let pendingRemoval: { variantId: string; expiresAt: number; timeoutId: number; countdownIntervalId: number } | null = null
 
   function element<K extends keyof HTMLElementTagNameMap>(tag: K, className?: string) {
     const node = document.createElement(tag)
@@ -48,23 +48,26 @@
 
   function clearPendingRemoval() {
     if (!pendingRemoval) return
-    window.clearInterval(pendingRemoval.intervalId)
+    window.clearTimeout(pendingRemoval.timeoutId)
+    window.clearInterval(pendingRemoval.countdownIntervalId)
     pendingRemoval = null
   }
 
   function scheduleRemoval(variantId: string) {
     clearPendingRemoval()
     const expiresAt = Date.now() + removalDelayMs
-    const intervalId = window.setInterval(() => {
-      if (!pendingRemoval || Date.now() < pendingRemoval.expiresAt) {
-        render()
-        return
-      }
-      const pendingVariantId = pendingRemoval.variantId
+    const updateCountdown = () => {
+      if (!pendingRemoval) return
+      const countdown = linesRoot?.querySelector<HTMLElement>(`[data-cart-removal-countdown="${variantId}"]`)
+      if (countdown) countdown.textContent = String(Math.max(1, Math.ceil((expiresAt - Date.now()) / 1000)))
+    }
+    const timeoutId = window.setTimeout(() => {
+      if (!pendingRemoval || pendingRemoval.variantId !== variantId) return
       clearPendingRemoval()
-      removeCartItem(pendingVariantId)
-    }, 250)
-    pendingRemoval = { variantId, expiresAt, intervalId }
+      removeCartItem(variantId)
+    }, removalDelayMs)
+    const countdownIntervalId = window.setInterval(updateCountdown, 250)
+    pendingRemoval = { variantId, expiresAt, timeoutId, countdownIntervalId }
     render()
   }
 
@@ -106,28 +109,27 @@
       const plus = element('button')
       plus.type = 'button'; plus.textContent = '+'; plus.disabled = isPendingRemoval || line.quantity >= 20; plus.setAttribute('aria-label', `Увеличить количество ${line.productName}`)
       plus.addEventListener('click', () => updateCartQuantity(line.variantId, line.quantity + 1))
-      controls.append(minus, quantity, plus)
-      copy.append(title, variant, controls)
-
-      const aside = element('div', 'cart-line-aside')
-      const price = element('strong'); price.textContent = money(line.unitPriceKopecks * line.quantity)
       if (isPendingRemoval && pendingRemoval) {
         const undo = element('button', 'cart-line-undo')
         undo.type = 'button'
-        undo.style.setProperty('--cart-removal-progress', `${Math.max(0, ((pendingRemoval.expiresAt - Date.now()) / removalDelayMs) * 100)}%`)
         undo.setAttribute('aria-label', `Вернуть ${line.productName}`)
-        const undoLabel = element('span'); undoLabel.textContent = `Вернуть ${Math.max(1, Math.ceil((pendingRemoval.expiresAt - Date.now()) / 1000))}`
+        const undoLabel = element('span'); undoLabel.dataset.cartRemovalCountdown = line.variantId; undoLabel.textContent = String(Math.max(1, Math.ceil((pendingRemoval.expiresAt - Date.now()) / 1000)))
         undo.append(actionIcon('M7 11 4 14l3 3M4 14h10a5 5 0 1 0-5-5'), undoLabel)
         undo.addEventListener('click', restoreRemoval)
-        aside.append(price, undo)
+        controls.append(minus, quantity, plus, undo)
       } else {
         const remove = element('button', 'cart-line-remove')
         remove.type = 'button'
         remove.setAttribute('aria-label', `Убрать ${line.productName} из корзины`)
         remove.append(actionIcon('M4 7h16M10 11v6m4-6v6M9 7l1-2h4l1 2m-9 0 1 13h10l1-13'))
         remove.addEventListener('click', () => scheduleRemoval(line.variantId))
-        aside.append(price, remove)
+        controls.append(minus, quantity, plus, remove)
       }
+      copy.append(title, variant, controls)
+
+      const aside = element('div', 'cart-line-aside')
+      const price = element('strong'); price.textContent = money(line.unitPriceKopecks * line.quantity)
+      aside.append(price)
       article.append(media, copy, aside)
       linesRoot?.append(article)
     }
@@ -144,7 +146,7 @@
 </script>
 
 <style is:global>
-  .cart-drawer{width:min(580px,100vw);max-width:none;height:100dvh;min-height:100svh;max-height:none;margin:0 0 0 auto;padding:0;border:0;background:#f3efe8;color:#1f3b2e;box-shadow:-24px 0 70px rgba(17,35,27,.2)}.cart-drawer::backdrop{background:rgba(15,31,24,.5);backdrop-filter:blur(5px)}.cart-drawer[open]{animation:cart-in .34s cubic-bezier(.22,1,.36,1)}.cart-drawer-shell{display:grid;height:100%;grid-template-rows:auto 1fr auto;background:#fcfbf8}.cart-drawer header{display:flex;align-items:center;justify-content:space-between;padding:30px clamp(24px,5vw,42px) 24px;border-bottom:1px solid #e5e0d8}.cart-drawer h2{margin:0;font-size:42px;line-height:.9;letter-spacing:-.06em}.cart-drawer header button{display:grid;width:42px;height:42px;padding:0;border:1px solid #dcd7cf;border-radius:50%;place-items:center;background:transparent;color:#1f3b2e;cursor:pointer}.cart-drawer header svg{width:18px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-width:1.7}.cart-drawer-lines{overflow:auto;padding:10px clamp(24px,5vw,42px)}.cart-line{display:grid;padding:20px 0;grid-template-columns:88px minmax(0,1fr) auto;gap:17px;border-bottom:1px solid #e5e0d8}.cart-line-media{overflow:hidden;width:88px;height:98px;border-radius:18px;background:#eee8df}.cart-line-media img{width:100%;height:100%;object-fit:cover}.cart-line-copy{display:flex;min-width:0;align-items:flex-start;flex-direction:column}.cart-line-copy>a{color:#1f3b2e;font-size:17px;font-weight:750;line-height:1.1;text-decoration:none}.cart-line-copy>span{margin-top:7px;color:#777069;font-size:10px}.cart-line-controls{display:grid;margin-top:auto;grid-template-columns:32px 30px 32px;align-items:center;border:1px solid #dcd7cf;border-radius:14px}.cart-line-controls button{height:31px;padding:0;border:0;background:transparent;color:#1f3b2e;cursor:pointer;font-size:17px}.cart-line-controls b{text-align:center;font-size:11px}.cart-line-aside{display:flex;align-items:flex-end;flex-direction:column}.cart-line-aside strong{white-space:nowrap;font-size:15px}.cart-line-aside button{margin-top:auto;padding:6px 0;border:0;background:transparent;color:#8a4038;cursor:pointer;font-size:9px;text-decoration:underline;text-underline-offset:3px}.cart-drawer footer{padding:24px clamp(24px,5vw,42px) 30px;border-top:1px solid #e5e0d8;background:#f3efe8}.cart-drawer footer[hidden],.cart-drawer-empty[hidden]{display:none}.cart-drawer footer>div{display:flex;align-items:end;justify-content:space-between;gap:20px}.cart-drawer footer span{color:#4f4a43;font-size:16px;font-weight:750;letter-spacing:-.025em}.cart-drawer footer strong{font-size:31px;letter-spacing:-.05em}.cart-drawer footer a,.cart-drawer-empty a{display:flex;min-height:54px;align-items:center;justify-content:center;border-radius:16px;background:#1f3b2e;color:#fff;font-size:11px;font-weight:800;text-decoration:none}.cart-drawer-empty{align-self:center;max-width:390px;padding:40px;justify-self:center;text-align:center}.cart-drawer-empty>span{display:grid;width:66px;height:66px;margin:0 auto 24px;border-radius:21px;place-items:center;background:#e4eadb;color:#1f3b2e;font-size:24px;font-weight:800}.cart-drawer-empty h3{margin:0;font-size:34px;letter-spacing:-.05em}.cart-drawer-empty p{margin:14px 0 24px;color:#716a63;font-size:12px;line-height:1.6}
+  .cart-drawer{width:min(580px,100vw);max-width:none;height:100dvh;min-height:100svh;max-height:none;margin:0 0 0 auto;padding:0;border:0;background:#f3efe8;color:#1f3b2e;box-shadow:-24px 0 70px rgba(17,35,27,.2)}.cart-drawer::backdrop{background:rgba(15,31,24,.5);backdrop-filter:blur(5px)}.cart-drawer[open]{animation:cart-in .34s cubic-bezier(.22,1,.36,1)}.cart-drawer-shell{display:grid;height:100%;grid-template-rows:auto 1fr auto;background:#fcfbf8}.cart-drawer header{display:flex;align-items:center;justify-content:space-between;padding:30px clamp(24px,5vw,42px) 24px;border-bottom:1px solid #e5e0d8}.cart-drawer h2{margin:0;font-size:42px;line-height:.9;letter-spacing:-.06em}.cart-drawer header button{display:grid;width:42px;height:42px;padding:0;border:1px solid #dcd7cf;border-radius:50%;place-items:center;background:transparent;color:#1f3b2e;cursor:pointer}.cart-drawer header svg{width:18px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-width:1.7}.cart-drawer-lines{overflow:auto;padding:10px clamp(24px,5vw,42px)}.cart-line{display:grid;padding:20px 0;grid-template-columns:88px minmax(0,1fr) auto;gap:17px;border-bottom:1px solid #e5e0d8}.cart-line-media{overflow:hidden;width:88px;height:98px;border-radius:18px;background:#eee8df}.cart-line-media img{width:100%;height:100%;object-fit:cover}.cart-line-copy{display:flex;min-width:0;align-items:flex-start;flex-direction:column}.cart-line-copy>a{color:#1f3b2e;font-size:17px;font-weight:750;line-height:1.1;text-decoration:none}.cart-line-copy>span{margin-top:7px;color:#777069;font-size:10px}.cart-line-controls{display:grid;margin-top:auto;grid-template-columns:32px 30px 32px 34px;align-items:center;border:1px solid #dcd7cf;border-radius:14px}.cart-line-controls button{height:31px;padding:0;border:0;background:transparent;color:#1f3b2e;cursor:pointer;font-size:17px}.cart-line-controls b{text-align:center;font-size:11px}.cart-line-aside{display:flex;align-items:flex-end;flex-direction:column}.cart-line-aside strong{white-space:nowrap;font-size:15px}.cart-drawer footer{padding:24px clamp(24px,5vw,42px) 30px;border-top:1px solid #e5e0d8;background:#f3efe8}.cart-drawer footer[hidden],.cart-drawer-empty[hidden]{display:none}.cart-drawer footer>div{display:flex;align-items:end;justify-content:space-between;gap:20px}.cart-drawer footer span{color:#4f4a43;font-size:16px;font-weight:750;letter-spacing:-.025em}.cart-drawer footer strong{font-size:31px;letter-spacing:-.05em}.cart-drawer footer a,.cart-drawer-empty a{display:flex;min-height:54px;align-items:center;justify-content:center;border-radius:16px;background:#1f3b2e;color:#fff;font-size:11px;font-weight:800;text-decoration:none}.cart-drawer-empty{align-self:center;max-width:390px;padding:40px;justify-self:center;text-align:center}.cart-drawer-empty>span{display:grid;width:66px;height:66px;margin:0 auto 24px;border-radius:21px;place-items:center;background:#e4eadb;color:#1f3b2e;font-size:24px;font-weight:800}.cart-drawer-empty h3{margin:0;font-size:34px;letter-spacing:-.05em}.cart-drawer-empty p{margin:14px 0 24px;color:#716a63;font-size:12px;line-height:1.6}
   @keyframes cart-in{from{opacity:.7;transform:translateX(44px)}to{opacity:1;transform:none}}@keyframes cart-fade-in{from{opacity:0}to{opacity:1}}@media(max-width:620px){.cart-drawer{width:100vw}.cart-drawer[open]{animation:cart-fade-in .24s ease-out}.cart-drawer header{padding:22px 20px 18px}.cart-drawer h2{font-size:36px}.cart-drawer-lines{padding:6px 20px}.cart-line{grid-template-columns:74px minmax(0,1fr);gap:13px}.cart-line-media{width:74px;height:84px}.cart-line-aside{grid-column:2;align-items:center;justify-content:space-between;margin-top:-22px;flex-direction:row}.cart-line-aside button{margin:0}.cart-drawer footer{padding:20px 20px calc(22px + env(safe-area-inset-bottom))}}@media(prefers-reduced-motion:reduce){.cart-drawer[open]{animation-duration:.01ms}}
 </style>
 
@@ -157,12 +159,13 @@
   body.public-site .cart-drawer footer[hidden]{display:none}
   body.public-site .cart-drawer .cart-drawer-total{display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding-bottom:18px;border-bottom:1px solid var(--line)}
   body.public-site .cart-drawer .cart-drawer-total span{font-size:17px}.public-site .cart-drawer .cart-drawer-total strong{font-size:34px;line-height:1}
-  body.public-site .cart-drawer .cart-line-aside{gap:13px}.public-site .cart-drawer .cart-line-aside :is(.cart-line-remove,.cart-line-undo){display:inline-flex;min-height:34px;margin:0;padding:0;border:0;align-items:center;justify-content:center;cursor:pointer;font:800 9px/1 Montserrat,Arial,sans-serif;text-decoration:none;transition:background .2s ease,color .2s ease,transform .2s ease}
-  body.public-site .cart-drawer .cart-line-remove{width:34px;border:1px solid var(--line)!important;border-radius:50%!important;background:var(--paper)!important;color:#8a4038}.public-site .cart-drawer .cart-line-remove svg{width:15px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.7}.public-site .cart-drawer .cart-line-remove:hover{border-color:#c98b82!important;background:#fff1ef!important;transform:translateY(-1px)}
-  body.public-site .cart-drawer .cart-line-undo{position:relative;min-width:84px;padding:0 11px!important;border-radius:var(--radius)!important;background:conic-gradient(var(--lime) var(--cart-removal-progress),#dfe5d8 0)!important;color:var(--moss)!important;font-size:9px;isolation:isolate;white-space:nowrap}.public-site .cart-drawer .cart-line-undo:before{position:absolute;z-index:0;inset:2px;border-radius:inherit;background:var(--paper);content:''}.public-site .cart-drawer .cart-line-undo :is(svg,span){position:relative;z-index:1}.public-site .cart-drawer .cart-line-undo svg{width:14px;margin-right:5px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
-  body.public-site .cart-drawer .cart-line.is-removal-pending{opacity:.72}.public-site .cart-drawer .cart-line.is-removal-pending .cart-line-controls{pointer-events:none}.public-site .cart-drawer .cart-line-remove:focus-visible,.public-site .cart-drawer .cart-line-undo:focus-visible{outline:3px solid var(--lime);outline-offset:3px}
+  @property --cart-removal-progress{syntax:'<percentage>';inherits:false;initial-value:100%}
+  body.public-site .cart-drawer .cart-line-aside{gap:13px}.public-site .cart-drawer .cart-line-controls :is(.cart-line-remove,.cart-line-undo){display:inline-flex;min-height:34px;margin:0;padding:0;border:0;align-items:center;justify-content:center;cursor:pointer;font:800 9px/1 Montserrat,Arial,sans-serif;text-decoration:none;transition:background .2s ease,color .2s ease,transform .2s ease}
+  body.public-site .cart-drawer .cart-line-remove{width:34px;border-left:1px solid var(--line)!important;color:#8a4038}.public-site .cart-drawer .cart-line-remove svg{width:15px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.7}.public-site .cart-drawer .cart-line-remove:hover{background:#fff1ef!important;transform:none}
+  body.public-site .cart-drawer .cart-line-undo{position:relative;width:34px;border-left:1px solid var(--line)!important;background:conic-gradient(var(--lime) var(--cart-removal-progress),#dfe5d8 0)!important;color:var(--moss)!important;isolation:isolate;animation:cart-removal-countdown 5s linear forwards}.public-site .cart-drawer .cart-line-undo:before{position:absolute;z-index:0;inset:2px;background:var(--paper);content:''}.public-site .cart-drawer .cart-line-undo :is(svg,span){position:relative;z-index:1}.public-site .cart-drawer .cart-line-undo svg{width:13px;margin-right:1px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}.public-site .cart-drawer .cart-line-undo span{font-size:8px}
+  body.public-site .cart-drawer .cart-line.is-removal-pending{opacity:.78}.public-site .cart-drawer .cart-line.is-removal-pending :is(.cart-line-controls button:not(.cart-line-undo),.cart-line-media,.cart-line-copy>a){pointer-events:none}.public-site .cart-drawer .cart-line-controls :is(.cart-line-remove,.cart-line-undo):focus-visible{outline:3px solid var(--lime);outline-offset:3px}@keyframes cart-removal-countdown{from{--cart-removal-progress:100%}to{--cart-removal-progress:0%}}
   body.public-site .cart-drawer :is(footer a,.cart-drawer-empty a){border-radius:var(--radius);background:var(--moss);transition:background .2s ease,transform .2s ease}
   body.public-site .cart-drawer :is(footer a,.cart-drawer-empty a):hover{background:#294b3a;transform:translateY(-2px)}
   body.public-site .cart-drawer :is(footer a,.cart-drawer-empty a):focus-visible{outline:3px solid var(--lime);outline-offset:3px}
-  @media(max-width:620px){body.public-site .cart-drawer footer{gap:16px;padding:20px 20px calc(22px + env(safe-area-inset-bottom))}.public-site .cart-drawer .cart-drawer-total{padding-bottom:15px}.public-site .cart-drawer .cart-line-aside{gap:10px}.public-site .cart-drawer .cart-line-remove{width:34px;height:34px}.public-site .cart-drawer .cart-line-undo{min-width:82px}}
+  @media(max-width:620px){body.public-site .cart-drawer footer{gap:16px;padding:20px 20px calc(22px + env(safe-area-inset-bottom))}.public-site .cart-drawer .cart-drawer-total{padding-bottom:15px}.public-site .cart-drawer .cart-line-aside{gap:10px}.public-site .cart-drawer .cart-line-remove,.public-site .cart-drawer .cart-line-undo{width:34px;height:34px}}
 </style>

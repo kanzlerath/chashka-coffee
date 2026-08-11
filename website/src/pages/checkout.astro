@@ -1,9 +1,10 @@
 ---
 import PageShell from '../layouts/PageShell.astro'
+const yandexMapsApiKey = import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY ?? ''
 ---
 <PageShell title="Оформление заказа" description="Самовывоз кофе собственной обжарки." active="coffee" noindex>
   <section class="checkout-page" aria-labelledby="checkout-title">
-    <header class="checkout-heading"><h1 id="checkout-title">Оформление заказа</h1><span>Выберите ресторан, оставьте контакты и проверьте заказ перед оплатой.</span></header>
+    <header class="checkout-heading"><h1 id="checkout-title">Оформление заказа</h1></header>
     <div class="checkout-loading" data-checkout-loading><span aria-hidden="true"></span>Проверяем корзину…</div>
     <section class="checkout-empty" data-checkout-empty hidden><h2>Корзина пуста</h2><p>Добавьте кофе и вернитесь к оформлению.</p><a href="/coffee#catalog">Перейти к кофе</a></section>
     <form class="checkout-layout" data-checkout-form hidden novalidate>
@@ -13,7 +14,13 @@ import PageShell from '../layouts/PageShell.astro'
         <div class="checkout-total"><span>Итого</span><strong data-checkout-total>—</strong></div>
       </div>
       <div class="checkout-details">
-        <fieldset class="checkout-fieldset checkout-pickup"><legend>Самовывоз</legend><div data-pickup-locations></div></fieldset>
+        <fieldset class="checkout-fieldset checkout-pickup"><legend>Самовывоз</legend>
+          <div class="checkout-pickup-map" data-pickup-map data-api-key={yandexMapsApiKey} hidden>
+            <div data-pickup-map-canvas></div>
+            <p data-pickup-map-status>Загружаем карту…</p>
+          </div>
+          <div data-pickup-locations></div>
+        </fieldset>
         <fieldset class="checkout-fieldset"><legend>Контакты</legend>
           <label>Имя<input name="name" autocomplete="name" maxlength="180" required placeholder="Как к вам обращаться" /></label>
           <label>Телефон<input name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="+7 (999) 000-00-00" /></label>
@@ -29,7 +36,7 @@ import PageShell from '../layouts/PageShell.astro'
 </PageShell>
 
 <script>
-  import type { OrderQuoteResponse, PickupLocation } from '@chashka-coffee/contracts'
+  import type { OrderQuoteResponse, PickupLocationWithCoordinates } from '@chashka-coffee/contracts'
   import { clearCart, getCart } from '../lib/cart-store'
   import { attachRussianPhoneMask, formatRussianPhone } from '../lib/contact-fields'
   import { customerAccountApi } from '../lib/customer-account-api'
@@ -40,12 +47,17 @@ import PageShell from '../layouts/PageShell.astro'
   const form = document.querySelector<HTMLFormElement>('[data-checkout-form]')
   const linesRoot = document.querySelector<HTMLElement>('[data-checkout-lines]')
   const locationsRoot = document.querySelector<HTMLElement>('[data-pickup-locations]')
+  const pickupMapRoot = document.querySelector<HTMLElement>('[data-pickup-map]')
+  const pickupMapCanvas = document.querySelector<HTMLElement>('[data-pickup-map-canvas]')
+  const pickupMapStatus = document.querySelector<HTMLElement>('[data-pickup-map-status]')
   const total = document.querySelector<HTMLElement>('[data-checkout-total]')
   const errorNode = document.querySelector<HTMLElement>('[data-checkout-error]')
   const submit = form?.querySelector<HTMLButtonElement>('[type="submit"]')
   const money = (kopecks: number) => `${(kopecks / 100).toLocaleString('ru-RU')} ₽`
   let quote: OrderQuoteResponse | null = null
   let idempotencyKey = sessionStorage.getItem('chashka_checkout_idempotency') ?? crypto.randomUUID()
+  let pickupMap: { geoObjects: { add(object: unknown): void }; setBounds(bounds: number[][], options?: unknown): void; destroy(): void } | null = null
+  let pickupMarkers = new Map<string, { options: { set(options: unknown): void } }>()
   sessionStorage.setItem('chashka_checkout_idempotency', idempotencyKey)
 
   const checkoutPhoneInput = form?.elements.namedItem('phone')
@@ -75,7 +87,7 @@ import PageShell from '../layouts/PageShell.astro'
     if (total) total.textContent = money(nextQuote.totalKopecks)
   }
 
-  function renderLocations(locations: PickupLocation[]) {
+  function renderLocations(locations: PickupLocationWithCoordinates[]) {
     locationsRoot?.replaceChildren()
     for (const [index, location] of locations.entries()) {
       const label = document.createElement('label')
@@ -86,7 +98,72 @@ import PageShell from '../layouts/PageShell.astro'
       const hours = document.createElement('small'); hours.textContent = location.openingHoursLabel
       copy.append(name, address, hours)
       label.append(input, copy)
+      input.addEventListener('change', () => syncPickupSelection(location.id))
       locationsRoot?.append(label)
+    }
+    void renderPickupMap(locations)
+  }
+
+  function syncPickupSelection(locationId: string) {
+    locationsRoot?.querySelectorAll<HTMLLabelElement>('label').forEach((label) => {
+      label.classList.toggle('is-selected', label.querySelector<HTMLInputElement>('input')?.value === locationId)
+    })
+    pickupMarkers.forEach((marker, markerId) => marker.options.set({ preset: markerId === locationId ? 'islands#darkGreenCoffeeIcon' : 'islands#greenCoffeeIcon' }))
+  }
+
+  function loadYandexMaps(apiKey: string) {
+    if (window.ymaps) return Promise.resolve()
+    return new Promise<void>((resolve, reject) => {
+      const existing = document.querySelector<HTMLScriptElement>('[data-yandex-maps-api]')
+      if (existing) {
+        existing.addEventListener('load', () => resolve(), { once: true })
+        existing.addEventListener('error', () => reject(new Error('MAP_LOAD_FAILED')), { once: true })
+        return
+      }
+      const script = document.createElement('script')
+      script.dataset.yandexMapsApi = 'true'
+      script.src = `https://api-maps.yandex.ru/2.1/?apikey=${encodeURIComponent(apiKey)}&lang=ru_RU`
+      script.async = true
+      script.onload = () => resolve()
+      script.onerror = () => reject(new Error('MAP_LOAD_FAILED'))
+      document.head.append(script)
+    })
+  }
+
+  async function renderPickupMap(locations: PickupLocationWithCoordinates[]) {
+    const apiKey = pickupMapRoot?.dataset.apiKey ?? ''
+    const points = locations.filter((location) => location.latitude !== null && location.longitude !== null)
+    if (!apiKey || !pickupMapRoot || !pickupMapCanvas || points.length === 0) return
+    pickupMapRoot.hidden = false
+    pickupMapStatus?.removeAttribute('hidden')
+    if (pickupMap) pickupMap.destroy()
+    pickupMap = null
+    pickupMarkers = new Map()
+    try {
+      await loadYandexMaps(apiKey)
+      window.ymaps?.ready(() => {
+        if (!window.ymaps || !pickupMapCanvas) return
+        const latitudes = points.map((location) => location.latitude!)
+        const longitudes = points.map((location) => location.longitude!)
+        const center: [number, number] = [(Math.min(...latitudes) + Math.max(...latitudes)) / 2, (Math.min(...longitudes) + Math.max(...longitudes)) / 2]
+        pickupMap = new window.ymaps.Map(pickupMapCanvas, { center, zoom: points.length === 1 ? 15 : 11, controls: ['zoomControl'] }, { suppressMapOpenBlock: true })
+        for (const location of points) {
+          const marker = new window.ymaps.Placemark([location.latitude!, location.longitude!], { balloonContentHeader: location.name.replace(/^Чашка кофе\s*[—-]\s*/i, ''), balloonContentBody: `${location.city}, ${location.address}` }, { preset: 'islands#greenCoffeeIcon' }) as { events: { add(event: string, listener: () => void): void }; options: { set(options: unknown): void } }
+          marker.events.add('click', () => {
+            const input = locationsRoot?.querySelector<HTMLInputElement>(`input[value="${location.id}"]`)
+            if (!input) return
+            input.checked = true
+            input.dispatchEvent(new Event('change', { bubbles: true }))
+          })
+          pickupMarkers.set(location.id, marker)
+          pickupMap.geoObjects.add(marker)
+        }
+        if (points.length > 1) pickupMap.setBounds([[Math.min(...latitudes), Math.min(...longitudes)], [Math.max(...latitudes), Math.max(...longitudes)]], { checkZoomRange: true, zoomMargin: 34, maxZoom: 13 })
+        syncPickupSelection(locationsRoot?.querySelector<HTMLInputElement>('input:checked')?.value ?? points[0]!.id)
+        pickupMapStatus?.setAttribute('hidden', '')
+      })
+    } catch {
+      pickupMapRoot.hidden = true
     }
   }
 
@@ -167,6 +244,26 @@ import PageShell from '../layouts/PageShell.astro'
 <style is:global>
   .checkout-page{padding:clamp(54px,7vw,105px) 0 clamp(90px,10vw,150px);color:#1f3b2e}.checkout-heading{display:grid;padding:0 clamp(24px,6vw,92px) clamp(54px,7vw,100px);grid-template-columns:minmax(0,1fr) minmax(280px,.45fr);align-items:end;gap:40px}.checkout-heading>p{grid-column:1/-1;margin:0 0 -15px;color:#78912f;font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.checkout-heading h1{margin:0;font-size:clamp(58px,7.5vw,116px);line-height:.84;letter-spacing:-.085em}.checkout-heading>span{max-width:340px;padding-bottom:8px;color:#716a63;font-size:13px;line-height:1.6}.checkout-loading{display:flex;min-height:360px;align-items:center;justify-content:center;gap:14px;border-top:1px solid #e0dbd2;color:#716a63;font-size:11px}.checkout-loading[hidden]{display:none}.checkout-loading span{width:26px;height:26px;border:2px solid #dbe2d3;border-top-color:#78912f;border-radius:50%;animation:checkout-spin .8s linear infinite}.checkout-layout{display:grid;grid-template-columns:minmax(0,.9fr) minmax(480px,1.1fr);border-top:1px solid #dcd7ce}.checkout-layout[hidden],.checkout-empty[hidden]{display:none}.checkout-order{padding:clamp(38px,5vw,76px) clamp(24px,6vw,92px);border-right:1px solid #dcd7ce;background:#f2eee7}.checkout-details{padding:clamp(38px,5vw,76px) clamp(24px,6vw,92px)}.checkout-section-title{display:flex;align-items:baseline;gap:14px;margin-bottom:30px}.checkout-section-title span,.checkout-fieldset legend span{color:#78912f;font-size:9px;font-weight:850;letter-spacing:.1em}.checkout-section-title h2{margin:0;font-size:34px;letter-spacing:-.05em}.checkout-lines article{display:grid;padding:18px 0;grid-template-columns:70px 1fr auto;align-items:center;gap:15px;border-bottom:1px solid #d8d2c9}.checkout-lines img{width:70px;height:78px;border-radius:16px;object-fit:cover}.checkout-lines div{display:grid;gap:6px}.checkout-lines strong{font-size:15px}.checkout-lines span{color:#777069;font-size:10px}.checkout-lines b{font-size:14px}.checkout-total{display:flex;align-items:end;justify-content:space-between;margin-top:28px}.checkout-total span{color:#6d665f;font-size:11px}.checkout-total strong{font-size:33px;letter-spacing:-.05em}.checkout-price-note{margin:9px 0 0;color:#807970;font-size:9px}.checkout-fieldset{display:grid;margin:0 0 38px;padding:0;border:0;gap:14px}.checkout-fieldset legend{display:flex;margin-bottom:22px;align-items:center;gap:14px;font-size:25px;font-weight:750;letter-spacing:-.04em}.checkout-pickup>div{display:grid;gap:8px}.checkout-pickup label{display:flex;position:relative;padding:17px;border:1px solid #ded8cf;border-radius:18px;align-items:flex-start;gap:13px;cursor:pointer;transition:border-color .2s,background .2s,transform .2s}.checkout-pickup label:has(input:checked){border-color:#78912f;background:#eff3e7;transform:translateX(3px)}.checkout-pickup input{margin-top:3px;accent-color:#1f3b2e}.checkout-pickup label>span{display:grid;gap:4px}.checkout-pickup strong{font-size:14px}.checkout-pickup b{font-size:10px;font-weight:600}.checkout-pickup small{color:#777069;font-size:9px}.checkout-fieldset>label{display:grid;gap:7px;color:#635d57;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.checkout-fieldset label small{font-size:8px;font-weight:500;letter-spacing:0;text-transform:none}.checkout-fieldset :is(input,textarea){width:100%;min-height:52px;padding:0 16px;border:1px solid #dcd7ce;border-radius:15px;background:#fff;color:#1f3b2e;font:500 14px/1.3 Montserrat,Arial,sans-serif;outline:0}.checkout-fieldset textarea{min-height:100px;padding-top:15px;resize:vertical}.checkout-fieldset :is(input,textarea):focus{border-color:#78912f;box-shadow:0 0 0 3px rgba(189,214,90,.2)}.checkout-consent{display:flex;align-items:flex-start;gap:11px;color:#69635c;font-size:9px;line-height:1.55}.checkout-consent input{margin-top:2px;accent-color:#1f3b2e}.checkout-consent a{color:inherit}.checkout-payment-note{margin:24px 0 12px;padding:18px;border-radius:18px;background:#e7ecdd}.checkout-payment-note strong{font-size:11px}.checkout-payment-note p{margin:6px 0 0;color:#62685f;font-size:9px;line-height:1.5}.checkout-error{margin:12px 0;color:#a4382f;font-size:10px;line-height:1.5}.checkout-error[hidden]{display:none}.checkout-submit{width:100%;min-height:58px;margin-top:12px;border:0;border-radius:17px;background:#1f3b2e;color:#fff;cursor:pointer;font-size:11px;font-weight:850;transition:background .2s,transform .2s}.checkout-submit:hover{background:#294d3b;transform:translateY(-1px)}.checkout-submit:disabled{cursor:wait;opacity:.6}.checkout-empty{max-width:680px;margin:0 auto;padding:90px 30px;text-align:center}.checkout-empty h2{margin:0;font-size:48px;letter-spacing:-.06em}.checkout-empty p{margin:16px 0 25px;color:#716a63}.checkout-empty a{display:inline-flex;min-height:50px;padding:0 22px;border-radius:16px;align-items:center;background:#1f3b2e;color:#fff;font-size:11px;font-weight:800;text-decoration:none}@keyframes checkout-spin{to{transform:rotate(360deg)}}
   @media(max-width:900px){.checkout-heading{grid-template-columns:1fr;padding:30px 24px 58px}.checkout-heading>p{margin:0}.checkout-heading h1{font-size:clamp(54px,15vw,78px)}.checkout-layout{grid-template-columns:1fr}.checkout-order{border-right:0;border-bottom:1px solid #dcd7ce}.checkout-details,.checkout-order{padding:42px 24px}.checkout-page{padding-top:20px}}@media(prefers-reduced-motion:reduce){.checkout-loading span{animation-duration:.01ms}}
+</style>
+
+<style is:global>
+  /* Checkout is rendered with a trailing slash in the static build. */
+  body.public-site .public-main[data-path^="/checkout"] .checkout-page{padding:clamp(42px,6vw,84px) 0 clamp(76px,9vw,132px);color:var(--ink)}
+  body.public-site .public-main[data-path^="/checkout"] .checkout-heading{display:block;max-width:920px;padding:0 var(--content-gutter) clamp(38px,5vw,66px)}
+  body.public-site .public-main[data-path^="/checkout"] .checkout-heading h1{max-width:760px;margin:0;font-size:clamp(48px,6vw,90px);line-height:.9;letter-spacing:-.085em}
+  body.public-site .public-main[data-path^="/checkout"] .checkout-loading{min-height:420px;margin:0 var(--content-gutter);border:0;border-radius:var(--radius);background:var(--sand)}
+  body.public-site .public-main[data-path^="/checkout"] .checkout-layout{margin:0 var(--content-gutter);grid-template-columns:minmax(330px,.82fr) minmax(460px,1.18fr);overflow:hidden;border:1px solid var(--line);border-radius:var(--radius);background:var(--paper)}
+  body.public-site .public-main[data-path^="/checkout"] .checkout-order{padding:clamp(34px,4.6vw,64px);border:0;border-right:1px solid var(--line);background:var(--sand)}
+  body.public-site .public-main[data-path^="/checkout"] .checkout-details{padding:clamp(34px,4.6vw,64px);background:var(--paper)}
+  body.public-site .public-main[data-path^="/checkout"] .checkout-section-title{margin-bottom:24px}.public-main[data-path^="/checkout"] .checkout-section-title h2,.public-main[data-path^="/checkout"] .checkout-fieldset legend{font-size:clamp(25px,2.4vw,34px);line-height:.95;letter-spacing:-.055em}
+  body.public-site .public-main[data-path^="/checkout"] .checkout-lines article{padding:17px 0;grid-template-columns:62px 1fr auto;gap:13px;border-color:var(--line)}.public-main[data-path^="/checkout"] .checkout-lines img{width:62px;height:70px;border-radius:calc(var(--radius) - 8px)}.public-main[data-path^="/checkout"] .checkout-total{margin-top:25px}.public-main[data-path^="/checkout"] .checkout-total strong{font-size:30px}
+  body.public-site .public-main[data-path^="/checkout"] .checkout-fieldset{margin:0 0 34px;gap:12px}.public-main[data-path^="/checkout"] .checkout-fieldset legend{margin-bottom:17px}.public-main[data-path^="/checkout"] .checkout-pickup>div[data-pickup-locations]{gap:7px}
+  body.public-site .public-main[data-path^="/checkout"] .checkout-pickup-map{position:relative;height:260px;overflow:hidden;margin:0 0 16px;border:1px solid var(--line);border-radius:calc(var(--radius) - 5px);background:var(--moss-soft)}.public-main[data-path^="/checkout"] .checkout-pickup-map[hidden]{display:none}.public-main[data-path^="/checkout"] .checkout-pickup-map [data-pickup-map-canvas]{position:absolute;inset:0}.public-main[data-path^="/checkout"] .checkout-pickup-map p{position:absolute;z-index:1;right:14px;bottom:14px;max-width:210px;margin:0;padding:9px 11px;border-radius:11px;background:rgba(255,253,249,.92);color:var(--muted);font-size:10px;line-height:1.35;box-shadow:0 4px 18px rgba(31,59,46,.1)}.public-main[data-path^="/checkout"] .checkout-pickup-map p[hidden]{display:none}
+  body.public-site .public-main[data-path^="/checkout"] .checkout-pickup label{padding:16px 17px;border-radius:calc(var(--radius) - 5px);border-color:var(--line);background:#fffdf9;transition:border-color .2s ease,background .2s ease,transform .2s ease}.public-main[data-path^="/checkout"] .checkout-pickup label:has(input:checked),.public-main[data-path^="/checkout"] .checkout-pickup label.is-selected{border-color:var(--moss);background:var(--moss-soft);transform:none}.public-main[data-path^="/checkout"] .checkout-pickup label:hover{border-color:#b7c8aa}
+  body.public-site .public-main[data-path^="/checkout"] .checkout-fieldset>label{gap:8px;color:var(--muted);font-size:10px}.public-main[data-path^="/checkout"] .checkout-fieldset :is(input,textarea){min-height:50px;border-color:var(--line);border-radius:calc(var(--radius) - 7px);background:#fffdf9}.public-main[data-path^="/checkout"] .checkout-layout.is-validation-visible .checkout-fieldset :is(input,textarea):invalid{border-color:#bb4b44;background:#fff7f5;box-shadow:0 0 0 3px rgba(187,75,68,.15)}
+  body.public-site .public-main[data-path^="/checkout"] .checkout-submit{min-height:54px;margin-top:24px;border-radius:var(--radius);background:var(--moss);font-size:12px}.public-main[data-path^="/checkout"] .checkout-empty{margin:0 var(--content-gutter);padding:clamp(68px,9vw,120px) 26px;border-radius:var(--radius);background:var(--sand)}
+  @media(max-width:900px){body.public-site .public-main[data-path^="/checkout"] .checkout-heading{padding-right:var(--mobile-gutter);padding-left:var(--mobile-gutter)}body.public-site .public-main[data-path^="/checkout"] :is(.checkout-loading,.checkout-layout,.checkout-empty){margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter)}body.public-site .public-main[data-path^="/checkout"] .checkout-layout{grid-template-columns:1fr}.public-main[data-path^="/checkout"] .checkout-order{border-right:0;border-bottom:1px solid var(--line)}}
+  @media(max-width:560px){body.public-site .public-main[data-path^="/checkout"] .checkout-page{padding-top:36px}.public-main[data-path^="/checkout"] .checkout-heading{padding-bottom:32px}.public-main[data-path^="/checkout"] .checkout-heading h1{font-size:48px}.public-main[data-path^="/checkout"] :is(.checkout-order,.checkout-details){padding:32px 20px}.public-main[data-path^="/checkout"] .checkout-layout{border-radius:20px}.public-main[data-path^="/checkout"] .checkout-pickup-map{height:230px}.public-main[data-path^="/checkout"] .checkout-lines article{grid-template-columns:54px 1fr}.public-main[data-path^="/checkout"] .checkout-lines img{width:54px;height:62px}.public-main[data-path^="/checkout"] .checkout-lines b{grid-column:2}}
 </style>
 
 <style is:global>

@@ -105,6 +105,14 @@ function toPickupLocation(restaurant: {
   }
 }
 
+function toPickupLocationWithCoordinates(restaurant: Parameters<typeof toPickupLocation>[0] & { latitude: { toNumber(): number } | null; longitude: { toNumber(): number } | null }) {
+  return {
+    ...toPickupLocation(restaurant),
+    latitude: restaurant.latitude?.toNumber() ?? null,
+    longitude: restaurant.longitude?.toNumber() ?? null,
+  }
+}
+
 export function createPrismaOrderRepository(db: DbClient): OrderRepository {
   return {
     async findVariants(ids) {
@@ -133,7 +141,7 @@ export function createPrismaOrderRepository(db: DbClient): OrderRepository {
         include: { openingHours: { orderBy: { dayOfWeek: 'asc' } } },
         orderBy: [{ city: 'asc' }, { name: 'asc' }],
       })
-      return restaurants.map(toPickupLocation)
+      return restaurants.map(toPickupLocationWithCoordinates)
     },
 
     async findPickupLocation(id) {

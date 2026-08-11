@@ -68,7 +68,12 @@ export const pickupLocationSchema = z.object({
   openingHoursLabel: z.string().trim().min(1).max(180),
 }).strict()
 export type PickupLocation = z.infer<typeof pickupLocationSchema>
-export const pickupLocationListResponseSchema = z.object({ locations: z.array(pickupLocationSchema) }).strict()
+export const pickupLocationWithCoordinatesSchema = pickupLocationSchema.extend({
+  latitude: z.number().min(-90).max(90).nullable(),
+  longitude: z.number().min(-180).max(180).nullable(),
+}).strict()
+export type PickupLocationWithCoordinates = z.infer<typeof pickupLocationWithCoordinatesSchema>
+export const pickupLocationListResponseSchema = z.object({ locations: z.array(pickupLocationWithCoordinatesSchema) }).strict()
 
 export const orderCustomerSchema = z.object({
   name: z.string().trim().min(2).max(180),

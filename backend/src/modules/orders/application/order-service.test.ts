@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { CreateOrderRequest, Order, OrderStatus, PaymentStatus, PickupLocation } from '@chashka-coffee/contracts'
+import type { CreateOrderRequest, Order, OrderStatus, PaymentStatus, PickupLocationWithCoordinates } from '@chashka-coffee/contracts'
 
 import { OrderFailure } from '../domain/errors'
 import { OrderService } from './order-service'
@@ -107,7 +107,7 @@ function variant(overrides: Partial<OrderableVariant> = {}): OrderableVariant {
   }
 }
 
-const pickup: PickupLocation = {
+const pickup: PickupLocationWithCoordinates = {
   id: restaurantId,
   slug: 'krasny-prospekt',
   name: 'Чашка кофе — Красный проспект',
@@ -115,6 +115,8 @@ const pickup: PickupLocation = {
   address: 'Красный проспект, 25',
   phone: '+7 383 000-00-00',
   openingHoursLabel: 'Ежедневно: 08:00–22:00',
+  latitude: 55.03,
+  longitude: 82.92,
 }
 
 function fakeRepository(variants: OrderableVariant[]) {

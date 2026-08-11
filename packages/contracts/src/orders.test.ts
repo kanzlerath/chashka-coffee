@@ -3,6 +3,7 @@ import { describe, expect, test } from 'bun:test'
 import {
   createOrderRequestSchema,
   orderQuoteRequestSchema,
+  pickupLocationListResponseSchema,
   updateOrderStatusRequestSchema,
 } from './orders'
 
@@ -41,5 +42,19 @@ describe('online coffee order contracts', () => {
   test('rejects impossible quantities and unknown operational statuses', () => {
     expect(() => orderQuoteRequestSchema.parse({ lines: [{ variantId, quantity: 0 }] })).toThrow()
     expect(() => updateOrderStatusRequestSchema.parse({ status: 'DELIVERING' })).toThrow()
+  })
+
+  test('keeps pickup coordinates with the location used by the checkout map', () => {
+    expect(pickupLocationListResponseSchema.parse({ locations: [{
+      id: restaurantId,
+      slug: 'lenina',
+      name: 'Чашка кофе — Ленина',
+      city: 'Новосибирск',
+      address: 'Ленина, 12/2',
+      phone: '+7 383 000-00-00',
+      openingHoursLabel: 'Ежедневно: 08:00–22:00',
+      latitude: 55.028,
+      longitude: 82.919,
+    }] })).toMatchObject({ locations: [{ latitude: 55.028, longitude: 82.919 }] })
   })
 })
