@@ -8,9 +8,9 @@ export const mediaUploadResponseSchema = z.object({ asset: mediaAssetSchema, alr
 export const mediaAssetListResponseSchema = z.object({ assets: z.array(mediaAssetSchema) })
 export const mediaAssetResponseSchema = z.object({ asset: mediaAssetSchema })
 export const mediaAssetDeleteResponseSchema = z.object({ success: z.literal(true) })
-export const mediaCardCropRequestSchema = z.object({
+export const cardImageCropSchema = z.object({
   focusX: z.number().min(0).max(100),
   focusY: z.number().min(0).max(100),
   zoom: z.number().min(1).max(2),
 }).strict()
-export type MediaCardCropRequest = z.infer<typeof mediaCardCropRequestSchema>
+export type CardImageCrop = z.infer<typeof cardImageCropSchema>

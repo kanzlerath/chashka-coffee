@@ -374,6 +374,7 @@ model Product {
   roastLevel   String?           @map("roast_level") @db.VarChar(80)
   tastingNotes Json              @default("[]") @map("tasting_notes")
   imageUrl     String?           @map("image_url")
+  imageCrop    Json?             @map("image_crop")
   galleryUrls  Json              @default("[]") @map("gallery_urls")
   details      Json              @default("[]")
   blocks       Json              @default("[]")
@@ -920,6 +921,7 @@ model MenuItem {
   isLight             Boolean                 @default(false) @map("is_light")
   marketingBadge      MarketingBadge?         @map("marketing_badge")
   imageUrl            String?                 @map("image_url")
+  imageCrop           Json?                   @map("image_crop")
   position            Int                     @default(0)
   category            MenuCategory            @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "menu_items_category_id_fkey")
   allergens           MenuItemAllergen[]

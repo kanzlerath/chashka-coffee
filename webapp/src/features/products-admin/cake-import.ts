@@ -67,7 +67,7 @@ export function buildCakeImportProducts(rows: CakeWorkbook['rows'], mapping: Cak
       products.set(key, {
         key, rowNumbers: [row.rowNumber], imageReference: imageReference(value('image')),
         product: {
-          type: 'CAKE', status: 'DRAFT', publishAt: null, slug: toPublicSlug(name), name, category: nullable(category), subtitle: nullable(value('subtitle')), description: nullable(value('description')), ingredients: nullable(value('ingredients')), origin: null, roastLevel: null, tastingNotes: [], imageUrl: null, galleryUrls: [], details: [], blocks: [], isFeatured: parseBoolean(value('featured')), position: parseInteger(value('position')) ?? (index + 1) * 10,
+          type: 'CAKE', status: 'DRAFT', publishAt: null, slug: toPublicSlug(name), name, category: nullable(category), subtitle: nullable(value('subtitle')), description: nullable(value('description')), ingredients: nullable(value('ingredients')), origin: null, roastLevel: null, tastingNotes: [], imageUrl: null, imageCrop: null, galleryUrls: [], details: [], blocks: [], isFeatured: parseBoolean(value('featured')), position: parseInteger(value('position')) ?? (index + 1) * 10,
           variants: [{ label: variantLabel, weightGrams: weight, priceKopecks: parsePrice(value('price')), position: 10, isAvailable: value('available') ? parseBoolean(value('available')) : true }],
         }, errors,
       })

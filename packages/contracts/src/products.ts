@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { contentBlockListSchema } from './content'
+import { cardImageCropSchema } from './media'
 
 const uuid = z.uuid()
 const slug = z.string().trim().min(1).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
@@ -36,6 +37,7 @@ const productFields = {
   roastLevel: nullableText(80),
   tastingNotes: z.array(z.string().trim().min(1).max(80)).max(12),
   imageUrl: publicUrl.nullable(),
+  imageCrop: cardImageCropSchema.nullable(),
   galleryUrls: z.array(publicUrl).max(12),
   details: z.array(productDetailSchema).max(20),
   blocks: contentBlockListSchema.default([]),

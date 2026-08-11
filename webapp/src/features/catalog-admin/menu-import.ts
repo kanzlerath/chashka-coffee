@@ -126,6 +126,7 @@ export function buildImportRows(rows: RawMenuRow[], mapping: ColumnMapping): Imp
       isLight: parseBoolean(value('light')) || hasLabel(labels, ['легк', 'лёгк']),
       marketingBadge: parseBadge(value('badge')),
       imageUrl: null,
+      imageCrop: null,
       position: (index + 1) * 10,
     }
     const errors = [...validateRequired(categoryName, name), ...validateItem(item)]

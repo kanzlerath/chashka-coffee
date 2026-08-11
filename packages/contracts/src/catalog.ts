@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { cardImageCropSchema } from './media'
 
 const uuidSchema = z.uuid()
 const slugSchema = z
@@ -223,7 +224,7 @@ export const upsertMenuItemRequestSchema = z.object({
   fats: z.number().nonnegative().nullable(),
   carbohydrates: z.number().nonnegative().nullable(),
   isVegetarian: z.boolean(), isSpicy: z.boolean(), isLactoseFree: z.boolean(), isGlutenFree: z.boolean(), isLight: z.boolean(),
-  marketingBadge: marketingBadgeSchema.nullable(), imageUrl: publicUrl.nullable(), position: z.number().int().nonnegative(),
+  marketingBadge: marketingBadgeSchema.nullable(), imageUrl: publicUrl.nullable(), imageCrop: cardImageCropSchema.nullable(), position: z.number().int().nonnegative(),
 }).strict()
 export type UpsertMenuItemRequest = z.infer<typeof upsertMenuItemRequestSchema>
 
@@ -261,6 +262,7 @@ export const adminMenuDetailResponseSchema = z.object({
       isLight: z.boolean(),
       marketingBadge: marketingBadgeSchema.nullable(),
       imageUrl: publicUrl.nullable(),
+      imageCrop: cardImageCropSchema.nullable(),
       position: z.number().int().nonnegative(),
     })),
   })),
@@ -284,6 +286,7 @@ export const menuItemSchema = z.object({
   dietaryMarks: z.array(dietaryMarkSchema).max(5),
   marketingBadge: marketingBadgeSchema.nullable(),
   imageUrl: publicUrl.nullable(),
+  imageCrop: cardImageCropSchema.nullable(),
 })
 export type MenuItem = z.infer<typeof menuItemSchema>
 

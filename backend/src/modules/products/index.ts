@@ -1,5 +1,6 @@
 import {
   contentBlockListSchema,
+  cardImageCropSchema,
   productDetailSchema,
   productDeleteResponseSchema,
   productListResponseSchema,
@@ -43,6 +44,7 @@ type ProductRecord = {
   roastLevel: string | null
   tastingNotes: unknown
   imageUrl: string | null
+  imageCrop: unknown
   galleryUrls: unknown
   details: unknown
   blocks: unknown
@@ -59,6 +61,7 @@ function dto(product: ProductRecord): Product {
     publishAt: product.publishAt?.toISOString() ?? null,
     tastingNotes: z.array(z.string()).parse(product.tastingNotes),
     galleryUrls: z.array(z.string()).parse(product.galleryUrls),
+    imageCrop: product.imageCrop === null ? null : cardImageCropSchema.parse(product.imageCrop),
     details: z.array(productDetailSchema).parse(product.details),
     blocks: contentBlockListSchema.parse(product.blocks),
     variants: product.variants.map((variant) => ({
@@ -78,7 +81,7 @@ function dto(product: ProductRecord): Product {
 
 function data(input: UpsertProductRequest) {
   const { variants, ...product } = input
-  return { product: { ...product, publishAt: product.publishAt ? new Date(product.publishAt) : null }, variants }
+  return { product: { ...product, imageCrop: product.imageCrop ?? Prisma.JsonNull, publishAt: product.publishAt ? new Date(product.publishAt) : null }, variants }
 }
 
 async function availableProductSlug(db: DbClient, requestedSlug: string) {
@@ -197,6 +200,7 @@ export function createProductsModule({ db, requireAuth, requireAdmin }: { db: Db
             roastLevel: source.roastLevel,
             tastingNotes: z.array(z.string()).parse(source.tastingNotes),
             imageUrl: source.imageUrl,
+            imageCrop: source.imageCrop === null ? Prisma.JsonNull : source.imageCrop as Prisma.InputJsonValue,
             galleryUrls: z.array(z.string()).parse(source.galleryUrls),
             details: z.array(productDetailSchema).parse(source.details),
             blocks: contentBlockListSchema.parse(source.blocks),

@@ -1,4 +1,4 @@
-import { restaurantVisitAmenitySchema } from '@chashka-coffee/contracts'
+import { cardImageCropSchema, restaurantVisitAmenitySchema } from '@chashka-coffee/contracts'
 import type {
   AdminRestaurant,
   AdminMenu,
@@ -44,6 +44,16 @@ function toScheduleException({ id, date, label, opensAt, closesAt, isClosed }: {
 
 function toUrlList(value: Prisma.JsonValue): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
+}
+
+function toCardImageCrop(value: Prisma.JsonValue | null) {
+  if (value === null) return null
+  const parsed = cardImageCropSchema.safeParse(value)
+  return parsed.success ? parsed.data : null
+}
+
+function toNullableInputJson(value: Prisma.JsonValue | null) {
+  return value === null ? Prisma.JsonNull : value as Prisma.InputJsonValue
 }
 
 function toRestaurantSummary(restaurant: {
@@ -185,6 +195,7 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
               dietaryMarks: dietaryMarks(item),
               marketingBadge: item.marketingBadge,
               imageUrl: item.imageUrl,
+              imageCrop: toCardImageCrop(item.imageCrop),
             }
           }),
         })),
@@ -371,7 +382,7 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
           categories: {
             create: input.categories.map(({ items, ...category }) => ({
               ...category,
-              items: { create: items },
+              items: { create: items.map(({ imageCrop, ...item }) => ({ ...item, imageCrop: toNullableInputJson(imageCrop) })) },
             })),
           },
         },
@@ -434,6 +445,7 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
                       isLight: item.isLight,
                       marketingBadge: item.marketingBadge,
                       imageUrl: item.imageUrl,
+                      imageCrop: toNullableInputJson(item.imageCrop),
                       position: item.position,
                       allergens: { create: item.allergens.map(({ allergenId }) => ({ allergenId })) },
                     })),
@@ -503,6 +515,7 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
             isLight: item.isLight,
             marketingBadge: item.marketingBadge,
             imageUrl: item.imageUrl,
+            imageCrop: toCardImageCrop(item.imageCrop),
             position: item.position,
           })),
         })),
@@ -524,13 +537,13 @@ export function createPrismaCatalogRepository(db: DbClient): CatalogRepository {
     async createItem(categoryId, input) {
       const category = await db.menuCategory.findUnique({ where: { id: categoryId }, select: { id: true } })
       if (!category) return null
-      const item = await db.menuItem.create({ data: { ...input, categoryId } })
+      const item = await db.menuItem.create({ data: { ...input, imageCrop: toNullableInputJson(input.imageCrop), categoryId } })
       return item.id
     },
 
     async updateItem(id, input) {
       try {
-        const item = await db.menuItem.update({ where: { id }, data: input })
+        const item = await db.menuItem.update({ where: { id }, data: { ...input, imageCrop: toNullableInputJson(input.imageCrop) } })
         return item.id
       } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') return null
