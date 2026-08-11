@@ -1,6 +1,6 @@
 import { SearchIcon, Upload01Icon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { mediaAssetListResponseSchema, type MediaAsset } from '@chashka-coffee/contracts'
+import { mediaAssetListResponseSchema, mediaAssetResponseSchema, type MediaAsset } from '@chashka-coffee/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -13,10 +13,11 @@ import { useAuth } from '@/features/auth'
 
 import { resolveAdminImagePreview, supportedImageTypes, uploadMediaFile } from './media-utils'
 
-type CropAspect = 'ORIGINAL' | '16:9' | '4:3' | '1:1' | '4:5'
+type CropAspect = 'ORIGINAL' | 'CARD' | '16:9' | '4:3' | '1:1' | '4:5'
 const mediaPickerPageSize = 18
 
 const aspectValue: Record<Exclude<CropAspect, 'ORIGINAL'>, number> = {
+  CARD: 1 / 0.86,
   '16:9': 16 / 9,
   '4:3': 4 / 3,
   '1:1': 1,
@@ -137,7 +138,7 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect }: { open: bool
           <img src={filePreview} alt="Предпросмотр кадрирования" style={{ objectPosition: `${focusX}% ${focusY}%`, transform: `scale(${zoom})` }} />
         </div>
         <div className="admin-crop-controls">
-          <label><Typography variant="label">Формат кадра</Typography><select value={aspect} onChange={(event) => { setAspect(event.target.value as CropAspect); setZoom(1) }}><option value="ORIGINAL">Оригинал без обрезки</option><option value="16:9">Широкий · 16:9</option><option value="4:3">Горизонтальный · 4:3</option><option value="1:1">Квадрат · 1:1</option><option value="4:5">Вертикальный · 4:5</option></select></label>
+          <label><Typography variant="label">Формат кадра</Typography><select value={aspect} onChange={(event) => { setAspect(event.target.value as CropAspect); setZoom(1) }}><option value="ORIGINAL">Оригинал без обрезки</option><option value="CARD">Карточка товара · 1:0,86</option><option value="16:9">Широкий · 16:9</option><option value="4:3">Горизонтальный · 4:3</option><option value="1:1">Квадрат · 1:1</option><option value="4:5">Вертикальный · 4:5</option></select></label>
           {aspect !== 'ORIGINAL' ? <>
             <label><Typography variant="label">Приближение · {zoom.toFixed(1)}×</Typography><input min="1" max="2" step="0.05" type="range" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} /></label>
             <div className="admin-crop-axis"><label><Typography variant="label">Фокус по горизонтали</Typography><input min="0" max="100" type="range" value={focusX} onChange={(event) => setFocusX(Number(event.target.value))} /></label><label><Typography variant="label">Фокус по вертикали</Typography><input min="0" max="100" type="range" value={focusY} onChange={(event) => setFocusY(Number(event.target.value))} /></label></div>
@@ -161,16 +162,65 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect }: { open: bool
   </Dialog>
 }
 
-export function AdminImageField({ value, onChange, required = false, compact = false }: { value: string | null; onChange: (value: string | null) => void; required?: boolean; compact?: boolean }) {
+function MediaCardCropDialog({ open, value, onOpenChange, onSelect }: { open: boolean; value: string | null; onOpenChange: (open: boolean) => void; onSelect: (url: string) => void }) {
+  const { api } = useAuth()
+  const queryClient = useQueryClient()
+  const [zoom, setZoom] = useState(1)
+  const [focusX, setFocusX] = useState(50)
+  const [focusY, setFocusY] = useState(50)
+  const assets = useQuery({ queryKey: ['admin', 'media'], queryFn: () => api.request('/api/admin/media', mediaAssetListResponseSchema), enabled: open })
+  const source = assets.data?.assets.find((asset) => asset.publicUrl === value)
+  const crop = useMutation({
+    mutationFn: () => api.request(`/api/admin/media/${source!.id}/card-crops`, mediaAssetResponseSchema, { method: 'POST', body: { focusX, focusY, zoom } }),
+    onSuccess: async ({ asset }) => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'media'] })
+      onSelect(asset.publicUrl)
+      onOpenChange(false)
+    },
+  })
+  const close = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      setZoom(1)
+      setFocusX(50)
+      setFocusY(50)
+      crop.reset()
+    }
+    onOpenChange(nextOpen)
+  }
+
+  return <Dialog open={open} onOpenChange={close}>
+    <DialogContent className="admin-media-picker-dialog">
+      <DialogHeader><DialogTitle>Кадр для карточки</DialogTitle><DialogDescription>Выберите, какая часть фотографии попадёт в карточки меню, кофе и тортов. Исходный файл останется без изменений.</DialogDescription></DialogHeader>
+      {assets.isPending ? <Typography className="admin-state-message" variant="bodySm">Ищем фотографию в медиатеке…</Typography> : null}
+      {assets.isError ? <Typography className="admin-state-message admin-state-error" variant="bodySm">Не удалось загрузить медиатеку.</Typography> : null}
+      {!assets.isPending && !assets.isError && !source ? <Typography className="admin-state-message admin-state-error" variant="bodySm">Этого файла нет в медиатеке. Замените фото на файл из медиатеки, чтобы настроить кадр.</Typography> : null}
+      {source ? <div className="admin-crop-workspace">
+        <div className="admin-crop-preview" data-aspect="CARD"><img src={resolveAdminImagePreview(source.publicUrl)} alt="Предпросмотр карточки" style={{ objectPosition: `${focusX}% ${focusY}%`, transform: `scale(${zoom})`, transformOrigin: `${focusX}% ${focusY}%` }} /></div>
+        <div className="admin-crop-controls">
+          <Typography variant="bodySm" tone="muted">Пропорция совпадает с публичными карточками.</Typography>
+          <label><Typography variant="label">Приближение · {zoom.toFixed(1)}×</Typography><input min="1" max="2" step="0.05" type="range" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} /></label>
+          <div className="admin-crop-axis"><label><Typography variant="label">Фокус по горизонтали</Typography><input min="0" max="100" type="range" value={focusX} onChange={(event) => setFocusX(Number(event.target.value))} /></label><label><Typography variant="label">Фокус по вертикали</Typography><input min="0" max="100" type="range" value={focusY} onChange={(event) => setFocusY(Number(event.target.value))} /></label></div>
+        </div>
+        {crop.isError ? <Typography className="admin-state-message admin-state-error" variant="bodySm">{crop.error instanceof Error ? crop.error.message : 'Не удалось создать кадр.'}</Typography> : null}
+        <DialogFooter><Button type="button" variant="outline" onClick={() => close(false)}>Отмена</Button><Button disabled={crop.isPending} type="button" onClick={() => crop.mutate()}>{crop.isPending ? 'Создаём кадр…' : 'Применить к карточке'}</Button></DialogFooter>
+      </div> : null}
+    </DialogContent>
+  </Dialog>
+}
+
+export function AdminImageField({ value, onChange, required = false, compact = false, cardCrop = false }: { value: string | null; onChange: (value: string | null) => void; required?: boolean; compact?: boolean; cardCrop?: boolean }) {
   const [open, setOpen] = useState(false)
+  const [cropOpen, setCropOpen] = useState(false)
   return <div className="admin-image-field" data-compact={compact || undefined}>
     <button aria-label={value ? 'Заменить фотографию' : 'Выбрать фотографию'} className="admin-image-field-preview" type="button" onClick={() => setOpen(true)}>{value ? <img src={resolveAdminImagePreview(value)} alt="" /> : <Typography variant="bodySm" tone="muted">Фотография не выбрана</Typography>}</button>
     <div className="admin-image-field-actions">
       <Button size="sm" type="button" variant="outline" onClick={() => setOpen(true)}>{value ? 'Заменить' : 'Выбрать фотографию'}</Button>
+      {value && cardCrop ? <Button size="sm" type="button" variant="outline" onClick={() => setCropOpen(true)}>Настроить кадр</Button> : null}
       {value && !required ? <Button size="sm" type="button" variant="ghost" onClick={() => onChange(null)}>Убрать</Button> : null}
       <details><summary><Typography variant="caption">Указать ссылку вручную</Typography></summary><Input required={required} inputMode="url" placeholder="/images/photo.webp или https://…" value={value ?? ''} onChange={(event) => onChange(event.target.value || null)} /></details>
     </div>
     <MediaPickerDialog open={open} value={value} onOpenChange={setOpen} onSelect={(url) => onChange(url)} />
+    {value && cardCrop ? <MediaCardCropDialog open={cropOpen} value={value} onOpenChange={setCropOpen} onSelect={onChange} /> : null}
   </div>
 }
 

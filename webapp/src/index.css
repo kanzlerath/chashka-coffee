@@ -754,6 +754,7 @@
   .admin-crop-workspace { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(15rem, .75fr); align-items: start; gap: 1rem; overflow-y: auto; }
   .admin-crop-preview { display: grid; min-height: 24rem; overflow: hidden; place-items: center; border-radius: .9rem; background: #1f2722; }
   .admin-crop-preview[data-aspect="16:9"] { aspect-ratio: 16 / 9; min-height: 0; }
+  .admin-crop-preview[data-aspect="CARD"] { aspect-ratio: 1 / .86; min-height: 0; }
   .admin-crop-preview[data-aspect="4:3"] { aspect-ratio: 4 / 3; min-height: 0; }
   .admin-crop-preview[data-aspect="1:1"] { aspect-ratio: 1; min-height: 0; }
   .admin-crop-preview[data-aspect="4:5"] { width: min(100%, 29rem); min-height: 0; aspect-ratio: 4 / 5; justify-self: center; }
