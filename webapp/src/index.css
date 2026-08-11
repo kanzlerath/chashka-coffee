@@ -760,6 +760,8 @@
   .admin-crop-preview[data-aspect="4:5"] { width: min(100%, 29rem); min-height: 0; aspect-ratio: 4 / 5; justify-self: center; }
   .admin-crop-preview img { width: 100%; height: 100%; object-fit: cover; transition: transform 140ms ease, object-position 140ms ease; }
   .admin-crop-preview[data-aspect="ORIGINAL"] img { object-fit: contain; }
+  .admin-precise-crop-preview { position: relative; display: block; }
+  .admin-precise-crop-preview img { display: block; max-width: none; max-height: none; min-height: 0; object-fit: fill; transition: width 140ms ease, height 140ms ease, top 140ms ease, left 140ms ease; }
   .admin-crop-controls { display: grid; gap: .9rem; }
   .admin-crop-controls label { display: grid; gap: .4rem; color: var(--foreground); font-size: .7rem; font-weight: 680; }
   .admin-crop-controls select { min-height: 2.4rem; border: 1px solid var(--input); border-radius: var(--radius); background: var(--card); padding: .45rem .7rem; }

@@ -134,9 +134,9 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect }: { open: bool
       </DialogHeader>
 
       {file && filePreview ? <div className="admin-crop-workspace">
-        <div className="admin-crop-preview" data-aspect={aspect}>
-          <img src={filePreview} alt="Предпросмотр кадрирования" style={{ objectPosition: `${focusX}% ${focusY}%`, transform: `scale(${zoom})` }} />
-        </div>
+        {aspect === 'ORIGINAL'
+          ? <div className="admin-crop-preview" data-aspect={aspect}><img src={filePreview} alt="Предпросмотр кадрирования" /></div>
+          : <CropPreviewImage src={filePreview} alt="Предпросмотр кадрирования" aspect={aspect} focusX={focusX} focusY={focusY} zoom={zoom} />}
         <div className="admin-crop-controls">
           <label><Typography variant="label">Формат кадра</Typography><select value={aspect} onChange={(event) => { setAspect(event.target.value as CropAspect); setZoom(1) }}><option value="ORIGINAL">Оригинал без обрезки</option><option value="CARD">Карточка товара · 1:0,86</option><option value="16:9">Широкий · 16:9</option><option value="4:3">Горизонтальный · 4:3</option><option value="1:1">Квадрат · 1:1</option><option value="4:5">Вертикальный · 4:5</option></select></label>
           {aspect !== 'ORIGINAL' ? <>
@@ -162,39 +162,42 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect }: { open: bool
   </Dialog>
 }
 
-function cardCropBox(width: number, height: number, focusX: number, focusY: number, zoom: number) {
+function cropBox(width: number, height: number, aspect: Exclude<CropAspect, 'ORIGINAL'>, focusX: number, focusY: number, zoom: number) {
   let cropWidth = width
-  let cropHeight = cropWidth / aspectValue.CARD
+  let cropHeight = cropWidth / aspectValue[aspect]
   if (cropHeight > height) {
     cropHeight = height
-    cropWidth = cropHeight * aspectValue.CARD
+    cropWidth = cropHeight * aspectValue[aspect]
   }
   cropWidth /= zoom
   cropHeight /= zoom
-  const roundedWidth = Math.min(width, Math.round(cropWidth))
-  const roundedHeight = Math.min(height, Math.round(cropHeight))
   return {
-    left: Math.min(width - roundedWidth, Math.max(0, Math.round((width - cropWidth) * (focusX / 100)))),
-    top: Math.min(height - roundedHeight, Math.max(0, Math.round((height - cropHeight) * (focusY / 100)))),
-    width: roundedWidth,
-    height: roundedHeight,
+    left: (width - cropWidth) * (focusX / 100),
+    top: (height - cropHeight) * (focusY / 100),
+    width: cropWidth,
+    height: cropHeight,
   }
 }
 
-function CardCropPreview({ src, focusX, focusY, zoom }: { src: string; focusX: number; focusY: number; zoom: number }) {
+function CropPreviewImage({ src, alt, aspect, focusX, focusY, zoom, className }: { src: string; alt: string; aspect: Exclude<CropAspect, 'ORIGINAL'>; focusX: number; focusY: number; zoom: number; className?: string }) {
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null)
-  const crop = dimensions ? cardCropBox(dimensions.width, dimensions.height, focusX, focusY, zoom) : null
+  const crop = dimensions ? cropBox(dimensions.width, dimensions.height, aspect, focusX, focusY, zoom) : null
   const imageStyle = crop && dimensions ? {
+    position: 'absolute' as const,
     width: `${(dimensions.width / crop.width) * 100}%`,
     height: `${(dimensions.height / crop.height) * 100}%`,
     left: `-${(crop.left / crop.width) * 100}%`,
     top: `-${(crop.top / crop.height) * 100}%`,
   } : undefined
 
+  return <div className={`admin-crop-preview admin-precise-crop-preview${className ? ` ${className}` : ''}`} data-aspect={aspect}>
+    <img src={src} alt={alt} style={imageStyle} onLoad={(event) => setDimensions({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />
+  </div>
+}
+
+function CardCropPreview({ src, focusX, focusY, zoom }: { src: string; focusX: number; focusY: number; zoom: number }) {
   return <article className="admin-card-crop-card" aria-label="Предпросмотр карточки на сайте">
-    <div className="admin-crop-preview admin-card-crop-image" data-aspect="CARD">
-      <img src={src} alt="Предпросмотр кадра для карточки" style={imageStyle} onLoad={(event) => setDimensions({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />
-    </div>
+    <CropPreviewImage className="admin-card-crop-image" src={src} alt="Предпросмотр кадра для карточки" aspect="CARD" focusX={focusX} focusY={focusY} zoom={zoom} />
     <div className="admin-card-crop-copy"><Typography variant="caption">Так увидит гость</Typography><Typography variant="bodySmMedium">Карточка товара</Typography><span /></div>
   </article>
 }
