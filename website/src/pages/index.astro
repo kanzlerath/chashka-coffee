@@ -29,9 +29,9 @@ try {
 } catch { /* The local fallback keeps the storefront complete before the API is available. */ }
 
 const defaultSlides = [
-  { mediaType: 'IMAGE', mediaUrl: '/images/home-morning-v2.png', posterUrl: null, eyebrow: 'С хорошего кофе', title: 'Начните день\nв своём ритме', description: 'Завтрак, любимый кофе и немного времени для себя.', ctaLabel: 'Открыть меню', ctaUrl: '/menu', durationSeconds: 7 },
-  { mediaType: 'IMAGE', mediaUrl: '/images/home-breakfast.png', posterUrl: null, eyebrow: 'В каждом районе', title: 'Место, куда\nхочется зайти', description: 'Встретиться, поработать или просто сделать паузу.', ctaLabel: 'Найти ресторан', ctaUrl: '/restaurants', durationSeconds: 7 },
-  { mediaType: 'IMAGE', mediaUrl: '/images/restaurants-hero.png', posterUrl: null, eyebrow: 'Любимое — ближе', title: 'Кофе и еда\nс доставкой', description: 'Привезём из ближайшей «Чашки кофе» бережно и вовремя.', ctaLabel: 'Заказать доставку', ctaUrl: '/delivery', durationSeconds: 7 },
+  { mediaType: 'IMAGE', mediaUrl: '/images/home-morning-v2.png', imageFocus: null, posterUrl: null, eyebrow: 'С хорошего кофе', title: 'Начните день\nв своём ритме', description: 'Завтрак, любимый кофе и немного времени для себя.', ctaLabel: 'Открыть меню', ctaUrl: '/menu', durationSeconds: 7 },
+  { mediaType: 'IMAGE', mediaUrl: '/images/home-breakfast.png', imageFocus: null, posterUrl: null, eyebrow: 'В каждом районе', title: 'Место, куда\nхочется зайти', description: 'Встретиться, поработать или просто сделать паузу.', ctaLabel: 'Найти ресторан', ctaUrl: '/restaurants', durationSeconds: 7 },
+  { mediaType: 'IMAGE', mediaUrl: '/images/restaurants-hero.png', imageFocus: null, posterUrl: null, eyebrow: 'Любимое — ближе', title: 'Кофе и еда\nс доставкой', description: 'Привезём из ближайшей «Чашки кофе» бережно и вовремя.', ctaLabel: 'Заказать доставку', ctaUrl: '/delivery', durationSeconds: 7 },
 ]
 const safeMenuHref = (href: string | null | undefined) => {
   if (!href) return href
@@ -123,7 +123,7 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
         {slides.map((slide, index) => <article class:list={['story-media-item', { 'is-active': index === 0 }]} data-story-media aria-hidden={index === 0 ? 'false' : 'true'}>
           {slide.mediaType === 'VIDEO'
             ? <video loop muted playsinline poster={slide.posterUrl ?? undefined} preload={index === 0 ? 'auto' : 'metadata'} src={slide.mediaUrl}></video>
-            : <img src={slide.mediaUrl} alt="" fetchpriority={index === 0 ? 'high' : undefined} loading={index === 0 ? 'eager' : 'lazy'} />}
+            : <img src={slide.mediaUrl} alt="" data-story-focus-x={slide.imageFocus?.x} data-story-focus-y={slide.imageFocus?.y} fetchpriority={index === 0 ? 'high' : undefined} loading={index === 0 ? 'eager' : 'lazy'} />}
         </article>)}
       </div>
       <div class="stories-copy">
@@ -221,6 +221,30 @@ const eventTitle = featuredEvent?.title ?? 'Вечер в Чашке'
   const stories = document.querySelector<HTMLElement>('[data-home-stories]')
 
   if (stories) {
+    const focusImages = [...stories.querySelectorAll<HTMLImageElement>('img[data-story-focus-x][data-story-focus-y]')]
+    const fitImageToFocus = (image: HTMLImageElement) => {
+      if (!image.naturalWidth || !image.naturalHeight) return
+      const focusX = Number(image.dataset.storyFocusX)
+      const focusY = Number(image.dataset.storyFocusY)
+      if (!Number.isFinite(focusX) || !Number.isFinite(focusY)) return
+      const frame = image.parentElement
+      if (!frame) return
+      const { width: frameWidth, height: frameHeight } = frame.getBoundingClientRect()
+      if (!frameWidth || !frameHeight) return
+      const scale = Math.max(frameWidth / image.naturalWidth, frameHeight / image.naturalHeight)
+      const width = image.naturalWidth * scale
+      const height = image.naturalHeight * scale
+      const left = Math.min(0, Math.max(frameWidth - width, frameWidth / 2 - width * focusX / 100))
+      const top = Math.min(0, Math.max(frameHeight - height, frameHeight / 2 - height * focusY / 100))
+      Object.assign(image.style, { position: 'absolute', width: `${width}px`, height: `${height}px`, maxWidth: 'none', left: `${left}px`, top: `${top}px`, objectFit: 'fill' })
+    }
+    const refreshFocusedImages = () => focusImages.forEach(fitImageToFocus)
+    focusImages.forEach((image) => {
+      if (image.complete) fitImageToFocus(image)
+      image.addEventListener('load', () => fitImageToFocus(image))
+    })
+    new ResizeObserver(refreshFocusedImages).observe(stories)
+
     const media = [...stories.querySelectorAll<HTMLElement>('[data-story-media]')]
     const copy = [...stories.querySelectorAll<HTMLElement>('[data-story-copy]')]
     const controls = [...stories.querySelectorAll<HTMLButtonElement>('[data-story-control]')]

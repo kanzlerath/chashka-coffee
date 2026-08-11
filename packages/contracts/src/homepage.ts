@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { dietaryMarkSchema, menuItemMeasurementUnitSchema } from './catalog'
+import { imageFocusSchema } from './media'
 
 const uuid = z.uuid()
 const nullableText = (max: number) => z.string().trim().max(max).nullable()
@@ -14,6 +15,7 @@ export const homepageSlideSchema = z.object({
   id: uuid,
   mediaType: homepageSlideMediaTypeSchema,
   mediaUrl: publicUrl,
+  imageFocus: imageFocusSchema.nullable(),
   posterUrl: nullablePublicUrl,
   eyebrow: nullableText(80),
   title: z.string().trim().min(1).max(180),

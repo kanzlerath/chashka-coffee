@@ -407,6 +407,7 @@ model HomepageSlide {
   id              String                 @id @default(dbgenerated("uuidv7()")) @db.Uuid
   mediaType       HomepageSlideMediaType @map("media_type")
   mediaUrl        String                 @map("media_url")
+  imageFocus      Json?                  @map("image_focus")
   posterUrl       String?                @map("poster_url")
   eyebrow         String?                @db.VarChar(80)
   title           String                 @db.VarChar(180)

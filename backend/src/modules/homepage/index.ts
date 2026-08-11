@@ -6,6 +6,7 @@ import {
   homepageOperationSuccessResponseSchema,
   homepagePublicResponseSchema,
   homepageSlideResponseSchema,
+  imageFocusSchema,
   upsertHomepageBestsellerRequestSchema,
   upsertHomepageDayPartRequestSchema,
   upsertHomepageDaySectionRequestSchema,
@@ -25,6 +26,7 @@ import type { MiddlewareHandler } from 'hono'
 import { z } from 'zod'
 
 import type { DbClient } from '../../db'
+import { Prisma } from '../../generated/prisma/client'
 import { AppError, validationErrorHook } from '../../http/errors'
 import type { AuthHttpEnv } from '../auth'
 
@@ -124,8 +126,8 @@ function menuItemDto(item: MenuItemWithCategory): HomepageBestsellerMenuItem {
   }
 }
 
-function slideDto(slide: { id: string; mediaType: 'IMAGE' | 'VIDEO'; mediaUrl: string; posterUrl: string | null; eyebrow: string | null; title: string; description: string | null; ctaLabel: string | null; ctaUrl: string | null; durationSeconds: number; isPublished: boolean; position: number; createdAt: Date; updatedAt: Date }): HomepageSlide {
-  return { ...slide, createdAt: slide.createdAt.toISOString(), updatedAt: slide.updatedAt.toISOString() }
+function slideDto(slide: { id: string; mediaType: 'IMAGE' | 'VIDEO'; mediaUrl: string; imageFocus: unknown; posterUrl: string | null; eyebrow: string | null; title: string; description: string | null; ctaLabel: string | null; ctaUrl: string | null; durationSeconds: number; isPublished: boolean; position: number; createdAt: Date; updatedAt: Date }): HomepageSlide {
+  return { ...slide, imageFocus: slide.imageFocus === null ? null : imageFocusSchema.parse(slide.imageFocus), createdAt: slide.createdAt.toISOString(), updatedAt: slide.updatedAt.toISOString() }
 }
 
 function bestsellerDto(bestseller: HomepageBestsellerWithItem): HomepageBestseller {
@@ -141,7 +143,7 @@ function daySectionDto(section: HomepageDaySectionRecord): HomepageDaySection {
 }
 
 function slideInput(input: UpsertHomepageSlideRequest) {
-  return input
+  return { ...input, imageFocus: input.imageFocus ?? Prisma.JsonNull }
 }
 
 function bestsellerInput(input: UpsertHomepageBestsellerRequest) {

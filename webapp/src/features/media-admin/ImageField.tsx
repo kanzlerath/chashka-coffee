@@ -1,8 +1,8 @@
 import { SearchIcon, Upload01Icon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { mediaAssetListResponseSchema, type CardImageCrop, type MediaAsset } from '@chashka-coffee/contracts'
+import { mediaAssetListResponseSchema, type CardImageCrop, type ImageFocus, type MediaAsset } from '@chashka-coffee/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -13,7 +13,7 @@ import { useAuth } from '@/features/auth'
 
 import { resolveAdminImagePreview, supportedImageTypes, uploadMediaFile } from './media-utils'
 
-type CropAspect = 'ORIGINAL' | 'CARD' | '16:9' | '4:3' | '1:1' | '4:5'
+type CropAspect = 'ORIGINAL' | 'CARD' | '16:9' | '4:3' | '1:1' | '4:5' | '9:16'
 const mediaPickerPageSize = 18
 
 const aspectValue: Record<Exclude<CropAspect, 'ORIGINAL'>, number> = {
@@ -22,6 +22,7 @@ const aspectValue: Record<Exclude<CropAspect, 'ORIGINAL'>, number> = {
   '4:3': 4 / 3,
   '1:1': 1,
   '4:5': 4 / 5,
+  '9:16': 9 / 16,
 }
 
 function useMediaUpload(onUploaded?: (asset: MediaAsset) => void) {
@@ -72,7 +73,7 @@ async function cropFile(file: File, aspect: CropAspect, zoom: number, focusX: nu
   }
 }
 
-function MediaPickerDialog({ open, value, onOpenChange, onSelect }: { open: boolean; value: string | null; onOpenChange: (open: boolean) => void; onSelect: (url: string) => void }) {
+function MediaPickerDialog({ open, value, onOpenChange, onSelect, allowUploadCrop = true }: { open: boolean; value: string | null; onOpenChange: (open: boolean) => void; onSelect: (url: string) => void; allowUploadCrop?: boolean }) {
   const { api } = useAuth()
   const fileInput = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState('')
@@ -130,7 +131,7 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect }: { open: bool
     <DialogContent className="admin-media-picker-dialog">
       <DialogHeader>
         <DialogTitle>{file ? 'Подготовить фотографию' : 'Выбрать фотографию'}</DialogTitle>
-        <DialogDescription>{file ? 'Оставьте оригинал или подготовьте отдельный кадр для этого места.' : 'Найдите загруженный файл или добавьте новый. SVG здесь намеренно не показываются.'}</DialogDescription>
+        <DialogDescription>{file ? 'Оставьте оригинал или подготовьте отдельный кадр для этого места.' : allowUploadCrop ? 'Найдите загруженный файл или добавьте новый. SVG здесь намеренно не показываются.' : 'Выберите или загрузите исходную фотографию. Точку центра для первого экрана можно будет поставить следующим шагом.'}</DialogDescription>
       </DialogHeader>
 
       {file && filePreview ? <div className="admin-crop-workspace">
@@ -138,7 +139,7 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect }: { open: bool
           ? <div className="admin-crop-preview" data-aspect={aspect}><img src={filePreview} alt="Предпросмотр кадрирования" /></div>
           : <CropPreviewImage src={filePreview} alt="Предпросмотр кадрирования" aspect={aspect} focusX={focusX} focusY={focusY} zoom={zoom} />}
         <div className="admin-crop-controls">
-          <label><Typography variant="label">Формат кадра</Typography><select value={aspect} onChange={(event) => { setAspect(event.target.value as CropAspect); setZoom(1) }}><option value="ORIGINAL">Оригинал без обрезки</option><option value="CARD">Карточка товара · 1:0,86</option><option value="16:9">Широкий · 16:9</option><option value="4:3">Горизонтальный · 4:3</option><option value="1:1">Квадрат · 1:1</option><option value="4:5">Вертикальный · 4:5</option></select></label>
+          <label><Typography variant="label">Формат кадра</Typography><select value={aspect} onChange={(event) => { setAspect(event.target.value as CropAspect); setZoom(1) }}><option value="ORIGINAL">Оригинал без обрезки</option><option value="CARD">Карточка товара · 1:0,86</option><option value="16:9">Широкий · 16:9</option><option value="4:3">Горизонтальный · 4:3</option><option value="1:1">Квадрат · 1:1</option><option value="4:5">Вертикальный · 4:5</option><option value="9:16">Экран телефона · 9:16</option></select></label>
           {aspect !== 'ORIGINAL' ? <>
             <label><Typography variant="label">Приближение · {zoom.toFixed(1)}×</Typography><input min="1" max="2" step="0.05" type="range" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} /></label>
             <div className="admin-crop-axis"><label><Typography variant="label">Фокус по горизонтали</Typography><input min="0" max="100" type="range" value={focusX} onChange={(event) => setFocusX(Number(event.target.value))} /></label><label><Typography variant="label">Фокус по вертикали</Typography><input min="0" max="100" type="range" value={focusY} onChange={(event) => setFocusY(Number(event.target.value))} /></label></div>
@@ -149,9 +150,10 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect }: { open: bool
       </div> : <>
         <div className="admin-media-picker-tools">
           <InputGroup><InputGroupAddon align="inline-start"><HugeiconsIcon icon={SearchIcon} size={17} strokeWidth={1.8} /></InputGroupAddon><InputGroupInput autoFocus aria-label="Поиск по медиатеке" placeholder="Название файла…" value={query} onChange={(event) => setQuery(event.target.value)} /></InputGroup>
-          <Input ref={fileInput} accept="image/jpeg,image/png,image/webp,image/avif" className="sr-only" type="file" onChange={(event) => { const next = event.target.files?.[0]; if (next) setFile(next); event.currentTarget.value = '' }} />
+          <Input ref={fileInput} accept="image/jpeg,image/png,image/webp,image/avif" className="sr-only" type="file" onChange={(event) => { const next = event.target.files?.[0]; if (next) { if (allowUploadCrop) setFile(next); else upload.mutate(next) }; event.currentTarget.value = '' }} />
           <Button type="button" variant="outline" onClick={() => fileInput.current?.click()}><HugeiconsIcon icon={Upload01Icon} size={17} strokeWidth={1.8} />Загрузить</Button>
         </div>
+        {upload.isError ? <Typography className="admin-state-message admin-state-error" variant="bodySm">{upload.error instanceof Error ? upload.error.message : 'Не удалось загрузить фотографию.'}</Typography> : null}
         {assets.isPending ? <Typography className="admin-state-message" variant="bodySm">Загружаем медиатеку…</Typography> : null}
         {assets.isError ? <Typography className="admin-state-message admin-state-error" variant="bodySm">Не удалось загрузить медиатеку.</Typography> : null}
         {!assets.isPending && !assets.isError && visibleAssets.length === 0 ? <div className="admin-media-picker-empty"><Typography variant="bodySmMedium">{query ? 'Ничего не найдено' : 'Медиатека пока пуста'}</Typography><Typography variant="bodySm" tone="muted">{query ? 'Попробуйте другое название.' : 'Загрузите первую фотографию — она сразу появится во всех редакторах.'}</Typography></div> : null}
@@ -179,9 +181,24 @@ function cropBox(width: number, height: number, aspect: Exclude<CropAspect, 'ORI
   }
 }
 
-function CropPreviewImage({ src, alt, aspect, focusX, focusY, zoom, className }: { src: string; alt: string; aspect: Exclude<CropAspect, 'ORIGINAL'>; focusX: number; focusY: number; zoom: number; className?: string }) {
+function focusCropBox(width: number, height: number, aspect: Exclude<CropAspect, 'ORIGINAL'>, focusX: number, focusY: number) {
+  let cropWidth = width
+  let cropHeight = cropWidth / aspectValue[aspect]
+  if (cropHeight > height) {
+    cropHeight = height
+    cropWidth = cropHeight * aspectValue[aspect]
+  }
+  return {
+    left: Math.min(Math.max((width * focusX / 100) - cropWidth / 2, 0), width - cropWidth),
+    top: Math.min(Math.max((height * focusY / 100) - cropHeight / 2, 0), height - cropHeight),
+    width: cropWidth,
+    height: cropHeight,
+  }
+}
+
+function CropPreviewImage({ src, alt, aspect, focusX, focusY, zoom, className, centerFocus = false }: { src: string; alt: string; aspect: Exclude<CropAspect, 'ORIGINAL'>; focusX: number; focusY: number; zoom: number; className?: string; centerFocus?: boolean }) {
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null)
-  const crop = dimensions ? cropBox(dimensions.width, dimensions.height, aspect, focusX, focusY, zoom) : null
+  const crop = dimensions ? centerFocus ? focusCropBox(dimensions.width, dimensions.height, aspect, focusX, focusY) : cropBox(dimensions.width, dimensions.height, aspect, focusX, focusY, zoom) : null
   const imageStyle = crop && dimensions ? {
     position: 'absolute' as const,
     width: `${(dimensions.width / crop.width) * 100}%`,
@@ -223,20 +240,55 @@ function MediaCardCropDialog({ open, value, crop, onOpenChange, onSelect }: { op
   </Dialog>
 }
 
-export function AdminImageField({ value, onChange, required = false, compact = false, cardCrop = false, imageCrop = null, onImageCropChange }: { value: string | null; onChange: (value: string | null) => void; required?: boolean; compact?: boolean; cardCrop?: boolean; imageCrop?: CardImageCrop | null; onImageCropChange?: (crop: CardImageCrop | null) => void }) {
+const defaultImageFocus: ImageFocus = { x: 50, y: 50 }
+
+function ImageFocusDialog({ open, value, focus, onOpenChange, onSelect }: { open: boolean; value: string; focus: ImageFocus | null; onOpenChange: (open: boolean) => void; onSelect: (focus: ImageFocus) => void }) {
+  const [nextFocus, setNextFocus] = useState(focus ?? defaultImageFocus)
+  useEffect(() => { if (open) setNextFocus(focus ?? defaultImageFocus) }, [focus, open])
+  const selectPoint = (event: MouseEvent<HTMLButtonElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect()
+    setNextFocus({
+      x: Math.min(100, Math.max(0, ((event.clientX - bounds.left) / bounds.width) * 100)),
+      y: Math.min(100, Math.max(0, ((event.clientY - bounds.top) / bounds.height) * 100)),
+    })
+  }
+
+  return <Dialog open={open} onOpenChange={onOpenChange}>
+    <DialogContent className="admin-media-picker-dialog admin-image-focus-dialog">
+      <DialogHeader><DialogTitle>Выберите центр первого экрана</DialogTitle><DialogDescription>Кликните по объекту, который должен оказаться в центре. Сайт заполнит экран фотографией и сохранит эту точку и на компьютере, и на телефоне.</DialogDescription></DialogHeader>
+      <div className="admin-image-focus-workspace">
+        <button aria-label="Выбрать центр фотографии" className="admin-image-focus-picker" type="button" onClick={selectPoint}>
+          <img src={resolveAdminImagePreview(value)} alt="Исходная фотография" />
+          <span aria-hidden="true" style={{ left: `${nextFocus.x}%`, top: `${nextFocus.y}%` }} />
+        </button>
+        <div className="admin-image-focus-previews">
+          <div><Typography variant="caption">Компьютер · широкий экран</Typography><CropPreviewImage src={resolveAdminImagePreview(value)} alt="Предпросмотр первого экрана на компьютере" aspect="16:9" focusX={nextFocus.x} focusY={nextFocus.y} zoom={1} centerFocus /></div>
+          <div><Typography variant="caption">Телефон · вертикальный экран</Typography><CropPreviewImage src={resolveAdminImagePreview(value)} alt="Предпросмотр первого экрана на телефоне" aspect="9:16" focusX={nextFocus.x} focusY={nextFocus.y} zoom={1} centerFocus /></div>
+        </div>
+        <DialogFooter><Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Отмена</Button><Button type="button" onClick={() => { onSelect(nextFocus); onOpenChange(false) }}>Сохранить точку</Button></DialogFooter>
+      </div>
+    </DialogContent>
+  </Dialog>
+}
+
+export function AdminImageField({ value, onChange, required = false, compact = false, cardCrop = false, imageCrop = null, onImageCropChange, imageFocus = null, onImageFocusChange }: { value: string | null; onChange: (value: string | null) => void; required?: boolean; compact?: boolean; cardCrop?: boolean; imageCrop?: CardImageCrop | null; onImageCropChange?: (crop: CardImageCrop | null) => void; imageFocus?: ImageFocus | null; onImageFocusChange?: (focus: ImageFocus | null) => void }) {
   const [open, setOpen] = useState(false)
   const [cropOpen, setCropOpen] = useState(false)
+  const [focusOpen, setFocusOpen] = useState(false)
   return <div className="admin-image-field" data-compact={compact || undefined}>
     <button aria-label={value ? 'Заменить фотографию' : 'Выбрать фотографию'} className="admin-image-field-preview" type="button" onClick={() => setOpen(true)}>{value ? <img src={resolveAdminImagePreview(value)} alt="" /> : <Typography variant="bodySm" tone="muted">Фотография не выбрана</Typography>}</button>
     <div className="admin-image-field-actions">
       <Button size="sm" type="button" variant="outline" onClick={() => setOpen(true)}>{value ? 'Заменить' : 'Выбрать фотографию'}</Button>
       {value && cardCrop && onImageCropChange ? <Button size="sm" type="button" variant="outline" onClick={() => setCropOpen(true)}>Настроить кадр</Button> : null}
       {value && imageCrop && onImageCropChange ? <Button size="sm" type="button" variant="ghost" onClick={() => onImageCropChange(null)}>Сбросить кадр</Button> : null}
+      {value && onImageFocusChange ? <Button size="sm" type="button" variant="outline" onClick={() => setFocusOpen(true)}>{imageFocus ? 'Изменить центр' : 'Выбрать центр'}</Button> : null}
+      {value && imageFocus && onImageFocusChange ? <Button size="sm" type="button" variant="ghost" onClick={() => onImageFocusChange(null)}>Сбросить центр</Button> : null}
       {value && !required ? <Button size="sm" type="button" variant="ghost" onClick={() => onChange(null)}>Убрать</Button> : null}
       <details><summary><Typography variant="caption">Указать ссылку вручную</Typography></summary><Input required={required} inputMode="url" placeholder="/images/photo.webp или https://…" value={value ?? ''} onChange={(event) => onChange(event.target.value || null)} /></details>
     </div>
-    <MediaPickerDialog open={open} value={value} onOpenChange={setOpen} onSelect={(url) => onChange(url)} />
+    <MediaPickerDialog open={open} value={value} onOpenChange={setOpen} onSelect={(url) => onChange(url)} allowUploadCrop={!onImageFocusChange} />
     {cropOpen && value && cardCrop && onImageCropChange ? <MediaCardCropDialog open value={value} crop={imageCrop} onOpenChange={setCropOpen} onSelect={onImageCropChange} /> : null}
+    {focusOpen && value && onImageFocusChange ? <ImageFocusDialog open value={value} focus={imageFocus} onOpenChange={setFocusOpen} onSelect={onImageFocusChange} /> : null}
   </div>
 }
 

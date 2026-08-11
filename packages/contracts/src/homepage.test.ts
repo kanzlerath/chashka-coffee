@@ -6,6 +6,7 @@ describe('homepage contracts', () => {
   const slide = {
     mediaType: 'VIDEO',
     mediaUrl: '/uploads/summer-drink.mp4',
+    imageFocus: null,
     posterUrl: '/uploads/summer-drink.webp',
     eyebrow: 'Летняя коллекция',
     title: 'Холодный кофе\nдля долгого дня',
@@ -23,6 +24,15 @@ describe('homepage contracts', () => {
       mediaUrl: '/uploads/summer-drink.mp4',
       durationSeconds: 8,
     })
+  })
+
+  test('accepts a focal point for an image slide', () => {
+    expect(upsertHomepageSlideRequestSchema.parse({
+      ...slide,
+      mediaType: 'IMAGE',
+      mediaUrl: '/uploads/coffee.webp',
+      imageFocus: { x: 31.5, y: 72 },
+    }).imageFocus).toEqual({ x: 31.5, y: 72 })
   })
 
   test('rejects untrusted media and CTA URLs', () => {

@@ -14,3 +14,8 @@ export const cardImageCropSchema = z.object({
   zoom: z.number().min(1).max(2),
 }).strict()
 export type CardImageCrop = z.infer<typeof cardImageCropSchema>
+export const imageFocusSchema = z.object({
+  x: z.number().min(0).max(100),
+  y: z.number().min(0).max(100),
+}).strict()
+export type ImageFocus = z.infer<typeof imageFocusSchema>
