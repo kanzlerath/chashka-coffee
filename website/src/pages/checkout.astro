@@ -58,6 +58,7 @@ const yandexMapsApiKey = import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY ?? ''
   let idempotencyKey = sessionStorage.getItem('chashka_checkout_idempotency') ?? crypto.randomUUID()
   let pickupMap: { geoObjects: { add(object: unknown): void }; setBounds(bounds: number[][], options?: unknown): void; destroy(): void } | null = null
   let pickupMarkers = new Map<string, { options: { set(options: unknown): void } }>()
+  let pickupLocationNames = new Map<string, string>()
   sessionStorage.setItem('chashka_checkout_idempotency', idempotencyKey)
 
   const checkoutPhoneInput = form?.elements.namedItem('phone')
@@ -89,14 +90,20 @@ const yandexMapsApiKey = import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY ?? ''
 
   function renderLocations(locations: PickupLocationWithCoordinates[]) {
     locationsRoot?.replaceChildren()
+    pickupLocationNames = new Map()
     for (const [index, location] of locations.entries()) {
       const label = document.createElement('label')
       const input = document.createElement('input'); input.type = 'radio'; input.name = 'pickupRestaurantId'; input.value = location.id; input.required = true; input.checked = index === 0
       const copy = document.createElement('span')
-      const name = document.createElement('strong'); name.textContent = location.name.replace(/^Чашка кофе\s*[—-]\s*/i, '')
+      const locationName = location.name.replace(/^Чашка кофе\s*[—-]\s*/i, '')
+      pickupLocationNames.set(location.id, locationName)
+      const name = document.createElement('strong'); name.textContent = locationName
       const address = document.createElement('b'); address.textContent = `${location.city}, ${location.address}`
-      const hours = document.createElement('small'); hours.textContent = location.openingHoursLabel
-      copy.append(name, address, hours)
+      copy.append(name, address)
+      if (location.openingHoursLabel !== 'График указан на странице ресторана') {
+        const hours = document.createElement('small'); hours.textContent = location.openingHoursLabel
+        copy.append(hours)
+      }
       label.append(input, copy)
       input.addEventListener('change', () => syncPickupSelection(location.id))
       locationsRoot?.append(label)
@@ -109,6 +116,11 @@ const yandexMapsApiKey = import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY ?? ''
       label.classList.toggle('is-selected', label.querySelector<HTMLInputElement>('input')?.value === locationId)
     })
     pickupMarkers.forEach((marker, markerId) => marker.options.set({ preset: markerId === locationId ? 'islands#darkGreenCoffeeIcon' : 'islands#greenCoffeeIcon' }))
+    const locationName = pickupLocationNames.get(locationId)
+    if (locationName && pickupMapStatus) {
+      pickupMapStatus.textContent = `Выбрана точка: ${locationName}. Нажмите на другую метку, чтобы изменить.`
+      pickupMapStatus.removeAttribute('hidden')
+    }
   }
 
   function loadYandexMaps(apiKey: string) {
@@ -160,7 +172,6 @@ const yandexMapsApiKey = import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY ?? ''
         }
         if (points.length > 1) pickupMap.setBounds([[Math.min(...latitudes), Math.min(...longitudes)], [Math.max(...latitudes), Math.max(...longitudes)]], { checkZoomRange: true, zoomMargin: 34, maxZoom: 13 })
         syncPickupSelection(locationsRoot?.querySelector<HTMLInputElement>('input:checked')?.value ?? points[0]!.id)
-        pickupMapStatus?.setAttribute('hidden', '')
       })
     } catch {
       pickupMapRoot.hidden = true
@@ -264,6 +275,16 @@ const yandexMapsApiKey = import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY ?? ''
   body.public-site .public-main[data-path^="/checkout"] .checkout-submit{min-height:54px;margin-top:24px;border-radius:var(--radius);background:var(--moss);font-size:12px}.public-main[data-path^="/checkout"] .checkout-empty{margin:0 var(--content-gutter);padding:clamp(68px,9vw,120px) 26px;border-radius:var(--radius);background:var(--sand)}
   @media(max-width:900px){body.public-site .public-main[data-path^="/checkout"] .checkout-heading{padding-right:var(--mobile-gutter);padding-left:var(--mobile-gutter)}body.public-site .public-main[data-path^="/checkout"] :is(.checkout-loading,.checkout-layout,.checkout-empty){margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter)}body.public-site .public-main[data-path^="/checkout"] .checkout-layout{grid-template-columns:1fr}.public-main[data-path^="/checkout"] .checkout-order{border-right:0;border-bottom:1px solid var(--line)}}
   @media(max-width:560px){body.public-site .public-main[data-path^="/checkout"] .checkout-page{padding-top:36px}.public-main[data-path^="/checkout"] .checkout-heading{padding-bottom:32px}.public-main[data-path^="/checkout"] .checkout-heading h1{font-size:48px}.public-main[data-path^="/checkout"] :is(.checkout-order,.checkout-details){padding:32px 20px}.public-main[data-path^="/checkout"] .checkout-layout{border-radius:20px}.public-main[data-path^="/checkout"] .checkout-pickup-map{height:230px}.public-main[data-path^="/checkout"] .checkout-lines article{grid-template-columns:54px 1fr}.public-main[data-path^="/checkout"] .checkout-lines img{width:54px;height:62px}.public-main[data-path^="/checkout"] .checkout-lines b{grid-column:2}}
+</style>
+
+<style is:global>
+  /* Pickup is a compact choice, not a second primary action. The form-control rule above
+     also reaches radio inputs, so the radio is explicitly isolated here. */
+  body.public-site .public-main[data-path^="/checkout"] .checkout-pickup label{min-height:0;padding:13px 14px;align-items:center;gap:11px}
+  body.public-site .public-main[data-path^="/checkout"] .checkout-pickup input{width:18px!important;min-width:18px;min-height:18px!important;height:18px;margin:0!important;padding:0!important;border:0!important;border-radius:50%!important;flex:0 0 18px;background:transparent!important;box-shadow:none!important}
+  body.public-site .public-main[data-path^="/checkout"] .checkout-pickup label>span{gap:2px}.public-main[data-path^="/checkout"] .checkout-pickup strong{font-size:13px;line-height:1.2}.public-main[data-path^="/checkout"] .checkout-pickup b{font-size:10px;line-height:1.35}.public-main[data-path^="/checkout"] .checkout-pickup small{margin-top:2px;font-size:9px;line-height:1.3}
+  body.public-site .public-main[data-path^="/checkout"] .checkout-pickup-map{margin-bottom:12px}.public-main[data-path^="/checkout"] .checkout-pickup-map p{max-width:245px}
+  @media(max-width:560px){body.public-site .public-main[data-path^="/checkout"] .checkout-pickup label{padding:12px 13px}.public-main[data-path^="/checkout"] .checkout-pickup-map p{right:10px;bottom:10px;max-width:205px;font-size:9px}}
 </style>
 
 <style is:global>

@@ -8,7 +8,7 @@ import PageShell from '../layouts/PageShell.astro'
     <article class="order-receipt" data-order-receipt hidden>
       <header class="order-receipt-header">
         <div class="order-receipt-copy">
-          <a class="order-back-link" href="/account">← К заказам</a>
+          <a class="order-back-link" href="/account">К заказам</a>
           <span class="order-number" data-order-number>Заказ</span>
           <h1 data-order-status>Ожидает оплаты</h1>
           <span data-order-status-copy></span>
@@ -23,7 +23,7 @@ import PageShell from '../layouts/PageShell.astro'
           <div class="order-actions">
             <button type="button" data-order-pay hidden>Перейти к оплате</button>
             <button type="button" data-order-refresh>Обновить статус</button>
-            <a href="/account">Все заказы в личном кабинете</a>
+            <a href="/account">В личный кабинет</a>
           </div>
         </aside>
       </div>
@@ -69,7 +69,11 @@ import PageShell from '../layouts/PageShell.astro'
     setText('[data-order-total]', money(order.totalKopecks))
     setText('[data-order-pickup-name]', order.pickupLocation.name.replace(/^Чашка кофе\s*[—-]\s*/i, ''))
     setText('[data-order-pickup-address]', `${order.pickupLocation.city}, ${order.pickupLocation.address}`)
-    setText('[data-order-pickup-hours]', order.pickupLocation.openingHoursLabel)
+    const pickupHours = document.querySelector<HTMLElement>('[data-order-pickup-hours]')
+    if (pickupHours) {
+      pickupHours.textContent = order.pickupLocation.openingHoursLabel
+      pickupHours.hidden = order.pickupLocation.openingHoursLabel === 'График указан на странице ресторана'
+    }
     setText('[data-order-customer]', order.customer.name)
     setText('[data-order-phone]', order.customer.phone)
     if (pay) pay.hidden = order.status !== 'AWAITING_PAYMENT'
@@ -177,4 +181,19 @@ import PageShell from '../layouts/PageShell.astro'
   body.public-site .public-main[data-path^="/order"] .order-actions{display:grid;margin-top:auto;padding-top:28px;gap:9px}.public-main[data-path^="/order"] .order-actions button,.public-main[data-path^="/order"] .order-actions a{display:flex;min-height:48px;margin:0;padding:0 18px;border:1px solid var(--line);border-radius:var(--radius);align-items:center;justify-content:center;background:var(--paper);color:var(--ink);font-size:11px;font-weight:800;text-decoration:none;transition:background .2s ease,color .2s ease,transform .2s ease}.public-main[data-path^="/order"] .order-actions button[data-order-pay]{border-color:var(--moss);background:var(--moss);color:#fff}.public-main[data-path^="/order"] .order-actions :is(button,a):hover{background:#e5eadc;transform:translateY(-1px)}.public-main[data-path^="/order"] .order-actions button[data-order-pay]:hover{background:#294b3a}.public-main[data-path^="/order"] .order-actions :is(button,a):focus-visible{outline:3px solid var(--lime);outline-offset:3px}
   @media(max-width:850px){body.public-site .public-main[data-path^="/order"] .order-page{padding-top:36px}.public-main[data-path^="/order"] :is(.order-loading,.order-receipt,.order-error){margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter)}.public-main[data-path^="/order"] .order-receipt-header{flex-direction:row!important}.public-main[data-path^="/order"] .order-grid{grid-template-columns:1fr!important}.public-main[data-path^="/order"] .order-composition{border-right:0!important;border-bottom:1px solid var(--line)!important}}
   @media(max-width:520px){body.public-site .public-main[data-path^="/order"] .order-receipt-header{padding:30px 23px!important}.public-main[data-path^="/order"] .order-back-link{margin-bottom:25px}.public-main[data-path^="/order"] .order-receipt h1[data-order-status]{font-size:40px!important}.public-main[data-path^="/order"] .order-brand{width:50px;height:50px}.public-main[data-path^="/order"] .order-composition,.public-main[data-path^="/order"] .order-context{padding:30px 22px!important}.public-main[data-path^="/order"] .order-context section strong{font-size:20px}}
+  /* The receipt becomes one clear vertical reading flow on phones. */
+  @media(max-width:520px){
+    body.public-site .public-main[data-path^="/order"] .order-page{padding-top:24px}
+    body.public-site .public-main[data-path^="/order"] .order-receipt-header{display:block!important;position:relative;padding:28px 21px!important}
+    body.public-site .public-main[data-path^="/order"] .order-receipt-copy{max-width:none;padding-right:58px}
+    body.public-site .public-main[data-path^="/order"] .order-brand{position:absolute;top:25px;right:21px;width:42px;height:42px}
+    body.public-site .public-main[data-path^="/order"] .order-back-link{margin-bottom:22px;font-size:11px;text-decoration:underline;text-underline-offset:3px}
+    body.public-site .public-main[data-path^="/order"] .order-number{margin-bottom:13px;font-size:10px}
+    body.public-site .public-main[data-path^="/order"] .order-receipt h1[data-order-status]{font-size:38px!important;line-height:.9!important}
+    body.public-site .public-main[data-path^="/order"] .order-receipt-copy>[data-order-status-copy]{margin-top:15px;font-size:12px;line-height:1.5}
+    body.public-site .public-main[data-path^="/order"] .order-composition,.public-main[data-path^="/order"] .order-context{padding:27px 21px!important}
+    body.public-site .public-main[data-path^="/order"] .order-composition h2{font-size:27px}.public-main[data-path^="/order"] .order-composition>div{margin-top:17px!important}.public-main[data-path^="/order"] .order-composition>div>div{padding:14px 0!important;gap:14px}.public-main[data-path^="/order"] .order-composition strong{font-size:14px}.public-main[data-path^="/order"] .order-composition footer{padding-top:18px!important}.public-main[data-path^="/order"] .order-composition footer strong{font-size:30px!important}
+    body.public-site .public-main[data-path^="/order"] .order-context{gap:0}.public-main[data-path^="/order"] .order-context section{display:grid;grid-template-columns:94px minmax(0,1fr);padding-bottom:21px!important;column-gap:14px}.public-main[data-path^="/order"] .order-context section+section{padding-top:21px!important}.public-main[data-path^="/order"] .order-context section h2{grid-row:1/4;padding-top:2px;font-size:11px!important;letter-spacing:.01em!important;text-transform:uppercase}.public-main[data-path^="/order"] .order-context section strong{margin:0;font-size:18px;line-height:1.05}.public-main[data-path^="/order"] .order-context section span,.public-main[data-path^="/order"] .order-context section small{margin-top:5px;font-size:11px}
+    body.public-site .public-main[data-path^="/order"] .order-actions{margin-top:0;padding-top:22px;gap:8px}.public-main[data-path^="/order"] .order-actions button,.public-main[data-path^="/order"] .order-actions a{min-height:46px;font-size:10px}.public-main[data-path^="/order"] .order-actions a{background:transparent;text-decoration:underline;text-underline-offset:3px}
+  }
 </style>
