@@ -741,7 +741,7 @@
   .admin-shared-preview header strong { font-size: .9rem; }
 
   .admin-media-picker-dialog { width: min(68rem, calc(100vw - 2rem)); max-width: none !important; max-height: min(52rem, calc(100svh - 2rem)); grid-template-rows: auto auto minmax(0, 1fr); overflow: hidden; }
-  .admin-media-picker-dialog--library { grid-template-rows: auto minmax(0, 1fr); }
+  .admin-media-picker-dialog--library { height: min(52rem, calc(100svh - 2rem)); grid-template-rows: auto minmax(0, 1fr); }
   .admin-media-picker-library { display: grid; min-height: 0; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: .8rem; }
   .admin-media-picker-status:empty { display: none; }
   .admin-media-picker-tools { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .55rem; }
