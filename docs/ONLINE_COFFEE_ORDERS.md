@@ -32,6 +32,8 @@ AWAITING_PAYMENT --проверенный webhook--> PAID -> PREPARING -> READY_
 - `POST /api/payments/yookassa/webhook` — уведомления `payment.succeeded` и `payment.canceled`;
 - `GET /api/store/orders/:accessToken` — приватная страница заказа;
 - `GET /api/customer/orders` — история авторизованного покупателя;
+- `GET /api/customer/orders/:id` — заказ из истории; доступен только владельцу текущей сессии;
+- `POST /api/customer/orders/:id/payment` — безопасное продолжение оплаты заказа из истории;
 - `GET /api/admin/orders` и `PUT /api/admin/orders/:id/status` — рабочая очередь.
 
 ## Настройка тестового магазина

@@ -42,6 +42,7 @@ export type OrderRepository = {
   findPickupLocation(id: string): Promise<PickupLocation | null>
   findByIdempotencyKey(key: string): Promise<Order | null>
   findById(id: string): Promise<Order | null>
+  findByIdAndCustomerId(id: string, customerId: string): Promise<Order | null>
   create(input: CreateOrderRecord): Promise<{ order: Order; created: boolean }>
   findByAccessTokenHash(hash: string): Promise<Order | null>
   listByCustomerId(customerId: string): Promise<Order[]>

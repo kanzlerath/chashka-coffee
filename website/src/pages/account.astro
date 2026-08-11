@@ -16,7 +16,7 @@ import PageShell from '../layouts/PageShell.astro'
     <section class="account-welcome" data-account-page-signed-out hidden aria-labelledby="account-welcome-title">
       <div class="account-welcome-copy">
         <h1 id="account-welcome-title">Личный кабинет</h1>
-        <p>Бонусная карта, баланс и ваши данные — в одном спокойном месте.</p>
+        <p>Бонусная карта, баланс и онлайн-заказы — в одном месте.</p>
         <button type="button" data-account-trigger>Войти по номеру телефона</button>
       </div>
       <div class="account-welcome-note">
@@ -62,6 +62,7 @@ import PageShell from '../layouts/PageShell.astro'
       <section class="account-orders" aria-labelledby="account-orders-title">
         <header>
           <h2 id="account-orders-title">История заказов</h2>
+          <span>Все заказы кофе с сайта — от ожидающих оплаты до выданных.</span>
         </header>
         <div class="account-order-list" data-account-order-list hidden></div>
         <div class="account-orders-empty" data-account-orders-empty>
@@ -137,7 +138,9 @@ import PageShell from '../layouts/PageShell.astro'
     orderList?.toggleAttribute('hidden', orders.length === 0)
     ordersEmpty?.toggleAttribute('hidden', orders.length > 0)
     for (const order of orders) {
-      const article = document.createElement('article')
+      const article = document.createElement('a')
+      article.href = `/order?order=${encodeURIComponent(order.id)}`
+      article.setAttribute('aria-label', `Открыть заказ ${order.publicNumber}`)
       const header = document.createElement('div')
       const number = document.createElement('strong'); number.textContent = order.publicNumber
       const status = document.createElement('span'); status.textContent = orderStatusLabel[order.status]
@@ -207,4 +210,22 @@ import PageShell from '../layouts/PageShell.astro'
   @media(max-width:900px){.account-welcome,.account-overview{grid-template-columns:1fr}.account-welcome{min-height:0;padding:60px 34px;gap:52px}.account-welcome-note{max-width:560px;padding:38px 0 0;border-top:1px solid #d8d4cc;border-left:0}.account-dashboard{grid-template-columns:1fr}.account-overview{padding:58px 28px 28px;gap:44px}.account-balance{min-height:240px}.account-details,.account-orders{padding:48px 28px}.account-orders{min-height:330px}.account-service{grid-column:1;padding:26px 24px}.account-page-error{padding:68px 28px}}
   @media(max-width:520px){.account-loading,.account-welcome,.account-overview,.account-details,.account-orders,.account-service,.account-page-error{border-radius:0}.account-welcome{padding:52px 24px}.account-welcome h1,.account-overview h1,.account-page-error h1{font-size:40px}.account-overview{padding:50px 20px 20px}.account-balance strong{font-size:70px}.account-details,.account-orders{padding:42px 24px}.account-details dl>div{grid-template-columns:105px 1fr}.account-orders-empty{grid-template-columns:46px 1fr;gap:16px}.account-orders-icon{width:46px;height:46px}.account-service{align-items:flex-start;flex-direction:column}.account-page-error>a{display:block;margin:20px 0 0}}
   @media(prefers-reduced-motion:reduce){.account-loading span{animation-duration:.01ms}}
+</style>
+
+<style is:global>
+  /* Account surfaces use the same quiet, editorial rhythm as the public site. */
+  body.public-site .public-main[data-path="/account"] .account-page{gap:14px;color:var(--ink)}
+  body.public-site .public-main[data-path="/account"] :is(.account-loading,.account-welcome,.account-overview,.account-details,.account-orders,.account-service,.account-page-error){border-radius:var(--radius)}
+  body.public-site .public-main[data-path="/account"] .account-loading{min-height:480px;background:var(--sand);color:var(--muted)}
+  body.public-site .public-main[data-path="/account"] .account-welcome{min-height:480px;padding:clamp(42px,5.8vw,78px);gap:clamp(38px,6vw,90px);background:var(--sand)}
+  body.public-site .public-main[data-path="/account"] .account-welcome h1,.public-main[data-path="/account"] .account-overview h1,.public-main[data-path="/account"] .account-page-error h1{color:var(--ink);font-size:clamp(46px,5.4vw,76px);line-height:.9;letter-spacing:-.085em}
+  body.public-site .public-main[data-path="/account"] :is(.account-welcome-copy>p,.account-overview-copy>p){margin-top:18px;color:var(--muted);font-size:14px}
+  body.public-site .public-main[data-path="/account"] :is(.account-welcome button,.account-show-qr,.account-page-error button){min-height:48px;margin-top:25px;border-radius:var(--radius);background:var(--moss);font-size:12px}.public-main[data-path="/account"] :is(.account-welcome button,.account-show-qr,.account-page-error button):hover{background:#294b3a;transform:translateY(-2px)}.public-main[data-path="/account"] :is(.account-welcome button,.account-show-qr,.account-page-error button):focus-visible{outline:3px solid var(--lime);outline-offset:3px}
+  body.public-site .public-main[data-path="/account"] .account-welcome-note{border-color:var(--line)}.public-main[data-path="/account"] .account-qr-glyph{border-radius:var(--radius);background:var(--moss)}.public-main[data-path="/account"] .account-welcome h2{color:var(--ink);font-size:clamp(27px,2.6vw,38px)}.public-main[data-path="/account"] .account-welcome-note>p{color:var(--muted)}
+  body.public-site .public-main[data-path="/account"] .account-dashboard{grid-template-columns:minmax(0,1.2fr) minmax(350px,.8fr);gap:14px}.public-main[data-path="/account"] .account-overview{min-height:355px;padding:clamp(40px,5vw,70px);gap:clamp(38px,6vw,86px);background:var(--sand)}.public-main[data-path="/account"] .account-overview h1 span{color:#6f902b}.public-main[data-path="/account"] .account-balance{min-height:226px;border-radius:calc(var(--radius) - 5px);background:var(--moss)}.public-main[data-path="/account"] .account-balance strong{font-size:clamp(58px,6.4vw,86px)}
+  body.public-site .public-main[data-path="/account"] :is(.account-details,.account-orders){padding:clamp(34px,4.4vw,56px);border:1px solid var(--line)}.public-main[data-path="/account"] .account-details{background:var(--paper)}.public-main[data-path="/account"] .account-orders{background:var(--moss-soft)}.public-main[data-path="/account"] :is(.account-details h2,.account-orders h2){color:var(--ink);font-size:clamp(27px,2.8vw,38px)}.public-main[data-path="/account"] .account-orders header>span{display:block;max-width:365px;margin-top:12px;color:#596156;font-size:11px;line-height:1.55}.public-main[data-path="/account"] .account-details dl{margin-top:27px}.public-main[data-path="/account"] .account-details dl>div{border-color:var(--line)}
+  body.public-site .public-main[data-path="/account"] .account-order-list{margin-top:22px}.public-main[data-path="/account"] .account-order-list a{display:block;position:relative;padding:17px 30px 17px 0;border-top:1px solid #c5d0bb;color:inherit;text-decoration:none;transition:color .2s ease,transform .2s ease}.public-main[data-path="/account"] .account-order-list a>div{display:flex;align-items:center;justify-content:space-between;gap:16px}.public-main[data-path="/account"] .account-order-list a strong{font-size:13px}.public-main[data-path="/account"] .account-order-list a span{padding:6px 8px;border-radius:var(--radius);background:var(--moss);color:var(--lime);font-size:7px;font-weight:850;text-transform:uppercase}.public-main[data-path="/account"] .account-order-list a p{margin:8px 0 5px;color:#596156;font-size:9px}.public-main[data-path="/account"] .account-order-list a small{display:block;color:#737b70;font-size:9px;line-height:1.5}.public-main[data-path="/account"] .account-order-list a:after{position:absolute;top:50%;right:2px;color:var(--moss);content:'↗';font-size:18px;transform:translateY(-50%);transition:transform .2s ease}.public-main[data-path="/account"] .account-order-list a:last-child{border-bottom:1px solid #c5d0bb}.public-main[data-path="/account"] .account-order-list a:hover{color:var(--moss);transform:translateX(3px)}.public-main[data-path="/account"] .account-order-list a:hover:after{transform:translate(3px,-50%)}.public-main[data-path="/account"] .account-order-list a:focus-visible{outline:3px solid var(--moss);outline-offset:3px}.public-main[data-path="/account"] .account-orders-empty{margin-top:auto}.public-main[data-path="/account"] .account-orders-icon{border-radius:var(--radius);background:var(--moss)}
+  body.public-site .public-main[data-path="/account"] .account-service{padding:25px clamp(24px,3.6vw,46px);background:var(--sand)}.public-main[data-path="/account"] .account-service a,.public-main[data-path="/account"] .account-service button{color:var(--ink)}.public-main[data-path="/account"] .account-page-error{background:var(--sand)}
+  @media(max-width:900px){body.public-site .public-main[data-path="/account"] .account-dashboard{grid-template-columns:1fr}.public-main[data-path="/account"] .account-overview{min-height:0}.public-main[data-path="/account"] .account-balance{min-height:220px}}
+  @media(max-width:520px){body.public-site .public-main[data-path="/account"] .account-page{gap:10px}.public-main[data-path="/account"] :is(.account-loading,.account-welcome,.account-overview,.account-details,.account-orders,.account-service,.account-page-error){margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter);border-radius:20px}.public-main[data-path="/account"] .account-welcome{padding:44px 24px}.public-main[data-path="/account"] .account-overview{padding:42px 20px 20px}.public-main[data-path="/account"] :is(.account-details,.account-orders){padding:34px 22px}.public-main[data-path="/account"] .account-service{padding:23px 22px}.public-main[data-path="/account"] .account-page-error{padding:54px 24px}}
 </style>

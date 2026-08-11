@@ -212,6 +212,14 @@ export function createPrismaOrderRepository(db: DbClient): OrderRepository {
       return order ? toOrder(order as OrderRecord) : null
     },
 
+    async findByIdAndCustomerId(id, customerId) {
+      const order = await db.order.findFirst({
+        where: { id, customerId },
+        include: includeOrderItems,
+      })
+      return order ? toOrder(order as OrderRecord) : null
+    },
+
     async listByCustomerId(customerId) {
       const orders = await db.order.findMany({
         where: { customerId },

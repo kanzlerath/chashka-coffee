@@ -109,6 +109,12 @@ export class OrderService {
     return order
   }
 
+  async getCustomerOrder(customerId: string, orderId: string) {
+    const order = await this.dependencies.repository.findByIdAndCustomerId(orderId, customerId)
+    if (!order) throw new OrderFailure('order_not_found', 'Заказ не найден.')
+    return order
+  }
+
   listCustomerOrders(customerId: string) {
     return this.dependencies.repository.listByCustomerId(customerId)
   }

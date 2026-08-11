@@ -91,6 +91,26 @@ export function createOrderRoutes({
       401: { content: errorContent, description: 'Customer session required' },
     },
   })
+  const customerOrder = createRoute({
+    method: 'get', path: '/orders/{id}',
+    request: { params: z.object({ id: z.uuid() }) },
+    responses: {
+      200: { content: { 'application/json': { schema: orderResponseSchema } }, description: 'Current customer order' },
+      401: { content: errorContent, description: 'Customer session required' },
+      404: { content: errorContent, description: 'Order not found for current customer' },
+    },
+  })
+  const customerOrderPayment = createRoute({
+    method: 'post', path: '/orders/{id}/payment',
+    request: { params: z.object({ id: z.uuid() }) },
+    responses: {
+      200: { content: { 'application/json': { schema: startOrderPaymentResponseSchema } }, description: 'Reusable YooKassa redirect payment for current customer order' },
+      401: { content: errorContent, description: 'Customer session required' },
+      404: { content: errorContent, description: 'Order not found for current customer' },
+      409: { content: errorContent, description: 'Order cannot be paid' },
+      503: { content: errorContent, description: 'YooKassa is not configured' },
+    },
+  })
   const adminList = createRoute({
     method: 'get', path: '/orders',
     responses: { 200: { content: { 'application/json': { schema: adminOrderListResponseSchema } }, description: 'All coffee orders' } },
@@ -140,10 +160,23 @@ export function createOrderRoutes({
     return c.json(response, 200)
   })
   customerRoutes.openapi(customerOrders, async (c) => {
-    const customerId = await resolveCustomerId(getCookie(c, customerSessionCookieName))
-    if (!customerId) throw new AppError(401, 'UNAUTHORIZED', 'Войдите в аккаунт, чтобы увидеть заказы.')
+    const customerId = await requireCustomerId(c, resolveCustomerId)
     c.header('Cache-Control', 'no-store')
     return c.json({ orders: await service.listCustomerOrders(customerId) }, 200)
+  })
+  customerRoutes.openapi(customerOrder, async (c) => {
+    const customerId = await requireCustomerId(c, resolveCustomerId)
+    const order = await executeOrder(() => service.getCustomerOrder(customerId, c.req.valid('param').id))
+    c.header('Cache-Control', 'no-store')
+    return c.json({ order }, 200)
+  })
+  customerRoutes.openapi(customerOrderPayment, async (c) => {
+    assertTrustedOrigin(c, env)
+    const customerId = await requireCustomerId(c, resolveCustomerId)
+    const order = await executeOrder(() => service.getCustomerOrder(customerId, c.req.valid('param').id))
+    const response = await executePayment(() => requirePaymentService(paymentService).startCustomerOrder(order))
+    c.header('Cache-Control', 'no-store')
+    return c.json(response, 200)
   })
   adminRoutes.openapi(adminList, async (c) => c.json({ orders: await service.listAdminOrders() }, 200))
   adminRoutes.openapi(adminUpdate, async (c) => {
@@ -170,6 +203,12 @@ export function createOrderRoutes({
 function requirePaymentService(service: PaymentService | null) {
   if (!service) throw new AppError(503, 'SERVICE_UNAVAILABLE', 'Оплата ЮKassa пока не настроена.')
   return service
+}
+
+async function requireCustomerId(c: Context, resolveCustomerId: (sessionToken: string | undefined) => Promise<string | null>) {
+  const customerId = await resolveCustomerId(getCookie(c, customerSessionCookieName))
+  if (!customerId) throw new AppError(401, 'UNAUTHORIZED', 'Войдите в аккаунт, чтобы увидеть заказы.')
+  return customerId
 }
 
 async function executePayment<T>(operation: () => Promise<T>) {

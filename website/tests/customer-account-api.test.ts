@@ -12,6 +12,21 @@ const profile = {
   cardNumber: '123456',
   balance: 725.5,
 }
+const orderId = '019fc12b-7054-70f1-9dc6-10bedb281936'
+const accountOrder = {
+  id: orderId,
+  publicNumber: 'CK-260811-A1B2C3',
+  status: 'AWAITING_PAYMENT',
+  paymentStatus: 'PENDING',
+  customer: { name: 'Анна', phone: '79131234567', email: 'anna@example.com' },
+  pickupLocation: { id: null, slug: 'center', name: 'Центр', city: 'Новосибирск', address: 'Красный проспект, 25', phone: '+7 383 000-00-00', openingHoursLabel: 'Ежедневно' },
+  items: [{ id: '019fc12b-7054-70f1-9dc6-10bedb281937', variantId: null, productName: 'Эфиопия Гуджи', variantLabel: '250 г', imageUrl: null, unitPriceKopecks: 89000, quantity: 1, totalKopecks: 89000 }],
+  itemCount: 1,
+  totalKopecks: 89000,
+  comment: null,
+  createdAt: '2026-08-11T10:00:00.000Z',
+  updatedAt: '2026-08-11T10:00:00.000Z',
+}
 
 describe('customer account browser API', () => {
   test('deduplicates simultaneous profile reads on pages that also render the shared header', async () => {
@@ -62,5 +77,26 @@ describe('customer account browser API', () => {
       code: 'LOYALTY_UNAVAILABLE',
       message: 'Сервис недоступен',
     })
+  })
+
+  test('opens and resumes an order through the authenticated account path', async () => {
+    const requests: Request[] = []
+    const api = createCustomerAccountApi({
+      apiOrigin: 'https://api.chashka.test',
+      fetch: async (input, init) => {
+        const request = new Request(input, init)
+        requests.push(request)
+        return request.method === 'POST'
+          ? Response.json({ order: accountOrder, payment: { status: 'PENDING', confirmationUrl: 'https://yookassa.test/confirm' } })
+          : Response.json({ order: accountOrder })
+      },
+    })
+
+    await expect(api.getOrder(orderId)).resolves.toEqual({ order: accountOrder })
+    await expect(api.startOrderPayment(orderId)).resolves.toMatchObject({ order: accountOrder })
+    expect(requests.map((request) => [request.method, request.url, request.credentials])).toEqual([
+      ['GET', `https://api.chashka.test/api/customer/orders/${orderId}`, 'include'],
+      ['POST', `https://api.chashka.test/api/customer/orders/${orderId}/payment`, 'include'],
+    ])
   })
 })

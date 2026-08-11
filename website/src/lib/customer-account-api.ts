@@ -5,6 +5,8 @@ import {
   customerSendCodeResponseSchema,
   customerSessionResponseSchema,
   customerOrderListResponseSchema,
+  orderResponseSchema,
+  startOrderPaymentResponseSchema,
   type CustomerProfile,
 } from '@chashka-coffee/contracts'
 
@@ -89,6 +91,16 @@ export function createCustomerAccountApi({
     async getOrders() {
       const response = await request('/api/customer/orders')
       return json(response, (value) => customerOrderListResponseSchema.parse(value)).then((result) => result.orders)
+    },
+
+    async getOrder(orderId: string) {
+      const response = await request(`/api/customer/orders/${encodeURIComponent(orderId)}`)
+      return json(response, (value) => orderResponseSchema.parse(value))
+    },
+
+    async startOrderPayment(orderId: string) {
+      const response = await request(`/api/customer/orders/${encodeURIComponent(orderId)}/payment`, { method: 'POST' })
+      return json(response, (value) => startOrderPaymentResponseSchema.parse(value))
     },
 
     async logout() {

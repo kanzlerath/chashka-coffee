@@ -24,6 +24,14 @@ export class PaymentService {
 
   async start(accessToken: string) {
     const order = await this.dependencies.orders.getByAccessToken(accessToken)
+    return this.startOrder(order, buildTokenReturnUrl(this.dependencies.returnUrl, accessToken))
+  }
+
+  async startCustomerOrder(order: Order) {
+    return this.startOrder(order, buildCustomerReturnUrl(this.dependencies.returnUrl, order.id))
+  }
+
+  private async startOrder(order: Order, returnUrl: string) {
     if (order.status !== 'AWAITING_PAYMENT' || order.paymentStatus === 'PAID') {
       throw new PaymentFailure('payment_already_completed', 'Этот заказ уже оплачен или закрыт.')
     }
@@ -42,7 +50,7 @@ export class PaymentService {
       orderId: order.id,
       publicNumber: order.publicNumber,
       amountKopecks: order.totalKopecks,
-      returnUrl: buildReturnUrl(this.dependencies.returnUrl, accessToken),
+      returnUrl,
       customerEmail: email,
       items: receiptItems(order, 'full_prepayment'),
     }, attempt.idempotencyKey)
@@ -140,9 +148,16 @@ function requireReceiptEmail(order: Order) {
   return order.customer.email
 }
 
-function buildReturnUrl(baseUrl: string, accessToken: string) {
+function buildTokenReturnUrl(baseUrl: string, accessToken: string) {
   const url = new URL(baseUrl)
   url.searchParams.set('token', accessToken)
+  url.searchParams.set('payment_return', '1')
+  return url.toString()
+}
+
+function buildCustomerReturnUrl(baseUrl: string, orderId: string) {
+  const url = new URL(baseUrl)
+  url.searchParams.set('order', orderId)
   url.searchParams.set('payment_return', '1')
   return url.toString()
 }

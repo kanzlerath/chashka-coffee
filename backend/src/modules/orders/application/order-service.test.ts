@@ -11,6 +11,8 @@ const restaurantId = '019fc12b-7054-70f1-9dc6-10bedb281930'
 const orderId = '019fc12b-7054-70f1-9dc6-10bedb281931'
 const itemId = '019fc12b-7054-70f1-9dc6-10bedb281932'
 const idempotencyKey = '019fc12b-7054-70f1-9dc6-10bedb281933'
+const customerId = '019fc12b-7054-70f1-9dc6-10bedb281934'
+const otherCustomerId = '019fc12b-7054-70f1-9dc6-10bedb281935'
 
 describe('OrderService', () => {
   test('calculates totals from current published coffee variants and reports unavailable lines', async () => {
@@ -53,6 +55,15 @@ describe('OrderService', () => {
     await expect(service.updateStatus(created.order.id, 'PREPARING')).rejects.toBeInstanceOf(OrderFailure)
     await expect(service.updateStatus(created.order.id, 'PAID')).rejects.toThrow('только ЮKassa')
     await expect(service.updateStatus(created.order.id, 'CANCELLED')).rejects.toThrow('возвратом')
+  })
+
+  test('returns an order from the account only to the customer who created it', async () => {
+    const repository = fakeRepository([variant({ id: variantId })])
+    const service = createService(repository)
+    const created = await service.create(checkout(), customerId)
+
+    await expect(service.getCustomerOrder(customerId, created.order.id)).resolves.toMatchObject({ id: created.order.id })
+    await expect(service.getCustomerOrder(otherCustomerId, created.order.id)).rejects.toThrow('Заказ не найден')
   })
 })
 
@@ -108,6 +119,7 @@ const pickup: PickupLocation = {
 
 function fakeRepository(variants: OrderableVariant[]) {
   const orders = new Map<string, Order>()
+  const orderCustomerIds = new Map<string, string | null>()
   const created: CreateOrderRecord[] = []
   const repository: OrderRepository & { created: CreateOrderRecord[] } = {
     created,
@@ -116,10 +128,15 @@ function fakeRepository(variants: OrderableVariant[]) {
     async findPickupLocation(id) { return id === pickup.id ? pickup : null },
     async findByIdempotencyKey(key) { return orders.get(key) ?? null },
     async findById(id) { return [...orders.values()].find((order) => order.id === id) ?? null },
+    async findByIdAndCustomerId(id, customerId) {
+      const order = [...orders.values()].find((candidate) => candidate.id === id)
+      return order && orderCustomerIds.get(order.id) === customerId ? order : null
+    },
     async create(input) {
       created.push(input)
       const order = recordToOrder(input)
       orders.set(input.idempotencyKey, order)
+      orderCustomerIds.set(order.id, input.customerId)
       return { order, created: true }
     },
     async findByAccessTokenHash() { return null },

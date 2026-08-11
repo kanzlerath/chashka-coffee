@@ -42,6 +42,16 @@ describe('PaymentService', () => {
     })
   })
 
+  test('returns an account customer to the protected order URL after payment', async () => {
+    const repository = fakePaymentRepository()
+    const gateway = fakeGateway()
+    const service = createService(repository, gateway)
+
+    await service.startCustomerOrder(sampleOrder())
+
+    expect(gateway.createdPayments[0]?.returnUrl).toBe(`https://dev.chashkacoffee.ru/order?order=${orderId}&payment_return=1`)
+  })
+
   test('trusts a succeeded webhook only after reading and matching the payment from YooKassa', async () => {
     const repository = fakePaymentRepository({ seededAttempt: pendingAttempt() })
     const gateway = fakeGateway({ paymentStatus: 'succeeded' })

@@ -34,7 +34,25 @@ maybeDescribe('online coffee order API integration', () => {
     YOOKASSA_TEST_MODE: true,
   }
   const prisma = createPrisma(databaseUrl!)
-  const app = createApp({ env, prisma, yooKassaGateway: yooKassa.gateway })
+  const app = createApp({ env, prisma, yooKassaGateway: yooKassa.gateway, premiumBonusGateway: {
+    async getCustomer(phone) {
+      return {
+        registered: true,
+        blocked: false,
+        clientId: `premium-bonus-${phone}`,
+        phone,
+        name: phone === '79130000000' ? 'Мария' : 'Анна',
+        surname: null,
+        middleName: null,
+        email: phone === '79130000000' ? 'maria@example.com' : 'anna@example.com',
+        cardNumber: null,
+        balance: 0,
+      }
+    },
+    async sendLoginCode() {},
+    async verifyLoginCode() {},
+    async generateOrderCode() { return '123456' },
+  } })
   let variantId = ''
   let restaurantId = ''
 
@@ -42,6 +60,8 @@ maybeDescribe('online coffee order API integration', () => {
     yooKassa.reset()
     await prisma.orderItem.deleteMany()
     await prisma.order.deleteMany()
+    await prisma.customerSession.deleteMany()
+    await prisma.customerAccount.deleteMany()
     await prisma.customerConsent.deleteMany()
     await prisma.customerNote.deleteMany()
     await prisma.customerTagAssignment.deleteMany()
@@ -152,6 +172,39 @@ maybeDescribe('online coffee order API integration', () => {
     expect((await disabled.json()).error.message).toContain('не принимает')
   })
 
+  test('opens and resumes payment for an unfinished order from its owner account only', async () => {
+    const cookie = await loginCustomer('79131234567')
+    const created = await app.request('/api/store/orders', {
+      ...json({
+        lines: [{ variantId, quantity: 1 }],
+        pickupRestaurantId: restaurantId,
+        customer: { name: 'Анна', phone: '79131234567', email: 'anna@example.com' },
+        comment: null,
+        privacyAccepted: true,
+        idempotencyKey: crypto.randomUUID(),
+      }),
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+    })
+    const createdBody = await created.json()
+
+    const fromAccount = await app.request(`/api/customer/orders/${createdBody.order.id}`, { headers: { Cookie: cookie } })
+    expect(fromAccount.status).toBe(200)
+    expect((await fromAccount.json()).order.id).toBe(createdBody.order.id)
+    expect((await app.request(`/api/customer/orders/${createdBody.order.id}`)).status).toBe(401)
+
+    const otherCookie = await loginCustomer('79130000000')
+    expect((await app.request(`/api/customer/orders/${createdBody.order.id}`, {
+      headers: { Cookie: otherCookie },
+    })).status).toBe(404)
+
+    const payment = await app.request(`/api/customer/orders/${createdBody.order.id}/payment`, {
+      method: 'POST',
+      headers: { Cookie: cookie },
+    })
+    expect(payment.status).toBe(200)
+    expect((await payment.json()).payment.confirmationUrl).toBe('https://yookassa.test/confirm/payment-1')
+  })
+
   test('creates one YooKassa payment and marks the order paid only after a verified webhook', async () => {
     const created = await app.request('/api/store/orders', json({
       lines: [{ variantId, quantity: 1 }],
@@ -187,6 +240,14 @@ maybeDescribe('online coffee order API integration', () => {
     const afterWebhook = await prisma.order.findUniqueOrThrow({ where: { id: createdBody.order.id } })
     expect(afterWebhook).toMatchObject({ status: 'PAID', paymentStatus: 'PAID' })
   })
+
+  async function loginCustomer(phone: string) {
+    const sent = await app.request('/api/customer/auth/code', json({ phone }))
+    const { challengeId } = await sent.json()
+    const verified = await app.request('/api/customer/auth/verify', json({ challengeId, code: '1234' }))
+    expect(verified.status).toBe(200)
+    return verified.headers.get('set-cookie')!.split(';')[0]!
+  }
 })
 
 function json(body: unknown) {
