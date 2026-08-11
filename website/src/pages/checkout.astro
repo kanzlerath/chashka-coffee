@@ -11,18 +11,16 @@ import PageShell from '../layouts/PageShell.astro'
         <div class="checkout-section-title"><h2>Состав заказа</h2></div>
         <div class="checkout-lines" data-checkout-lines></div>
         <div class="checkout-total"><span>Итого</span><strong data-checkout-total>—</strong></div>
-        <p class="checkout-price-note">Цена рассчитана сервером по актуальному каталогу.</p>
       </div>
       <div class="checkout-details">
         <fieldset class="checkout-fieldset checkout-pickup"><legend>Самовывоз</legend><div data-pickup-locations></div></fieldset>
         <fieldset class="checkout-fieldset"><legend>Контакты</legend>
           <label>Имя<input name="name" autocomplete="name" maxlength="180" required placeholder="Как к вам обращаться" /></label>
           <label>Телефон<input name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="+7 (999) 000-00-00" /></label>
-          <label>E-mail <small>для фискального чека</small><input name="email" type="email" autocomplete="email" maxlength="320" required placeholder="name@example.com" /></label>
-          <label>Комментарий <small>необязательно</small><textarea name="comment" maxlength="1000" placeholder="Например, позвонить, когда заказ будет готов"></textarea></label>
+          <label>E-mail<input name="email" type="email" autocomplete="email" maxlength="320" required placeholder="name@example.com" /></label>
+          <label>Комментарий<textarea name="comment" maxlength="1000" placeholder="Например, позвонить, когда заказ будет готов"></textarea></label>
         </fieldset>
         <label class="checkout-consent"><input name="privacy" type="checkbox" required /><span>Согласен с <a href="/privacy" target="_blank">политикой конфиденциальности</a> и обработкой данных для оформления заказа.</span></label>
-        <div class="checkout-payment-note"><strong>Безопасная оплата через ЮKassa</strong><p>После подтверждения заказа откроется платёжная страница. Ресторан увидит заказ только после успешной оплаты.</p></div>
         <p class="checkout-error" data-checkout-error role="alert" hidden></p>
         <button class="checkout-submit" type="submit">Подтвердить заказ</button>
       </div>
@@ -52,6 +50,7 @@ import PageShell from '../layouts/PageShell.astro'
 
   const checkoutPhoneInput = form?.elements.namedItem('phone')
   if (checkoutPhoneInput instanceof HTMLInputElement) attachRussianPhoneMask(checkoutPhoneInput)
+  form?.addEventListener('invalid', () => form.classList.add('is-validation-visible'), true)
 
   function showError(message = '') {
     if (!errorNode) return
@@ -185,12 +184,11 @@ import PageShell from '../layouts/PageShell.astro'
   body.public-site .public-main[data-path="/checkout"] .checkout-lines article{padding:17px 0;grid-template-columns:62px 1fr auto;gap:13px;border-color:var(--line)}
   body.public-site .public-main[data-path="/checkout"] .checkout-lines img{width:62px;height:70px;border-radius:calc(var(--radius) - 8px)}
   body.public-site .public-main[data-path="/checkout"] .checkout-lines strong{font-size:14px}.public-main[data-path="/checkout"] .checkout-lines span{font-size:10px}.public-main[data-path="/checkout"] .checkout-lines b{font-size:13px}
-  body.public-site .public-main[data-path="/checkout"] .checkout-total{margin-top:25px}.public-main[data-path="/checkout"] .checkout-total strong{font-size:30px}.public-main[data-path="/checkout"] .checkout-price-note{margin-top:10px}
+  body.public-site .public-main[data-path="/checkout"] .checkout-total{margin-top:25px}.public-main[data-path="/checkout"] .checkout-total strong{font-size:30px}
   body.public-site .public-main[data-path="/checkout"] .checkout-fieldset{margin:0 0 34px;gap:12px}.public-main[data-path="/checkout"] .checkout-fieldset legend{margin-bottom:17px}
   body.public-site .public-main[data-path="/checkout"] .checkout-pickup>div{gap:7px}.public-main[data-path="/checkout"] .checkout-pickup label{padding:16px 17px;border-radius:calc(var(--radius) - 5px);border-color:var(--line);background:#fffdf9}.public-main[data-path="/checkout"] .checkout-pickup label:has(input:checked){border-color:var(--moss);background:var(--moss-soft);transform:none}.public-main[data-path="/checkout"] .checkout-pickup label:hover{border-color:#b7c8aa}
-  body.public-site .public-main[data-path="/checkout"] .checkout-fieldset>label{gap:8px;color:var(--muted);font-size:10px}.public-main[data-path="/checkout"] .checkout-fieldset :is(input,textarea){min-height:50px;border-color:var(--line);border-radius:calc(var(--radius) - 7px);background:#fffdf9}.public-main[data-path="/checkout"] .checkout-fieldset textarea{min-height:96px}.public-main[data-path="/checkout"] .checkout-fieldset :is(input,textarea):focus{border-color:var(--moss);box-shadow:0 0 0 3px rgba(189,214,90,.24)}
-  body.public-site .public-main[data-path="/checkout"] .checkout-payment-note{margin:22px 0 10px;padding:17px 18px;border-radius:calc(var(--radius) - 5px);background:var(--moss-soft)}.public-main[data-path="/checkout"] .checkout-payment-note strong{font-size:11px}.public-main[data-path="/checkout"] .checkout-payment-note p{font-size:10px}
-  body.public-site .public-main[data-path="/checkout"] .checkout-submit{min-height:54px;margin-top:14px;border-radius:var(--radius);background:var(--moss);font-size:12px}.public-main[data-path="/checkout"] .checkout-submit:hover{background:#294b3a;transform:translateY(-2px)}.public-main[data-path="/checkout"] .checkout-submit:focus-visible{outline:3px solid var(--lime);outline-offset:3px}
+  body.public-site .public-main[data-path="/checkout"] .checkout-fieldset>label{gap:8px;color:var(--muted);font-size:10px}.public-main[data-path="/checkout"] .checkout-fieldset :is(input,textarea){min-height:50px;border-color:var(--line);border-radius:calc(var(--radius) - 7px);background:#fffdf9}.public-main[data-path="/checkout"] .checkout-fieldset textarea{min-height:96px}.public-main[data-path="/checkout"] .checkout-fieldset :is(input,textarea):focus{border-color:var(--moss);box-shadow:0 0 0 3px rgba(189,214,90,.24)}.public-main[data-path="/checkout"] .checkout-layout.is-validation-visible .checkout-fieldset :is(input,textarea):invalid{border-color:#bb4b44;background:#fff7f5;box-shadow:0 0 0 3px rgba(187,75,68,.15)}
+  body.public-site .public-main[data-path="/checkout"] .checkout-submit{min-height:54px;margin-top:24px;border-radius:var(--radius);background:var(--moss);font-size:12px}.public-main[data-path="/checkout"] .checkout-submit:hover{background:#294b3a;transform:translateY(-2px)}.public-main[data-path="/checkout"] .checkout-submit:focus-visible{outline:3px solid var(--lime);outline-offset:3px}
   body.public-site .public-main[data-path="/checkout"] .checkout-empty{margin:0 var(--content-gutter);padding:clamp(68px,9vw,120px) 26px;border-radius:var(--radius);background:var(--sand)}.public-main[data-path="/checkout"] .checkout-empty h2{font-size:clamp(38px,4vw,56px)}.public-main[data-path="/checkout"] .checkout-empty a{border-radius:var(--radius);background:var(--moss)}
   @media(max-width:900px){body.public-site .public-main[data-path="/checkout"] .checkout-heading{padding-right:var(--mobile-gutter);padding-left:var(--mobile-gutter)}body.public-site .public-main[data-path="/checkout"] .checkout-loading,body.public-site .public-main[data-path="/checkout"] .checkout-layout,body.public-site .public-main[data-path="/checkout"] .checkout-empty{margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter)}body.public-site .public-main[data-path="/checkout"] .checkout-layout{grid-template-columns:1fr}.public-main[data-path="/checkout"] .checkout-order{border-right:0;border-bottom:1px solid var(--line)}}
   @media(max-width:560px){body.public-site .public-main[data-path="/checkout"] .checkout-page{padding-top:36px}.public-main[data-path="/checkout"] .checkout-heading{gap:14px;padding-bottom:32px}.public-main[data-path="/checkout"] .checkout-heading h1{font-size:48px}.public-main[data-path="/checkout"] .checkout-order,.public-main[data-path="/checkout"] .checkout-details{padding:32px 20px}.public-main[data-path="/checkout"] .checkout-layout{border-radius:20px}.public-main[data-path="/checkout"] .checkout-lines article{grid-template-columns:54px 1fr}.public-main[data-path="/checkout"] .checkout-lines img{width:54px;height:62px}.public-main[data-path="/checkout"] .checkout-lines b{grid-column:2}.public-main[data-path="/checkout"] .checkout-empty{padding:70px 20px}}

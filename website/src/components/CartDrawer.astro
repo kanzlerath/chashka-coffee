@@ -12,7 +12,7 @@
       <a href="/coffee#catalog">Выбрать кофе</a>
     </section>
     <footer data-cart-footer hidden>
-      <div><span>Итого</span><strong data-cart-total>0 ₽</strong></div>
+      <div class="cart-drawer-total"><span>Итого</span><strong data-cart-total>0 ₽</strong></div>
       <a href="/checkout">Перейти к оформлению</a>
     </footer>
   </div>
@@ -27,6 +27,8 @@
   const footer = dialog?.querySelector<HTMLElement>('[data-cart-footer]')
   const total = dialog?.querySelector<HTMLElement>('[data-cart-total]')
   const money = (kopecks: number) => `${(kopecks / 100).toLocaleString('ru-RU')} ₽`
+  const removalDelayMs = 5_000
+  let pendingRemoval: { variantId: string; expiresAt: number; intervalId: number } | null = null
 
   function element<K extends keyof HTMLElementTagNameMap>(tag: K, className?: string) {
     const node = document.createElement(tag)
@@ -34,8 +36,46 @@
     return node
   }
 
+  function actionIcon(pathData: string) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    svg.setAttribute('viewBox', '0 0 24 24')
+    svg.setAttribute('aria-hidden', 'true')
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    path.setAttribute('d', pathData)
+    svg.append(path)
+    return svg
+  }
+
+  function clearPendingRemoval() {
+    if (!pendingRemoval) return
+    window.clearInterval(pendingRemoval.intervalId)
+    pendingRemoval = null
+  }
+
+  function scheduleRemoval(variantId: string) {
+    clearPendingRemoval()
+    const expiresAt = Date.now() + removalDelayMs
+    const intervalId = window.setInterval(() => {
+      if (!pendingRemoval || Date.now() < pendingRemoval.expiresAt) {
+        render()
+        return
+      }
+      const pendingVariantId = pendingRemoval.variantId
+      clearPendingRemoval()
+      removeCartItem(pendingVariantId)
+    }, 250)
+    pendingRemoval = { variantId, expiresAt, intervalId }
+    render()
+  }
+
+  function restoreRemoval() {
+    clearPendingRemoval()
+    render()
+  }
+
   function render() {
     const lines = getCart()
+    if (pendingRemoval && !lines.some((line) => line.variantId === pendingRemoval?.variantId)) clearPendingRemoval()
     if (linesRoot) linesRoot.replaceChildren()
     empty?.toggleAttribute('hidden', lines.length > 0)
     footer?.toggleAttribute('hidden', lines.length === 0)
@@ -43,6 +83,8 @@
 
     for (const line of lines) {
       const article = element('article', 'cart-line')
+      const isPendingRemoval = pendingRemoval?.variantId === line.variantId
+      article.classList.toggle('is-removal-pending', isPendingRemoval)
       const media = element('a', 'cart-line-media')
       media.href = `/coffee/${line.productSlug}`
       const image = element('img')
@@ -58,20 +100,34 @@
       variant.textContent = line.variantLabel
       const controls = element('div', 'cart-line-controls')
       const minus = element('button')
-      minus.type = 'button'; minus.textContent = '−'; minus.setAttribute('aria-label', `Уменьшить количество ${line.productName}`)
+      minus.type = 'button'; minus.textContent = '−'; minus.disabled = isPendingRemoval; minus.setAttribute('aria-label', `Уменьшить количество ${line.productName}`)
       minus.addEventListener('click', () => updateCartQuantity(line.variantId, line.quantity - 1))
       const quantity = element('b'); quantity.textContent = String(line.quantity)
       const plus = element('button')
-      plus.type = 'button'; plus.textContent = '+'; plus.disabled = line.quantity >= 20; plus.setAttribute('aria-label', `Увеличить количество ${line.productName}`)
+      plus.type = 'button'; plus.textContent = '+'; plus.disabled = isPendingRemoval || line.quantity >= 20; plus.setAttribute('aria-label', `Увеличить количество ${line.productName}`)
       plus.addEventListener('click', () => updateCartQuantity(line.variantId, line.quantity + 1))
       controls.append(minus, quantity, plus)
       copy.append(title, variant, controls)
 
       const aside = element('div', 'cart-line-aside')
       const price = element('strong'); price.textContent = money(line.unitPriceKopecks * line.quantity)
-      const remove = element('button'); remove.type = 'button'; remove.textContent = 'Убрать'
-      remove.addEventListener('click', () => removeCartItem(line.variantId))
-      aside.append(price, remove)
+      if (isPendingRemoval && pendingRemoval) {
+        const undo = element('button', 'cart-line-undo')
+        undo.type = 'button'
+        undo.style.setProperty('--cart-removal-progress', `${Math.max(0, ((pendingRemoval.expiresAt - Date.now()) / removalDelayMs) * 100)}%`)
+        undo.setAttribute('aria-label', `Вернуть ${line.productName}`)
+        const undoLabel = element('span'); undoLabel.textContent = `Вернуть ${Math.max(1, Math.ceil((pendingRemoval.expiresAt - Date.now()) / 1000))}`
+        undo.append(actionIcon('M7 11 4 14l3 3M4 14h10a5 5 0 1 0-5-5'), undoLabel)
+        undo.addEventListener('click', restoreRemoval)
+        aside.append(price, undo)
+      } else {
+        const remove = element('button', 'cart-line-remove')
+        remove.type = 'button'
+        remove.setAttribute('aria-label', `Убрать ${line.productName} из корзины`)
+        remove.append(actionIcon('M4 7h16M10 11v6m4-6v6M9 7l1-2h4l1 2m-9 0 1 13h10l1-13'))
+        remove.addEventListener('click', () => scheduleRemoval(line.variantId))
+        aside.append(price, remove)
+      }
       article.append(media, copy, aside)
       linesRoot?.append(article)
     }
@@ -97,8 +153,15 @@
   body.public-site .cart-drawer-shell{background:var(--paper)}
   body.public-site .cart-drawer header,body.public-site .cart-drawer footer{border-color:var(--line)}
   body.public-site .cart-drawer header button,body.public-site .cart-line-controls{border-color:var(--line);border-radius:var(--radius)}
-  body.public-site .cart-drawer footer{background:var(--sand)}
+  body.public-site .cart-drawer footer{display:grid;gap:19px;padding:25px clamp(24px,5vw,42px) calc(28px + env(safe-area-inset-bottom));background:var(--sand)}
+  body.public-site .cart-drawer .cart-drawer-total{display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+  body.public-site .cart-drawer .cart-drawer-total span{font-size:17px}.public-site .cart-drawer .cart-drawer-total strong{font-size:34px;line-height:1}
+  body.public-site .cart-drawer .cart-line-aside{gap:13px}.public-site .cart-drawer .cart-line-aside :is(.cart-line-remove,.cart-line-undo){display:inline-flex;min-height:34px;margin:0;padding:0;border:0;align-items:center;justify-content:center;cursor:pointer;font:800 9px/1 Montserrat,Arial,sans-serif;text-decoration:none;transition:background .2s ease,color .2s ease,transform .2s ease}
+  body.public-site .cart-drawer .cart-line-remove{width:34px;border:1px solid var(--line)!important;border-radius:50%!important;background:var(--paper)!important;color:#8a4038}.public-site .cart-drawer .cart-line-remove svg{width:15px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.7}.public-site .cart-drawer .cart-line-remove:hover{border-color:#c98b82!important;background:#fff1ef!important;transform:translateY(-1px)}
+  body.public-site .cart-drawer .cart-line-undo{position:relative;min-width:84px;padding:0 11px!important;border-radius:var(--radius)!important;background:conic-gradient(var(--lime) var(--cart-removal-progress),#dfe5d8 0)!important;color:var(--moss)!important;font-size:9px;isolation:isolate;white-space:nowrap}.public-site .cart-drawer .cart-line-undo:before{position:absolute;z-index:0;inset:2px;border-radius:inherit;background:var(--paper);content:''}.public-site .cart-drawer .cart-line-undo :is(svg,span){position:relative;z-index:1}.public-site .cart-drawer .cart-line-undo svg{width:14px;margin-right:5px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
+  body.public-site .cart-drawer .cart-line.is-removal-pending{opacity:.72}.public-site .cart-drawer .cart-line.is-removal-pending .cart-line-controls{pointer-events:none}.public-site .cart-drawer .cart-line-remove:focus-visible,.public-site .cart-drawer .cart-line-undo:focus-visible{outline:3px solid var(--lime);outline-offset:3px}
   body.public-site .cart-drawer :is(footer a,.cart-drawer-empty a){border-radius:var(--radius);background:var(--moss);transition:background .2s ease,transform .2s ease}
   body.public-site .cart-drawer :is(footer a,.cart-drawer-empty a):hover{background:#294b3a;transform:translateY(-2px)}
   body.public-site .cart-drawer :is(footer a,.cart-drawer-empty a):focus-visible{outline:3px solid var(--lime);outline-offset:3px}
+  @media(max-width:620px){body.public-site .cart-drawer footer{gap:16px;padding:20px 20px calc(22px + env(safe-area-inset-bottom))}.public-site .cart-drawer .cart-drawer-total{padding-bottom:15px}.public-site .cart-drawer .cart-line-aside{gap:10px}.public-site .cart-drawer .cart-line-remove{width:34px;height:34px}.public-site .cart-drawer .cart-line-undo{min-width:82px}}
 </style>

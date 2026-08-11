@@ -61,8 +61,8 @@ import PageShell from '../layouts/PageShell.astro'
 
       <section class="account-orders" aria-labelledby="account-orders-title">
         <header>
-          <h2 id="account-orders-title">История заказов</h2>
-          <span>Все заказы кофе с сайта — от ожидающих оплаты до выданных.</span>
+          <h2 id="account-orders-title">Заказы</h2>
+          <span>Кофе, заказанный на сайте. Откройте заказ, чтобы посмотреть состав и статус.</span>
         </header>
         <div class="account-order-list" data-account-order-list hidden></div>
         <div class="account-orders-empty" data-account-orders-empty>
@@ -139,15 +139,24 @@ import PageShell from '../layouts/PageShell.astro'
     ordersEmpty?.toggleAttribute('hidden', orders.length > 0)
     for (const order of orders) {
       const article = document.createElement('a')
+      article.className = 'account-order'
       article.href = `/order?order=${encodeURIComponent(order.id)}`
       article.setAttribute('aria-label', `Открыть заказ ${order.publicNumber}`)
-      const header = document.createElement('div')
-      const number = document.createElement('strong'); number.textContent = order.publicNumber
-      const status = document.createElement('span'); status.textContent = orderStatusLabel[order.status]
-      header.append(number, status)
-      const pickup = document.createElement('p'); pickup.textContent = `${order.pickupLocation.address} · ${new Date(order.createdAt).toLocaleDateString('ru-RU')}`
-      const summary = document.createElement('small'); summary.textContent = `${order.items.map((item) => `${item.productName}, ${item.variantLabel}`).join(' · ')} · ${(order.totalKopecks / 100).toLocaleString('ru-RU')} ₽`
-      article.append(header, pickup, summary)
+      const heading = document.createElement('div'); heading.className = 'account-order-heading'
+      const headingCopy = document.createElement('div')
+      const date = document.createElement('strong')
+      date.textContent = `Заказ от ${new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' }).format(new Date(order.createdAt))}`
+      const number = document.createElement('small'); number.textContent = `№ ${order.publicNumber}`
+      headingCopy.append(date, number)
+      const status = document.createElement('span'); status.className = 'account-order-status'; status.textContent = orderStatusLabel[order.status]
+      heading.append(headingCopy, status)
+      const summary = document.createElement('p'); summary.className = 'account-order-summary'
+      summary.textContent = `${order.items.map((item) => `${item.productName}, ${item.variantLabel}`).join(' · ')} · ${(order.totalKopecks / 100).toLocaleString('ru-RU')} ₽`
+      const footer = document.createElement('div'); footer.className = 'account-order-footer'
+      const pickup = document.createElement('span'); pickup.textContent = order.pickupLocation.address
+      const details = document.createElement('b'); details.textContent = 'Подробнее →'
+      footer.append(pickup, details)
+      article.append(heading, summary, footer)
       orderList?.append(article)
     }
   }
@@ -228,4 +237,18 @@ import PageShell from '../layouts/PageShell.astro'
   body.public-site .public-main[data-path="/account"] .account-service{padding:25px clamp(24px,3.6vw,46px);background:var(--sand)}.public-main[data-path="/account"] .account-service a,.public-main[data-path="/account"] .account-service button{color:var(--ink)}.public-main[data-path="/account"] .account-page-error{background:var(--sand)}
   @media(max-width:900px){body.public-site .public-main[data-path="/account"] .account-dashboard{grid-template-columns:1fr}.public-main[data-path="/account"] .account-overview{min-height:0}.public-main[data-path="/account"] .account-balance{min-height:220px}}
   @media(max-width:520px){body.public-site .public-main[data-path="/account"] .account-page{gap:10px}.public-main[data-path="/account"] :is(.account-loading,.account-welcome,.account-overview,.account-details,.account-orders,.account-service,.account-page-error){margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter);border-radius:20px}.public-main[data-path="/account"] .account-welcome{padding:44px 24px}.public-main[data-path="/account"] .account-overview{padding:42px 20px 20px}.public-main[data-path="/account"] :is(.account-details,.account-orders){padding:34px 22px}.public-main[data-path="/account"] .account-service{padding:23px 22px}.public-main[data-path="/account"] .account-page-error{padding:54px 24px}}
+</style>
+
+<style is:global>
+  /* Orders read as deliberate, tappable receipts rather than a group of links. */
+  body.public-site .public-main[data-path="/account"] .account-orders{background:var(--moss-soft)!important}
+  body.public-site .public-main[data-path="/account"] .account-orders h2{font-size:clamp(30px,3.2vw,42px)!important;line-height:.94!important;letter-spacing:-.07em!important}
+  body.public-site .public-main[data-path="/account"] .account-orders header>span{max-width:390px;margin-top:14px!important;color:var(--muted)!important;font-size:12px!important;line-height:1.5!important}
+  body.public-site .public-main[data-path="/account"] .account-order-list{margin-top:25px!important;gap:10px}
+  body.public-site .public-main[data-path="/account"] .account-order{display:grid!important;padding:18px!important;gap:14px!important;border:1px solid rgba(31,59,46,.15)!important;border-radius:18px!important;background:rgba(255,255,255,.48)!important;color:var(--ink)!important;text-decoration:none!important;transition:background .2s ease,transform .2s ease,border-color .2s ease!important}
+  body.public-site .public-main[data-path="/account"] .account-order:last-child{border-bottom:1px solid rgba(31,59,46,.15)!important}
+  body.public-site .public-main[data-path="/account"] .account-order:after{display:none!important}.public-main[data-path="/account"] .account-order:hover{border-color:rgba(31,59,46,.34)!important;background:rgba(255,255,255,.72)!important;color:var(--ink)!important;transform:translateY(-2px)!important}.public-main[data-path="/account"] .account-order:focus-visible{outline:3px solid var(--moss);outline-offset:3px}
+  body.public-site .public-main[data-path="/account"] .account-order-heading{display:flex!important;align-items:flex-start!important;justify-content:space-between!important;gap:12px!important}.public-main[data-path="/account"] .account-order-heading strong{display:block;font-size:14px!important;line-height:1.1}.public-main[data-path="/account"] .account-order-heading small{display:block;margin-top:5px!important;color:var(--muted)!important;font-size:10px!important;line-height:1.2!important}.public-main[data-path="/account"] .account-order-status{flex:0 0 auto;padding:6px 8px!important;border-radius:999px!important;background:var(--moss)!important;color:var(--lime)!important;font-size:8px!important;font-weight:850!important;line-height:1!important;text-transform:uppercase}
+  body.public-site .public-main[data-path="/account"] .account-order-summary{margin:0!important;color:#4f5d53!important;font-size:11px!important;line-height:1.45!important}.public-main[data-path="/account"] .account-order-footer{display:flex;min-width:0;padding-top:12px;border-top:1px solid rgba(31,59,46,.13);align-items:center;justify-content:space-between;gap:12px;color:var(--muted);font-size:10px;line-height:1.2}.public-main[data-path="/account"] .account-order-footer>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.public-main[data-path="/account"] .account-order-footer b{flex:0 0 auto;color:var(--moss);font-size:10px}
+  @media(max-width:520px){body.public-site .public-main[data-path="/account"] .account-orders h2{font-size:34px!important}.public-main[data-path="/account"] .account-order{padding:16px!important}.public-main[data-path="/account"] .account-order-status{font-size:7px!important}.public-main[data-path="/account"] .account-order-footer{font-size:9px}}
 </style>
