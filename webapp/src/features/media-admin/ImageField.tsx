@@ -212,29 +212,47 @@ function CropPreviewImage({ src, alt, aspect, focusX, focusY, zoom, className, c
   </div>
 }
 
-function CardCropPreview({ src, focusX, focusY, zoom }: { src: string; focusX: number; focusY: number; zoom: number }) {
+function CardCropPreview({ src, focusX, focusY }: { src: string; focusX: number; focusY: number }) {
   return <article className="admin-card-crop-card" aria-label="Предпросмотр карточки на сайте">
-    <CropPreviewImage className="admin-card-crop-image" src={src} alt="Предпросмотр кадра для карточки" aspect="CARD" focusX={focusX} focusY={focusY} zoom={zoom} />
+    <CropPreviewImage className="admin-card-crop-image" src={src} alt="Предпросмотр кадра для карточки" aspect="CARD" focusX={focusX} focusY={focusY} zoom={1} centerFocus />
     <div className="admin-card-crop-copy"><Typography variant="caption">Так увидит гость</Typography><Typography variant="bodySmMedium">Карточка товара</Typography><span /></div>
   </article>
 }
 
 function MediaCardCropDialog({ open, value, crop, onOpenChange, onSelect }: { open: boolean; value: string; crop: CardImageCrop | null; onOpenChange: (open: boolean) => void; onSelect: (crop: CardImageCrop) => void }) {
-  const [zoom, setZoom] = useState(crop?.zoom ?? 1)
-  const [focusX, setFocusX] = useState(crop?.focusX ?? 50)
-  const [focusY, setFocusY] = useState(crop?.focusY ?? 50)
+  const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null)
+  const [focus, setFocus] = useState<ImageFocus>(defaultImageFocus)
+  useEffect(() => {
+    if (!dimensions) return
+    if (!crop) { setFocus(defaultImageFocus); return }
+    const currentCrop = cropBox(dimensions.width, dimensions.height, 'CARD', crop.focusX, crop.focusY, crop.zoom)
+    setFocus({ x: ((currentCrop.left + currentCrop.width / 2) / dimensions.width) * 100, y: ((currentCrop.top + currentCrop.height / 2) / dimensions.height) * 100 })
+  }, [crop, dimensions])
+  const selectPoint = (event: MouseEvent<HTMLButtonElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect()
+    setFocus({ x: Math.min(100, Math.max(0, ((event.clientX - bounds.left) / bounds.width) * 100)), y: Math.min(100, Math.max(0, ((event.clientY - bounds.top) / bounds.height) * 100)) })
+  }
+  const save = () => {
+    if (!dimensions) return
+    const card = focusCropBox(dimensions.width, dimensions.height, 'CARD', focus.x, focus.y)
+    onSelect({
+      focusX: dimensions.width === card.width ? 50 : (card.left / (dimensions.width - card.width)) * 100,
+      focusY: dimensions.height === card.height ? 50 : (card.top / (dimensions.height - card.height)) * 100,
+      zoom: 1,
+    })
+    onOpenChange(false)
+  }
 
   return <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="admin-media-picker-dialog admin-card-crop-dialog">
-      <DialogHeader><DialogTitle>Кадр для карточки</DialogTitle><DialogDescription>Выберите, какая часть фотографии попадёт в карточки меню, кофе и тортов. Сохранятся только настройки кадра — исходный файл и медиатека не меняются.</DialogDescription></DialogHeader>
-      <div className="admin-crop-workspace admin-card-crop-workspace">
-        <CardCropPreview src={resolveAdminImagePreview(value)} focusX={focusX} focusY={focusY} zoom={zoom} />
-        <div className="admin-crop-controls">
-          <Typography variant="bodySm" tone="muted">Предпросмотр обновляется сразу и совпадает с карточкой на сайте.</Typography>
-          <label><Typography variant="label">Приближение · {zoom.toFixed(1)}×</Typography><input min="1" max="2" step="0.05" type="range" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} /></label>
-          <div className="admin-crop-axis"><label><Typography variant="label">Фокус по горизонтали</Typography><input min="0" max="100" type="range" value={focusX} onChange={(event) => setFocusX(Number(event.target.value))} /><div className="admin-crop-range-ends"><Typography variant="caption">Влево</Typography><Typography variant="caption">Вправо</Typography></div></label><label><Typography variant="label">Фокус по вертикали</Typography><input min="0" max="100" type="range" value={focusY} onChange={(event) => setFocusY(Number(event.target.value))} /><div className="admin-crop-range-ends"><Typography variant="caption">Вверх</Typography><Typography variant="caption">Вниз</Typography></div></label></div>
-        </div>
-        <DialogFooter><Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Отмена</Button><Button type="button" onClick={() => { onSelect({ focusX, focusY, zoom }); onOpenChange(false) }}>Применить к карточке</Button></DialogFooter>
+    <DialogContent className="admin-media-picker-dialog admin-image-focus-dialog">
+      <DialogHeader><DialogTitle>Выберите центр карточки</DialogTitle><DialogDescription>Кликните по объекту, который должен быть в центре карточек меню, кофе и тортов. Исходный файл и медиатека не меняются.</DialogDescription></DialogHeader>
+      <div className="admin-image-focus-workspace">
+        <button aria-label="Выбрать центр фотографии для карточки" className="admin-image-focus-picker" type="button" onClick={selectPoint}>
+          <img src={resolveAdminImagePreview(value)} alt="Исходная фотография" onLoad={(event) => setDimensions({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />
+          <span aria-hidden="true" style={{ left: `${focus.x}%`, top: `${focus.y}%` }} />
+        </button>
+        <div className="admin-card-crop-preview"><Typography variant="caption">Так увидит гость</Typography><CardCropPreview src={resolveAdminImagePreview(value)} focusX={focus.x} focusY={focus.y} /></div>
+        <DialogFooter><Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Отмена</Button><Button disabled={!dimensions} type="button" onClick={save}>Сохранить точку</Button></DialogFooter>
       </div>
     </DialogContent>
   </Dialog>
@@ -279,8 +297,8 @@ export function AdminImageField({ value, onChange, required = false, compact = f
     <button aria-label={value ? 'Заменить фотографию' : 'Выбрать фотографию'} className="admin-image-field-preview" type="button" onClick={() => setOpen(true)}>{value ? <img src={resolveAdminImagePreview(value)} alt="" /> : <Typography variant="bodySm" tone="muted">Фотография не выбрана</Typography>}</button>
     <div className="admin-image-field-actions">
       <Button size="sm" type="button" variant="outline" onClick={() => setOpen(true)}>{value ? 'Заменить' : 'Выбрать фотографию'}</Button>
-      {value && cardCrop && onImageCropChange ? <Button size="sm" type="button" variant="outline" onClick={() => setCropOpen(true)}>Настроить кадр</Button> : null}
-      {value && imageCrop && onImageCropChange ? <Button size="sm" type="button" variant="ghost" onClick={() => onImageCropChange(null)}>Сбросить кадр</Button> : null}
+      {value && cardCrop && onImageCropChange ? <Button size="sm" type="button" variant="outline" onClick={() => setCropOpen(true)}>{imageCrop ? 'Изменить центр' : 'Выбрать центр'}</Button> : null}
+      {value && imageCrop && onImageCropChange ? <Button size="sm" type="button" variant="ghost" onClick={() => onImageCropChange(null)}>Сбросить центр</Button> : null}
       {value && onImageFocusChange ? <Button size="sm" type="button" variant="outline" onClick={() => setFocusOpen(true)}>{imageFocus ? 'Изменить центр' : 'Выбрать центр'}</Button> : null}
       {value && imageFocus && onImageFocusChange ? <Button size="sm" type="button" variant="ghost" onClick={() => onImageFocusChange(null)}>Сбросить центр</Button> : null}
       {value && !required ? <Button size="sm" type="button" variant="ghost" onClick={() => onChange(null)}>Убрать</Button> : null}
