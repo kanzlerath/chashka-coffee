@@ -1159,7 +1159,7 @@
   .admin-advanced-fields summary { cursor: pointer; font-size: .82rem; font-weight: 650; }
   .admin-variant-editor { background: transparent; }
   .admin-variant-row { display: grid; grid-template-columns: minmax(9rem,1fr) 7.5rem 7.5rem auto auto; align-items: center; gap: .6rem; border-top: 1px solid var(--border); padding-top: .75rem; }
-  .admin-variant-row label { display: flex; align-items: center; gap: .35rem; white-space: nowrap; font-size: .75rem; }
+  .admin-variant-row > .admin-compact-check { display: flex; align-items: center; gap: .35rem; white-space: nowrap; font-size: .75rem; }
 
   @media (max-width: 760px) {
     .admin-block-toolbar,
