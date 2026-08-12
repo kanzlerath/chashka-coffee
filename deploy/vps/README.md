@@ -19,7 +19,7 @@ the repository-root `docker-compose.yml`, which is local-development-only.
   the build finishes successfully, so visitors never receive a half-built site.
 - `api` writes admin-uploaded images, MP4 videos, and PDF documents to `/srv/uploads`, which is
   a persistent bind mount from `UPLOADS_DIR`; Caddy serves those files at
-  `/uploads/...`.
+  `/uploads/...` on both the public site and admin domains.
 
 ## First start
 
