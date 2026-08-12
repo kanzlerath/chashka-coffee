@@ -2,6 +2,7 @@ import { sanitizeRichText, type ContentBlock, type HeadingLevel } from '@chashka
 import type { MouseEvent, ReactNode } from 'react'
 
 import { Typography } from '@/components/ui/typography'
+import { resolveAdminImagePreview } from '@/features/media-admin/media-utils'
 
 type ContentPreviewProps = {
   blocks: ContentBlock[]
@@ -26,7 +27,7 @@ export function ContentPreview({ blocks, title, excerpt, imageUrl }: ContentPrev
     <article className="admin-preview-page">
       {(title || excerpt || imageUrl) ? <header className="admin-preview-hero">
         <div><Typography as="small" variant="caption">Материал</Typography><Typography as="h1" variant="h1">{title || 'Заголовок материала'}</Typography>{excerpt ? <Typography variant="bodySm">{excerpt}</Typography> : null}</div>
-        {imageUrl ? <img alt="" src={imageUrl} /> : <Typography aria-hidden="true" as="div" className="admin-preview-cover-placeholder" variant="caption">Обложка</Typography>}
+        {imageUrl ? <img alt="" src={resolveAdminImagePreview(imageUrl)} /> : <Typography aria-hidden="true" as="div" className="admin-preview-cover-placeholder" variant="caption">Обложка</Typography>}
       </header> : null}
       <div className="admin-preview-blocks">
         {visible.map((block) => <PreviewBlock block={block} key={block.id} />)}
@@ -42,13 +43,13 @@ function PreviewBlock({ block }: { block: ContentBlock }) {
       <Typography as="div" variant="body">{block.title ? heading(block.titleLevel, block.title) : null}<div className="admin-preview-rich" dangerouslySetInnerHTML={richHtml(block.text)} /></Typography>
     </section>
   }
-  if (block.type === 'IMAGE') return <figure className={`admin-preview-image ${variantClass('admin-preview-image', block.layout ?? 'WIDE')}`}><img alt={block.alt} src={block.imageUrl} />{block.caption ? <Typography as="figcaption" variant="caption">{block.caption}</Typography> : null}</figure>
+  if (block.type === 'IMAGE') return <figure className={`admin-preview-image ${variantClass('admin-preview-image', block.layout ?? 'WIDE')}`}><img alt={block.alt} src={resolveAdminImagePreview(block.imageUrl)} />{block.caption ? <Typography as="figcaption" variant="caption">{block.caption}</Typography> : null}</figure>
   if (block.type === 'SPLIT') {
     return <section className={`admin-preview-split ${variantClass('admin-preview-split', block.layout ?? 'BALANCED')} ${variantClass('admin-preview-copy', block.textSize ?? 'NORMAL')} ${block.imagePosition === 'LEFT' ? 'is-reverse' : ''}`}>
-      <Typography as="div" variant="body">{heading(block.titleLevel, block.title)}<div className="admin-preview-rich" dangerouslySetInnerHTML={richHtml(block.text)} /></Typography><img alt={block.alt} src={block.imageUrl} />
+      <Typography as="div" variant="body">{heading(block.titleLevel, block.title)}<div className="admin-preview-rich" dangerouslySetInnerHTML={richHtml(block.text)} /></Typography><img alt={block.alt} src={resolveAdminImagePreview(block.imageUrl)} />
     </section>
   }
-  if (block.type === 'GALLERY') return <section className={`admin-preview-gallery ${variantClass('admin-preview-gallery', block.layout ?? 'MOSAIC')}`}>{block.images.map((image, index) => <figure key={`${block.id}-${index}`}><img alt={image.alt} src={image.url} />{image.caption ? <Typography as="figcaption" variant="caption">{image.caption}</Typography> : null}</figure>)}</section>
+  if (block.type === 'GALLERY') return <section className={`admin-preview-gallery ${variantClass('admin-preview-gallery', block.layout ?? 'MOSAIC')}`}>{block.images.map((image, index) => <figure key={`${block.id}-${index}`}><img alt={image.alt} src={resolveAdminImagePreview(image.url)} />{image.caption ? <Typography as="figcaption" variant="caption">{image.caption}</Typography> : null}</figure>)}</section>
   if (block.type === 'QUOTE') return <Typography asChild variant="body"><blockquote className={`admin-preview-quote ${variantClass('admin-preview-quote', block.style ?? 'DARK')} ${variantClass('admin-preview-copy', block.textSize ?? 'NORMAL')}`}><div className="admin-preview-rich" dangerouslySetInnerHTML={richHtml(block.text)} />{block.attribution ? <Typography as="cite" variant="caption">{block.attribution}</Typography> : null}</blockquote></Typography>
   if (block.type === 'VIDEO') return <section className={`admin-preview-video ${variantClass('admin-preview-video', block.layout ?? 'WIDE')}`}><video controls poster={block.posterUrl ?? undefined} src={block.videoUrl} />{block.title ? <Typography variant="bodySm">{block.title}</Typography> : null}</section>
 

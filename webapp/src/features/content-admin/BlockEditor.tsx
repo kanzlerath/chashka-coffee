@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Typography } from '@/components/ui/typography'
 import { nullableDraftText } from '@/lib/form-drafts'
 import { AdminImageField, AdminVideoField } from '@/features/media-admin'
+import { resolveAdminImagePreview } from '@/features/media-admin/media-utils'
 import { ContentPreview } from './ContentPreview'
 import { RichTextEditor } from './RichTextEditor'
 
@@ -265,7 +266,7 @@ function GalleryFields({ block, onChange }: { block: GalleryBlock; onChange: (bl
     </div>
     <div className="admin-gallery-images">
       {block.images.map((image, index) => <section className="admin-gallery-image" key={`${block.id}-${index}`}>
-        <div className="admin-gallery-preview">{image.url ? <img alt="" src={image.url} /> : <Typography as="span" variant="caption">Нет изображения</Typography>}<Typography as="b" variant="caption">{index + 1}</Typography></div>
+        <div className="admin-gallery-preview">{image.url ? <img alt="" src={resolveAdminImagePreview(image.url)} /> : <Typography as="span" variant="caption">Нет изображения</Typography>}<Typography as="b" variant="caption">{index + 1}</Typography></div>
         <div className="admin-gallery-image-fields">
           <Field label="Изображение"><AdminImageField compact required value={image.url} onChange={(url) => url && updateImage(index, { ...image, url })} /></Field>
           <Field label="Описание для доступности"><Input placeholder="Гости за столом у окна" value={image.alt} onChange={(event) => updateImage(index, { ...image, alt: event.target.value })} /></Field>

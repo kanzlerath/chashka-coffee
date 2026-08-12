@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { BlockEditor } from '@/features/content-admin'
 import { useAuth } from '@/features/auth'
 import { AdminImageField } from '@/features/media-admin'
+import { resolveAdminImagePreview } from '@/features/media-admin/media-utils'
 import { useEditorDraft } from '@/hooks/use-editor-draft'
 
 const labels: Record<ManagedPageKey, string> = { HOME: 'Главная', COFFEE: 'Кофе', RESTAURANTS: 'Рестораны', DELIVERY: 'Доставка', APP: 'Приложение', LOYALTY: 'Лояльность', CERTIFICATES: 'Сертификаты', BAKERY: 'Кондитерская', FRANCHISE: 'Франшиза', JOBS: 'Вакансии', CONTACTS: 'Контакты', ABOUT: 'О нас', BANQUETS: 'Банкеты', PROMOTIONS: 'Акции' }
@@ -155,7 +156,7 @@ function AppChoiceEditor({ choices, onChange }: { choices: AppChoice[]; onChange
     <div><h3 className="admin-field-heading">Блок «Что сегодня важнее?»</h3><p className="admin-field-hint">Пункты переключаются слева направо. Для каждого задайте подпись вкладки, пояснение и экран приложения внутри телефона.</p></div>
     <div className="admin-gallery-images">
       {choices.map((choice, index) => <section className="admin-gallery-image" key={choice.id}>
-        <div className="admin-gallery-preview">{choice.imageUrl ? <img alt="" src={choice.imageUrl} /> : <span>Нет изображения</span>}<b>{index + 1}</b></div>
+        <div className="admin-gallery-preview">{choice.imageUrl ? <img alt="" src={resolveAdminImagePreview(choice.imageUrl)} /> : <span>Нет изображения</span>}<b>{index + 1}</b></div>
         <div className="admin-gallery-image-fields">
           <AdminField label="Название вкладки" required><Input required value={choice.label} onChange={(event) => update(index, { ...choice, label: event.target.value })} /></AdminField>
           <AdminField label="Заголовок" required><Input required value={choice.title} onChange={(event) => update(index, { ...choice, title: event.target.value })} /></AdminField>
@@ -195,7 +196,7 @@ function CoffeeTasteEditor({ tastes, onChange }: { tastes: CoffeeTaste[]; onChan
     <div><h3 className="admin-field-heading">Аккордеон вкусов</h3><p className="admin-field-hint">Каждый вкус содержит фотографию, заголовок и подпись под ним.</p></div>
     <div className="admin-gallery-images">
       {tastes.map((taste, index) => <section className="admin-gallery-image" key={`${taste.title}-${index}`}>
-        <div className="admin-gallery-preview">{taste.imageUrl ? <img alt="" src={taste.imageUrl} /> : <span>Нет изображения</span>}<b>{index + 1}</b></div>
+        <div className="admin-gallery-preview">{taste.imageUrl ? <img alt="" src={resolveAdminImagePreview(taste.imageUrl)} /> : <span>Нет изображения</span>}<b>{index + 1}</b></div>
         <div className="admin-gallery-image-fields">
           <AdminField label="Заголовок" required><Input required value={taste.title} onChange={(event) => update(index, { ...taste, title: event.target.value })} /></AdminField>
           <AdminField label="Описание" required><Input required value={taste.description} onChange={(event) => update(index, { ...taste, description: event.target.value })} /></AdminField>

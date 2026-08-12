@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { resolveAdminImagePreview } from '@/features/media-admin/media-utils'
 
 export type AdminPreview = {
   eyebrow?: string
@@ -25,7 +26,7 @@ export function AdminPreviewInspector({ preview }: { preview: AdminPreview }) {
           <SheetDescription>Черновик — без публикации и выхода из редактора.</SheetDescription>
         </SheetHeader>
         <div className="admin-preview-canvas">
-          {preview.imageUrl ? <figure><img alt="" src={preview.imageUrl} /></figure> : <div className="admin-preview-placeholder">Изображение не выбрано</div>}
+          {preview.imageUrl ? <figure><img alt="" src={resolveAdminImagePreview(preview.imageUrl)} /></figure> : <div className="admin-preview-placeholder">Изображение не выбрано</div>}
           <div className="admin-preview-copy">
             {preview.eyebrow ? <span>{preview.eyebrow}</span> : null}
             <h2>{preview.title || 'Без названия'}</h2>
