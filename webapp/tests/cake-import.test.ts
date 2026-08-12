@@ -19,4 +19,10 @@ describe('cake import parsing', () => {
     const file = new File(['image'], 'napoleon.webp', { type: 'image/webp' })
     expect(matchCakeImages([product], [file]).get(product.key)).toEqual({ file, error: null })
   })
+
+  test('uses an individually selected file for an images-prefixed reference', () => {
+    const [product] = buildCakeImportProducts([{ rowNumber: 2, values: { Категория: 'Торты', Название: 'Медовик', Цена: '1800', Вариант: '1 кг', Фото: 'images/medovik.webp' } }], { category: 'Категория', name: 'Название', price: 'Цена', variant: 'Вариант', image: 'Фото' })
+    const file = new File(['image'], 'medovik.webp', { type: 'image/webp' })
+    expect(matchCakeImages([product], [file]).get(product.key)).toEqual({ file, error: null })
+  })
 })

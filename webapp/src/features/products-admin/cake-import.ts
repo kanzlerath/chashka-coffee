@@ -112,4 +112,7 @@ function parsePrice(value: string) { const parsed = parseDecimal(value); return 
 function parseBoolean(value: string) { return ['1', 'true', 'да', 'yes', 'y', 'x', '✓', '+'].includes(value.trim().toLocaleLowerCase('ru')) }
 function imageReference(value: string) { const markdown = value.match(/!\[[^\]]*\]\((?:<)?([^\s>)]+)(?:\s+[^)]*)?\)/); const wiki = value.match(/!\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/); const raw = (markdown?.[1] ?? wiki?.[1] ?? value).trim().replace(/^['"]|['"]$/g, ''); if (!raw) return null; try { return decodeURIComponent(new URL(raw).pathname) } catch { try { return decodeURIComponent(raw) } catch { return raw } } }
 function path(value: string) { return value.replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\//, '').toLocaleLowerCase('ru') }
-function add(index: Map<string, File[]>, key: string, file: File) { index.set(key, [...(index.get(key) ?? []), file]) }
+function add(index: Map<string, File[]>, key: string, file: File) {
+  const files = index.get(key) ?? []
+  if (!files.includes(file)) index.set(key, [...files, file])
+}
