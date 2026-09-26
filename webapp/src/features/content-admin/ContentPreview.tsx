@@ -2,7 +2,7 @@ import { sanitizeRichText, type ContentBlock, type HeadingLevel } from '@chashka
 import type { MouseEvent, ReactNode } from 'react'
 
 import { Typography } from '@/components/ui/typography'
-import { resolveAdminImagePreview } from '@/features/media-admin/media-utils'
+import { resolveAdminImagePreview } from '@/features/media-admin'
 
 type ContentPreviewProps = {
   blocks: ContentBlock[]

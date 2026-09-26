@@ -9,8 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { BlockEditor } from '@/features/content-admin'
 import { useAuth } from '@/features/auth'
-import { AdminImageField } from '@/features/media-admin'
-import { resolveAdminImagePreview } from '@/features/media-admin/media-utils'
+import { AdminImageField, resolveAdminImagePreview } from '@/features/media-admin'
 import { useEditorDraft } from '@/hooks/use-editor-draft'
 
 const labels: Record<ManagedPageKey, string> = { HOME: 'Главная', COFFEE: 'Кофе', RESTAURANTS: 'Рестораны', DELIVERY: 'Доставка', APP: 'Приложение', LOYALTY: 'Лояльность', CERTIFICATES: 'Сертификаты', BAKERY: 'Десерты', FRANCHISE: 'Франшиза', JOBS: 'Вакансии', CONTACTS: 'Контакты', ABOUT: 'О нас', BANQUETS: 'Банкеты', PROMOTIONS: 'Акции' }
@@ -18,7 +17,7 @@ const labels: Record<ManagedPageKey, string> = { HOME: 'Главная', COFFEE:
 const heroDefaults: Partial<Record<ManagedPageKey, Pick<UpsertManagedPageRequest, 'heroTitle' | 'heroDescription' | 'heroImageUrl'>>> = {
   ABOUT: { heroTitle: 'Город меняется.\nЛюбимое место\ностаётся.', heroDescription: 'Мы создаём рестораны, в которых одинаково естественно начать утро, назначить важную встречу и задержаться без особого повода.', heroImageUrl: '/images/restaurants-hero.png' },
   COFFEE: { heroTitle: 'Кофе —\nнаша работа.', heroDescription: 'Выбираем зерно, строим профиль обжарки и каждый день настраиваем вкус в чашке.', heroImageUrl: '/images/coffee-editorial-v1.webp' },
-  BAKERY: { heroTitle: 'Десерты\nс честным составом', heroDescription: 'Собираем торты и десерты вручную — из натуральных ингредиентов и заготовок собственного производства.', heroImageUrl: '/images/bakery-hero-v1.png' },
+  BAKERY: { heroTitle: 'Десерты\nдля особых поводов', heroDescription: 'Выберите торт или десерт для праздника, встречи или маленького знака внимания.', heroImageUrl: '/images/bakery-hero-v1.png' },
   DELIVERY: { heroTitle: 'Любимое\nприедет.', heroDescription: 'Для медленного утра, обеда между встречами или вечера, когда хочется остаться дома.', heroImageUrl: '/images/home-breakfast.png' },
   LOYALTY: { heroTitle: 'Любимое\nвозвращается', heroDescription: 'Показывайте электронную карту при каждом заказе — и часть стоимости вернётся бонусами на следующий визит.', heroImageUrl: '/images/home-morning-v2.png' },
   APP: { heroTitle: 'Вся «Чашка»\nв вашем телефоне', heroDescription: 'Заказывайте и оплачивайте онлайн, копите бонусы, возвращайтесь к любимым блюдам и узнавайте о новом раньше всех.', heroImageUrl: '/images/app/hero.webp' },

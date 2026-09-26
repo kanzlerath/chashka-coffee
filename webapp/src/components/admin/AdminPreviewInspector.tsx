@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { resolveAdminImagePreview } from '@/features/media-admin/media-utils'
+import { resolveAdminImagePreview } from '@/features/media-admin'
 
 export type AdminPreview = {
   eyebrow?: string

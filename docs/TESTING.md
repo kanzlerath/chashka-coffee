@@ -47,7 +47,7 @@ The integration and Docker smoke runners refuse database names that do not end w
 
 The Docker smoke test builds the backend image, starts it against `postgres_test`, waits for `/health`, and removes only the smoke container it created.
 
-`.github/workflows/ci.yml` runs typecheck, deployment/script tests, contract tests, webapp client tests, backend tests, and the webapp Playwright smoke flow on pushes to `main` and `master` plus pull requests.
+`.github/workflows/ci.yml` runs on every pull request and on pushes to `main`, `master`, and `mobile`. It installs the pinned Bun version, then runs typecheck, build, architecture boundaries, webapp lint, deployment/script tests, contract tests, webapp client tests, backend tests, the backend Docker smoke test, and the webapp Playwright smoke flow. The CI build sets `PUBLIC_API_URL` to an unreachable local address so it validates Astro's static fallback path without relying on a live content API; deployment builds must set it to the real API origin.
 
 ## Webapp E2E
 

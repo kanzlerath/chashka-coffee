@@ -37,7 +37,7 @@ const productFields = {
   roastLevel: nullableText(80),
   tastingNotes: z.array(z.string().trim().min(1).max(80)).max(12),
   imageUrl: publicUrl.nullable(),
-  imageCrop: cardImageCropSchema.nullable(),
+  imageCrop: cardImageCropSchema.nullable().default(null),
   galleryUrls: z.array(publicUrl).max(12),
   details: z.array(productDetailSchema).max(20),
   blocks: contentBlockListSchema.default([]),

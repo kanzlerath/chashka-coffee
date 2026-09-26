@@ -8,7 +8,7 @@ import { getManagedPage, getProducts } from '../lib/public-api'
 
 const [products, page] = await Promise.all([getProducts('CAKE'), getManagedPage('BAKERY')])
 const heroTitle = page?.heroTitle ?? 'Десерты\nс честным составом'
-const heroDescription = page?.heroDescription ?? 'Собираем торты и десерты вручную — из натуральных ингредиентов и заготовок собственного производства.'
+const heroDescription = page?.heroDescription ?? 'Выберите торт или десерт для праздника, встречи или маленького знака внимания.'
 const heroImage = page?.heroImageUrl ?? '/images/bakery-hero-v1.png'
 const productGroups = products.reduce((groups, product) => {
   const name = product.category || 'Торты'
