@@ -8,7 +8,9 @@ const { active = '' } = Astro.props
 const siteSettings = await getSiteSettings()
 const configuredPreview = (id: string, fallback: { src: string; label: string; href: string }) => {
   const saved = siteSettings?.headerPreviews.find((item) => item.id === id)
-  return saved ? { src: saved.imageUrl, label: saved.label, href: saved.href, alt: saved.imageAlt } : { ...fallback, alt: '' }
+  if (!saved) return { ...fallback, alt: '' }
+  if (id === 'occasion-bakery') return { src: saved.imageUrl, label: fallback.label, href: fallback.href, alt: saved.imageAlt }
+  return { src: saved.imageUrl, label: saved.label, href: saved.href, alt: saved.imageAlt }
 }
 const primary = [
   ['menu', 'Меню', '/menu'],

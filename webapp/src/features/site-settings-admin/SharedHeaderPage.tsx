@@ -21,7 +21,11 @@ const defaultHeaderPreviews: SiteHeaderPreview[] = [
   { id: 'company-franchise', label: 'Франшиза', href: '/franchise', imageUrl: '/images/home-hero-v1.png', imageAlt: 'Франшиза Чашки кофе' },
 ]
 
-const mergePreviews = (saved: SiteHeaderPreview[]) => defaultHeaderPreviews.map((fallback) => saved.find((item) => item.id === fallback.id) ?? fallback)
+const mergePreviews = (saved: SiteHeaderPreview[]) => defaultHeaderPreviews.map((fallback) => {
+  const current = saved.find((item) => item.id === fallback.id)
+  if (!current) return fallback
+  return fallback.id === 'occasion-bakery' ? { ...current, label: fallback.label, href: fallback.href } : current
+})
 
 export function SharedHeaderPage() {
   const { api } = useAuth()
