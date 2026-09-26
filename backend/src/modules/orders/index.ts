@@ -21,6 +21,7 @@ export function createOrdersModule({
   requireAuth,
   requireOrderAccess,
   resolveCustomerId,
+  isCoffeeOrdersEnabled,
   notifications,
   yooKassaGateway,
 }: {
@@ -29,6 +30,7 @@ export function createOrdersModule({
   requireAuth: MiddlewareHandler<AuthHttpEnv>
   requireOrderAccess: MiddlewareHandler<AuthHttpEnv>
   resolveCustomerId: (sessionToken: string | undefined) => Promise<string | null>
+  isCoffeeOrdersEnabled: () => Promise<boolean>
   notifications?: OperationalNotifications
   yooKassaGateway?: YooKassaGateway
 }) {
@@ -52,7 +54,7 @@ export function createOrdersModule({
         onPaid: (order) => notifications?.notifyOrder(order) ?? Promise.resolve(),
       })
     : null
-  return createOrderRoutes({ env, service, paymentService, requireAuth, requireOrderAccess, resolveCustomerId })
+  return createOrderRoutes({ env, service, paymentService, requireAuth, requireOrderAccess, resolveCustomerId, isCoffeeOrdersEnabled })
 }
 
 export type { YooKassaGateway } from './application/payment-ports'

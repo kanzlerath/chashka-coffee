@@ -44,7 +44,7 @@ export function createApp({ env, prisma, premiumBonusGateway, yooKassaGateway }:
   const analytics = createAnalyticsModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('ANALYTICS_READ') })
   const workspace = createWorkspaceModule({ db: prisma, requireAuth: auth.requireAuth })
   const customerAccount = createCustomerAccountModule({ db: prisma, env, gateway: premiumBonusGateway })
-  const orders = createOrdersModule({ db: prisma, env, requireAuth: auth.requireAuth, requireOrderAccess: auth.requirePermission('ORDERS_MANAGE'), resolveCustomerId: customerAccount.resolveCustomerId, notifications: notifications.service, yooKassaGateway })
+  const orders = createOrdersModule({ db: prisma, env, requireAuth: auth.requireAuth, requireOrderAccess: auth.requirePermission('ORDERS_MANAGE'), resolveCustomerId: customerAccount.resolveCustomerId, isCoffeeOrdersEnabled: siteSettings.isCoffeeOrdersEnabled, notifications: notifications.service, yooKassaGateway })
   const crm = createCrmModule({ db: prisma, requireAuth: auth.requireAuth, requireCustomerRead: auth.requirePermission('CUSTOMERS_READ') })
   const app = new OpenAPIHono<AuthHttpEnv>({
     defaultHook: validationErrorHook,

@@ -2,9 +2,9 @@
 import { CATERING_URL } from '../lib/footer-navigation'
 import { getSiteSettings } from '../lib/public-api'
 
-interface Props { active?: string }
+interface Props { active?: string; coffeeOrdersEnabled?: boolean }
 
-const { active = '' } = Astro.props
+const { active = '', coffeeOrdersEnabled = true } = Astro.props
 const siteSettings = await getSiteSettings()
 const configuredPreview = (id: string, fallback: { src: string; label: string; href: string }) => {
   const saved = siteSettings?.headerPreviews.find((item) => item.id === id)
@@ -83,10 +83,10 @@ const moreGroups = [
     <div class="site-actions">
       <button class="site-menu-button" type="button" aria-controls="site-menu" aria-expanded="false" aria-label="Открыть меню"><span class="site-menu-button-label">Меню</span><i></i><i></i><i></i></button>
       <div class="site-action-cluster">
-        <button class="site-cart-button" type="button" data-cart-trigger aria-label="Открыть корзину">
+        {coffeeOrdersEnabled && <button class="site-cart-button" type="button" data-cart-trigger aria-label="Открыть корзину">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l-1 12H7L6 8Zm3 0V6a3 3 0 0 1 6 0v2" /></svg>
           <span data-cart-count hidden>0</span>
-        </button>
+        </button>}
         <button class="site-account-button" type="button" data-account-trigger aria-label="Открыть карту лояльности">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="8" height="8" /><path d="M6 6h.01M14 2h8v8h-8zM18 6h.01M2 14h8v8H2zM6 18h.01M14 14h.01M18 18h.01M18 22h4v-4M14 18v4M22 14h-4" /></svg>
         </button>

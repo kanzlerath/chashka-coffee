@@ -6,9 +6,9 @@ import type { DbClient } from '../../db'
 import { validationErrorHook } from '../../http/errors'
 import type { AuthHttpEnv } from '../auth'
 
-type SettingsRecord = { headerPreviews: unknown; updatedAt: Date }
-const dto = (value: SettingsRecord): SiteSettings => ({ headerPreviews: siteHeaderPreviewSchema.array().parse(value.headerPreviews), updatedAt: value.updatedAt.toISOString() })
-const emptySettings = (): SiteSettings => ({ headerPreviews: [], updatedAt: new Date(0).toISOString() })
+type SettingsRecord = { headerPreviews: unknown; coffeeOrdersEnabled: boolean; updatedAt: Date }
+const dto = (value: SettingsRecord): SiteSettings => ({ headerPreviews: siteHeaderPreviewSchema.array().parse(value.headerPreviews), coffeeOrdersEnabled: value.coffeeOrdersEnabled, updatedAt: value.updatedAt.toISOString() })
+const emptySettings = (): SiteSettings => ({ headerPreviews: [], coffeeOrdersEnabled: true, updatedAt: new Date(0).toISOString() })
 
 export function createSiteSettingsModule({ db, requireAuth, requireAdmin }: { db: DbClient; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireAdmin: MiddlewareHandler<AuthHttpEnv> }) {
   const routes = new OpenAPIHono({ defaultHook: validationErrorHook })
@@ -27,8 +27,16 @@ export function createSiteSettingsModule({ db, requireAuth, requireAdmin }: { db
   adminRoutes.openapi(adminRead, async (c) => c.json({ settings: await find() }, 200))
   adminRoutes.openapi(update, async (c) => {
     const input = c.req.valid('json')
-    const settings = await db.siteSettings.upsert({ where: { id: 'global' }, create: { id: 'global', headerPreviews: input.headerPreviews }, update: { headerPreviews: input.headerPreviews } })
+    const settings = await db.siteSettings.upsert({
+      where: { id: 'global' },
+      create: { id: 'global', headerPreviews: input.headerPreviews, coffeeOrdersEnabled: input.coffeeOrdersEnabled },
+      update: { headerPreviews: input.headerPreviews, coffeeOrdersEnabled: input.coffeeOrdersEnabled },
+    })
     return c.json({ settings: dto(settings as SettingsRecord) }, 200)
   })
-  return { routes, adminRoutes }
+  return {
+    routes,
+    adminRoutes,
+    isCoffeeOrdersEnabled: async () => (await db.siteSettings.findUnique({ where: { id: 'global' }, select: { coffeeOrdersEnabled: true } }))?.coffeeOrdersEnabled ?? true,
+  }
 }

@@ -13,6 +13,7 @@ export type SiteHeaderPreview = z.infer<typeof siteHeaderPreviewSchema>
 
 export const siteSettingsSchema = z.object({
   headerPreviews: z.array(siteHeaderPreviewSchema).max(16),
+  coffeeOrdersEnabled: z.boolean().default(true),
   updatedAt: z.string().datetime(),
 })
 export type SiteSettings = z.infer<typeof siteSettingsSchema>

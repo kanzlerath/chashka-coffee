@@ -14,7 +14,13 @@ describe('shared site settings contracts', () => {
       }],
     })
     expect(request.headerPreviews[0]?.id).toBe('service-delivery')
+    expect(request.coffeeOrdersEnabled).toBe(true)
     expect(siteSettingsResponseSchema.parse({ settings: { ...request, updatedAt: '2026-08-06T04:00:00.000Z' } }).settings.headerPreviews).toHaveLength(1)
+  })
+
+  test('accepts disabling online coffee orders', () => {
+    const request = upsertSiteSettingsRequestSchema.parse({ headerPreviews: [], coffeeOrdersEnabled: false })
+    expect(request.coffeeOrdersEnabled).toBe(false)
   })
 
   test('rejects unsafe or empty image addresses', () => {

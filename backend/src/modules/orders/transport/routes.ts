@@ -35,6 +35,7 @@ export function createOrderRoutes({
   requireAuth,
   requireOrderAccess,
   resolveCustomerId,
+  isCoffeeOrdersEnabled,
 }: {
   env: AppEnv
   service: OrderService
@@ -42,6 +43,7 @@ export function createOrderRoutes({
   requireAuth: MiddlewareHandler<AuthHttpEnv>
   requireOrderAccess: MiddlewareHandler<AuthHttpEnv>
   resolveCustomerId: (sessionToken: string | undefined) => Promise<string | null>
+  isCoffeeOrdersEnabled: () => Promise<boolean>
 }) {
   const storeRoutes = new OpenAPIHono({ defaultHook: validationErrorHook })
   const customerRoutes = new OpenAPIHono({ defaultHook: validationErrorHook })
@@ -142,6 +144,7 @@ export function createOrderRoutes({
   storeRoutes.openapi(quote, async (c) => c.json(await service.quote(c.req.valid('json').lines), 200))
   storeRoutes.openapi(create, async (c) => {
     assertTrustedOrigin(c, env)
+    await assertCoffeeOrdersEnabled(isCoffeeOrdersEnabled)
     const customerId = await resolveCustomerId(getCookie(c, customerSessionCookieName))
     const response = await executeOrder(() => service.create(c.req.valid('json'), customerId))
     c.header('Cache-Control', 'no-store')
@@ -154,6 +157,7 @@ export function createOrderRoutes({
   })
   storeRoutes.openapi(startPayment, async (c) => {
     assertTrustedOrigin(c, env)
+    await assertCoffeeOrdersEnabled(isCoffeeOrdersEnabled)
     if (!paymentService) throw new AppError(503, 'SERVICE_UNAVAILABLE', 'Оплата ЮKassa пока не настроена.')
     const response = await executePayment(() => paymentService.start(c.req.valid('param').accessToken))
     c.header('Cache-Control', 'no-store')
@@ -172,6 +176,7 @@ export function createOrderRoutes({
   })
   customerRoutes.openapi(customerOrderPayment, async (c) => {
     assertTrustedOrigin(c, env)
+    await assertCoffeeOrdersEnabled(isCoffeeOrdersEnabled)
     const customerId = await requireCustomerId(c, resolveCustomerId)
     const order = await executeOrder(() => service.getCustomerOrder(customerId, c.req.valid('param').id))
     const response = await executePayment(() => requirePaymentService(paymentService).startCustomerOrder(order))
@@ -203,6 +208,10 @@ export function createOrderRoutes({
 function requirePaymentService(service: PaymentService | null) {
   if (!service) throw new AppError(503, 'SERVICE_UNAVAILABLE', 'Оплата ЮKassa пока не настроена.')
   return service
+}
+
+async function assertCoffeeOrdersEnabled(isCoffeeOrdersEnabled: () => Promise<boolean>) {
+  if (!await isCoffeeOrdersEnabled()) throw new AppError(409, 'CONFLICT', 'Онлайн-заказ кофе временно недоступен.')
 }
 
 async function requireCustomerId(c: Context, resolveCustomerId: (sessionToken: string | undefined) => Promise<string | null>) {

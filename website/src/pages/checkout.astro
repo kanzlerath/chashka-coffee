@@ -1,9 +1,11 @@
 ---
 import PageShell from '../layouts/PageShell.astro'
+import { getSiteSettings } from '../lib/public-api'
 const yandexMapsApiKey = import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY ?? ''
+const coffeeOrdersEnabled = (await getSiteSettings())?.coffeeOrdersEnabled ?? true
 ---
 <PageShell title="Оформление заказа" description="Самовывоз кофе собственной обжарки." active="coffee" noindex>
-  <section class="checkout-page" aria-labelledby="checkout-title">
+  {coffeeOrdersEnabled ? <section class="checkout-page" aria-labelledby="checkout-title">
     <header class="checkout-heading"><h1 id="checkout-title">Оформление заказа</h1></header>
     <div class="checkout-loading" data-checkout-loading><span aria-hidden="true"></span>Проверяем корзину…</div>
     <section class="checkout-empty" data-checkout-empty hidden><h2>Корзина пуста</h2><p>Добавьте кофе и вернитесь к оформлению.</p><a href="/coffee#catalog">Перейти к кофе</a></section>
@@ -35,7 +37,7 @@ const yandexMapsApiKey = import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY ?? ''
         <button class="checkout-submit" type="submit">Перейти к оплате</button>
       </div>
     </form>
-  </section>
+  </section> : <section class="checkout-page" aria-labelledby="checkout-title"><header class="checkout-heading"><h1 id="checkout-title">Онлайн-заказ временно недоступен</h1></header><section class="checkout-empty"><p>Попробуйте вернуться позже или выберите кофе в ресторане.</p><a href="/coffee#catalog">Перейти к кофе</a></section></section>}
 </PageShell>
 
 <script>
@@ -45,6 +47,7 @@ const yandexMapsApiKey = import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY ?? ''
   import { customerAccountApi } from '../lib/customer-account-api'
   import { StoreApiError, storeApi } from '../lib/store-api'
 
+  if (document.querySelector('[data-checkout-form]')) {
   const loading = document.querySelector<HTMLElement>('[data-checkout-loading]')
   const empty = document.querySelector<HTMLElement>('[data-checkout-empty]')
   const form = document.querySelector<HTMLFormElement>('[data-checkout-form]')
@@ -253,6 +256,7 @@ const yandexMapsApiKey = import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY ?? ''
   })
 
   void load()
+  }
 </script>
 
 <style is:global>
@@ -309,7 +313,7 @@ const yandexMapsApiKey = import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY ?? ''
   body.public-site .public-main[data-path="/checkout"] .checkout-fieldset{margin:0 0 34px;gap:12px}.public-main[data-path="/checkout"] .checkout-fieldset legend{margin-bottom:17px}
   body.public-site .public-main[data-path="/checkout"] .checkout-pickup>div{gap:7px}.public-main[data-path="/checkout"] .checkout-pickup label{padding:16px 17px;border-radius:calc(var(--radius) - 5px);border-color:var(--line);background:#fffdf9}.public-main[data-path="/checkout"] .checkout-pickup label:has(input:checked){border-color:var(--moss);background:var(--moss-soft);transform:none}.public-main[data-path="/checkout"] .checkout-pickup label:hover{border-color:#b7c8aa}
   body.public-site .public-main[data-path="/checkout"] .checkout-fieldset>label{gap:8px;color:var(--muted);font-size:10px}.public-main[data-path="/checkout"] .checkout-fieldset :is(input,textarea){min-height:50px;border-color:var(--line);border-radius:calc(var(--radius) - 7px);background:#fffdf9}.public-main[data-path="/checkout"] .checkout-fieldset textarea{min-height:96px}.public-main[data-path="/checkout"] .checkout-fieldset :is(input,textarea):focus{border-color:var(--moss);box-shadow:0 0 0 3px rgba(189,214,90,.24)}.public-main[data-path="/checkout"] .checkout-layout.is-validation-visible .checkout-fieldset :is(input,textarea):invalid{border-color:#bb4b44;background:#fff7f5;box-shadow:0 0 0 3px rgba(187,75,68,.15)}
-  body.public-site .public-main[data-path="/checkout"] .checkout-consents{display:grid;gap:10px}.public-main[data-path="/checkout"] .checkout-consent{font-size:10px}.public-main[data-path="/checkout"] .checkout-consent a{text-underline-offset:2px}
+  body.public-site .public-main[data-path="/checkout"] .checkout-consents{display:grid;gap:10px}.public-main[data-path="/checkout"] .checkout-consent{color:var(--ink);font-size:11px;font-weight:600}.public-main[data-path="/checkout"] .checkout-consent a{text-decoration-color:currentColor;text-underline-offset:2px}
   body.public-site .public-main[data-path="/checkout"] .checkout-submit{min-height:54px;margin-top:24px;border-radius:var(--radius);background:var(--moss);font-size:12px}.public-main[data-path="/checkout"] .checkout-submit:hover{background:#294b3a;transform:translateY(-2px)}.public-main[data-path="/checkout"] .checkout-submit:focus-visible{outline:3px solid var(--lime);outline-offset:3px}
   body.public-site .public-main[data-path="/checkout"] .checkout-empty{margin:0 var(--content-gutter);padding:clamp(68px,9vw,120px) 26px;border-radius:var(--radius);background:var(--sand)}.public-main[data-path="/checkout"] .checkout-empty h2{font-size:clamp(38px,4vw,56px)}.public-main[data-path="/checkout"] .checkout-empty a{border-radius:var(--radius);background:var(--moss)}
   @media(max-width:900px){body.public-site .public-main[data-path="/checkout"] .checkout-heading{padding-right:var(--mobile-gutter);padding-left:var(--mobile-gutter)}body.public-site .public-main[data-path="/checkout"] .checkout-loading,body.public-site .public-main[data-path="/checkout"] .checkout-layout,body.public-site .public-main[data-path="/checkout"] .checkout-empty{margin-right:var(--mobile-gutter);margin-left:var(--mobile-gutter)}body.public-site .public-main[data-path="/checkout"] .checkout-layout{grid-template-columns:1fr}.public-main[data-path="/checkout"] .checkout-order{border-right:0;border-bottom:1px solid var(--line)}}

@@ -485,10 +485,11 @@ model MediaAsset {
 }
 
 model SiteSettings {
-  id             String   @id @default("global") @db.VarChar(32)
-  headerPreviews Json     @default("[]") @map("header_previews")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id                  String   @id @default("global") @db.VarChar(32)
+  headerPreviews      Json     @default("[]") @map("header_previews")
+  coffeeOrdersEnabled Boolean  @default(true) @map("coffee_orders_enabled")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
 
   @@map("site_settings")
 }
