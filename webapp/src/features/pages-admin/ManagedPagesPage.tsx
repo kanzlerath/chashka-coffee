@@ -13,7 +13,7 @@ import { AdminImageField } from '@/features/media-admin'
 import { resolveAdminImagePreview } from '@/features/media-admin/media-utils'
 import { useEditorDraft } from '@/hooks/use-editor-draft'
 
-const labels: Record<ManagedPageKey, string> = { HOME: 'Главная', COFFEE: 'Кофе', RESTAURANTS: 'Рестораны', DELIVERY: 'Доставка', APP: 'Приложение', LOYALTY: 'Лояльность', CERTIFICATES: 'Сертификаты', BAKERY: 'Кондитерская', FRANCHISE: 'Франшиза', JOBS: 'Вакансии', CONTACTS: 'Контакты', ABOUT: 'О нас', BANQUETS: 'Банкеты', PROMOTIONS: 'Акции' }
+const labels: Record<ManagedPageKey, string> = { HOME: 'Главная', COFFEE: 'Кофе', RESTAURANTS: 'Рестораны', DELIVERY: 'Доставка', APP: 'Приложение', LOYALTY: 'Лояльность', CERTIFICATES: 'Сертификаты', BAKERY: 'Десерты', FRANCHISE: 'Франшиза', JOBS: 'Вакансии', CONTACTS: 'Контакты', ABOUT: 'О нас', BANQUETS: 'Банкеты', PROMOTIONS: 'Акции' }
 
 const heroDefaults: Partial<Record<ManagedPageKey, Pick<UpsertManagedPageRequest, 'heroTitle' | 'heroDescription' | 'heroImageUrl'>>> = {
   ABOUT: { heroTitle: 'Город меняется.\nЛюбимое место\ностаётся.', heroDescription: 'Мы создаём рестораны, в которых одинаково естественно начать утро, назначить важную встречу и задержаться без особого повода.', heroImageUrl: '/images/restaurants-hero.png' },
@@ -30,7 +30,7 @@ const heroDefaults: Partial<Record<ManagedPageKey, Pick<UpsertManagedPageRequest
 
 const pageImageDefaults: Partial<Record<ManagedPageKey, ManagedPageImage[]>> = {
   HOME: [{ id: 'menu-tile', label: 'Плитка «Завтраки»', imageUrl: '/images/home-breakfast.png', imageAlt: 'Завтраки' }],
-  ABOUT: [{ id: 'craft', label: 'Блок «Зерно, кухня и кондитерская»', imageUrl: '/images/home-morning-v2.png', imageAlt: 'Кофе собственной обжарки' }],
+  ABOUT: [{ id: 'craft', label: 'Блок «Зерно, кухня и десерты»', imageUrl: '/images/home-morning-v2.png', imageAlt: 'Кофе для дома' }],
   DELIVERY: [{ id: 'app-order-screen', label: 'Экран приложения в блоке заказа', imageUrl: '/images/app/order-screen.webp', imageAlt: 'Экран заказа в приложении Чашка кофе' }],
   JOBS: [{ id: 'team', label: 'Блок о команде', imageUrl: '/images/stock/jobs-team.jpg', imageAlt: 'Команда бариста за стойкой' }],
   BANQUETS: [{ id: 'gathering', label: 'История о событии', imageUrl: '/images/stock/banquets-gathering.jpg', imageAlt: 'Гости за праздничным столом' }],

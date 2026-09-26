@@ -351,9 +351,9 @@ async function seed() {
   }
 
   const pageSeeds = [
-    { key: 'ABOUT' as const, title: 'О нас', blocks: [{ id: 'about-intro', type: 'TEXT', isVisible: true, title: 'Двадцать лет создаём места для хорошего дня', text: '«Чашка кофе» началась в Новосибирске в 2003 году. Сегодня мы соединяем ресторанную кухню, собственную обжарку и кондитерское мастерство.' }] },
+    { key: 'ABOUT' as const, title: 'О нас', blocks: [{ id: 'about-intro', type: 'TEXT', isVisible: true, title: 'Двадцать лет создаём места для хорошего дня', text: '«Чашка кофе» началась в Новосибирске в 2003 году. Сегодня это рестораны, меню для разных поводов, кофе и десерты.' }] },
     { key: 'COFFEE' as const, title: 'Кофе', blocks: [{ id: 'coffee-story', type: 'SPLIT', isVisible: true, title: 'Обжариваем сами с 2017 года', text: 'Работаем с сезонными specialty-лотами из Эфиопии, Колумбии и Бразилии.', imageUrl: '/images/home-morning-v2.png', alt: 'Кофе собственной обжарки', imagePosition: 'RIGHT' }] },
-    { key: 'BAKERY' as const, title: 'Кондитерская', blocks: [{ id: 'bakery-story', type: 'SPLIT', isVisible: true, title: 'Десерты, которые становятся частью праздника', text: 'Собственная кондитерская, натуральные ингредиенты и ручная работа.', imageUrl: '/images/home-breakfast.png', alt: 'Десерт кондитерской', imagePosition: 'LEFT' }] },
+    { key: 'BAKERY' as const, title: 'Десерты', blocks: [{ id: 'bakery-story', type: 'SPLIT', isVisible: true, title: 'Десерты, которые становятся частью праздника', text: 'Выбор десертов для праздников и особых поводов.', imageUrl: '/images/home-breakfast.png', alt: 'Десерт «Чашки кофе»', imagePosition: 'LEFT' }] },
   ]
   for (const page of pageSeeds) {
     await db.managedPage.upsert({ where: { key: page.key }, create: page, update: { title: page.title, blocks: page.blocks } })

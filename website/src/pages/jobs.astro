@@ -29,7 +29,7 @@ const values = [
 const restaurantFilters = [...new Map(jobs.flatMap((job) => job.restaurant ? [[job.restaurant.id, job.restaurant] as const] : [])).values()]
 ---
 
-<PageShell title="Вакансии" description="Вакансии в ресторанах, кондитерской и команде Чашки кофе." active="jobs" image={heroImage}>
+<PageShell title="Вакансии" description="Вакансии в ресторанах, направлении десертов и команде Чашки кофе." active="jobs" image={heroImage}>
   <EditorialHero
     title={heroTitle}
     image={heroImage}

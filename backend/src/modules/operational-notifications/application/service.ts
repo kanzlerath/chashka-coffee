@@ -143,7 +143,7 @@ function formatLead(lead: Lead, event: Exclude<OperationalNotificationEvent, 'CO
 }
 
 const leadNotificationTitles: Record<Exclude<OperationalNotificationEvent, 'COFFEE_ORDER'>, string> = {
-  CAKE_REQUEST: '🎂 Новая заявка в кондитерскую',
+  CAKE_REQUEST: '🎂 Новая заявка на десерт',
   FOOTER_INQUIRY: '💬 Новый вопрос или идея с сайта',
   CONTACT_REQUEST: '✉️ Новое обращение со страницы контактов',
   RESERVATION_REQUEST: '🪑 Новая заявка на бронирование',

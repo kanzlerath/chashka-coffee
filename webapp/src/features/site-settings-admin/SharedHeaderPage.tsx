@@ -13,7 +13,7 @@ import { AdminImageField } from '@/features/media-admin'
 const defaultHeaderPreviews: SiteHeaderPreview[] = [
   { id: 'service-delivery', label: 'Доставка', href: '/delivery', imageUrl: '/images/home-hero-v1.png', imageAlt: 'Доставка из Чашки кофе' },
   { id: 'service-app', label: 'Приложение', href: '/app', imageUrl: '/images/home-morning-v2.png', imageAlt: 'Приложение Чашки кофе' },
-  { id: 'occasion-bakery', label: 'Кондитерская', href: '/bakery', imageUrl: '/images/home-breakfast.png', imageAlt: 'Десерты Чашки кофе' },
+  { id: 'occasion-bakery', label: 'Десерты', href: '/bakery', imageUrl: '/images/home-breakfast.png', imageAlt: 'Десерты Чашки кофе' },
   { id: 'occasion-banquets', label: 'Банкеты', href: '/banquets', imageUrl: '/images/restaurants-hero.png', imageAlt: 'Банкет в ресторане Чашка кофе' },
   { id: 'reading-journal', label: 'Журнал', href: '/journal', imageUrl: '/images/home-morning-v2.png', imageAlt: 'Журнал Чашки кофе' },
   { id: 'reading-promotions', label: 'Акции', href: '/promotions', imageUrl: '/images/home-breakfast.png', imageAlt: 'Акции Чашки кофе' },

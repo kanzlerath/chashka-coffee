@@ -21,7 +21,7 @@ const imageStyle = product.imageCrop
     <div class="product-card-reveal"><p>{product.description}</p><b>Подробнее</b></div>
   </div>
   <div class="product-card-copy">
-    <small>{product.type === 'CAKE' ? product.category ?? 'Кондитерская' : product.subtitle ?? 'Кофе собственной обжарки'}</small>
+    <small>{product.type === 'CAKE' ? product.category ?? 'Десерты' : product.subtitle ?? 'Кофе для дома'}</small>
     <h3>{product.name}</h3>
     {presentation === 'editorial' && product.tastingNotes.length > 0 && <p>{product.tastingNotes.join(' · ')}</p>}
     {presentation === 'menu' && product.tastingNotes.length > 0 && <div class="product-card-tasting">

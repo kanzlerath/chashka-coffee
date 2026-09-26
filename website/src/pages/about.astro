@@ -11,14 +11,14 @@ const craftImage = managedPageImage(page, 'craft', { imageUrl: '/images/home-mor
 const milestones = [
   ['2003','Первая «Чашка кофе» в Новосибирске.'],
   ['2017','Запустили собственную обжарку на 15-килограммовом ростере Giesen.'],
-  ['Сегодня','Рестораны, кондитерская, доставка и команда, которая продолжает расти.'],
+  ['Сегодня','Рестораны, десерты, доставка и команда, которая продолжает расти.'],
 ]
 ---
 <PageShell title="О компании" description="История и ремесло сети ресторанов «Чашка кофе»." active="about" image={heroImage}>
   <section class="about-opening"><img src={heroImage} alt="Интерьер ресторана «Чашка кофе»"/><div><h1>{heroTitle.split(/\r?\n/).map((line) => <span>{line}</span>)}</h1><p>{heroDescription}</p></div></section>
   <section class="about-statement"><h2>Двадцать с лишним лет мы превращаем ежедневный кофе в часть городской культуры.</h2></section>
   <section class="about-history"><header><h2>От первой чашки<br/>до собственного ремесла</h2></header><div>{milestones.map(([year,text]) => <article><strong>{year}</strong><p>{text}</p></article>)}</div></section>
-  <section class="about-craft"><figure><img src={craftImage.imageUrl} alt={craftImage.imageAlt}/></figure><div><h2>Зерно, кухня<br/>и кондитерская</h2><span>Мы сами обжариваем specialty-кофе, готовим блюда в ресторанах и делаем торты из натуральных ингредиентов — без маргарина, искусственных красителей и ароматизаторов.</span><nav><a href="/coffee">Кофе</a><a href="/bakery">Кондитерская</a><a href="/menu">Меню</a></nav></div></section>
+  <section class="about-craft"><figure><img src={craftImage.imageUrl} alt={craftImage.imageAlt}/></figure><div><h2>Зерно, кухня<br/>и десерты</h2><span>В ресторанах «Чашки кофе» — меню для разных поводов, specialty-кофе и выбор десертов.</span><nav><a href="/coffee">Кофе</a><a href="/bakery">Десерты</a><a href="/menu">Меню</a></nav></div></section>
   {page && <ContentBlocks blocks={page.blocks}/>} 
   <section class="about-links" aria-label="Продолжить знакомство"><a href="/restaurants"><strong>Рестораны</strong><img class="about-link-art" src="/brand/about/restaurants.svg" alt="" aria-hidden="true"/></a><a href="/jobs"><strong>Вакансии</strong><img class="about-link-art" src="/brand/about/vacancy.svg" alt="" aria-hidden="true"/></a><a href="/franchise"><strong>Франшиза</strong><img class="about-link-art" src="/brand/about/franchise.svg" alt="" aria-hidden="true"/></a></section>
 </PageShell>

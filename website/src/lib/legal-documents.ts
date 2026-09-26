@@ -1,5 +1,5 @@
 export const LEGAL_EFFECTIVE_DATE = '11 августа 2026'
-export const LEGAL_SUPPORT_EMAIL = 'support@chashkacoffee.ru'
+export const LEGAL_SUPPORT_EMAIL = 'sbis-ivanov@denisivanov.ru'
 export const PREMIUM_BONUS_OFFER_URL = 'https://cards.premiumbonus.su/DIB_Len21sibsib/public-offer-agreement'
 
 export type LegalDocumentCategory = 'Основное' | 'Персональные данные' | 'Покупки и программы'
@@ -36,7 +36,7 @@ export const legalDocuments: LegalDocumentEntry[] = [
     shortTitle: 'Реквизиты',
     href: '/requisites',
     category: 'Основное',
-    summary: 'Кто владеет сайтом, принимает заявки, продаёт кофе и исполняет заказы кондитерской.',
+    summary: 'Сведения о владельце сайта и операторе персональных данных.',
     effectiveDate: LEGAL_EFFECTIVE_DATE,
   },
   {

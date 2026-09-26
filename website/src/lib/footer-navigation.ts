@@ -27,7 +27,7 @@ export const footerGroups: FooterGroup[] = [
     title: 'Для повода',
     links: [
       { label: 'Кофе для дома', href: '/coffee' },
-      { label: 'Кондитерская', href: '/bakery' },
+      { label: 'Десерты', href: '/bakery' },
       { label: 'Банкеты', href: '/banquets' },
       { label: 'Кейтеринг', href: CATERING_URL, external: true },
     ],

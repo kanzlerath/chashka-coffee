@@ -32,7 +32,7 @@ type EventGroup = { label: string; options: readonly EventOption[] }
 const eventGroups: readonly EventGroup[] = [
   { label: 'Заказы', options: [
     { value: 'COFFEE_ORDER', label: 'Заказы кофе', description: 'Онлайн-заказ на самовывоз.' },
-    { value: 'CAKE_REQUEST', label: 'Кондитерская', description: 'Форма заказа торта или десерта.' },
+    { value: 'CAKE_REQUEST', label: 'Десерты', description: 'Форма заказа торта или десерта.' },
   ] },
   { label: 'Обращения гостей', options: [
     { value: 'FOOTER_INQUIRY', label: 'Вопросы и идеи', description: 'Самая нижняя форма в футере.' },

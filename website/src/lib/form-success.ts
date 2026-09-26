@@ -33,7 +33,7 @@ export function getPublicFormSuccessMessage(context: PublicFormSuccessContext): 
   }
 
   if (context.type === 'CAKE') return {
-    eyebrow: 'Кондитерская',
+    eyebrow: 'Десерты',
     title: 'Заявка получена',
     copy: 'Уточним детали заказа, рассчитаем стоимость и скоро свяжемся с вами.',
   }

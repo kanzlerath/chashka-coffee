@@ -39,12 +39,12 @@ const ownKitchen = ['Карамель', 'Варенье из свежих яго
 const excluded = ['маргарин', 'спреды', 'покупные джемы', 'яичный порошок', 'консерванты', 'искусственные ароматизаторы', 'продлители хранения']
 ---
 
-<PageShell title="Кондитерская" description="Торты и десерты собственной кондитерской «Чашка кофе» из натуральных ингредиентов." active="bakery" image={heroImage}>
+<PageShell title="Десерты" description="Торты и десерты «Чашки кофе» для праздников и особых поводов." active="bakery" image={heroImage}>
   <EditorialHero
     title={heroTitle}
     image={heroImage}
-    alt="Торт из собственной кондитерской Чашки кофе"
-    eyebrow="Собственная кондитерская"
+    alt="Торт «Чашки кофе»"
+    eyebrow="Десерты"
     description={heroDescription}
     actionLabel="Смотреть каталог"
     actionHref="#catalog"
@@ -52,7 +52,7 @@ const excluded = ['маргарин', 'спреды', 'покупные джем
 
   <section class="bakery-belief reveal-on-scroll">
     <h2>Домашний вкус<br />начинается с продукта.</h2>
-    <p>Мы хотим, чтобы гости точно знали, из чего приготовлен их десерт. Поэтому выбираем понятные ингредиенты, сами делаем большую часть начинок и не прячем вкус за ароматизаторами.</p>
+    <p>Поможем выбрать десерт для праздника: расскажем о составе, вариантах оформления и доступных вкусах.</p>
   </section>
 
   <section class="ingredient-story" aria-labelledby="ingredient-title">
@@ -70,7 +70,7 @@ const excluded = ['маргарин', 'спреды', 'покупные джем
 
   <section class="bakery-kitchen reveal-on-scroll">
     <div class="kitchen-copy">
-      <h2>Сделано здесь,<br />а не куплено.</h2>
+      <h2>Десерт для<br />вашего повода.</h2>
       <span>Так мы контролируем свежесть, сладость и текстуру каждой детали — от первой варки карамели до финального слоя крема.</span>
     </div>
     <div class="kitchen-list">
@@ -86,18 +86,18 @@ const excluded = ['маргарин', 'спреды', 'покупные джем
 
   {page && <div class="bakery-managed"><ContentBlocks blocks={page.blocks} /></div>}
 
-  <section id="catalog" class="cake-catalog" aria-label="Каталог кондитерской">
+  <section id="catalog" class="cake-catalog" aria-label="Каталог десертов">
     {productGroups.length
-      ? <div class="cake-catalog-layout"><aside class="cake-catalog-nav"><nav aria-label="Категории кондитерской">{productGroups.map((group) => <a href={`#${group.id}`}>{group.name}</a>)}</nav></aside><div class="cake-catalog-groups">{productGroups.map((group) => <section id={group.id} class="cake-catalog-group"><h2>{group.name}</h2><div class="cake-grid">{group.products.map((product) => <ProductCard product={product} presentation="menu" />)}</div></section>)}</div></div>
-      : <p class="catalog-empty">Каталог временно недоступен. Позвоните в кондитерскую — команда подскажет актуальные вкусы и стоимость.</p>}
+      ? <div class="cake-catalog-layout"><aside class="cake-catalog-nav"><nav aria-label="Категории десертов">{productGroups.map((group) => <a href={`#${group.id}`}>{group.name}</a>)}</nav></aside><div class="cake-catalog-groups">{productGroups.map((group) => <section id={group.id} class="cake-catalog-group"><h2>{group.name}</h2><div class="cake-grid">{group.products.map((product) => <ProductCard product={product} presentation="menu" />)}</div></section>)}</div></div>
+      : <p class="catalog-empty">Каталог временно недоступен. Свяжитесь с нами — команда подскажет актуальные вкусы и стоимость.</p>}
   </section>
 
   <LeadPanel
     id="cake-request"
     title={'Расскажите\nо вашем торте'}
-    description="Напишите дату, количество гостей и пожелания по вкусу. Кондитерская уточнит детали и рассчитает стоимость."
+    description="Напишите дату, количество гостей и пожелания по вкусу. Уточним детали и рассчитаем стоимость."
     type="CAKE"
-    submitLabel="Отправить в кондитерскую"
+    submitLabel="Отправить заявку"
     subjectLabel="Повод или вид торта"
     source="bakery_order_request"
     compactTitle

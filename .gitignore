@@ -35,3 +35,10 @@ backend/.prisma-generate.lock
 .vscode/
 *.swp
 *.swo
+
+# Temporary content-filling aids
+docs/COFFEE_CATALOG_FILLING_GUIDE.md
+docs/ADMIN_CONTENT_PLAN.md
+output/
+presentation/
+Договор Чашка кофе редакция 3 с пояснениями.md
