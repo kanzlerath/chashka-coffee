@@ -2,7 +2,7 @@
 import PageShell from '../layouts/PageShell.astro'
 import LeadPanel from '../components/LeadPanel.astro'
 import ContentBlocks from '../components/ContentBlocks.astro'
-import { getManagedPage, getRestaurants, managedPageImage } from '../lib/public-api'
+import { getManagedPage, managedPageImage } from '../lib/public-api'
 
 const page = await getManagedPage('FRANCHISE')
 const heroTitle = page?.heroTitle ?? 'Готовая модель.\nВаш город.\nНаш кофе.'
@@ -24,10 +24,19 @@ const support = [
   'Маркетинговые материалы и сопровождение запуска',
 ]
 const history = [
-  ['2003', 'Начинается история «Чашки кофе».'],
-  ['Дальше', 'Развиваем рестораны, аэропортовые и городские форматы.'],
-  ['2017', 'Открываем собственное обжарочное производство.'],
-  ['Сегодня', 'Сеть объединяет 17 точек разных форматов.'],
+  ['2003', 'Первая «Чашка кофе» открывается в аэропорту Толмачёво.'],
+  ['2004', 'Открываются две кофейни в аэропорту Толмачёво и бизнес-зал.'],
+  ['2005', 'В аэропорту открываются ещё четыре «Чашки кофе», включая VIP Lounge.'],
+  ['2008', 'Открывается кондитерское производство.'],
+  ['2011', 'Открывается ресторан на Морском проспекте, 54.'],
+  ['2012', 'Открывается «Чашка кофе» на Красном проспекте, 22.'],
+  ['2013', 'Открывается «Чашка кофе» в Новосибирской филармонии на Красном проспекте, 18/1.'],
+  ['2016', 'Открываются две кофейни: в Новосибирском зоопарке и ТРЦ «Галерея Новосибирск».'],
+  ['2018', 'Открывается «Чашка кофе» на Ленина, 12 и собственная обжарка.'],
+  ['2019', 'Открывается новая «Чашка кофе» в ТРЦ «АУРА».'],
+  ['2023', 'Открываются буфеты и ресторан в «Сибирь-Арене», а также «Чашка кофе» в «Парк Арене».'],
+  ['2024', 'Открывается кофе-пойнт «Чашка кофе» в визит-центре «Парк Арена».'],
+  ['2025', 'Открывается ресторан «Чашка кофе» в «Парк Арене», два бизнес-зала в аэропорту Толмачёво и развивается франчайзинговая сеть.'],
 ]
 const stages = [
   ['01', 'Знакомимся', 'Обсуждаем город, ожидания и подходящий формат.'],
@@ -35,8 +44,6 @@ const stages = [
   ['03', 'Готовим', 'Проектируем, комплектуем, обучаем и выстраиваем процессы.'],
   ['04', 'Открываем', 'Путь от заявки до открытия занимает ориентировочно 6 месяцев.'],
 ]
-const restaurants = await getRestaurants()
-const apartville = restaurants.find((restaurant) => /apartville|кошурникова/i.test(`${restaurant.name} ${restaurant.address}`))
 ---
 
 <PageShell title="Франшиза" description="Франшиза Чашка кофе: форматы от 5 м², паушальный взнос от 360 000 рублей и поддержка на каждом этапе." active="franchise" image={heroImage}>
@@ -48,7 +55,6 @@ const apartville = restaurants.find((restaurant) => /apartville|кошурник
       <p>{heroDescription}</p>
       <a href="#franchise-form">Получить презентацию</a>
     </div>
-    <div class="franchise-hero-sign" aria-hidden="true"><span>ЧК</span><em>coffee<br />people</em></div>
   </section>
 
   <section class="franchise-ledger" aria-label="Основные условия франшизы">
@@ -56,7 +62,6 @@ const apartville = restaurants.find((restaurant) => /apartville|кошурник
     <article><strong>от 360<br />тыс. ₽</strong><span>паушальный<br />взнос</span></article>
     <article><strong>4%</strong><span>роялти</span></article>
     <article><strong>0 ₽</strong><span>маркетинговый<br />сбор</span></article>
-    <article><strong>без других</strong><span>регулярных<br />платежей</span></article>
   </section>
 
   <section class="franchise-intro">
@@ -91,23 +96,6 @@ const apartville = restaurants.find((restaurant) => /apartville|кошурник
     <ol>{support.map((item, index) => <li><span>{String(index + 1).padStart(2, '0')}</span><p>{item}</p></li>)}</ol>
   </section>
 
-  <section class="franchise-terms" aria-labelledby="franchise-terms-title">
-    <header><p class="franchise-kicker">Условия партнёрства</p><h2 id="franchise-terms-title">Важное —<br /><em>без мелкого шрифта.</em></h2></header>
-    <div class="franchise-terms-list">
-      <article><span>01</span><div><h3>Запуск</h3><p>Путь от заявки до открытия — ориентировочно 6 месяцев.</p></div></article>
-      <article><span>02</span><div><h3>Партнёр</h3><p>Опыт в общепите не обязателен. Специальных требований к партнёру нет.</p></div></article>
-      <article><span>03</span><div><h3>География</h3><p>Ограничений по городу или региону нет: формат и конкретную локацию оцениваем индивидуально.</p></div></article>
-      <article><span>04</span><div><h3>Территория</h3><p>Эксклюзив на город или территорию обсуждается индивидуально.</p></div></article>
-      <article class="franchise-terms-highlight"><span>05</span><div><h3>Обязательная закупка</h3><p>У сети обязательно закупается кофейное зерно.</p></div></article>
-      <article><span>06</span><div><h3>Экономика точки</h3><p>После заявки предоставим выручку, прибыль, точку безубыточности, P&amp;L и экономику конкретной точки.</p></div></article>
-    </div>
-  </section>
-
-  {apartville && <section class="franchise-case" aria-labelledby="franchise-case-title">
-    <a class="franchise-case-image" href={`/restaurants/${apartville.slug}`}><img src={apartville.coverImageUrl ?? '/images/restaurants-hero.png'} alt={`Чашка кофе — ${apartville.name}`} loading="lazy" /></a>
-    <div class="franchise-case-copy"><p class="franchise-kicker">Действующая партнёрская точка</p><h2 id="franchise-case-title">Apartville<br />на Кошурникова</h2><p>{apartville.address}</p><p>Пример работающей партнёрской точки в сети «Чашка кофе».</p><a href={`/restaurants/${apartville.slug}`}>Посмотреть точку <span aria-hidden="true">→</span></a></div>
-  </section>}
-
   <section class="franchise-history">
     <header><h2>История,<br />которая продолжается.</h2><strong>2003—2025</strong></header>
     <div>{history.map(([year, event]) => <article><span>{year}</span><p>{event}</p></article>)}</div>
@@ -123,7 +111,6 @@ const apartville = restaurants.find((restaurant) => /apartville|кошурник
   <LeadPanel
     id="franchise-form"
     title="Давайте\nпосчитаем\nвашу точку"
-    description="Оставьте контакты, город и интересующий формат. Пришлём презентацию и подготовим расчёт конкретной точки — с финансовой моделью под выбранную локацию."
     type="FRANCHISE"
     submitLabel="Получить презентацию"
     subjectLabel="Город для открытия"
@@ -146,5 +133,8 @@ const apartville = restaurants.find((restaurant) => /apartville|кошурник
   .franchise-ledger{grid-template-columns:1.12fr repeat(4,1fr)}.franchise-ledger article{min-width:0}.franchise-ledger article:last-child strong{font-size:clamp(25px,2.65vw,42px);line-height:.95}.franchise-ledger article:nth-child(2) strong{font-size:clamp(26px,3vw,46px)}.format-metrics{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}.format-metrics strong{font-size:12px}.format-metrics strong+strong{color:var(--muted);font-weight:700}.franchise-support h2 em,.franchise-terms h2 em{font-family:'21Cent',serif;font-weight:400}.franchise-terms{display:grid;grid-template-columns:minmax(0,.82fr) minmax(440px,1.18fr);gap:clamp(60px,10vw,170px);padding:clamp(105px,12vw,180px) var(--content-gutter);background:#eee9e1}.franchise-kicker{margin:0 0 22px;color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.franchise-terms h2{margin:0;font-size:clamp(48px,5.5vw,88px);line-height:.88}.franchise-terms-list{border-top:1px solid var(--line)}.franchise-terms-list article{display:grid;grid-template-columns:46px 1fr;gap:17px;padding:23px 0;border-bottom:1px solid var(--line)}.franchise-terms-list span{padding-top:4px;font-size:10px;font-weight:800}.franchise-terms-list h3{margin:0;font-size:clamp(20px,1.8vw,28px);letter-spacing:-.045em}.franchise-terms-list p{max-width:520px;margin:8px 0 0;color:var(--muted);font-size:13px;line-height:1.6}.franchise-terms-highlight{margin-inline:-16px;padding-inline:16px!important;background:var(--lime);color:var(--moss)}.franchise-terms-highlight p{color:var(--moss)}.franchise-case{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(330px,.88fr);min-height:620px;overflow:hidden;border-radius:var(--radius);background:#d8e5df}.franchise-case-image{display:block;min-height:100%;overflow:hidden;background:#263b2f}.franchise-case-image img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .7s cubic-bezier(.22,1,.36,1)}.franchise-case:hover img{transform:scale(1.025)}.franchise-case-copy{display:flex;align-items:flex-start;justify-content:center;padding:clamp(45px,6vw,90px);flex-direction:column}.franchise-case-copy h2{margin:0;font-size:clamp(43px,4.8vw,73px);line-height:.86}.franchise-case-copy>p:not(.franchise-kicker){max-width:330px;margin:22px 0 0;color:var(--muted);font-size:13px;line-height:1.68}.franchise-case-copy>a{display:inline-flex;gap:18px;align-items:center;margin-top:35px;padding-bottom:5px;border-bottom:1px solid currentColor;color:inherit;font-size:11px;font-weight:800;text-decoration:none}.franchise-case-copy>a span{font-size:19px;line-height:.7}
   @media(max-width:1000px){.franchise-ledger{grid-template-columns:1fr 1fr}.franchise-ledger article:nth-child(5){border-left:0;border-top:1px solid rgba(35,30,27,.12)}.franchise-terms{grid-template-columns:1fr;padding:90px var(--mobile-gutter);gap:48px}.franchise-case{grid-template-columns:1fr;margin:0 var(--mobile-gutter)}.franchise-case-image{min-height:480px}.franchise-case-copy{min-height:460px;padding:58px 25px}}
   @media(max-width:560px){.franchise-ledger{grid-template-columns:1fr}.franchise-ledger article:nth-child(n){min-height:150px;border-top:1px solid rgba(35,30,27,.12);border-left:0}.franchise-ledger article:first-child{border-top:0}.franchise-ledger article:last-child strong{font-size:30px}.franchise-terms{padding-block:72px}.franchise-terms h2{font-size:49px}.franchise-terms-list article{grid-template-columns:35px 1fr}.franchise-terms-highlight{margin-inline:-8px;padding-inline:8px!important}.franchise-case-image{min-height:340px}.franchise-case-copy{min-height:390px}.franchise-case-copy h2{font-size:49px}}
-  @media(prefers-reduced-motion:reduce){.franchise-hero>img,.franchise-hero-copy{animation:none}.franchise-formats article,.franchise-roastery img,.franchise-support li,.franchise-case-image img{transition:none}}
+  .franchise-ledger{grid-template-columns:1.15fr repeat(3,1fr)}.franchise-roastery{grid-template-columns:minmax(0,1.04fr) minmax(0,.96fr)}.roastery-copy{position:relative;z-index:1;background:#24201d}.franchise-roastery figure{position:relative;z-index:0}
+  @media(max-width:1000px){.franchise-ledger{grid-template-columns:1fr 1fr}.franchise-roastery{grid-template-columns:1fr}}
+  @media(max-width:560px){.franchise-ledger{grid-template-columns:1fr}}
+  @media(prefers-reduced-motion:reduce){.franchise-hero>img,.franchise-hero-copy{animation:none}.franchise-formats article,.franchise-roastery img,.franchise-support li{transition:none}}
 </style>
