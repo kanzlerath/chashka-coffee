@@ -34,6 +34,11 @@ export async function getRestaurantSlugs(fallback: string[]) {
     : uniqueSlugs(fallback)
 }
 
+export async function getRestaurants() {
+  const response = await getJson<{ restaurants: RestaurantSummary[] }>('/api/restaurants')
+  return response?.restaurants ?? []
+}
+
 export async function getRestaurantMenuSlugs(fallback: string[]) {
   const response = await getJson<{ restaurants: Pick<RestaurantSummary, 'slug' | 'hasMenu'>[] }>('/api/restaurants')
   return response
