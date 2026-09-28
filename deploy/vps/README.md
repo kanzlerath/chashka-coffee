@@ -90,6 +90,16 @@ docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml run --rm we
 docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml up -d --force-recreate website-builder
 ```
 
+If the update changes `deploy/vps/Caddyfile`, validate the candidate and
+recreate only Caddy. The bind-mounted file can keep its old inode after a
+Git pull, so a reload inside the existing container may read the old config:
+
+```bash
+docker cp deploy/vps/Caddyfile chashka-coffee-dev-caddy-1:/tmp/Caddyfile.candidate
+docker exec chashka-coffee-dev-caddy-1 caddy validate --config /tmp/Caddyfile.candidate
+docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml up -d --no-deps --force-recreate caddy
+```
+
 `api` and `migrate` are separate Compose services. Rebuild both before running
 migrations; otherwise `migrate` can use an older image and report success
 without applying migrations added by the new revision. Recreate `api` only

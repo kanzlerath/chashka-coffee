@@ -152,9 +152,10 @@ does not restart DEV API, worker, or PostgreSQL.
 
 ```bash
 cd /srv/chashka-coffee/app
-docker exec chashka-coffee-dev-caddy-1 caddy validate --config /etc/caddy/Caddyfile
+docker cp deploy/vps/Caddyfile chashka-coffee-dev-caddy-1:/tmp/Caddyfile.candidate
+docker exec chashka-coffee-dev-caddy-1 caddy validate --config /tmp/Caddyfile.candidate
 docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml config -q
-docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml up -d --no-deps caddy
+docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml up -d --no-deps --force-recreate caddy
 ```
 
 Recheck all three DEV hosts immediately. The public DEV site and admin retain
