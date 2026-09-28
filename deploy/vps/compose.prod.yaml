@@ -65,7 +65,7 @@ services:
       PUBLIC_YANDEX_MAPS_API_KEY: ${PUBLIC_YANDEX_MAPS_API_KEY:-}
       PUBLIC_YANDEX_METRIKA_ID: ${PUBLIC_YANDEX_METRIKA_ID-}
       WEBSITE_RELEASES_DIR: /srv/website
-      WEBSITE_BUILD_STAGING_DIR: /srv/website/.release-staging
+      WEBSITE_BUILD_STAGING_DIR: /app/website/.release-staging-prod
     command: ["/bin/sh", "-ec", "bun install --frozen-lockfile && bun deploy/vps/scripts/build-website-release.mjs"]
     volumes:
       - ${APP_DIR:?APP_DIR is required}:/app
@@ -86,7 +86,7 @@ services:
       PUBLIC_YANDEX_MAPS_API_KEY: ${PUBLIC_YANDEX_MAPS_API_KEY:-}
       PUBLIC_YANDEX_METRIKA_ID: ${PUBLIC_YANDEX_METRIKA_ID-}
       WEBSITE_RELEASES_DIR: /srv/website
-      WEBSITE_BUILD_STAGING_DIR: /srv/website/.release-staging
+      WEBSITE_BUILD_STAGING_DIR: /app/website/.release-staging-prod
     command: ["/bin/sh", "-ec", "bun install --frozen-lockfile && bun run --cwd backend start:website-builder"]
     volumes:
       - ${APP_DIR:?APP_DIR is required}:/app

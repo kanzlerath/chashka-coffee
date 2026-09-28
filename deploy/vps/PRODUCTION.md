@@ -24,6 +24,9 @@ API is attached to the proxy network and its own Compose network; its
 PostgreSQL is available only on the latter. Neither PostgreSQL nor API
 publishes a host port. DEV and PROD builds use separate checkouts, so their
 dependency installs, staging files, and generated outputs cannot collide.
+Astro stages each PROD build inside its checkout before copying the completed
+release to the persistent releases mount; this keeps Astro's internal renames
+on one filesystem.
 
 ## First launch preflight and backup
 
