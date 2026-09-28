@@ -64,6 +64,11 @@ Set these build-time variables for the public site before a production build:
 
 - `PUBLIC_API_URL` — externally reachable API URL used while Astro generates the public catalogue pages.
 - `PUBLIC_SITE_URL` — canonical public website URL, for example `https://chashkacoffee.ru`. It is used for canonical and Open Graph links.
+
+The website build also writes `robots.txt` and `sitemap.xml` from the canonical
+URLs of generated, indexable HTML pages. The DEV hostname gets `Disallow: /`;
+the production hostname gets an allow rule and a production sitemap. Pages
+marked `noindex`, including account and checkout, are omitted from the sitemap.
 - `PUBLIC_YANDEX_MAPS_API_KEY` — browser API key for the interactive restaurant map, restricted by HTTP Referer.
 - `PUBLIC_YANDEX_METRIKA_ID` — public numeric Yandex Metrika counter ID. Leave it empty to keep Metrika disabled.
 

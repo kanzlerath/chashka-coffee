@@ -1,4 +1,4 @@
-name: chashka-coffee-dev
+name: chashka-coffee-prod
 
 services:
   postgres:
@@ -36,6 +36,9 @@ services:
       timeout: 5s
       retries: 6
       start_period: 20s
+    networks:
+      - default
+      - proxy
 
   migrate:
     build:
@@ -50,34 +53,6 @@ services:
         condition: service_healthy
     profiles: ["maintenance"]
 
-  caddy:
-    image: caddy:2.10.2-alpine
-    restart: unless-stopped
-    depends_on:
-      api:
-        condition: service_healthy
-    environment:
-      WEBSITE_HOST: ${WEBSITE_HOST:?WEBSITE_HOST is required}
-      WEBAPP_HOST: ${WEBAPP_HOST:?WEBAPP_HOST is required}
-      API_HOST: ${API_HOST:?API_HOST is required}
-      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL is required}
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ${APP_DIR:?APP_DIR is required}/deploy/vps/Caddyfile:/etc/caddy/Caddyfile:ro
-      - ${WEBSITE_RELEASES_DIR:?WEBSITE_RELEASES_DIR is required}:/srv/website:ro
-      - ${APP_DIR:?APP_DIR is required}/webapp/dist:/srv/webapp:ro
-      - ${UPLOADS_DIR:?UPLOADS_DIR is required}:/srv/uploads:ro
-      - /srv/chashka-coffee/prod/website-releases:/srv/prod/website:ro
-      - /srv/chashka-coffee/prod/app/webapp/dist:/srv/prod/webapp:ro
-      - /srv/chashka-coffee/prod/uploads:/srv/prod/uploads:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    networks:
-      - default
-      - proxy
-
   website-build:
     image: oven/bun:1.3.14
     working_dir: /app
@@ -86,11 +61,11 @@ services:
       PUBLIC_API_URL: ${PUBLIC_API_URL:?PUBLIC_API_URL is required}
       PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:?PUBLIC_SITE_URL is required}
       PUBLIC_WEBAPP_URL: ${PUBLIC_WEBAPP_URL:?PUBLIC_WEBAPP_URL is required}
-      PUBLIC_ROBOTS_DISALLOW: "true"
+      PUBLIC_ROBOTS_DISALLOW: "false"
       PUBLIC_YANDEX_MAPS_API_KEY: ${PUBLIC_YANDEX_MAPS_API_KEY:-}
-      PUBLIC_YANDEX_METRIKA_ID: ${PUBLIC_YANDEX_METRIKA_ID:-111388685}
+      PUBLIC_YANDEX_METRIKA_ID: ${PUBLIC_YANDEX_METRIKA_ID-}
       WEBSITE_RELEASES_DIR: /srv/website
-      WEBSITE_BUILD_STAGING_DIR: /app/website/.release-staging
+      WEBSITE_BUILD_STAGING_DIR: /srv/website/.release-staging
     command: ["/bin/sh", "-ec", "bun install --frozen-lockfile && bun deploy/vps/scripts/build-website-release.mjs"]
     volumes:
       - ${APP_DIR:?APP_DIR is required}:/app
@@ -107,11 +82,11 @@ services:
       PUBLIC_API_URL: ${PUBLIC_API_URL:?PUBLIC_API_URL is required}
       PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:?PUBLIC_SITE_URL is required}
       PUBLIC_WEBAPP_URL: ${PUBLIC_WEBAPP_URL:?PUBLIC_WEBAPP_URL is required}
-      PUBLIC_ROBOTS_DISALLOW: "true"
+      PUBLIC_ROBOTS_DISALLOW: "false"
       PUBLIC_YANDEX_MAPS_API_KEY: ${PUBLIC_YANDEX_MAPS_API_KEY:-}
-      PUBLIC_YANDEX_METRIKA_ID: ${PUBLIC_YANDEX_METRIKA_ID:-111388685}
+      PUBLIC_YANDEX_METRIKA_ID: ${PUBLIC_YANDEX_METRIKA_ID-}
       WEBSITE_RELEASES_DIR: /srv/website
-      WEBSITE_BUILD_STAGING_DIR: /app/website/.release-staging
+      WEBSITE_BUILD_STAGING_DIR: /srv/website/.release-staging
     command: ["/bin/sh", "-ec", "bun install --frozen-lockfile && bun run --cwd backend start:website-builder"]
     volumes:
       - ${APP_DIR:?APP_DIR is required}:/app
@@ -134,8 +109,6 @@ services:
 
 volumes:
   postgres_data:
-  caddy_data:
-  caddy_config:
 
 networks:
   proxy:

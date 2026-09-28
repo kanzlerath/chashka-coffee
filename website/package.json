@@ -8,9 +8,9 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro build && bun scripts/generate-seo.mjs",
     "typecheck": "astro check",
-    "test": "bun test tests",
+    "test": "bun test tests scripts/generate-seo.test.mjs",
     "preview": "astro preview",
     "astro": "astro"
   },

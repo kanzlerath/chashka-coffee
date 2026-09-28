@@ -39,5 +39,48 @@
 }
 
 {$API_HOST} {
-	reverse_proxy api:3000
+	header X-Robots-Tag "noindex, nofollow, noarchive"
+	reverse_proxy chashka-coffee-dev-api-1:3000
+}
+
+chashkacoffee.ru {
+	encode zstd gzip
+	header -Server
+
+	handle_path /uploads/* {
+		header Cache-Control "public, max-age=31536000, immutable"
+		root * /srv/prod/uploads
+		file_server
+	}
+
+	root * /srv/prod/website/current
+	try_files {path} {path}/index.html
+	file_server
+}
+
+www.chashkacoffee.ru {
+	redir https://chashkacoffee.ru{uri} permanent
+}
+
+admin.chashkacoffee.ru {
+	encode zstd gzip
+	header {
+		X-Robots-Tag "noindex, nofollow, noarchive"
+		-Server
+	}
+
+	handle_path /uploads/* {
+		header Cache-Control "public, max-age=31536000, immutable"
+		root * /srv/prod/uploads
+		file_server
+	}
+
+	root * /srv/prod/webapp
+	try_files {path} /index.html
+	file_server
+}
+
+api.chashkacoffee.ru {
+	header X-Robots-Tag "noindex, nofollow, noarchive"
+	reverse_proxy chashka-coffee-prod-api-1:3000
 }

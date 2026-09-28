@@ -1,5 +1,10 @@
 # Deployment
 
+For this installed project's existing VPS DEV stack and the requested parallel
+VPS production launch, use [deploy/vps/README.md](../deploy/vps/README.md) and
+[deploy/vps/PRODUCTION.md](../deploy/vps/PRODUCTION.md). The DigitalOcean path
+below remains an alternative and is not the current VPS release path.
+
 Use this document only after the user has asked for deployment. Read the root [README.md](../README.md) and active surface READMEs first; they record the installed project's active surfaces, deferred surfaces, release targets, and validation scope.
 
 The default production path is DigitalOcean App Platform plus DigitalOcean Managed PostgreSQL. Do not ask the user to choose a cloud provider during first-run setup. Ask for product-facing release details instead:

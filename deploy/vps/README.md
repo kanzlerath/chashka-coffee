@@ -1,8 +1,15 @@
-# VPS dev deployment
+# VPS deployment
 
 This directory is the self-managed VPS path for the current static website,
 static admin app, Bun API, and PostgreSQL. It is deliberately separate from
 the repository-root `docker-compose.yml`, which is local-development-only.
+
+The existing `compose.yaml` remains the DEV stack. The separate production
+stack, first migration, DNS cutover, and rollback procedure are in
+[PRODUCTION.md](./PRODUCTION.md). Both stacks use the single Caddy service in
+the DEV Compose project. The checked-in `.env.example` documents the existing
+DEV `deploy/vps/.env`; `.env.prod.example` documents the separate production
+`deploy/vps/.env.prod` in the production checkout. Never commit either real env.
 
 ## Services
 
@@ -23,13 +30,17 @@ the repository-root `docker-compose.yml`, which is local-development-only.
 
 ## First start
 
-Run these commands from the repository clone on the VPS after DNS records have
-propagated and after replacing every placeholder in `deploy/vps/.env`:
+Run these commands from the DEV repository clone on the VPS after DNS records
+have propagated and after replacing every placeholder in `deploy/vps/.env`.
+The shared Caddy also mounts the production static and uploads directories, so
+create those empty paths and the proxy network before starting it:
 
 ```bash
 cd /srv/chashka-coffee/app
 cp deploy/vps/.env.example deploy/vps/.env
 mkdir -p /srv/chashka-coffee/uploads /srv/chashka-coffee/website-releases webapp/dist
+mkdir -p /srv/chashka-coffee/prod/uploads /srv/chashka-coffee/prod/website-releases /srv/chashka-coffee/prod/app/webapp/dist
+docker network inspect chashka-coffee-proxy >/dev/null 2>&1 || docker network create chashka-coffee-proxy
 docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml up -d postgres api
 docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml run --rm migrate
 docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml up -d caddy
@@ -66,7 +77,7 @@ script deletes existing catalog records before adding demo data.
 
 ## Deploying an update
 
-Deploy only a committed, pushed revision:
+Deploy only a committed, pushed revision. These commands update DEV only:
 
 ```bash
 cd /srv/chashka-coffee/app
