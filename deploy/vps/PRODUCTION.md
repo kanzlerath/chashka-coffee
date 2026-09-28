@@ -144,8 +144,7 @@ does not restart DEV API, worker, or PostgreSQL.
 
 ```bash
 cd /srv/chashka-coffee/app
-docker run --rm -v "$PWD/deploy/vps/Caddyfile:/etc/caddy/Caddyfile:ro" \
-  caddy:2.10.2-alpine caddy validate --config /etc/caddy/Caddyfile
+docker exec chashka-coffee-dev-caddy-1 caddy validate --config /etc/caddy/Caddyfile
 docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml config -q
 docker compose --env-file deploy/vps/.env -f deploy/vps/compose.yaml up -d --no-deps caddy
 ```
