@@ -99,6 +99,11 @@ restore, before the production API starts; DEV analytics stays untouched.
 ```bash
 cd /srv/chashka-coffee/prod/app
 docker compose --env-file deploy/vps/.env.prod -f deploy/vps/compose.prod.yaml up -d postgres
+for attempt in $(seq 1 30); do
+  test "$(docker inspect --format '{{.State.Health.Status}}' chashka-coffee-prod-postgres-1)" = healthy && break
+  sleep 2
+done
+test "$(docker inspect --format '{{.State.Health.Status}}' chashka-coffee-prod-postgres-1)" = healthy
 docker exec -i chashka-coffee-prod-postgres-1 sh -ec \
   'exec pg_restore --no-owner --no-acl --single-transaction --exit-on-error --username="$POSTGRES_USER" --dbname="$POSTGRES_DB"' \
   < /srv/chashka-coffee/backups/dev-db-YYYY-MM-DD-HHMM.dump

@@ -33,9 +33,11 @@
 		file_server
 	}
 
-	root * /srv/webapp
-	try_files {path} /index.html
-	file_server
+	handle {
+		root * /srv/webapp
+		try_files {path} /index.html
+		file_server
+	}
 }
 
 {$API_HOST} {
@@ -75,9 +77,11 @@ admin.chashkacoffee.ru {
 		file_server
 	}
 
-	root * /srv/prod/webapp
-	try_files {path} /index.html
-	file_server
+	handle {
+		root * /srv/prod/webapp
+		try_files {path} /index.html
+		file_server
+	}
 }
 
 api.chashkacoffee.ru {
