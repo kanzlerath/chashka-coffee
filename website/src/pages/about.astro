@@ -2,23 +2,20 @@
 import PageShell from '../layouts/PageShell.astro'
 import ContentBlocks from '../components/ContentBlocks.astro'
 import { getManagedPage, managedPageImage } from '../lib/public-api'
+import { franchiseHistory } from '../lib/franchise-history'
 
 const page = await getManagedPage('ABOUT')
 const heroTitle = page?.heroTitle ?? 'Город меняется.\nЛюбимое место\nостаётся.'
 const heroDescription = page?.heroDescription ?? 'Мы создаём рестораны, в которых одинаково естественно начать утро, назначить важную встречу и задержаться без особого повода.'
 const heroImage = page?.heroImageUrl ?? '/images/restaurants-hero.png'
 const craftImage = managedPageImage(page, 'craft', { imageUrl: '/images/home-morning-v2.png', imageAlt: 'Кофе собственной обжарки' })
-const milestones = [
-  ['2003','Первая «Чашка кофе» в Новосибирске.'],
-  ['2017','Запустили собственную обжарку на 15-килограммовом ростере Giesen.'],
-  ['Сегодня','Рестораны, десерты, доставка и команда, которая продолжает расти.'],
-]
+const milestones = franchiseHistory.filter(([year]) => ['2003', '2008', '2011', '2018', '2023', '2025'].includes(year))
 ---
 <PageShell title="О компании" description="История и ремесло сети ресторанов «Чашка кофе»." active="about" image={heroImage}>
   <section class="about-opening"><img src={heroImage} alt="Интерьер ресторана «Чашка кофе»"/><div><h1>{heroTitle.split(/\r?\n/).map((line) => <span>{line}</span>)}</h1><p>{heroDescription}</p></div></section>
-  <section class="about-statement"><h2>Двадцать с лишним лет мы превращаем ежедневный кофе в часть городской культуры.</h2></section>
-  <section class="about-history"><header><h2>От первой чашки<br/>до собственного ремесла</h2></header><div>{milestones.map(([year,text]) => <article><strong>{year}</strong><p>{text}</p></article>)}</div></section>
-  <section class="about-craft"><figure><img src={craftImage.imageUrl} alt={craftImage.imageAlt}/></figure><div><h2>Зерно, кухня<br/>и десерты</h2><span>В ресторанах «Чашки кофе» — меню для разных поводов, specialty-кофе и выбор десертов.</span><nav><a href="/coffee">Кофе</a><a href="/bakery">Десерты</a><a href="/menu">Меню</a></nav></div></section>
+  <section class="about-statement"><h2>Всё началось с первой кофейни в Толмачёво. Сегодня «Чашка кофе» встречает гостей в разных точках Новосибирска — от городских улиц до спортивных арен.</h2></section>
+  <section class="about-history"><header><h2>Как росла<br/>«Чашка кофе»</h2></header><div>{milestones.map(([year,text]) => <article><strong>{year}</strong><p>{text}</p></article>)}</div></section>
+  <section class="about-craft"><figure><img src={craftImage.imageUrl} alt={craftImage.imageAlt}/></figure><div><h2>Своё дело —<br/>в каждой детали</h2><span>Мы открыли кондитерское производство, запустили собственную обжарку и развивали рестораны с кухней. За чашкой кофе, десертом или долгим ужином стоит работа команды, которая знает свой продукт.</span><nav><a href="/coffee">Кофе</a><a href="/bakery">Десерты</a><a href="/menu">Меню</a></nav></div></section>
   {page && <ContentBlocks blocks={page.blocks}/>} 
   <section class="about-links" aria-label="Продолжить знакомство"><a href="/restaurants"><strong>Рестораны</strong><img class="about-link-art" src="/brand/about/restaurants.svg" alt="" aria-hidden="true"/></a><a href="/jobs"><strong>Вакансии</strong><img class="about-link-art" src="/brand/about/vacancy.svg" alt="" aria-hidden="true"/></a><a href="/franchise"><strong>Франшиза</strong><img class="about-link-art" src="/brand/about/franchise.svg" alt="" aria-hidden="true"/></a></section>
 </PageShell>

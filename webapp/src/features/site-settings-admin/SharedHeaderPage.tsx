@@ -40,7 +40,10 @@ function SharedHeaderForm({ initialPreviews, initialCoffeeOrdersEnabled, loadErr
   const [previews, setPreviews] = useState(initialPreviews)
   const [coffeeOrdersEnabled, setCoffeeOrdersEnabled] = useState(initialCoffeeOrdersEnabled)
   const save = useMutation({
-    mutationFn: () => api.request('/api/admin/site-settings', siteSettingsResponseSchema, { method: 'PUT', body: upsertSiteSettingsRequestSchema.parse({ headerPreviews: previews, coffeeOrdersEnabled }) }),
+    mutationFn: async () => {
+      const latest = await api.request('/api/admin/site-settings', siteSettingsResponseSchema)
+      return api.request('/api/admin/site-settings', siteSettingsResponseSchema, { method: 'PUT', body: upsertSiteSettingsRequestSchema.parse({ headerPreviews: previews, coffeeOrdersEnabled, contactCards: latest.settings.contactCards, footerContact: latest.settings.footerContact }) })
+    },
     onSuccess: ({ settings: saved }) => { setPreviews(mergePreviews(saved.headerPreviews)); setCoffeeOrdersEnabled(saved.coffeeOrdersEnabled); void queryClient.invalidateQueries({ queryKey: ['admin', 'site-settings'] }) },
   })
   const update = (index: number, next: SiteHeaderPreview) => setPreviews((current) => current.map((item, itemIndex) => itemIndex === index ? next : item))

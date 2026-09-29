@@ -31,6 +31,7 @@ const commands = [
   { label: 'Журнал', href: '/content/journal', group: 'Публикации', permission: 'CONTENT_MANAGE' },
   { label: 'Вакансии', href: '/jobs', group: 'Публикации', permission: 'JOBS_MANAGE' },
   { label: 'Шапка и меню', href: '/shared/header', group: 'Общие блоки', permission: 'CONTENT_MANAGE' },
+  { label: 'Контакты и подвал', href: '/shared/contacts', group: 'Общие блоки', permission: 'CONTENT_MANAGE' },
   { label: 'Медиатека', href: '/media', group: 'Медиа', permission: 'MEDIA_MANAGE' },
   { label: 'История изменений', href: '/activity', group: 'Настройки', permission: 'AUDIT_READ' },
 ] satisfies readonly ({ label: string; href: string; group: string; permission?: StaffPermission; permissions?: StaffPermission[] })[]

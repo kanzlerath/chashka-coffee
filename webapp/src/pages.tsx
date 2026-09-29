@@ -53,7 +53,7 @@ import { ActivityPage } from '@/features/workspace-admin'
 import { OrdersPage } from '@/features/orders-admin'
 import { CustomerDetailPage, CustomersPage } from '@/features/crm-admin'
 import { TelegramNotificationsPage } from '@/features/telegram-notifications-admin'
-import { SharedHeaderPage } from '@/features/site-settings-admin'
+import { ContactsSettingsPage, SharedHeaderPage } from '@/features/site-settings-admin'
 
 const workspaceNavigation = [
   { to: '/', label: 'Обзор', icon: DashboardSquare01Icon },
@@ -201,6 +201,10 @@ export function RootLayout() {
             <Link to="/shared/header" className="admin-nav-link" onClick={closeNavigation}>
               <HugeiconsIcon icon={Menu01Icon} size={18} strokeWidth={1.8} />
               <span>Шапка и меню</span>
+            </Link>
+            <Link to="/shared/contacts" className="admin-nav-link" onClick={closeNavigation}>
+              <HugeiconsIcon icon={Menu01Icon} size={18} strokeWidth={1.8} />
+              <span>Контакты и подвал</span>
             </Link>
           </> : null}
 
@@ -540,6 +544,14 @@ export function SharedHeaderAdminRoute() {
   if (!auth.user) return <HomePage />
   if (!hasPermission(auth.user, 'CONTENT_MANAGE')) return <AccessDenied title="Шапка и меню" description="Настройка общих блоков доступна редакторам сайта." />
   return <SharedHeaderPage />
+}
+
+export function ContactsSettingsAdminRoute() {
+  const auth = useAuth()
+  if (auth.isBootstrapping) return <LoadingState />
+  if (!auth.user) return <HomePage />
+  if (!hasPermission(auth.user, 'CONTENT_MANAGE')) return <AccessDenied title="Контакты" description="Настройка контактов доступна редакторам сайта." />
+  return <ContactsSettingsPage />
 }
 
 export function CustomersAdminRoute() {

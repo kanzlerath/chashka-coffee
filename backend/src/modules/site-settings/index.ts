@@ -1,4 +1,4 @@
-import { siteHeaderPreviewSchema, siteSettingsResponseSchema, upsertSiteSettingsRequestSchema, type SiteSettings } from '@chashka-coffee/contracts'
+import { contactCardSchema, defaultContactCards, defaultFooterContact, footerContactSchema, siteHeaderPreviewSchema, siteSettingsResponseSchema, upsertSiteSettingsRequestSchema, type SiteSettings } from '@chashka-coffee/contracts'
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi'
 import type { MiddlewareHandler } from 'hono'
 
@@ -6,9 +6,9 @@ import type { DbClient } from '../../db'
 import { validationErrorHook } from '../../http/errors'
 import type { AuthHttpEnv } from '../auth'
 
-type SettingsRecord = { headerPreviews: unknown; coffeeOrdersEnabled: boolean; updatedAt: Date }
-const dto = (value: SettingsRecord): SiteSettings => ({ headerPreviews: siteHeaderPreviewSchema.array().parse(value.headerPreviews), coffeeOrdersEnabled: value.coffeeOrdersEnabled, updatedAt: value.updatedAt.toISOString() })
-const emptySettings = (): SiteSettings => ({ headerPreviews: [], coffeeOrdersEnabled: true, updatedAt: new Date(0).toISOString() })
+type SettingsRecord = { headerPreviews: unknown; coffeeOrdersEnabled: boolean; contactCards: unknown; footerContact: unknown; updatedAt: Date }
+const dto = (value: SettingsRecord): SiteSettings => ({ headerPreviews: siteHeaderPreviewSchema.array().parse(value.headerPreviews), coffeeOrdersEnabled: value.coffeeOrdersEnabled, contactCards: contactCardSchema.array().min(1).max(12).safeParse(value.contactCards).data ?? defaultContactCards, footerContact: footerContactSchema.safeParse(value.footerContact).data ?? defaultFooterContact, updatedAt: value.updatedAt.toISOString() })
+const emptySettings = (): SiteSettings => ({ headerPreviews: [], coffeeOrdersEnabled: true, contactCards: defaultContactCards, footerContact: defaultFooterContact, updatedAt: new Date(0).toISOString() })
 
 export function createSiteSettingsModule({ db, requireAuth, requireAdmin }: { db: DbClient; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireAdmin: MiddlewareHandler<AuthHttpEnv> }) {
   const routes = new OpenAPIHono({ defaultHook: validationErrorHook })
@@ -29,8 +29,8 @@ export function createSiteSettingsModule({ db, requireAuth, requireAdmin }: { db
     const input = c.req.valid('json')
     const settings = await db.siteSettings.upsert({
       where: { id: 'global' },
-      create: { id: 'global', headerPreviews: input.headerPreviews, coffeeOrdersEnabled: input.coffeeOrdersEnabled },
-      update: { headerPreviews: input.headerPreviews, coffeeOrdersEnabled: input.coffeeOrdersEnabled },
+      create: { id: 'global', headerPreviews: input.headerPreviews, coffeeOrdersEnabled: input.coffeeOrdersEnabled, contactCards: input.contactCards, footerContact: input.footerContact },
+      update: { headerPreviews: input.headerPreviews, coffeeOrdersEnabled: input.coffeeOrdersEnabled, contactCards: input.contactCards, footerContact: input.footerContact },
     })
     return c.json({ settings: dto(settings as SettingsRecord) }, 200)
   })

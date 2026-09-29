@@ -26,4 +26,11 @@ describe('shared site settings contracts', () => {
   test('rejects unsafe or empty image addresses', () => {
     expect(upsertSiteSettingsRequestSchema.safeParse({ headerPreviews: [{ id: 'x', label: 'X', href: '/', imageUrl: 'javascript:alert(1)', imageAlt: '' }] }).success).toBe(false)
   })
+
+  test('keeps page and footer contacts editable with validated addresses', () => {
+    const base = { headerPreviews: [], contactCards: [{ title: 'Банкеты', phone: '+7 (383) 123-20-20', email: 'events@chashkacoffee.ru', hours: 'Ежедневно' }], footerContact: { phone: '+7 (383) 123-20-20', email: 'hello@chashkacoffee.ru' } }
+    expect(upsertSiteSettingsRequestSchema.safeParse(base).success).toBe(true)
+    expect(upsertSiteSettingsRequestSchema.safeParse({ ...base, footerContact: { ...base.footerContact, email: 'invalid' } }).success).toBe(false)
+    expect(upsertSiteSettingsRequestSchema.safeParse({ ...base, contactCards: [{ ...base.contactCards[0], phone: '12345' }] }).success).toBe(false)
+  })
 })

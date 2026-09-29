@@ -2,6 +2,14 @@
 import ContactDialog from './ContactDialog.astro'
 import StoreBadges from './StoreBadges.astro'
 import { footerGroups, footerLegalLinks } from '../lib/footer-navigation'
+import { defaultFooterContact, type FooterContact } from '@chashka-coffee/contracts'
+interface Props { footerContact?: FooterContact }
+const contact = Astro.props.footerContact ?? defaultFooterContact
+const groups = footerGroups.map((group) => group.title === 'На связи' ? { ...group, links: [
+  { label: contact.phone, href: `tel:${contact.phone.replace(/[^+\d]/g, '')}` },
+  { label: contact.email, href: `mailto:${contact.email}` },
+  { label: 'Все контакты', href: '/contacts' },
+] } : group)
 ---
 
 <footer class="site-footer">
@@ -10,7 +18,7 @@ import { footerGroups, footerLegalLinks } from '../lib/footer-navigation'
     <StoreBadges />
   </div>
   <div class="footer-grid">
-    {footerGroups.map((group) => <div class="footer-link-group">
+    {groups.map((group) => <div class="footer-link-group">
       <small>{group.title}</small>
       {group.links.map((link) => <a href={link.href} target={link.external ? '_blank' : undefined} rel={link.external ? 'noreferrer' : undefined}>{link.label}{link.external && <svg class="footer-external-icon" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" /></svg>}</a>)}
     </div>)}

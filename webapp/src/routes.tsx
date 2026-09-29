@@ -49,6 +49,7 @@ import {
   TeamEditAdminRoute,
   TelegramNotificationsAdminRoute,
   SharedHeaderAdminRoute,
+  ContactsSettingsAdminRoute,
 } from './pages'
 
 const rootRoute = createRootRoute({ component: RootLayout })
@@ -78,6 +79,7 @@ const teamCreateRoute = route('/team/new', TeamCreateAdminRoute)
 const teamEditRoute = route('/team/$userId', TeamEditAdminRoute)
 const telegramRoute = route('/telegram', TelegramNotificationsAdminRoute)
 const sharedHeaderRoute = route('/shared/header', SharedHeaderAdminRoute)
+const contactsSettingsRoute = route('/shared/contacts', ContactsSettingsAdminRoute)
 
 const productsLegacyRoute = createRoute({ getParentRoute: () => rootRoute, path: '/products', beforeLoad: () => { throw redirect({ to: '/products/coffee' }) } })
 const coffeeRoute = route('/products/coffee', ProductsCoffeeAdminRoute)
@@ -111,7 +113,7 @@ const pageEditRoute = route('/pages/$pageKey', ManagedPageEditAdminRoute)
 const routeTree = rootRoute.addChildren([
   indexRoute, appRoute, activityRoute, statisticsRoute, ordersRoute, customersRoute, customerDetailRoute, restaurantsRoute, restaurantCreateRoute, restaurantEditRoute,
   menusRoute, menuCreateRoute, menuImportRoute, menuDetailRoute, menuCategoryCreateRoute, menuItemCreateRoute, menuItemEditRoute,
-  teamRoute, teamCreateRoute, teamEditRoute, telegramRoute, sharedHeaderRoute,
+  teamRoute, teamCreateRoute, teamEditRoute, telegramRoute, sharedHeaderRoute, contactsSettingsRoute,
   productsLegacyRoute, coffeeRoute, coffeeCreateRoute, coffeeEditRoute, cakesRoute, cakeImportRoute, cakeCreateRoute, cakeEditRoute,
   contentLegacyRoute, promotionsRoute, promotionCreateRoute, promotionEditRoute, eventsRoute, eventCreateRoute, eventEditRoute, journalRoute, articleCreateRoute, articleEditRoute,
   homepageRoute, leadsRoute, mediaRoute, jobsRoute, jobCreateRoute, jobEditRoute, pagesRoute, pageEditRoute,

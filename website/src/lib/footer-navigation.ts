@@ -46,8 +46,8 @@ export const footerGroups: FooterGroup[] = [
   {
     title: 'На связи',
     links: [
-      { label: '+7 (383) 123–20–20', href: 'tel:+73831232020' },
-      { label: 'hello@chashkacoffee.ru', href: 'mailto:hello@chashkacoffee.ru' },
+      { label: defaultFooterContact.phone, href: `tel:${defaultFooterContact.phone.replace(/[^+\d]/g, '')}` },
+      { label: defaultFooterContact.email, href: `mailto:${defaultFooterContact.email}` },
       { label: 'Все контакты', href: '/contacts' },
     ],
   },
@@ -67,3 +67,4 @@ export const footerLegalLinks: FooterLink[] = [
   { label: 'Правила сертификатов', href: '/certificate-rules' },
   { label: 'Правила акций', href: '/promotion-rules' },
 ]
+import { defaultFooterContact } from '@chashka-coffee/contracts'

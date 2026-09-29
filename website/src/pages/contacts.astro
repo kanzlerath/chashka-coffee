@@ -3,21 +3,18 @@ import PageShell from '../layouts/PageShell.astro'
 import LeadPanel from '../components/LeadPanel.astro'
 import ContentBlocks from '../components/ContentBlocks.astro'
 import { getManagedPage } from '../lib/public-api'
+import { getSiteSettings } from '../lib/public-api'
+import { defaultContactCards } from '@chashka-coffee/contracts'
 
 const page = await getManagedPage('CONTACTS')
-const contacts = [
-  ['Банкеты и события', '+7 (383) 123-20-20', 'events@chashkacoffee.ru', 'Ежедневно · 10:00–21:00'],
-  ['Десерты', '+7 (383) 123-20-20', 'sbis-ivanov@denisivanov.ru', 'Ежедневно · 09:00–21:00'],
-  ['Франшиза', '+7 (383) 123-20-20', 'franchise@chashkacoffee.ru', 'Пн–Пт · 09:00–18:00'],
-  ['Вакансии', '+7 (383) 123-20-20', 'team@chashkacoffee.ru', 'Пн–Пт · 10:00–18:00'],
-]
+const contacts = (await getSiteSettings())?.contactCards ?? defaultContactCards
 ---
 
 <PageShell title="Контакты" description="Контакты банкетной службы, десертов, франшизы и команды Чашки кофе." active="contacts">
   <section class="contacts-intro"><h1>Контакты</h1></section>
 
   <section class="contact-grid" aria-label="Контактные направления">
-    {contacts.map(([title, phone, email, hours]) => <article>
+    {contacts.map(({ title, phone, email, hours }) => <article>
       <h2>{title}</h2>
       <div><a href={`tel:${phone.replace(/[^+\d]/g, '')}`}>{phone}</a><a href={`mailto:${email}`}>{email}</a></div>
       <small>{hours}</small>

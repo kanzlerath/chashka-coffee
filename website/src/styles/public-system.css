@@ -59,7 +59,7 @@ body.public-site .page-shell :is(.hero>div>p:not(.eyebrow),.hero>div>span,.hero>
 /* One shape language: surfaces and controls deliberately share the same radius. */
 body.public-site .page-shell :is(.hero,.story,.ending,.custom,.download,.app,.delivery,.delivery-panel,.form,.contact-form,.note,.lead,.support,.strip,.rules,.alternatives,.facts,.map-section,.menu-callout,.menu-banner,.formats-heading,.archive,.levels,.app-banner,.map-panel,.unavailable){border-radius:var(--radius)}
 body.public-site .page-shell :is(.service-card,.services article,.ecosystem-card,.grid>article,.benefits article,.steps article,.how-grid article,.restaurant,.item,.format-list article,.values article,.articles article,.offer-list article,.nominals article,.job-list article,.event-list article,.restaurant-grid article){border-radius:var(--radius)}
-body.public-site .page-shell :is(.button,.hero a:not(.site-logo),.stores a,.delivery a,.card-actions a,.point-picker,.category-nav a,.filters button,.note a,.lead a,.back,.job-list a,.event-list a,.alternatives a,.rules a,.map-link,.site-menu-button,.footer-cta a,.lead-form :is(input,textarea,button),.form :is(input,textarea,button),.contact-form :is(input,textarea,button)){min-height:46px;border-radius:var(--radius)!important}
+body.public-site .page-shell :is(.button,.hero a:not(.site-logo),.stores a,.delivery a,.card-actions a,.point-picker,.category-nav a,.filters button,.note a,.lead a,.back,.job-list a,.event-list a,.alternatives a,.rules a,.map-link,.site-menu-button,.footer-cta a,.lead-form :is(input:not([type="checkbox"]),textarea,button),.form :is(input:not([type="checkbox"]),textarea,button),.contact-form :is(input:not([type="checkbox"]),textarea,button)){min-height:46px;border-radius:var(--radius)!important}
 body.public-site .page-shell :is(.button,.hero a:not(.site-logo),.stores a,.delivery a,.card-actions a,.note a,.lead a,.rules a,.map-link,.job-list a,.event-list a,.alternatives a,.lead-form button,.form button,.contact-form button){display:inline-flex;align-items:center;justify-content:center;gap:0;border:1px solid transparent;background:var(--moss);color:#fff;font-size:12px;font-weight:800;line-height:1.1;text-decoration:none;transition:transform .2s ease,background-color .2s ease,color .2s ease,border-color .2s ease,box-shadow .2s ease}
 body.public-site .page-shell :is(.button,.hero a:not(.site-logo),.stores a,.delivery a,.card-actions a,.note a,.lead a,.rules a,.map-link,.job-list a,.event-list a,.alternatives a,.lead-form button,.form button,.contact-form button):hover{box-shadow:0 9px 18px rgba(31,59,46,.14);transform:translateY(-2px);background:#294b3a}
 body.public-site .page-shell :is(.button,.hero a:not(.site-logo),.stores a,.delivery a,.card-actions a,.note a,.lead a,.rules a,.map-link,.job-list a,.event-list a,.alternatives a,.lead-form button,.form button,.contact-form button):focus-visible{outline:3px solid rgba(189,214,90,.85);outline-offset:3px}
@@ -67,8 +67,8 @@ body.public-site .page-shell :is(.button,.hero a:not(.site-logo),.stores a,.deli
 body.public-site .page-shell :is(.filters button,.category-nav a,.point-picker,.back){display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-size:12px;font-weight:800;text-decoration:none;transition:background-color .2s ease,color .2s ease,border-color .2s ease,transform .2s ease}
 body.public-site .page-shell .back{padding-inline:23px}
 body.public-site .page-shell :is(.filters button,.category-nav a,.point-picker,.back):hover{border-color:var(--moss);background:var(--moss);color:#fff;transform:translateY(-1px)}
-body.public-site .page-shell :is(.lead-form input,.lead-form textarea,.form input,.form textarea,.contact-form input,.contact-form textarea){border:1px solid var(--line);background:#fffdf9;color:var(--ink);outline:none;transition:border-color .18s ease,box-shadow .18s ease}
-body.public-site .page-shell :is(.lead-form input,.lead-form textarea,.form input,.form textarea,.contact-form input,.contact-form textarea):focus{border-color:#6f902b;box-shadow:0 0 0 3px rgba(189,214,90,.24)}
+body.public-site .page-shell :is(.lead-form input:not([type="checkbox"]),.lead-form textarea,.form input:not([type="checkbox"]),.form textarea,.contact-form input:not([type="checkbox"]),.contact-form textarea){border:1px solid var(--line);background:#fffdf9;color:var(--ink);outline:none;transition:border-color .18s ease,box-shadow .18s ease}
+body.public-site .page-shell :is(.lead-form input:not([type="checkbox"]),.lead-form textarea,.form input:not([type="checkbox"]),.form textarea,.contact-form input:not([type="checkbox"]),.contact-form textarea):focus{border-color:#6f902b;box-shadow:0 0 0 3px rgba(189,214,90,.24)}
 
 /* Shared editorial blocks. The page-specific content retains its own rhythm. */
 body.public-site .page-shell .hero{margin:0;min-height:min(48vw,680px);border:0;box-shadow:none}
@@ -161,3 +161,11 @@ body.public-site .page-shell .shell{max-width:none;margin:0;overflow:visible;bor
   }
 
 }
+
+/* Consent controls keep their native checkbox size and readable text on dark panels. */
+body.public-site .page-shell :is(.lead-form,.event-form) input[type="checkbox"]{box-sizing:border-box;width:18px;height:18px;min-height:18px;flex:0 0 18px;margin:2px 0 0;padding:0;border-radius:4px;accent-color:var(--lime)}
+body.public-site .page-shell :is(.lead-panel,.form,.contact-form,.site-footer) .lead-form .lead-form-consent{color:#f9fbf5}
+body.public-site .page-shell :is(.lead-panel,.form,.contact-form,.site-footer) .lead-form .lead-form-consent a{color:var(--lime)}
+body.public-site .page-shell .event-form .consent{color:#f9fbf5}
+body.public-site .page-shell .event-form .consent a{color:var(--lime)}
+body.public-site .page-shell .checkout-consent input[type="checkbox"]{box-sizing:border-box;width:18px;height:18px;min-height:18px;flex:0 0 18px;margin:1px 0 0;padding:0;accent-color:var(--moss)}

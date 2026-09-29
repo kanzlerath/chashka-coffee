@@ -488,6 +488,8 @@ model SiteSettings {
   id                  String   @id @default("global") @db.VarChar(32)
   headerPreviews      Json     @default("[]") @map("header_previews")
   coffeeOrdersEnabled Boolean  @default(true) @map("coffee_orders_enabled")
+  contactCards        Json?    @map("contact_cards")
+  footerContact       Json?    @map("footer_contact")
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 
