@@ -771,6 +771,7 @@
   .admin-crop-controls label { display: grid; gap: .4rem; color: var(--foreground); font-size: .7rem; font-weight: 680; }
   .admin-crop-controls select { min-height: 2.4rem; border: 1px solid var(--input); border-radius: var(--radius); background: var(--card); padding: .45rem .7rem; }
   .admin-crop-controls input[type="range"] { width: 100%; accent-color: var(--primary); }
+  .admin-crop-controls input[type="range"]:disabled { cursor: not-allowed; opacity: .38; }
   .admin-crop-axis { display: grid; gap: .8rem; border-top: 1px solid var(--border); padding-top: .9rem; }
   .admin-crop-workspace [data-slot="dialog-footer"], .admin-crop-workspace > .admin-state-message { grid-column: 1 / -1; }
   .admin-card-crop-dialog { grid-template-rows: auto minmax(0, 1fr); }

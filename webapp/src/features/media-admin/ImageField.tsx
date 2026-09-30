@@ -47,24 +47,14 @@ async function cropFile(file: File, aspect: CropAspect, zoom: number, focusX: nu
       element.onerror = () => reject(new Error('Не удалось прочитать изображение.'))
       element.src = sourceUrl
     })
-    const ratio = aspectValue[aspect]
-    let cropWidth = image.naturalWidth
-    let cropHeight = cropWidth / ratio
-    if (cropHeight > image.naturalHeight) {
-      cropHeight = image.naturalHeight
-      cropWidth = cropHeight * ratio
-    }
-    cropWidth /= zoom
-    cropHeight /= zoom
-    const sourceX = (image.naturalWidth - cropWidth) * (focusX / 100)
-    const sourceY = (image.naturalHeight - cropHeight) * (focusY / 100)
-    const scale = Math.min(1, 2_000 / Math.max(cropWidth, cropHeight))
+    const crop = cropBox(image.naturalWidth, image.naturalHeight, aspect, focusX, focusY, zoom)
+    const scale = Math.min(1, 2_000 / Math.max(crop.width, crop.height))
     const canvas = document.createElement('canvas')
-    canvas.width = Math.max(1, Math.round(cropWidth * scale))
-    canvas.height = Math.max(1, Math.round(cropHeight * scale))
+    canvas.width = Math.max(1, Math.round(crop.width * scale))
+    canvas.height = Math.max(1, Math.round(crop.height * scale))
     const context = canvas.getContext('2d')
     if (!context) throw new Error('Браузер не поддерживает кадрирование.')
-    context.drawImage(image, sourceX, sourceY, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height)
+    context.drawImage(image, crop.left, crop.top, crop.width, crop.height, 0, 0, canvas.width, canvas.height)
     const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error('Не удалось подготовить кадр.')), 'image/webp', 0.9))
     const stem = file.name.replace(/\.[^.]+$/, '')
     return new File([blob], `${stem}-${aspect.replace(':', 'x')}.webp`, { type: 'image/webp' })
@@ -82,6 +72,7 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect, allowUploadCro
   const [zoom, setZoom] = useState(1)
   const [focusX, setFocusX] = useState(50)
   const [focusY, setFocusY] = useState(50)
+  const [fileDimensions, setFileDimensions] = useState<{ width: number; height: number } | null>(null)
   const [prepareError, setPrepareError] = useState<string | null>(null)
   const [visibleCount, setVisibleCount] = useState(mediaPickerPageSize)
   const assets = useQuery({ queryKey: ['admin', 'media'], queryFn: () => api.request('/api/admin/media', mediaAssetListResponseSchema), enabled: open })
@@ -92,6 +83,7 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect, allowUploadCro
     setZoom(1)
     setFocusX(50)
     setFocusY(50)
+    setFileDimensions(null)
     setPrepareError(null)
   }
   const handleOpenChange = (nextOpen: boolean) => {
@@ -111,6 +103,9 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect, allowUploadCro
     return assets.data?.assets.filter((asset) => supportedImageTypes.has(asset.contentType) && (!normalized || asset.filename.toLocaleLowerCase('ru').includes(normalized))) ?? []
   }, [assets.data, query])
   const displayedAssets = visibleAssets.slice(0, visibleCount)
+  const crop = fileDimensions && aspect !== 'ORIGINAL' ? cropBox(fileDimensions.width, fileDimensions.height, aspect, focusX, focusY, zoom) : null
+  const canMoveX = Boolean(crop && fileDimensions && fileDimensions.width - crop.width > 0.5)
+  const canMoveY = Boolean(crop && fileDimensions && fileDimensions.height - crop.height > 0.5)
 
   useEffect(() => {
     setVisibleCount(mediaPickerPageSize)
@@ -137,12 +132,12 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect, allowUploadCro
       {file && filePreview ? <div className="admin-crop-workspace">
         {aspect === 'ORIGINAL'
           ? <div className="admin-crop-preview" data-aspect={aspect}><img src={filePreview} alt="Предпросмотр кадрирования" /></div>
-          : <CropPreviewImage src={filePreview} alt="Предпросмотр кадрирования" aspect={aspect} focusX={focusX} focusY={focusY} zoom={zoom} />}
+          : <CropPreviewImage key={filePreview} src={filePreview} alt="Предпросмотр кадрирования" aspect={aspect} focusX={focusX} focusY={focusY} zoom={zoom} onDimensions={setFileDimensions} />}
         <div className="admin-crop-controls">
           <label><Typography variant="label">Формат кадра</Typography><select value={aspect} onChange={(event) => { setAspect(event.target.value as CropAspect); setZoom(1) }}><option value="ORIGINAL">Оригинал без обрезки</option><option value="CARD">Карточка товара · 1:0,86</option><option value="16:9">Широкий · 16:9</option><option value="4:3">Горизонтальный · 4:3</option><option value="1:1">Квадрат · 1:1</option><option value="4:5">Вертикальный · 4:5</option><option value="9:16">Экран телефона · 9:16</option></select></label>
           {aspect !== 'ORIGINAL' ? <>
-            <label><Typography variant="label">Приближение · {zoom.toFixed(1)}×</Typography><input min="1" max="2" step="0.05" type="range" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} /></label>
-            <div className="admin-crop-axis"><label><Typography variant="label">Фокус по горизонтали</Typography><input min="0" max="100" type="range" value={focusX} onChange={(event) => setFocusX(Number(event.target.value))} /></label><label><Typography variant="label">Фокус по вертикали</Typography><input min="0" max="100" type="range" value={focusY} onChange={(event) => setFocusY(Number(event.target.value))} /></label></div>
+            <label><Typography variant="label">Приближение · {zoom.toFixed(2)}×</Typography><input min="1" max="2" step="0.05" type="range" value={zoom} onInput={(event) => setZoom(Number(event.currentTarget.value))} /></label>
+            <div className="admin-crop-axis"><label><Typography variant="label">По горизонтали · {focusX}%</Typography><input disabled={!canMoveX} min="0" max="100" type="range" value={focusX} onInput={(event) => setFocusX(Number(event.currentTarget.value))} /></label><label><Typography variant="label">По вертикали · {focusY}%</Typography><input disabled={!canMoveY} min="0" max="100" type="range" value={focusY} onInput={(event) => setFocusY(Number(event.currentTarget.value))} /></label>{fileDimensions && (!canMoveX || !canMoveY) ? <Typography variant="caption" tone="muted">Чтобы сдвинуть фото по неактивной оси, сначала увеличьте его.</Typography> : null}</div>
           </> : null}
         </div>
         {upload.isError || prepareError ? <Typography className="admin-state-message admin-state-error" variant="bodySm">{prepareError ?? (upload.error instanceof Error ? upload.error.message : 'Не удалось загрузить фотографию.')}</Typography> : null}
@@ -150,7 +145,7 @@ function MediaPickerDialog({ open, value, onOpenChange, onSelect, allowUploadCro
       </div> : <div className="admin-media-picker-library">
         <div className="admin-media-picker-tools">
           <InputGroup><InputGroupAddon align="inline-start"><HugeiconsIcon icon={SearchIcon} size={17} strokeWidth={1.8} /></InputGroupAddon><InputGroupInput autoFocus aria-label="Поиск по медиатеке" placeholder="Название файла…" value={query} onChange={(event) => setQuery(event.target.value)} /></InputGroup>
-          <Input ref={fileInput} accept="image/jpeg,image/png,image/webp,image/avif" className="sr-only" type="file" onChange={(event) => { const next = event.target.files?.[0]; if (next) { if (allowUploadCrop) setFile(next); else upload.mutate(next) }; event.currentTarget.value = '' }} />
+          <Input ref={fileInput} accept="image/jpeg,image/png,image/webp,image/avif" className="sr-only" type="file" onChange={(event) => { const next = event.target.files?.[0]; if (next) { if (allowUploadCrop) { setFileDimensions(null); setFile(next) } else upload.mutate(next) }; event.currentTarget.value = '' }} />
           <Button type="button" variant="outline" onClick={() => fileInput.current?.click()}><HugeiconsIcon icon={Upload01Icon} size={17} strokeWidth={1.8} />Загрузить</Button>
         </div>
         <div className="admin-media-picker-status">
@@ -198,7 +193,7 @@ function focusCropBox(width: number, height: number, aspect: Exclude<CropAspect,
   }
 }
 
-function CropPreviewImage({ src, alt, aspect, focusX, focusY, zoom, className, centerFocus = false }: { src: string; alt: string; aspect: Exclude<CropAspect, 'ORIGINAL'>; focusX: number; focusY: number; zoom: number; className?: string; centerFocus?: boolean }) {
+function CropPreviewImage({ src, alt, aspect, focusX, focusY, zoom, className, centerFocus = false, onDimensions }: { src: string; alt: string; aspect: Exclude<CropAspect, 'ORIGINAL'>; focusX: number; focusY: number; zoom: number; className?: string; centerFocus?: boolean; onDimensions?: (dimensions: { width: number; height: number }) => void }) {
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null)
   const crop = dimensions ? centerFocus ? focusCropBox(dimensions.width, dimensions.height, aspect, focusX, focusY) : cropBox(dimensions.width, dimensions.height, aspect, focusX, focusY, zoom) : null
   const imageStyle = crop && dimensions ? {
@@ -210,7 +205,7 @@ function CropPreviewImage({ src, alt, aspect, focusX, focusY, zoom, className, c
   } : undefined
 
   return <div className={`admin-crop-preview admin-precise-crop-preview${className ? ` ${className}` : ''}`} data-aspect={aspect}>
-    <img src={src} alt={alt} style={imageStyle} onLoad={(event) => setDimensions({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />
+    <img src={src} alt={alt} style={imageStyle} onLoad={(event) => { const next = { width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight }; setDimensions(next); onDimensions?.(next) }} />
   </div>
 }
 
