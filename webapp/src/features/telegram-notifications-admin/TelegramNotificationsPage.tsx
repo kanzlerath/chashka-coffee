@@ -110,7 +110,7 @@ export function TelegramNotificationsPage() {
       {settings.isPending ? <Typography className="admin-state-message" variant="bodySm">Загружаем настройки…</Typography> : null}
       {settings.isError ? <Typography className="admin-state-message admin-state-error" variant="bodySm">Не удалось загрузить настройки Telegram.</Typography> : null}
       {!settings.isPending && settings.data?.recipients.length === 0 ? <Card><CardContent className="py-10"><Typography align="center" tone="muted" variant="bodySm">Пока никто не подключён.</Typography></CardContent></Card> : null}
-      {settings.data?.recipients.map((recipient) => <RecipientCard key={`${recipient.id}:${recipient.updatedAt}`} recipient={recipient} configured={settings.data.configured} />)}
+      {settings.data?.recipients.map((recipient) => <RecipientCard key={recipient.id} recipient={recipient} configured={settings.data.configured} />)}
     </div>
   </section>
 }
