@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Typography } from '@/components/ui/typography'
 import { useAuth } from '@/features/auth'
+import { ApiRequestError } from '@/platform/api/http-client'
 
 type EventOption = { value: OperationalNotificationEvent; label: string; description: string }
 type EventGroup = { label: string; options: readonly EventOption[] }
@@ -137,7 +138,7 @@ function RecipientCard({ recipient, configured }: { recipient: TelegramRecipient
   const [open, setOpen] = useState(false)
   const refresh = () => void queryClient.invalidateQueries({ queryKey: ['admin', 'telegram'] })
   const save = useMutation({ mutationFn: () => api.request(`/api/admin/telegram/recipients/${recipient.id}`, telegramRecipientResponseSchema, { method: 'PUT', body: updateTelegramRecipientRequestSchema.parse({ name, eventTypes: events, isActive: active }) }), onSuccess: refresh })
-  const test = useMutation({ mutationFn: () => api.request(`/api/admin/telegram/recipients/${recipient.id}/test`, testTelegramRecipientResponseSchema, { method: 'POST' }), onSuccess: refresh })
+  const test = useMutation({ mutationFn: () => api.request(`/api/admin/telegram/recipients/${recipient.id}/test`, testTelegramRecipientResponseSchema, { method: 'POST' }), onSuccess: refresh, onError: refresh })
   const remove = useMutation({ mutationFn: () => api.request(`/api/admin/telegram/recipients/${recipient.id}`, deleteTelegramRecipientResponseSchema, { method: 'DELETE' }), onSuccess: refresh })
   const changed = name !== recipient.name || active !== recipient.isActive || [...events].sort().join() !== [...recipient.eventTypes].sort().join()
 
@@ -167,12 +168,16 @@ function RecipientCard({ recipient, configured }: { recipient: TelegramRecipient
           <Input aria-label={`Название получателя ${recipient.name}`} value={name} maxLength={120} onChange={(event) => setName(event.target.value)} />
           <EventSelector value={events} onChange={setEvents} />
           {recipient.lastError ? <Alert variant="destructive"><AlertTitle>Последняя отправка не удалась</AlertTitle><AlertDescription>{recipient.lastError}</AlertDescription></Alert> : recipient.lastSentAt ? <Typography tone="muted" variant="bodyXs">Последняя успешная отправка: {new Date(recipient.lastSentAt).toLocaleString('ru-RU')}</Typography> : null}
-          {save.isError || test.isError ? <Typography className="admin-state-message admin-state-error" variant="bodySm">Действие не выполнено. Проверьте настройки бота и попробуйте снова.</Typography> : null}
+          {save.isError || test.isError ? <Typography className="admin-state-message admin-state-error" variant="bodySm">{telegramActionError(test.error ?? save.error)}</Typography> : null}
           <div className="flex flex-wrap justify-between gap-2"><Button disabled={remove.isPending} variant="ghost" onClick={() => { if (window.confirm(`Отключить ${recipient.name} от Telegram-уведомлений?`)) remove.mutate() }}>{remove.isPending ? 'Удаляем…' : 'Удалить'}</Button><div className="flex gap-2"><Button disabled={!configured || test.isPending} variant="outline" onClick={() => test.mutate()}>{test.isPending ? 'Отправляем…' : 'Тест'}</Button><Button disabled={!changed || !name.trim() || events.length === 0 || save.isPending} onClick={() => save.mutate()}>{save.isPending ? 'Сохраняем…' : 'Сохранить'}</Button></div></div>
         </CardContent>
       </CollapsibleContent>
     </Card>
   </Collapsible>
+}
+
+function telegramActionError(error: Error | null) {
+  return error instanceof ApiRequestError ? error.message : 'Действие не выполнено. Попробуйте снова.'
 }
 
 function getEventSummary(events: OperationalNotificationEvent[]) {
