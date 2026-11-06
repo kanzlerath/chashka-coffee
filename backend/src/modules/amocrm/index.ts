@@ -85,6 +85,31 @@ export function createAmoCrmClient(env: AppEnv) {
     if (customFields.length) deal.custom_fields_values = customFields
     const result = await request('/api/v4/leads/complex', { method: 'POST', body: JSON.stringify([{ ...deal, _embedded: { contacts: [contact] } }]) })
     const created = (result._embedded as { leads?: Array<{ id?: number }> } | undefined)?.leads?.[0]
+    if (created?.id) {
+      const attributionLines = [
+        `Источник: ${metadata.attribution_source ?? 'не определён'}`,
+        metadata.utm_source && `UTM source: ${metadata.utm_source}`,
+        metadata.utm_medium && `UTM medium: ${metadata.utm_medium}`,
+        metadata.utm_campaign && `UTM campaign: ${metadata.utm_campaign}`,
+        metadata.utm_content && `UTM content: ${metadata.utm_content}`,
+        metadata.utm_term && `UTM term: ${metadata.utm_term}`,
+        metadata.gclid && `gclid: ${metadata.gclid}`,
+        metadata.yclid && `yclid: ${metadata.yclid}`,
+        metadata.landingPage && `Страница входа: ${metadata.landingPage}`,
+        metadata.referrer && `Referrer: ${metadata.referrer}`,
+      ].filter((line): line is string => Boolean(line))
+      const noteText = [
+        'Заявка с сайта «Чашка кофе»',
+        metadata.subject && `Город: ${metadata.subject}`,
+        lead.message && `Комментарий: ${lead.message}`,
+        ...attributionLines,
+      ].filter(Boolean).join('\n')
+      try {
+        await request('/api/v4/leads/notes', { method: 'POST', body: JSON.stringify([{ entity_id: created.id, note_type: 'common', params: { text: noteText } }]) })
+      } catch (error) {
+        console.error('amoCRM franchise lead note sync failed', error)
+      }
+    }
     return created?.id ?? null
   }
 
