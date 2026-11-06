@@ -65,6 +65,8 @@ export function createAmoCrmClient(env: AppEnv) {
       field(env.AMOCRM_UTM_CONTENT_FIELD_ID, metadata.utm_content),
       field(env.AMOCRM_UTM_TERM_FIELD_ID, metadata.utm_term),
       field(env.AMOCRM_REFERRER_FIELD_ID, metadata.referrer),
+      field(env.AMOCRM_LANDING_PAGE_FIELD_ID, metadata.landingPage),
+      field(env.AMOCRM_COMMENT_FIELD_ID, lead.message ?? undefined),
     ].filter(Boolean)
     const contact: Record<string, unknown> = { name: lead.name, request_id: `lead-${lead.id}` }
     const contactFields = [lead.phone ? { field_code: 'PHONE', values: [{ value: lead.phone, enum_code: 'WORK' }] } : null, lead.email ? { field_code: 'EMAIL', values: [{ value: lead.email, enum_code: 'WORK' }] } : null].filter(Boolean)

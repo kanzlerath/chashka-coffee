@@ -65,6 +65,8 @@ const envSchema = z.object({
   AMOCRM_UTM_CONTENT_FIELD_ID: z.coerce.number().int().positive().optional(),
   AMOCRM_UTM_TERM_FIELD_ID: z.coerce.number().int().positive().optional(),
   AMOCRM_REFERRER_FIELD_ID: z.coerce.number().int().positive().optional(),
+  AMOCRM_LANDING_PAGE_FIELD_ID: z.coerce.number().int().positive().optional(),
+  AMOCRM_COMMENT_FIELD_ID: z.coerce.number().int().positive().optional(),
   YOOKASSA_SHOP_ID: optionalStringSchema,
   YOOKASSA_SECRET_KEY: optionalStringSchema,
   YOOKASSA_RETURN_URL: optionalUrlSchema,

@@ -11,6 +11,8 @@ CRM объединяет только онлайн-заказы кофе и св
 - `Источник` — `AMOCRM_SOURCE_FIELD_ID`;
 - `UTM source`, `UTM medium`, `UTM campaign`, `UTM content`, `UTM term` — соответствующие `AMOCRM_UTM_*_FIELD_ID`;
 - `Referrer` — `AMOCRM_REFERRER_FIELD_ID`.
+- `Страница входа` — `AMOCRM_LANDING_PAGE_FIELD_ID`;
+- `Комментарий` — `AMOCRM_COMMENT_FIELD_ID` (текст заявки также дублируется в примечании сделки).
 
 Redirect URI приватной интеграции:
 
