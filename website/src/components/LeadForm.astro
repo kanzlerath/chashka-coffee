@@ -43,7 +43,23 @@ const isFranchise = type === 'FRANCHISE'
           initialMetadata = Object.fromEntries(Object.entries(parsed).filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].trim().length > 0))
         }
       } catch { /* A malformed optional data attribute must not block the form. */ }
-      const metadata = { ...initialMetadata, ...(source ? { source } : {}), ...(subject ? { subject } : {}) }
+      const metadata: Record<string, string> = { ...initialMetadata, ...(source ? { source } : {}), ...(subject ? { subject } : {}) }
+      const attribution = (() => {
+        const keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'yclid']
+        const current = new URL(window.location.href)
+        const stored = (() => { try { return JSON.parse(localStorage.getItem('chashka_attribution') ?? '{}') } catch { return {} } })()
+        const first = stored.first ?? {}
+        const currentValues = Object.fromEntries(keys.filter((key) => current.searchParams.get(key)).map((key) => [key, current.searchParams.get(key) as string]))
+        const merged = { ...stored.last, ...currentValues }
+        const referrer = stored.referrer ?? (document.referrer ? new URL(document.referrer).origin + new URL(document.referrer).pathname : '')
+        const referrerHost = document.referrer ? new URL(document.referrer).hostname : ''
+        const isSearchReferrer = /(^|\.)((google|yandex|bing|mail)\.)/i.test(referrerHost)
+        const attributionSource = currentValues.utm_source ? `utm:${currentValues.utm_source}${currentValues.utm_medium ? `/${currentValues.utm_medium}` : ''}` : (isSearchReferrer ? 'organic_search' : (referrer ? 'referral' : 'direct'))
+        const next = { first: Object.keys(first).length ? first : { ...merged }, last: merged, attribution_source: attributionSource, landingPage: stored.landingPage ?? current.pathname, referrer }
+        try { localStorage.setItem('chashka_attribution', JSON.stringify(next)) } catch { /* optional attribution */ }
+        return { ...next.first, ...next.last, attribution_source: next.attribution_source, landingPage: next.landingPage, referrer: next.referrer }
+      })()
+      Object.entries(attribution).forEach(([key, value]) => { if (typeof value === 'string' && value.trim()) metadata[key] = value })
       const payload = {
         type: form.dataset.leadType,
         name: String(values.get('name') ?? '').trim(),

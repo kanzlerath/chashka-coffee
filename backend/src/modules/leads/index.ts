@@ -17,6 +17,7 @@ import type { DbClient } from '../../db'
 import { AppError, validationErrorHook } from '../../http/errors'
 import type { AuthHttpEnv } from '../auth'
 import type { OperationalNotifications } from '../operational-notifications'
+import type { AmoCrmClient } from '../amocrm'
 
 const PRIVACY_CONSENT_VERSION = '2026-08-11'
 
@@ -58,7 +59,7 @@ function readMetadata(value: unknown): Record<string, string> | null {
   return entries.length ? Object.fromEntries(entries) : null
 }
 
-export function createLeadsModule({ db, requireAuth, requireLeadAccess, notifications }: { db: DbClient; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireLeadAccess: MiddlewareHandler<AuthHttpEnv>; notifications?: OperationalNotifications }) {
+export function createLeadsModule({ db, requireAuth, requireLeadAccess, notifications, amoCrm }: { db: DbClient; requireAuth: MiddlewareHandler<AuthHttpEnv>; requireLeadAccess: MiddlewareHandler<AuthHttpEnv>; notifications?: OperationalNotifications; amoCrm?: AmoCrmClient }) {
   const routes = new OpenAPIHono({ defaultHook: validationErrorHook })
   const adminRoutes = new OpenAPIHono<AuthHttpEnv>({ defaultHook: validationErrorHook })
   adminRoutes.use('/leads', requireAuth, requireLeadAccess)
@@ -98,6 +99,9 @@ export function createLeadsModule({ db, requireAuth, requireLeadAccess, notifica
     const lead = await db.lead.create({ data: { ...data, payload: consentMetadata, crmCustomerId: customer?.id } })
     const response = dto(lead)
     await notifications?.notifyLead(response)
+    if (amoCrm) {
+      void amoCrm.createFranchiseLead(response).catch((error) => console.error('amoCRM franchise lead sync failed', error))
+    }
     return c.json({ lead: response }, 201)
   })
   adminRoutes.openapi(list, async (c) => {

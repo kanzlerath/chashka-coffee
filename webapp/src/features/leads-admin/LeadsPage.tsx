@@ -9,7 +9,7 @@ import { useAuth } from '@/features/auth'
 const statusLabel: Record<LeadStatus, string> = { NEW: 'Новая', IN_PROGRESS: 'В работе', CLOSED: 'Закрыта' }
 const typeLabel: Record<Lead['type'], string> = { CONTACT: 'Общий вопрос', RESERVATION: 'Бронирование', FRANCHISE: 'Франшиза', BANQUET: 'Банкет', CAKE: 'Десерты', JOB: 'Вакансия', EVENT_REGISTRATION: 'Регистрация на событие' }
 
-const metadataLabel: Record<string, string> = { vacancy: 'Вакансия', restaurant: 'Заведение', address: 'Адрес', subject: 'Тема' }
+const metadataLabel: Record<string, string> = { vacancy: 'Вакансия', restaurant: 'Заведение', address: 'Адрес', subject: 'Тема', attribution_source: 'Источник', landingPage: 'Страница входа', referrer: 'Referrer', utm_source: 'UTM source', utm_medium: 'UTM medium', utm_campaign: 'UTM campaign', utm_content: 'UTM content', utm_term: 'UTM term', gclid: 'Google click ID', yclid: 'Yandex click ID' }
 const displayType = (lead: Lead) => {
   if (lead.type === 'CONTACT' && lead.metadata?.source === FOOTER_QUESTION_LEAD_SOURCE) return 'Вопрос / идея'
   if (lead.type === 'JOB' && lead.metadata?.source === JOB_OPENING_LEAD_SOURCE) return 'Отклик на вакансию'

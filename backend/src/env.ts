@@ -47,6 +47,24 @@ const envSchema = z.object({
   PREMIUMBONUS_API_URL: optionalUrlSchema,
   TELEGRAM_BOT_TOKEN: optionalStringSchema,
   TELEGRAM_BOT_USERNAME: optionalStringSchema,
+  AMOCRM_SUBDOMAIN: optionalStringSchema,
+  AMOCRM_CLIENT_ID: optionalStringSchema,
+  AMOCRM_CLIENT_SECRET: optionalStringSchema,
+  AMOCRM_REDIRECT_URI: optionalUrlSchema,
+  AMOCRM_ACCESS_TOKEN: optionalStringSchema,
+  AMOCRM_REFRESH_TOKEN: optionalStringSchema,
+  AMOCRM_TOKEN_EXPIRES_AT: z.coerce.number().int().positive().optional(),
+  AMOCRM_PIPELINE_ID: z.coerce.number().int().positive().optional(),
+  AMOCRM_STATUS_ID: z.coerce.number().int().positive().optional(),
+  AMOCRM_PIPELINE_NAME: stringWithDefault('Воронка продаж'),
+  AMOCRM_STATUS_NAME: stringWithDefault('Входящий лид'),
+  AMOCRM_SOURCE_FIELD_ID: z.coerce.number().int().positive().optional(),
+  AMOCRM_UTM_SOURCE_FIELD_ID: z.coerce.number().int().positive().optional(),
+  AMOCRM_UTM_MEDIUM_FIELD_ID: z.coerce.number().int().positive().optional(),
+  AMOCRM_UTM_CAMPAIGN_FIELD_ID: z.coerce.number().int().positive().optional(),
+  AMOCRM_UTM_CONTENT_FIELD_ID: z.coerce.number().int().positive().optional(),
+  AMOCRM_UTM_TERM_FIELD_ID: z.coerce.number().int().positive().optional(),
+  AMOCRM_REFERRER_FIELD_ID: z.coerce.number().int().positive().optional(),
   YOOKASSA_SHOP_ID: optionalStringSchema,
   YOOKASSA_SECRET_KEY: optionalStringSchema,
   YOOKASSA_RETURN_URL: optionalUrlSchema,
@@ -76,7 +94,7 @@ const envSchema = z.object({
 })
 
 type ParsedAppEnv = z.infer<typeof envSchema>
-export type AppEnv = Omit<ParsedAppEnv, 'YOOKASSA_TEST_MODE'> & { YOOKASSA_TEST_MODE?: boolean }
+export type AppEnv = Omit<ParsedAppEnv, 'YOOKASSA_TEST_MODE' | 'AMOCRM_PIPELINE_NAME' | 'AMOCRM_STATUS_NAME'> & { YOOKASSA_TEST_MODE?: boolean; AMOCRM_PIPELINE_NAME?: string; AMOCRM_STATUS_NAME?: string }
 
 export function loadEnv(source: Record<string, string | undefined>) {
   return envSchema.parse(source)

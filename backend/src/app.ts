@@ -21,6 +21,7 @@ import { createOrdersModule, type YooKassaGateway } from './modules/orders'
 import { createCrmModule } from './modules/crm'
 import { createOperationalNotificationsModule } from './modules/operational-notifications'
 import { createSiteSettingsModule } from './modules/site-settings'
+import { createAmoCrmClient } from './modules/amocrm'
 
 type CreateAppOptions = {
   env: AppEnv
@@ -35,7 +36,8 @@ export function createApp({ env, prisma, premiumBonusGateway, yooKassaGateway }:
   const content = createContentModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('CONTENT_MANAGE') })
   const media = createMediaModule({ db: prisma, env, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('MEDIA_MANAGE') })
   const notifications = createOperationalNotificationsModule({ db: prisma, env, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('STAFF_MANAGE') })
-  const leads = createLeadsModule({ db: prisma, requireAuth: auth.requireAuth, requireLeadAccess: auth.requireAnyPermission(['LEADS_MANAGE', 'JOB_APPLICATIONS_MANAGE']), notifications: notifications.service })
+  const amoCrm = createAmoCrmClient(env)
+  const leads = createLeadsModule({ db: prisma, requireAuth: auth.requireAuth, requireLeadAccess: auth.requireAnyPermission(['LEADS_MANAGE', 'JOB_APPLICATIONS_MANAGE']), notifications: notifications.service, amoCrm })
   const jobs = createJobsModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('JOBS_MANAGE') })
   const homepage = createHomepageModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('CONTENT_MANAGE') })
   const products = createProductsModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('CATALOG_MANAGE') })
@@ -88,6 +90,17 @@ export function createApp({ env, prisma, premiumBonusGateway, yooKassaGateway }:
   app.route('/api/content', content.routes)
   app.route('/api/homepage', homepage.routes)
   app.route('/api/leads', leads.routes)
+  app.get('/api/integrations/amocrm/oauth/callback', async (c) => {
+    const code = c.req.query('code')
+    if (!code) return c.html('<h1>amoCRM: код авторизации не получен</h1>', 400)
+    try {
+      await amoCrm.exchangeAuthorizationCode(code)
+      return c.html('<h1>amoCRM подключён</h1><p>Можно закрыть это окно.</p>')
+    } catch (error) {
+      console.error('amoCRM OAuth callback failed', error)
+      return c.html('<h1>amoCRM: ошибка подключения</h1><p>Проверьте настройки интеграции и Redirect URI.</p>', 500)
+    }
+  })
   app.route('/api/jobs', jobs.routes)
   app.route('/api/products', products.routes)
   app.route('/api/pages', managedPages.routes)
