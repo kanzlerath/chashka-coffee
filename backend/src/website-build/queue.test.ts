@@ -4,7 +4,7 @@ import { responsePublishesPublicContent, shouldRequestPublicWebsiteBuild } from 
 
 describe('public website build queue', () => {
   test('queues mutations that can change generated public pages', () => {
-    for (const resource of ['restaurants', 'menus', 'categories', 'items', 'content', 'homepage', 'products', 'pages', 'site-settings', 'jobs', 'workspace']) {
+    for (const resource of ['restaurants', 'menus', 'categories', 'items', 'content', 'homepage', 'products', 'pages', 'site-settings', 'seo', 'jobs', 'workspace']) {
       expect(shouldRequestPublicWebsiteBuild(resource)).toBe(true)
     }
   })
