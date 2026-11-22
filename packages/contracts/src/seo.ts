@@ -10,6 +10,8 @@ export const seoPageSchema = z.object({
   title: nullableText(180),
   description: nullableText(320),
   imageUrl: nullableUrl,
+  canonicalUrl: nullableUrl,
+  noindex: z.boolean(),
   updatedAt: z.string().datetime().nullable(),
 }).strict()
 export type SeoPage = z.infer<typeof seoPageSchema>

@@ -6,6 +6,8 @@ CREATE TABLE "seo_metadata" (
   "title" VARCHAR(180),
   "description" VARCHAR(320),
   "image_url" TEXT,
+  "canonical_url" TEXT,
+  "noindex" BOOLEAN NOT NULL DEFAULT false,
   "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updated_at" TIMESTAMP(3) NOT NULL,
   CONSTRAINT "seo_metadata_pkey" PRIMARY KEY ("id")

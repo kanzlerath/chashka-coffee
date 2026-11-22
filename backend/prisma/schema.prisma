@@ -370,6 +370,8 @@ model SeoMetadata {
   title       String?  @db.VarChar(180)
   description String?  @db.VarChar(320)
   imageUrl    String?  @map("image_url")
+  canonicalUrl String? @map("canonical_url")
+  noindex     Boolean  @default(false)
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
