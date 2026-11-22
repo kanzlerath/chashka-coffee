@@ -25,6 +25,9 @@ type PageRecord = {
   heroTitle: string | null
   heroDescription: string | null
   heroImageUrl: string | null
+  seoTitle: string | null
+  seoDescription: string | null
+  seoImageUrl: string | null
   coffeeTastes: unknown | null
   appChoices: unknown | null
   images: unknown
@@ -78,6 +81,9 @@ export function createManagedPagesModule({ db, requireAuth, requireAdmin }: { db
         heroTitle: input.heroTitle,
         heroDescription: input.heroDescription,
         heroImageUrl: input.heroImageUrl,
+        seoTitle: input.seoTitle,
+        seoDescription: input.seoDescription,
+        seoImageUrl: input.seoImageUrl,
         coffeeTastes,
         appChoices,
         images: input.images,

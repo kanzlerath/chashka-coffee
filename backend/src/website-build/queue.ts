@@ -13,6 +13,7 @@ const publicWebsiteResources = new Set([
   'products',
   'restaurants',
   'site-settings',
+  'seo',
   'workspace',
 ])
 

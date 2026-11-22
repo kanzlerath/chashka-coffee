@@ -21,6 +21,7 @@ import { createOrdersModule, type YooKassaGateway } from './modules/orders'
 import { createCrmModule } from './modules/crm'
 import { createOperationalNotificationsModule } from './modules/operational-notifications'
 import { createSiteSettingsModule } from './modules/site-settings'
+import { createSeoModule } from './modules/seo'
 import { createAmoCrmClient } from './modules/amocrm'
 
 type CreateAppOptions = {
@@ -43,6 +44,7 @@ export function createApp({ env, prisma, premiumBonusGateway, yooKassaGateway }:
   const products = createProductsModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('CATALOG_MANAGE') })
   const managedPages = createManagedPagesModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('CONTENT_MANAGE') })
   const siteSettings = createSiteSettingsModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('CONTENT_MANAGE') })
+  const seo = createSeoModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('CONTENT_MANAGE') })
   const analytics = createAnalyticsModule({ db: prisma, requireAuth: auth.requireAuth, requireAdmin: auth.requirePermission('ANALYTICS_READ') })
   const workspace = createWorkspaceModule({ db: prisma, requireAuth: auth.requireAuth })
   const customerAccount = createCustomerAccountModule({ db: prisma, env, gateway: premiumBonusGateway })
@@ -105,6 +107,7 @@ export function createApp({ env, prisma, premiumBonusGateway, yooKassaGateway }:
   app.route('/api/products', products.routes)
   app.route('/api/pages', managedPages.routes)
   app.route('/api/site-settings', siteSettings.routes)
+  app.route('/api/seo', seo.routes)
   app.route('/api/analytics', analytics.routes)
   app.route('/api/admin', catalog.adminRoutes)
   app.route('/api/admin', content.adminRoutes)
@@ -115,6 +118,7 @@ export function createApp({ env, prisma, premiumBonusGateway, yooKassaGateway }:
   app.route('/api/admin', products.adminRoutes)
   app.route('/api/admin', managedPages.adminRoutes)
   app.route('/api/admin', siteSettings.adminRoutes)
+  app.route('/api/admin', seo.adminRoutes)
   app.route('/api/admin', analytics.adminRoutes)
   app.route('/api/admin', workspace.adminRoutes)
   app.route('/api/admin', orders.adminRoutes)

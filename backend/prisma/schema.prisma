@@ -349,6 +349,9 @@ model ManagedPage {
   heroTitle       String?        @map("hero_title") @db.VarChar(180)
   heroDescription String?        @map("hero_description") @db.VarChar(500)
   heroImageUrl    String?        @map("hero_image_url")
+  seoTitle        String?        @map("seo_title") @db.VarChar(180)
+  seoDescription  String?        @map("seo_description") @db.VarChar(320)
+  seoImageUrl     String?        @map("seo_image_url")
   coffeeTastes    Json?          @map("coffee_tastes")
   appChoices      Json?          @map("app_choices")
   images          Json           @default("[]")
@@ -357,6 +360,20 @@ model ManagedPage {
   updatedAt       DateTime       @updatedAt @map("updated_at")
 
   @@map("managed_pages")
+}
+
+model SeoMetadata {
+  id          String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  key         String   @unique @db.VarChar(160)
+  path        String   @unique @db.VarChar(300)
+  label       String   @db.VarChar(180)
+  title       String?  @db.VarChar(180)
+  description String?  @db.VarChar(320)
+  imageUrl    String?  @map("image_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("seo_metadata")
 }
 
 model Product {
