@@ -25,6 +25,7 @@ import {
   OrdersAdminRoute,
   ManagedPagesAdminRoute,
   ManagedPageEditAdminRoute,
+  SeoPagesAdminRoute,
   MediaAdminRoute,
   MenuAdminRoute,
   MenuCategoryCreateAdminRoute,
@@ -108,6 +109,7 @@ const jobsRoute = route('/jobs', JobsAdminRoute)
 const jobCreateRoute = route('/jobs/new', JobCreateAdminRoute)
 const jobEditRoute = route('/jobs/$openingId', JobEditAdminRoute)
 const pagesRoute = route('/pages', ManagedPagesAdminRoute)
+const seoRoute = route('/seo', SeoPagesAdminRoute)
 const pageEditRoute = route('/pages/$pageKey', ManagedPageEditAdminRoute)
 
 const routeTree = rootRoute.addChildren([
@@ -116,7 +118,7 @@ const routeTree = rootRoute.addChildren([
   teamRoute, teamCreateRoute, teamEditRoute, telegramRoute, sharedHeaderRoute, contactsSettingsRoute,
   productsLegacyRoute, coffeeRoute, coffeeCreateRoute, coffeeEditRoute, cakesRoute, cakeImportRoute, cakeCreateRoute, cakeEditRoute,
   contentLegacyRoute, promotionsRoute, promotionCreateRoute, promotionEditRoute, eventsRoute, eventCreateRoute, eventEditRoute, journalRoute, articleCreateRoute, articleEditRoute,
-  homepageRoute, leadsRoute, mediaRoute, jobsRoute, jobCreateRoute, jobEditRoute, pagesRoute, pageEditRoute,
+  homepageRoute, leadsRoute, mediaRoute, jobsRoute, jobCreateRoute, jobEditRoute, pagesRoute, pageEditRoute, seoRoute,
 ])
 
 export const router = createRouter({ routeTree })

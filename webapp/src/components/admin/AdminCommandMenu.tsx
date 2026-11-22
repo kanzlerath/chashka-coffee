@@ -24,6 +24,7 @@ const commands = [
   { label: 'Заявки и отклики', href: '/leads', group: 'Работа', permissions: ['LEADS_MANAGE', 'JOB_APPLICATIONS_MANAGE'] },
   { label: 'Главная страница', href: '/homepage', group: 'Страницы', permission: 'CONTENT_MANAGE' },
   { label: 'Страницы', href: '/pages', group: 'Страницы', permission: 'CONTENT_MANAGE' },
+  { label: 'SEO страниц', href: '/seo', group: 'Страницы', permission: 'CONTENT_MANAGE' },
   { label: 'Кофе', href: '/products/coffee', group: 'Каталог', permission: 'CATALOG_MANAGE' },
   { label: 'Торты', href: '/products/cakes', group: 'Каталог', permission: 'CATALOG_MANAGE' },
   { label: 'Акции', href: '/content/promotions', group: 'Публикации', permission: 'CONTENT_MANAGE' },

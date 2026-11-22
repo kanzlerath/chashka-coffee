@@ -45,7 +45,7 @@ import { HomepagePage } from '@/features/homepage-admin'
 import { JobsPage } from '@/features/jobs-admin'
 import { LeadsPage } from '@/features/leads-admin'
 import { MediaPage } from '@/features/media-admin'
-import { ManagedPagesPage } from '@/features/pages-admin'
+import { ManagedPagesPage, SeoPagesPage } from '@/features/pages-admin'
 import { CakeImportPage, ProductsPage } from '@/features/products-admin'
 import { TeamPage } from '@/features/staff-admin'
 import { StatisticsPage } from '@/features/analytics-admin'
@@ -71,6 +71,7 @@ const catalogNavigation = [
 const pageNavigation = [
   { to: '/homepage', label: 'Главная', icon: Home01Icon, permission: 'CONTENT_MANAGE' },
   { to: '/pages', label: 'Страницы', icon: File01Icon, permission: 'CONTENT_MANAGE' },
+  { to: '/seo', label: 'SEO страниц', icon: Settings01Icon, permission: 'CONTENT_MANAGE' },
 ] as const
 
 const publicationNavigation = [
@@ -649,6 +650,14 @@ export function ManagedPagesAdminRoute() {
   if (!auth.user) return <HomePage />
   if (!hasPermission(auth.user, 'CONTENT_MANAGE')) return <AccessDenied title="Страницы" description="Редактор страниц доступен контент-мейкеру." />
   return <ManagedPagesPage />
+}
+
+export function SeoPagesAdminRoute() {
+  const auth = useAuth()
+  if (auth.isBootstrapping) return <LoadingState />
+  if (!auth.user) return <HomePage />
+  if (!hasPermission(auth.user, 'CONTENT_MANAGE')) return <AccessDenied title="SEO страниц" description="SEO доступно контент-мейкеру." />
+  return <SeoPagesPage />
 }
 
 export function ManagedPageEditAdminRoute() {
