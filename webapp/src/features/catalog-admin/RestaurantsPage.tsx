@@ -29,7 +29,7 @@ const defaultHours: RestaurantOpeningHoursEntry[] = [
 ]
 
 const emptyRestaurant: UpsertRestaurantRequest = {
-  slug: '', name: '', format: 'CITY', area: 'CITY', isAtApartHotel: false, coffeePickupEnabled: false,
+  slug: '', name: '', location: null, format: 'CITY', area: 'CITY', isAtApartHotel: false, coffeePickupEnabled: false,
   city: 'Новосибирск', address: '', phone: '', description: null, coverImageUrl: null,
   aboutTitle: 'О ресторане', aboutText: null, visitAmenities: [],
   galleryUrls: [], menuPdfUrl: null,
@@ -152,6 +152,7 @@ export function RestaurantsPage({ mode = 'list', restaurantId }: { mode?: 'list'
         {editorTab === 'main' ? <>
         <AdminFormIntro>Название, контакты и фотография — то, что увидит гость на странице ресторана.</AdminFormIntro>
         <AdminField label="Название ресторана" required hint="Например: Чашка кофе на Красном проспекте"><Input required placeholder="Чашка кофе на…" value={draft.name} onChange={(event) => change('name', event.target.value)} /></AdminField>
+        <AdminField label="Локация для заголовка меню" hint="Например: на Ленина, в зоопарке или в аэропорту Толмачёво. Используется в H1 меню."><Input maxLength={180} placeholder="на Ленина" value={draft.location ?? ''} onChange={(event) => change('location', nullableDraftText(event.target.value))} /></AdminField>
         <div className="grid gap-4 sm:grid-cols-2"><AdminField label="Тип ресторана" required hint="Выберите, где находится точка."><select value={draft.format} onChange={(event) => { const value = event.target.value as UpsertRestaurantRequest['format']; change('format', value); change('area', value === 'AIRPORT' ? 'AIRPORT' : 'CITY') }}><option value="CITY">В городе</option><option value="AIRPORT">В аэропорту</option></select></AdminField><AdminField label="Город" required><Input required placeholder="Новосибирск" value={draft.city} onChange={(event) => change('city', event.target.value)} /></AdminField></div>
         <AdminField label="Адрес" required hint="Полный адрес, который можно скопировать в навигатор."><Input required placeholder="Красный проспект, 25" value={draft.address} onChange={(event) => change('address', event.target.value)} /></AdminField>
         <AdminField label="Телефон" required hint="Показывается посетителям и используется для кнопки «Позвонить»."><Input required type="tel" inputMode="tel" pattern={russianPhonePattern} title="Введите полный номер, например +7 (383) 123-20-20" placeholder="+7 (383) 123-20-20" value={draft.phone} onChange={(event) => change('phone', formatRussianPhone(event.target.value))} /></AdminField>
@@ -239,6 +240,7 @@ const dayLabel = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
 const restaurantFieldLabels: Record<string, string> = {
   slug: 'Адрес страницы',
   name: 'Название ресторана',
+  location: 'Локация для заголовка меню',
   format: 'Тип ресторана',
   area: 'Тип ресторана',
   city: 'Город',

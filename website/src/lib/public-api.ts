@@ -1,4 +1,5 @@
 import type { ContentEntry, JobOpening, ManagedPage, ManagedPageKey, Product, ProductType, RestaurantSummary, SiteSettings, SeoPage } from '@chashka-coffee/contracts'
+import { SEO_DEFAULTS } from './seo-defaults'
 
 const apiOrigin = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'
 
@@ -73,7 +74,18 @@ export async function getSiteSettings() {
 
 export async function getSeoMetadata(path: string) {
   const response = await getJson<{ page: SeoPage | null }>(`/api/seo?path=${encodeURIComponent(path)}`)
-  return response?.page ?? null
+  const normalizedPath = path === '/' ? '/' : `${path.replace(/\/+$/, '')}/`
+  const fallback = SEO_DEFAULTS[normalizedPath]
+  if (response?.page) {
+    return {
+      ...response.page,
+      title: response.page.title ?? fallback?.title ?? null,
+      description: response.page.description ?? fallback?.description ?? null,
+    }
+  }
+  return fallback
+    ? { key: `default:${normalizedPath}`, path: normalizedPath, label: fallback.title, title: fallback.title, description: fallback.description, imageUrl: null, canonicalUrl: null, noindex: false, updatedAt: null }
+    : null
 }
 
 export async function getContent(type: ContentEntry['type']) {

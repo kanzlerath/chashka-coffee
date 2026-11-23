@@ -733,6 +733,7 @@ model Restaurant {
   id                  String                        @id @default(dbgenerated("uuidv7()")) @db.Uuid
   slug                String                        @unique @db.VarChar(120)
   name                String                        @db.VarChar(180)
+  location            String?                       @db.VarChar(180)
   format              RestaurantFormat
   area                RestaurantArea
   isAtApartHotel      Boolean                       @default(false) @map("is_at_apart_hotel")

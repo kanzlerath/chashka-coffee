@@ -57,12 +57,13 @@ function toNullableInputJson(value: Prisma.JsonValue | null) {
 }
 
 function toRestaurantSummary(restaurant: {
-  id: string; slug: string; name: string; format: 'CITY' | 'PARK' | 'AIRPORT' | 'APART_HOTEL'; area: 'CITY' | 'PARK' | 'AIRPORT'; isAtApartHotel: boolean; city: string; address: string; phone: string; coverImageUrl: string | null; latitude: Prisma.Decimal | null; longitude: Prisma.Decimal | null; openingHours: { dayOfWeek: number; opensAt: string | null; closesAt: string | null; isClosed: boolean }[]; menuAssignments?: { id: string }[]
+  id: string; slug: string; name: string; location: string | null; format: 'CITY' | 'PARK' | 'AIRPORT' | 'APART_HOTEL'; area: 'CITY' | 'PARK' | 'AIRPORT'; isAtApartHotel: boolean; city: string; address: string; phone: string; coverImageUrl: string | null; latitude: Prisma.Decimal | null; longitude: Prisma.Decimal | null; openingHours: { dayOfWeek: number; opensAt: string | null; closesAt: string | null; isClosed: boolean }[]; menuAssignments?: { id: string }[]
 }): RestaurantSummary {
   return {
     id: restaurant.id,
     slug: restaurant.slug,
     name: restaurant.name,
+    location: restaurant.location,
     format: restaurant.format,
     area: restaurant.area,
     isAtApartHotel: restaurant.isAtApartHotel,
@@ -88,12 +89,13 @@ function dietaryMarks(item: { isVegetarian: boolean; isSpicy: boolean; isLactose
 }
 
 function toAdminRestaurant(restaurant: {
-  id: string; slug: string; name: string; format: 'CITY' | 'PARK' | 'AIRPORT' | 'APART_HOTEL'; area: 'CITY' | 'PARK' | 'AIRPORT'; isAtApartHotel: boolean; coffeePickupEnabled: boolean; city: string; address: string; phone: string; description: string | null; aboutTitle: string | null; aboutText: string | null; visitAmenities: Prisma.JsonValue; coverImageUrl: string | null; galleryUrls: Prisma.JsonValue; menuPdfUrl: string | null; latitude: Prisma.Decimal | null; longitude: Prisma.Decimal | null; yandexMapsUrl: string | null; twoGisUrl: string | null; createdAt: Date; updatedAt: Date; openingHours?: { dayOfWeek: number; opensAt: string | null; closesAt: string | null; isClosed: boolean }[]; menuAssignments?: { menu: { id: string; name: string } }[]
+  id: string; slug: string; name: string; location: string | null; format: 'CITY' | 'PARK' | 'AIRPORT' | 'APART_HOTEL'; area: 'CITY' | 'PARK' | 'AIRPORT'; isAtApartHotel: boolean; coffeePickupEnabled: boolean; city: string; address: string; phone: string; description: string | null; aboutTitle: string | null; aboutText: string | null; visitAmenities: Prisma.JsonValue; coverImageUrl: string | null; galleryUrls: Prisma.JsonValue; menuPdfUrl: string | null; latitude: Prisma.Decimal | null; longitude: Prisma.Decimal | null; yandexMapsUrl: string | null; twoGisUrl: string | null; createdAt: Date; updatedAt: Date; openingHours?: { dayOfWeek: number; opensAt: string | null; closesAt: string | null; isClosed: boolean }[]; menuAssignments?: { menu: { id: string; name: string } }[]
 }): AdminRestaurant {
   return {
     id: restaurant.id,
     slug: restaurant.slug,
     name: restaurant.name,
+    location: restaurant.location,
     format: restaurant.format,
     area: restaurant.area,
     isAtApartHotel: restaurant.isAtApartHotel,
