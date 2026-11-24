@@ -14,13 +14,13 @@ const fallbackImages=['/images/restaurants-hero.png','/images/home-hero-v1.png',
 <PageShell title="Рестораны" description="Рестораны Чашка кофе в Новосибирске и аэропорту Толмачёво." active="restaurants">
   <main class="restaurants-page">
     <header class="restaurants-heading"><h1>Рестораны</h1></header>
-    <RestaurantMap restaurants={restaurants} apiKey={yandexMapsApiKey} />
     <section class="restaurants-catalog" aria-label="Список ресторанов">
       {apiUnavailable ? <div class="restaurants-error"><h3>Список пока недоступен</h3><p>Не удалось загрузить рестораны. Попробуйте обновить страницу немного позже.</p></div> : <div class="restaurant-grid">{restaurants.map((restaurant,index)=><article class="restaurant-card">
         <a class="restaurant-card-image" href={`/restaurants/${restaurant.slug}`}><img src={restaurant.coverImageUrl ?? fallbackImages[index % fallbackImages.length]} alt="" loading="lazy" /></a>
         <div><h3 class:list={{ 'is-long': restaurant.name.replace('Чашка кофе — ', '').length > 22 }}>{restaurant.name.replace('Чашка кофе — ', '')}</h3><div class="restaurant-card-meta"><p>{restaurant.address}</p><span class="restaurant-hours">{restaurant.openingHoursLabel}</span></div><nav class:list={{ 'is-single': !restaurant.hasMenu }}><a href={`/restaurants/${restaurant.slug}`}>Подробнее</a>{restaurant.hasMenu && <a class="restaurant-menu-link" href={`/restaurants/${restaurant.slug}/menu`}>Меню</a>}</nav></div>
       </article>)}</div>}
     </section>
+    <RestaurantMap restaurants={restaurants} apiKey={yandexMapsApiKey} />
     <aside class="restaurants-promo"><div><h2>Встречайтесь<br/>без повода</h2><span>Любимое меню, спокойная музыка и стол, который уже ждёт.</span><a href="/menu">Посмотреть меню</a></div><img class="restaurants-promo-illustration" src="/images/menu-track.svg" alt="" aria-hidden="true" /></aside>
   </main>
 </PageShell>
